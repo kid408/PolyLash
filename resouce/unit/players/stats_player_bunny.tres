@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3 uid="uid://ccl8uhqa6qbdb"]
+
+[ext_resource type="Texture2D" uid="uid://dmox6e28kf6ax" path="res://assets/sprites/Players/Player_4.png" id="1_ctqht"]
+[ext_resource type="Script" uid="uid://cfd55woyni5qt" path="res://resouce/unit/unit_stats.gd" id="1_thaqk"]
+
+[resource]
+script = ExtResource("1_thaqk")
+name = "bunny"
+icon = ExtResource("1_ctqht")
+health = 20
+damage = 5
+lock = 5.0
+block_chance = 3.0
+metadata/_custom_type_script = "uid://cfd55woyni5qt"

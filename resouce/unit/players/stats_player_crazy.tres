@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3 uid="uid://7kgdno7ivioe"]
+
+[ext_resource type="Texture2D" uid="uid://dq63ocnu3lset" path="res://assets/sprites/Players/Player_3}.png" id="1_1kljk"]
+[ext_resource type="Script" uid="uid://cfd55woyni5qt" path="res://resouce/unit/unit_stats.gd" id="1_5pp5k"]
+
+[resource]
+script = ExtResource("1_5pp5k")
+name = "crazy"
+icon = ExtResource("1_1kljk")
+health = 15
+health_increase_per_wave = 0.0
+damage = 3
+speed = 325
+lock = 5.0
+block_chance = 3.0
+gold_drop = 0
+metadata/_custom_type_script = "uid://cfd55woyni5qt"

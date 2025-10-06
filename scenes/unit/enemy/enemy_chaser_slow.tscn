@@ -1,0 +1,70 @@
+[gd_scene load_steps=10 format=3 uid="uid://d2gykr8m3idaq"]
+
+[ext_resource type="PackedScene" uid="uid://cyavyrbpj6jjb" path="res://scenes/unit/unit.tscn" id="1_idtdn"]
+[ext_resource type="Texture2D" uid="uid://d1ou504pylric" path="res://assets/sprites/Enemies/Enemy_1.png" id="2_k8upj"]
+[ext_resource type="Script" uid="uid://cslieepfyhg7k" path="res://scenes/unit/enemy/enemy.gd" id="2_oo7ju"]
+[ext_resource type="Resource" uid="uid://74yt7nqgvdqa" path="res://resouce/unit/enemies/stats_enemy_chaser_slow.tres" id="3_lmqbh"]
+[ext_resource type="PackedScene" uid="uid://3t6iqc1kav5h" path="res://scenes/components/hitbox_component.tscn" id="5_e15k4"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_421q1"]
+radius = 66.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_y0s2k"]
+radius = 150.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_03rrj"]
+radius = 31.016125
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_e15k4"]
+radius = 34.0
+
+[node name="EnemyChaserSlow" instance=ExtResource("1_idtdn")]
+collision_layer = 2
+script = ExtResource("2_oo7ju")
+flock_push = 20.0
+stats = ExtResource("3_lmqbh")
+
+[node name="Sprite" parent="Visuals" index="1"]
+texture = ExtResource("2_k8upj")
+
+[node name="CollisionShape2D" parent="." index="1"]
+z_index = 1
+position = Vector2(0, -34)
+shape = SubResource("CircleShape2D_421q1")
+debug_color = Color(0.9592579, 0.05681254, 0.4922163, 0.41960785)
+
+[node name="VisionArea" type="Area2D" parent="." index="3"]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="VisionArea" index="0"]
+position = Vector2(0, -27)
+shape = SubResource("CircleShape2D_y0s2k")
+
+[node name="HurtboxComponent" parent="." index="4"]
+collision_layer = 8
+collision_mask = 16
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtboxComponent" index="0"]
+position = Vector2(0, -32)
+shape = SubResource("CircleShape2D_03rrj")
+debug_color = Color(0.24092275, 0.5110418, 0.9892948, 0.41960785)
+
+[node name="HitboxComponent" parent="." index="5" instance=ExtResource("5_e15k4")]
+collision_layer = 4
+collision_mask = 32
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitboxComponent" index="0"]
+z_index = 1
+position = Vector2(0, -34)
+shape = SubResource("CircleShape2D_e15k4")
+debug_color = Color(0.91839224, 0.2275866, 0.44220272, 0.41960785)
+
+[node name="HealthBar" parent="." index="7"]
+back_color = Color(0.015686275, 0.05490196, 0.16862746, 1)
+fill_color = Color(0.37254903, 0.5372549, 0.75686276, 1)
+
+[node name="KnockbackTimer" type="Timer" parent="." index="9"]
+
+[connection signal="on_health_changed" from="HealthComponent" to="HealthBar" method="_on_health_component_on_health_changed"]
+[connection signal="timeout" from="KnockbackTimer" to="." method="_on_knockback_timer_timeout"]

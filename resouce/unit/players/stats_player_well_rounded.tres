@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3 uid="uid://dlsijaffps5qh"]
+
+[ext_resource type="Script" uid="uid://cfd55woyni5qt" path="res://resouce/unit/unit_stats.gd" id="1_ft3hu"]
+[ext_resource type="Texture2D" uid="uid://cproxhccob85g" path="res://assets/sprites/Players/Player_1.png" id="1_joiwj"]
+
+[resource]
+script = ExtResource("1_ft3hu")
+name = "Well Rounded"
+icon = ExtResource("1_joiwj")
+health = 15
+block_chance = 50.0
+metadata/_custom_type_script = "uid://cfd55woyni5qt"

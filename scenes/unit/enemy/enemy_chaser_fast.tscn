@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://klee8qrodifa"]
+
+[ext_resource type="PackedScene" uid="uid://d2gykr8m3idaq" path="res://scenes/unit/enemy/enemy_chaser_slow.tscn" id="1_yb8ih"]
+[ext_resource type="Texture2D" uid="uid://c6vplmpl4q4jr" path="res://assets/sprites/Enemies/Enemy_3.png" id="2_fw3op"]
+
+[node name="EnemyChaserFast" instance=ExtResource("1_yb8ih")]
+
+[node name="Sprite" parent="Visuals" index="1"]
+texture = ExtResource("2_fw3op")

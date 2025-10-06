@@ -1,0 +1,7 @@
+res://scenes/arena/arena.tscn
+res://effects/flash.gdshader
+res://scenes/unit/enemy/enemy.gd
+res://scenes/unit/enemy/enemy_shooter.tscn
+res://scenes/unit/enemy/enemy_chaser_slow.tscn
+res://scenes/unit/unit.tscn
+res://resouce/items/weapons/melee/punch/stats_punch_1.tres
