@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="WeaponStats" load_steps=3 format=3 uid="uid://dghl73qyktbw4"]
+
+[ext_resource type="PackedScene" uid="uid://cijnwjrwvsvq4" path="res://scenes/projectiles/projectile_laser.tscn" id="1_0s8jo"]
+[ext_resource type="Script" uid="uid://dkttq8qhi07rl" path="res://resouce/items/weapons/weapon_stats.gd" id="2_k7jiy"]
+
+[resource]
+script = ExtResource("2_k7jiy")
+projectile_scene = ExtResource("1_0s8jo")
+metadata/_custom_type_script = "uid://dkttq8qhi07rl"

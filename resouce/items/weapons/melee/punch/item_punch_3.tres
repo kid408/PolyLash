@@ -13,5 +13,6 @@ stats = ExtResource("3_qgf7a")
 upgrade_to = ExtResource("4_yygpe")
 item_name = "Punch3"
 item_icon = ExtResource("1_pdu3x")
+item_tier = 2
 item_cost = 20
 metadata/_custom_type_script = "uid://c1gqkylu74grc"

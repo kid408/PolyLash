@@ -11,5 +11,6 @@ scene = ExtResource("2_fa50a")
 stats = ExtResource("3_ldfun")
 item_name = "Punch4"
 item_icon = ExtResource("1_ldfun")
+item_tier = 3
 item_cost = 30
 metadata/_custom_type_script = "uid://c1gqkylu74grc"

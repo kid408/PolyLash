@@ -12,6 +12,7 @@ class_name Unit
 
 
 func _ready() -> void:	
+	# 设置生命条数据
 	health_component.setup(stats)
 
 func set_flash_material() -> void:
@@ -24,12 +25,15 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 	
 	var blocked := Global.get_chance_sucess(stats.block_chance / 100)
 	if blocked:
+		# 发送闪避的信号
 		Global.on_create_block_text.emit(self)
 		return
 		
 	set_flash_material()
 	
+	# 受到伤害，调用健康组件的受到伤害
 	health_component.take_damage(hitbox.damage)
+	# 发送伤害飘字信号
 	Global.on_create_damage_text.emit(self,hitbox)
 	#print("%s :%d" %[name,health_component.current_health])
 

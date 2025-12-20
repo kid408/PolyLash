@@ -1,8 +1,9 @@
-[gd_scene load_steps=10 format=3 uid="uid://d2gykr8m3idaq"]
+[gd_scene load_steps=11 format=3 uid="uid://d2gykr8m3idaq"]
 
 [ext_resource type="PackedScene" uid="uid://cyavyrbpj6jjb" path="res://scenes/unit/unit.tscn" id="1_idtdn"]
 [ext_resource type="Texture2D" uid="uid://d1ou504pylric" path="res://assets/sprites/Enemies/Enemy_1.png" id="2_k8upj"]
 [ext_resource type="Script" uid="uid://cslieepfyhg7k" path="res://scenes/unit/enemy/enemy.gd" id="2_oo7ju"]
+[ext_resource type="PackedScene" uid="uid://dvfjoyutjx5jf" path="res://scenes/particles/Explosion.tscn" id="3_421q1"]
 [ext_resource type="Resource" uid="uid://74yt7nqgvdqa" path="res://resouce/unit/enemies/stats_enemy_chaser_slow.tres" id="3_lmqbh"]
 [ext_resource type="PackedScene" uid="uid://3t6iqc1kav5h" path="res://scenes/components/hitbox_component.tscn" id="5_e15k4"]
 
@@ -22,6 +23,7 @@ radius = 34.0
 collision_layer = 2
 script = ExtResource("2_oo7ju")
 flock_push = 20.0
+death_vfx_scene = ExtResource("3_421q1")
 stats = ExtResource("3_lmqbh")
 
 [node name="Sprite" parent="Visuals" index="1"]
@@ -66,5 +68,4 @@ fill_color = Color(0.37254903, 0.5372549, 0.75686276, 1)
 
 [node name="KnockbackTimer" type="Timer" parent="." index="9"]
 
-[connection signal="on_health_changed" from="HealthComponent" to="HealthBar" method="_on_health_component_on_health_changed"]
 [connection signal="timeout" from="KnockbackTimer" to="." method="_on_knockback_timer_timeout"]

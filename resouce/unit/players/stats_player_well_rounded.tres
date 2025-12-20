@@ -7,6 +7,8 @@
 script = ExtResource("1_ft3hu")
 name = "Well Rounded"
 icon = ExtResource("1_joiwj")
-health = 15
-block_chance = 50.0
+health = 5000
+damage = 10
+speed = 600
+block_chance = 10.0
 metadata/_custom_type_script = "uid://cfd55woyni5qt"

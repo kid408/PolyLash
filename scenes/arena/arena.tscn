@@ -1,13 +1,22 @@
-[gd_scene load_steps=9 format=3 uid="uid://bjhraywhhpn3h"]
+[gd_scene load_steps=12 format=3 uid="uid://bjhraywhhpn3h"]
 
 [ext_resource type="Texture2D" uid="uid://cy4xfx762bxgb" path="res://assets/sprites/BG.png" id="1_8trdl"]
 [ext_resource type="Script" uid="uid://fylssyuoxjey" path="res://scenes/arena/arena.gd" id="1_asdgj"]
 [ext_resource type="Texture2D" uid="uid://ov4fmsbglo55" path="res://assets/sprites/Map.png" id="2_5tue2"]
 [ext_resource type="PackedScene" uid="uid://r0yv7tny8sc8" path="res://scenes/unit/players/player_well_rounded.tscn" id="3_5tue2"]
 [ext_resource type="Script" uid="uid://xik4iqa2n4lo" path="res://scenes/arena/camera_2d.gd" id="4_aj7ud"]
-[ext_resource type="PackedScene" uid="uid://d2gykr8m3idaq" path="res://scenes/unit/enemy/enemy_chaser_slow.tscn" id="6_jx0ua"]
-[ext_resource type="PackedScene" uid="uid://bmly4taxkg73t" path="res://scenes/unit/enemy/enemy_charger.tscn" id="9_vmsrg"]
-[ext_resource type="PackedScene" uid="uid://bjtqmtfqxufqq" path="res://scenes/unit/enemy/enemy_shooter.tscn" id="10_s83md"]
+[ext_resource type="Script" uid="uid://c1r0p6xkr6l1v" path="res://scenes/arena/spawner.gd" id="8_ii07k"]
+[ext_resource type="Script" uid="uid://dkr6e34g4poq6" path="res://resouce/waves/wave_data.gd" id="9_2ml6w"]
+[ext_resource type="FontFile" uid="uid://kfh6ooeul77g" path="res://assets/font/Bake Soda.otf" id="9_6w4xk"]
+[ext_resource type="Resource" uid="uid://dg6afyqcpnt4j" path="res://resouce/waves/date/wave_1_to_5.tres" id="10_xgbxb"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_2ml6w"]
+font = ExtResource("9_6w4xk")
+font_size = 64
+
+[sub_resource type="LabelSettings" id="LabelSettings_xgbxb"]
+font = ExtResource("9_6w4xk")
+font_size = 64
 
 [node name="Arena" type="Node2D" node_paths=PackedStringArray("player")]
 script = ExtResource("1_asdgj")
@@ -26,20 +35,49 @@ scale = Vector2(2, 4)
 texture = ExtResource("2_5tue2")
 
 [node name="PlayerWellRound" parent="." instance=ExtResource("3_5tue2")]
+position = Vector2(-364, 0)
+dash_knockback = 2.0
 
 [node name="Camera2D" type="Camera2D" parent="."]
 script = ExtResource("4_aj7ud")
 
 [node name="Marker2D" type="Marker2D" parent="."]
 
-[node name="EnemyChaserSlow" parent="." instance=ExtResource("6_jx0ua")]
-position = Vector2(-521, 0)
+[node name="Spawner" type="Node2D" parent="."]
+script = ExtResource("8_ii07k")
+waves_data = Array[ExtResource("9_2ml6w")]([ExtResource("10_xgbxb")])
 
-[node name="EnemyChaserSlow2" parent="." instance=ExtResource("6_jx0ua")]
-position = Vector2(-524, -329)
+[node name="SpawnTimer" type="Timer" parent="Spawner"]
 
-[node name="EnemyCharger" parent="." instance=ExtResource("9_vmsrg")]
-position = Vector2(-518, 257)
+[node name="WaveTimer" type="Timer" parent="Spawner"]
 
-[node name="EnemyShooter" parent="." instance=ExtResource("10_s83md")]
-position = Vector2(-493, -577)
+[node name="GameUI" type="CanvasLayer" parent="."]
+
+[node name="waveIndexLable" type="Label" parent="GameUI"]
+unique_name_in_owner = true
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -110.0
+offset_top = 20.0
+offset_right = 110.0
+offset_bottom = 97.333336
+grow_horizontal = 2
+text = "Wave 1"
+label_settings = SubResource("LabelSettings_2ml6w")
+
+[node name="waveTimeLable" type="Label" parent="GameUI"]
+unique_name_in_owner = true
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_top = 100.0
+offset_right = 20.0
+offset_bottom = 120.0
+grow_horizontal = 2
+text = "Wave 1"
+label_settings = SubResource("LabelSettings_xgbxb")
+
+[connection signal="timeout" from="Spawner/SpawnTimer" to="Spawner" method="_on_spawn_timer_timeout"]
+[connection signal="timeout" from="Spawner/WaveTimer" to="Spawner" method="_on_wave_timer_timeout"]

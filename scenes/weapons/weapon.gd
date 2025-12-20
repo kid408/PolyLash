@@ -17,6 +17,8 @@ func _ready() -> void:
 	atk_start_pos = sprite.position
 
 func _process(delta: float) -> void:
+	if Global.game_paused: return
+	
 	if not is_attacking:
 		if targets.size() > 0:
 			update_closest_target()
@@ -24,6 +26,7 @@ func _process(delta: float) -> void:
 			closest_target = null
 	
 	rotate_to_target()
+	update_visuals()
 	
 	if can_use_weapon():
 		use_weapon()
@@ -47,7 +50,7 @@ func rotate_to_target() -> void:
 func get_custom_rotation_to_target() -> float:
 	if not closest_target or not is_instance_valid(closest_target):
 		return rotation
-	
+
 	var rot := global_position.direction_to(closest_target.global_position).angle()
 	return rot + weapon_spread
 	
@@ -64,6 +67,13 @@ func get_idle_rotation() -> float:
 		return 0
 	else :
 		return PI
+
+# 更新手枪的旋转朝向问题
+func update_visuals() -> void:
+	if abs(rotation) > PI /2:
+		sprite.scale.y = -0.5
+	else:
+		sprite.scale.y = 0.5
 
 # 计算武器选择朝向
 func calculate_spread() -> void:
@@ -84,8 +94,8 @@ func get_closest_target() -> Node2D:
 		
 		if distance < closest_distance:
 			closest_target = target
-			closest_distance = distance			
-		
+			closest_distance = distance
+	
 	return closest_enemy
 
 

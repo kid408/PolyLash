@@ -278,4 +278,5 @@ wait_time = 0.2
 one_shot = true
 
 [connection signal="on_damaged" from="HurtboxComponent" to="." method="_on_hurtbox_component_on_damaged"]
+[connection signal="on_health_changed" from="HealthComponent" to="HealthBar" method="_on_health_component_on_health_changed"]
 [connection signal="timeout" from="FlashTimer" to="." method="_on_flash_timer_timeout"]

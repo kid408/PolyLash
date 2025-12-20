@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ItemWeapon" load_steps=5 format=3 uid="uid://dv128bxp7xikp"]
+
+[ext_resource type="Texture2D" uid="uid://crs6paux78un0" path="res://assets/sprites/Weapons/Icons/weapon_laser_icon.png" id="1_0j48j"]
+[ext_resource type="PackedScene" uid="uid://clnrskabvakml" path="res://scenes/weapons/range/weapon_laser.tscn" id="2_bgjna"]
+[ext_resource type="Script" uid="uid://c1gqkylu74grc" path="res://resouce/items/weapons/item_weapon.gd" id="3_fkvaj"]
+[ext_resource type="Resource" uid="uid://dghl73qyktbw4" path="res://resouce/items/weapons/range/laser/stats_laser_4.tres" id="4_0j48j"]
+
+[resource]
+script = ExtResource("3_fkvaj")
+type = 1
+scene = ExtResource("2_bgjna")
+stats = ExtResource("4_0j48j")
+item_name = "laser4"
+item_icon = ExtResource("1_0j48j")
+item_tier = 3
+item_cost = 20
+metadata/_custom_type_script = "uid://c1gqkylu74grc"

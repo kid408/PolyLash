@@ -20,9 +20,11 @@ func _ready() -> void:
 
 func update_bar(value:float,health:float) -> void:
 	progress_bar.value = value
-	health_amount .text = str(health)
+	health_amount.text = str(health)
+	#if health <60:
+	#	print("UI 更新: ", value, " 显示血量: ", health)
 
-# 调用方调用的回收需要通过healthComponent组件的节点信号，手动嗲用到healthbar的实现
+# Unit 里 节点信号 on_health_changed 链接到 HealthBar
 func _on_health_component_on_health_changed(current: float, max: float) -> void:
 	var value = current / max
 	update_bar(value,current)

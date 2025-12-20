@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://r0yv7tny8sc8"]
+[gd_scene load_steps=12 format=3 uid="uid://r0yv7tny8sc8"]
 
 [ext_resource type="PackedScene" uid="uid://cyavyrbpj6jjb" path="res://scenes/unit/unit.tscn" id="1_xa7el"]
 [ext_resource type="Script" uid="uid://cm81pfwdbi3ho" path="res://scenes/unit/players/player.gd" id="2_0kki1"]
@@ -6,6 +6,7 @@
 [ext_resource type="Resource" uid="uid://dlsijaffps5qh" path="res://resouce/unit/players/stats_player_well_rounded.tres" id="3_viu20"]
 [ext_resource type="Script" uid="uid://c0mirjaxbhe0q" path="res://scenes/unit/players/trail.gd" id="5_ht2l1"]
 [ext_resource type="Script" uid="uid://3xhc8o3yr61w" path="res://scenes/unit/players/weapon_container.gd" id="6_viu20"]
+[ext_resource type="Script" uid="uid://cyj3i1371tt7i" path="res://scenes/components/hitbox_component.gd" id="7_20xkg"]
 
 [sub_resource type="Curve" id="Curve_0kki1"]
 _data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
@@ -17,12 +18,24 @@ radius = 20.0
 [sub_resource type="CircleShape2D" id="CircleShape2D_20xkg"]
 radius = 32.01562
 
+[sub_resource type="CircleShape2D" id="CircleShape2D_45lct"]
+radius = 30.016663
+
 [node name="PlayerWellRound" instance=ExtResource("1_xa7el")]
 collision_mask = 2
 script = ExtResource("2_0kki1")
-dash_duration = 0.5
-dash_speed_multi = 2.0
+fixed_dash_distance = 300.0
+max_charges = 12
+dash_speed = 1200.0
 dash_cooldown = 3.0
+slow_motion_scale = 0.1
+dash_damage = 50
+dash_knockback = 2.0
+geometry_mask_color = Color(1, 0.2, 0.2, 0.5)
+poison_cloud_scene = null
+shockwave_scene = null
+mine_scene = null
+decoy_scene = null
 stats = ExtResource("3_viu20")
 
 [node name="Trail" type="Line2D" parent="Visuals" index="0" node_paths=PackedStringArray("player")]
@@ -150,6 +163,20 @@ shape = SubResource("CircleShape2D_20xkg")
 back_color = Color(0.13725491, 0.019607844, 0.02745098, 1)
 fill_color = Color(1, 0.2901961, 0.45490196, 1)
 
+[node name="Line2D" type="Line2D" parent="." index="11"]
+
+[node name="GhostsContainer" type="Node2D" parent="." index="12"]
+
+[node name="DashHitbox" type="Area2D" parent="." index="13"]
+collision_layer = 16
+collision_mask = 8
+script = ExtResource("7_20xkg")
+metadata/_custom_type_script = "uid://cyj3i1371tt7i"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DashHitbox" index="0"]
+position = Vector2(0, -34)
+shape = SubResource("CircleShape2D_45lct")
+debug_color = Color(0.7804564, 0.43616673, 0.075355105, 0.41960785)
+
 [connection signal="timeout" from="DashTimer" to="." method="_on_dash_timer_timeout"]
 [connection signal="timeout" from="TrailTimer" to="Visuals/Trail" method="_on_trail_timer_timeout"]
-[connection signal="on_health_changed" from="HealthComponent" to="HealthBar" method="_on_health_component_on_health_changed"]

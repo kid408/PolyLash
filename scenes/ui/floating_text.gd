@@ -1,8 +1,11 @@
 extends Node2D
+# 飘字类
 class_name FloatingText
 
+# 飘字文本框
 @onready var value_label: Label = $ValueLabel
 
+# 设置飘字文字和颜色 并播放动画
 func setup(value:String,color:Color) -> void:
 	value_label.text = value
 	modulate = color
@@ -21,7 +24,7 @@ func setup(value:String,color:Color) -> void:
 	# 修改 随机位置
 	tween.parallel().tween_property(self,"global_position",global_position+Vector2.UP*15,0.4)
 	
-	# 等待5秒
+	# 等待0.5秒
 	tween.tween_interval(0.5)
 	
 	# 缩放变回去
