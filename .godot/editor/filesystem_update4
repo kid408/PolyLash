@@ -3,3 +3,5 @@ res://effects/flash.gdshader
 res://resouce/waves/date/wave_1_to_5.tres
 res://scenes/unit/players/player.gd
 res://scenes/unit/players/player_well_rounded.tscn
+res://autoloads/global.gd
+res://scenes/unit/enemy/enemy.gd

@@ -198,6 +198,7 @@ func perform_explosion() -> void:
 	if armor < max_armor:
 		armor += 1
 		Global.spawn_floating_text(global_position, "+Armor", Color.CYAN)
+	Global.play_player_explosion()
 
 # Q技能：规划
 func enter_planning_mode() -> void:
@@ -248,7 +249,7 @@ func start_dash_sequence() -> void:
 	dash_hitbox.set_deferred("monitorable", true)
 	dash_hitbox.set_deferred("monitoring", true)
 	dash_hitbox.setup(dash_base_damage * current_art_score, false, dash_knockback, self)
-	
+	Global.play_player_dash()
 	current_target = dash_queue.pop_front()
 
 func _handle_dashing_logic(delta: float) -> void:
@@ -340,6 +341,8 @@ func trigger_geometry_kill(polygon_points: PackedVector2Array):
 func _perform_geometry_damage(polygon_points: PackedVector2Array):
 	Global.on_camera_shake.emit(20.0, 0.5) 
 	Global.frame_freeze(0.15, 0.05)
+	
+	
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	var kill_batch = 0
 	for enemy in enemies:
@@ -486,3 +489,70 @@ func update_rotation() -> void:
 		facing_dir = move_dir
 	if facing_dir.x != 0:
 		visuals.scale.x = -0.5 if facing_dir.x > 0 else 0.5
+
+# ==============================================================================
+# 14. 玩家死亡与生命周期 (Player Life Cycle)
+# ==============================================================================
+
+# 玩家受伤 (你可以连接到你的 Hurtbox)
+func take_damage(amount: int) -> void:
+	# 这里如果你有 health 变量
+	# health -= amount
+	# if health <= 0:
+	#    die()
+	pass 
+
+# 【新增】玩家死亡逻辑：碎裂效果
+func die() -> void:
+	print(">>> 玩家死亡！播放碎裂特效 <<<")
+	
+	# 1. 播放音效 (玻璃/陶瓷破碎声)
+	Global.play_player_death()
+	
+	# 2. 视觉表现：时间慢放 -> 冻结
+	Engine.time_scale = 0.2
+	
+	# 3. 视觉表现：生成碎片
+	spawn_death_particles()
+	
+	# 4. 隐藏本体 (不要直接queue_free，否则摄像机会丢)
+	visuals.visible = false
+	collision.set_deferred("disabled", true)
+	dash_hitbox.set_deferred("monitorable", false)
+	
+	# 5. 游戏结束流程 (延迟一会)
+	var tween = create_tween().set_parallel(true)
+	# 比如让屏幕变红或变灰
+	# tween.tween_property(Camera, "zoom", Vector2(2,2), 0.5) 
+	
+	# 2秒后完全暂停或弹出菜单
+	await get_tree().create_timer(1.0).timeout
+	# Global.game_over() # 这里调用你的全局结束方法
+
+# 生成像素碎片 (模拟身体崩塌)
+func spawn_death_particles() -> void:
+	# 创建一个 CPU 粒子发射器
+	var emitter = CPUParticles2D.new()
+	emitter.emitting = false
+	emitter.one_shot = true
+	emitter.amount = 30 # 30个碎片
+	emitter.lifetime = 2.0
+	emitter.explosiveness = 1.0 # 瞬间全部炸开
+	
+	# 碎片外观 (方形像素块)
+	emitter.scale_amount_min = 4.0
+	emitter.scale_amount_max = 8.0
+	emitter.color = Color.WHITE # 或者你的熊猫色
+	
+	# 物理动力学 (像玻璃一样炸开掉落)
+	emitter.direction = Vector2(0, -1) # 稍微向上炸
+	emitter.spread = 180.0
+	emitter.gravity = Vector2(0, 800) # 重力下落
+	emitter.initial_velocity_min = 200.0
+	emitter.initial_velocity_max = 400.0
+	
+	emitter.global_position = global_position
+	emitter.z_index = 100
+	get_tree().current_scene.add_child(emitter)
+	emitter.emitting = true
+	

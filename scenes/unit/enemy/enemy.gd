@@ -121,6 +121,14 @@ func destroy_enemy() -> void:
 	if Global.player and Global.player.has_method("on_enemy_killed"):
 		Global.player.on_enemy_killed(self)
 	
+	# 【新增】播放解压音效！
+	# 这里的判断可以区分一下：如果是被撞死的，声音正常
+	# 如果是被绞杀的，声音可以不一样 (由Player控制)
+	Global.play_enemy_death()
+	
+	spawn_explosion_safe()
+	Global.on_camera_shake.emit(2.0, 0.1)
+	
 	# 【这里】调用死亡特效生成函数
 	spawn_explosion_safe()
 	Global.on_camera_shake.emit(2.0, 0.1)
