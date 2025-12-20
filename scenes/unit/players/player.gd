@@ -2,61 +2,61 @@ extends Unit
 class_name Player
 
 # ==============================================================================
-# 1. 信号定义 (Signals)
+# 1. 信号定义
 # ==============================================================================
-signal energy_changed(current, max_val) # UI信号：能量变化
-signal armor_changed(current)           # UI信号：护甲变化
+signal energy_changed(current, max_val)
+signal armor_changed(current)
 
 # ==============================================================================
-# 2. 核心属性配置 (Export Variables)
+# 2. 核心属性
 # ==============================================================================
-@export_group("Stats (基础属性)")
-@export var max_energy: float = 100.0   # 最大能量
-@export var energy_regen: float = 0.5   # 能量恢复速度
-@export var max_armor: int = 3          # 最大护甲
+@export_group("Stats")
+@export var max_energy: float = 100.0
+@export var energy_regen: float = 0.5
+@export var max_armor: int = 3
 
-@export_group("Dash Settings (冲刺配置)")
-# 【强制设定】代码中会强制覆盖此值，以代码为准
-@export var fixed_dash_distance: float = 300.0 
-@export var max_charges: int = 99       # 最大连冲次数
-@export var dash_speed: float = 1800.0  # 冲刺速度 (已调快)
-@export var slow_motion_scale: float = 0.1 # 规划时的慢动作倍率
-@export var dash_base_damage: int = 10  # 基础撞击伤害
-@export var dash_knockback: float = 2.0 # 撞击击退力
-@export var geometry_mask_color: Color = Color(1, 0.0, 0.0, 0.6) # 绞杀红圈颜色
-@export var close_threshold: float = 80.0 # 闭环判定距离（磁吸阈值）
+@export_group("Dash Settings")
+@export var fixed_dash_distance: float = 800.0 
+@export var max_charges: int = 99
+@export var dash_speed: float = 1800.0
+@export var slow_motion_scale: float = 0.1
+@export var dash_base_damage: int = 10
+@export var dash_knockback: float = 2.0
+@export var geometry_mask_color: Color = Color(1, 0.0, 0.0, 0.6)
+# 【重要】磁吸阈值。设得太大会导致还没连上就误判，设太小很难连。60-80比较合适。
+@export var close_threshold: float = 60.0 
 
-@export_group("Skill Costs (技能消耗)")
-@export var cost_per_segment: float = 0.3 # Q技能消耗
-@export var cost_explosion: float = 0.5   # E技能消耗
+@export_group("Skill Costs")
+@export var cost_per_segment: float = 0.3
+@export var cost_explosion: float = 0.5
 
 # ==============================================================================
-# 3. 节点引用 (Node References)
+# 3. 节点引用
 # ==============================================================================
 @onready var dash_hitbox: HitboxComponent = $DashHitbox
 @onready var collision: CollisionShape2D = $CollisionShape2D
-@onready var trail: Trail = %Trail         # 拖尾
-@onready var line_2d: Line2D = $Line2D     # 画线
+@onready var trail: Trail = %Trail
+@onready var line_2d: Line2D = $Line2D
 @onready var dash_cooldown_timer: Timer = $DashCooldwnTimer 
 
 # ==============================================================================
-# 4. 状态与变量 (Variables)
+# 4. 状态变量
 # ==============================================================================
 enum State { HERDING, DASHING } 
-var current_state = State.HERDING # 当前状态
+var current_state = State.HERDING
 
-var energy: float = 0.0          # 当前能量
-var armor: int = 0               # 当前护甲
-var dash_queue: Array[Vector2] = [] # 冲刺队列
-var current_target: Vector2 = Vector2.ZERO # 当前目标点
-var is_planning: bool = false    # 是否规划中
-var kill_count: int = 0          # 击杀数
+var energy: float = 0.0
+var armor: int = 0
+var dash_queue: Array[Vector2] = []
+var current_target: Vector2 = Vector2.ZERO
+var is_planning: bool = false
+var kill_count: int = 0
+var path_history: Array[Vector2] = []
+var current_art_score: float = 1.0
 
-# --- 闭环核心变量 ---
-var path_history: Array[Vector2] = [] # 路径历史记录
-var current_art_score: float = 1.0    # 艺术分
+# 【核心修复】斩杀执行锁。true时绝对禁止触发新的斩杀逻辑
+var is_executing_kill: bool = false 
 
-# --- 技能开关 ---
 var upgrades = {
 	"poison_trail": false,
 	"closed_loop": true,
@@ -67,10 +67,7 @@ var upgrades = {
 	"corpse_bowling": false
 }
 
-# ==============================================================================
-# 5. 资源预加载
-# ==============================================================================
-@export_group("Skill Scenes (技能预制体)")
+@export_group("Skill Scenes")
 @export var poison_cloud_scene: PackedScene
 @export var mine_scene: PackedScene
 @export var decoy_scene: PackedScene
@@ -79,17 +76,15 @@ var upgrades = {
 var move_dir: Vector2 
 
 # ==============================================================================
-# 6. 初始化 (Init)
+# 6. 初始化
 # ==============================================================================
 func _ready() -> void:
 	super._ready()
 	line_2d.top_level = true 
 	line_2d.clear_points()
 	
-	# 【强制覆盖】无视编辑器设置，锁定代码手感数值
 	fixed_dash_distance = 300.0 
 	
-	# 测试数值
 	max_energy = 999.0
 	max_charges = 999
 	energy = max_energy 
@@ -99,10 +94,10 @@ func _ready() -> void:
 	if dash_cooldown_timer:
 		dash_cooldown_timer.one_shot = true
 	
-	print(">>> 玩家就绪 | 闭环预警提示已实装(变红) <<<")
+	print(">>> 玩家就绪 | 算法统一 | 音效后置 <<<")
 
 # ==============================================================================
-# 7. 主循环 (Process)
+# 7. 主循环
 # ==============================================================================
 func _process(delta: float) -> void:
 	if Global.game_paused: return
@@ -140,14 +135,12 @@ func _handle_herding_logic(delta: float) -> void:
 	anim_player.play("idle")
 
 func _handle_skill_inputs() -> void:
-	# E 技能
 	if Input.is_action_just_pressed("skill_e"): 
 		if energy >= cost_explosion:
 			perform_explosion()
 		else:
 			Global.spawn_floating_text(global_position, "No Energy!", Color.RED)
 
-	# Q 技能 / 左键
 	if Input.is_action_pressed("skill_q"): 
 		if not is_planning:
 			enter_planning_mode()
@@ -179,18 +172,18 @@ func try_add_path_segment() -> bool:
 func perform_explosion() -> void:
 	consume_energy(cost_explosion)
 	Global.on_camera_shake.emit(10.0, 0.3)
+	Global.play_player_explosion()
 	
 	spawn_temp_vfx(explosion_vfx_scene, global_position, 2.0)
+	create_explosion_range_visual(200.0)
 	
 	var damage_amount = 100 
-	
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if global_position.distance_to(enemy.global_position) < 200.0:
 			if enemy.has_method("apply_knockback"):
 				var dir = (enemy.global_position - global_position).normalized()
 				enemy.apply_knockback(dir, 500.0)
-				
 				if enemy.has_node("HealthComponent"):
 					enemy.health_component.take_damage(damage_amount)
 					Global.spawn_floating_text(enemy.global_position, str(damage_amount), Color.ORANGE)
@@ -198,16 +191,17 @@ func perform_explosion() -> void:
 	if armor < max_armor:
 		armor += 1
 		Global.spawn_floating_text(global_position, "+Armor", Color.CYAN)
-	Global.play_player_explosion()
 
 # Q技能：规划
 func enter_planning_mode() -> void:
 	is_planning = true
 	Engine.time_scale = slow_motion_scale 
 
+# 松开Q键执行
 func exit_planning_mode_and_dash() -> void:
 	is_planning = false
 	Engine.time_scale = 1.0 
+	
 	if dash_queue.size() > 0:
 		start_dash_sequence()
 
@@ -215,8 +209,6 @@ func add_path_point(mouse_pos: Vector2) -> void:
 	var start_pos = global_position
 	if dash_queue.size() > 0:
 		start_pos = dash_queue.back()
-	
-	# 800.0 距离
 	var direction = (mouse_pos - start_pos).normalized()
 	var final_pos = start_pos + (direction * fixed_dash_distance)
 	dash_queue.append(final_pos)
@@ -249,6 +241,7 @@ func start_dash_sequence() -> void:
 	dash_hitbox.set_deferred("monitorable", true)
 	dash_hitbox.set_deferred("monitoring", true)
 	dash_hitbox.setup(dash_base_damage * current_art_score, false, dash_knockback, self)
+	
 	Global.play_player_dash()
 	current_target = dash_queue.pop_front()
 
@@ -288,60 +281,119 @@ func end_dash_sequence() -> void:
 	dash_hitbox.set_deferred("monitoring", false)
 
 # ==============================================================================
-# 12. 几何闭环逻辑
+# 12. 几何闭环逻辑 (算法统一核心)
 # ==============================================================================
-func check_and_trigger_intersection() -> void:
-	if path_history.size() < 3: return
-	
-	var current_pos = path_history[-1]      
-	var previous_pos = path_history[-2]     
-	
-	for i in range(path_history.size() - 2):
-		var old_pos = path_history[i]
-		
-		# 磁吸检测
-		var dist = current_pos.distance_to(old_pos)
-		if dist < close_threshold:
-			var polygon_points = PackedVector2Array()
-			for j in range(i, path_history.size()):
-				polygon_points.append(path_history[j])
-			trigger_geometry_kill(polygon_points)
-			return 
 
-		# 交叉检测
-		if i < path_history.size() - 2:
-			var old_next = path_history[i+1]
-			var intersection = Geometry2D.segment_intersects_segment(previous_pos, current_pos, old_pos, old_next)
-			if intersection:
-				var polygon_points = PackedVector2Array()
-				polygon_points.append(intersection)
-				for j in range(i + 1, path_history.size() - 1):
-					polygon_points.append(path_history[j])
-				polygon_points.append(intersection) 
-				trigger_geometry_kill(polygon_points)
-				return
+# 【核心重构 1】通用几何检测函数
+# 输入：待检测点(candidate_point)，历史路径(check_history)
+# 输出：如果闭合，返回多边形点集；否则返回空数组
+# 作用：视觉检测和实际运行检测都调用这个函数，保证逻辑绝对一致！
+func find_closing_polygon(candidate_point: Vector2, check_history: Array[Vector2]) -> PackedVector2Array:
+	if check_history.size() < 2: return PackedVector2Array()
+	
+	# 倒序遍历，找最近的闭合点
+	for i in range(check_history.size() - 1):
+		var old_pos = check_history[i]
+		
+		# 1. 磁吸检测
+		if candidate_point.distance_to(old_pos) < close_threshold:
+			var poly = PackedVector2Array()
+			# 从旧点开始，一直加到最后
+			for j in range(i, check_history.size()):
+				poly.append(check_history[j])
+			# 把当前点也加上
+			poly.append(candidate_point) 
+			return poly
+			
+		# 2. 交叉检测
+		if i < check_history.size() - 1:
+			var old_next = check_history[i+1]
+			# 当前这笔画是: history的最后一个点 -> candidate_point
+			var current_start = check_history.back()
+			
+			# 防止与相邻线段检测 (必然相交于端点)
+			if old_next != current_start:
+				var intersection = Geometry2D.segment_intersects_segment(current_start, candidate_point, old_pos, old_next)
+				if intersection:
+					var poly = PackedVector2Array()
+					poly.append(intersection) # 交点作为起点
+					for j in range(i + 1, check_history.size()):
+						poly.append(check_history[j])
+					poly.append(intersection) # 闭合回交点
+					return poly
+					
+	return PackedVector2Array()
+
+# 运行时检测 (由 _on_reach_target_point 调用)
+func check_and_trigger_intersection() -> void:
+	# 【Fix Bug 2】超级锁：如果正在斩杀，直接退出，防止声音重叠
+	if is_executing_kill: return
+	
+	if path_history.size() < 2: return
+	
+	var current_point = path_history.back()
+	# 构造一个排除掉当前点的临时历史 (为了套用通用函数)
+	var history_to_check = path_history.slice(0, path_history.size() - 1)
+	
+	# 调用通用检测
+	var polygon_points = find_closing_polygon(current_point, history_to_check)
+	
+	if polygon_points.size() > 0:
+		trigger_geometry_kill(polygon_points)
 
 func trigger_geometry_kill(polygon_points: PackedVector2Array):
-	print(">>> 触发闭环！生成遮罩... <<<")
+	print(">>> 闭环确认！启动斩杀流程 <<<")
+	
+	# 【Fix Bug 2】立即上锁，动画结束前绝不开锁
+	is_executing_kill = true
+	
+	# 生成遮罩 (立即添加)
 	var mask_node = create_geometry_mask_visual(polygon_points)
+	
+	# 【Fix Bug 3】声音后置
+	# 不在这里播放声音，防止“有声音无红圈”的情况
+	# 声音将在 Tween 回调中，与红圈变亮同步播放
+	
 	var tween = create_tween()
+	
+	# 1. 变红预警 (0.2s)
 	tween.tween_property(mask_node, "color:a", 0.8, 0.2).from(0.0)
+	
+	# 2. 伤害爆发 + 音效 (同步执行)
 	tween.tween_callback(func(): 
 		if is_instance_valid(mask_node): 
-			mask_node.color = Color(2, 2, 2, 1)
+			mask_node.color = Color(2, 2, 2, 1) # 变亮
+		
+		# 【Fix Bug 3】在这里播放音效！
+		# 只有红圈成功变亮了，才会响，解决“没斩杀也响”的问题
+		Global.play_loop_kill_impact()
+		
+		# 执行伤害
 		_perform_geometry_damage(polygon_points)
 	)
+	
+	# 3. 停留
 	tween.tween_interval(0.15)
+	
+	# 4. 淡出
 	tween.tween_property(mask_node, "color", geometry_mask_color, 0.05)
 	tween.tween_property(mask_node, "color:a", 0.0, 0.3)
+	
+	# 5. 解锁
 	tween.tween_callback(func():
+		is_executing_kill = false # 【解锁】
 		if is_instance_valid(mask_node): mask_node.queue_free()
+	)
+	
+	# 强制解锁保险 (防止Tween被意外杀掉导致死锁)
+	get_tree().create_timer(2.0).timeout.connect(func():
+		if is_executing_kill:
+			is_executing_kill = false
 	)
 
 func _perform_geometry_damage(polygon_points: PackedVector2Array):
 	Global.on_camera_shake.emit(20.0, 0.5) 
 	Global.frame_freeze(0.15, 0.05)
-	
 	
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	var kill_batch = 0
@@ -354,93 +406,88 @@ func _perform_geometry_damage(polygon_points: PackedVector2Array):
 				Global.spawn_floating_text(enemy.global_position, "LOOP KILL!", Color.GOLD)
 	print(">>> 闭环伤害结束，击杀数: ", kill_batch)
 
+# ==============================================================================
+# 13. 视觉更新 (Fix Bug 1: 视觉与逻辑统一)
+# ==============================================================================
+func _update_visuals() -> void:
+	if dash_queue.is_empty() and not is_planning:
+		line_2d.clear_points()
+		return
+	
+	line_2d.clear_points()
+	line_2d.add_point(global_position)
+	for p in dash_queue:
+		line_2d.add_point(p)
+	
+	if is_planning:
+		var start = global_position
+		if dash_queue.size() > 0: start = dash_queue.back()
+		
+		var mouse_dir = (get_global_mouse_position() - start).normalized()
+		var preview_pos = start + (mouse_dir * fixed_dash_distance)
+		
+		# --- 变色逻辑 ---
+		var final_color = Color.WHITE
+		
+		if energy < cost_per_segment:
+			final_color = Color(0.5, 0.5, 0.5, 0.5)
+		
+		# 【核心重构】使用 check_and_trigger_intersection 同款逻辑进行检测
+		# 只有当 dash_queue 中的线确实构成了闭环，才变红
+		elif is_queue_closing_visual():
+			final_color = Color(1.0, 0.0, 0.0, 1.0)
+			
+		line_2d.default_color = final_color
+		line_2d.add_point(preview_pos)
+
+# 视觉层检测：模拟 path_history + dash_queue 的组合
+func is_queue_closing_visual() -> bool:
+	# 构造一个“假设已经跑完所有点”的历史数组
+	# 包含：当前真实位置 + 队列里所有已确认的点
+	var simulated_history: Array[Vector2] = []
+	simulated_history.append(global_position)
+	simulated_history.append_array(dash_queue)
+	
+	if simulated_history.size() < 3: return false
+	
+	var last_point = simulated_history.back()
+	var history_before_last = simulated_history.slice(0, simulated_history.size() - 1)
+	
+	# 调用那个【通用函数】，看能不能返回有效的多边形
+	var poly = find_closing_polygon(last_point, history_before_last)
+	
+	# 如果数组不为空，说明形成闭环了 -> 变红
+	return poly.size() > 0
+
+# ==============================================================================
+# 14. 辅助与生命周期
+# ==============================================================================
+
 func create_geometry_mask_visual(points: PackedVector2Array) -> Polygon2D:
 	var poly_node = Polygon2D.new()
 	poly_node.polygon = points
 	poly_node.color = geometry_mask_color
 	poly_node.color.a = 0.0 
 	poly_node.z_index = 100 
-	get_tree().current_scene.call_deferred("add_child", poly_node)
+	get_tree().current_scene.add_child(poly_node) # 立即添加
 	return poly_node
 
-# ==============================================================================
-# 13. 【核心新增】闭环预判与视觉更新
-# ==============================================================================
-
-# 更新画线与变色逻辑
-func _update_visuals() -> void:
-	if dash_queue.is_empty() and not is_planning:
-		line_2d.clear_points()
-		return
-	
-	# 画出已规划的线 (白色/默认色)
-	line_2d.clear_points()
-	line_2d.add_point(global_position)
-	for p in dash_queue:
-		line_2d.add_point(p)
-	
-	# 画出当前鼠标指向的“预测线”
-	if is_planning:
-		var start = global_position
-		if dash_queue.size() > 0: start = dash_queue.back()
-		
-		# 计算预测终点
-		var mouse_dir = (get_global_mouse_position() - start).normalized()
-		var preview_pos = start + (mouse_dir * fixed_dash_distance)
-		
-		# --- 颜色逻辑判定 ---
-		if energy < cost_per_segment:
-			# 1. 没蓝了：变灰/暗红
-			line_2d.default_color = Color(0.5, 0.5, 0.5, 0.5)
-		elif is_preview_loop_closing(preview_pos):
-			# 2. 【新增】检测到闭环：变红！(提示必杀)
-			line_2d.default_color = Color(1.0, 0.0, 0.0, 1.0) 
-		else:
-			# 3. 正常规划：白色
-			line_2d.default_color = Color.WHITE
-			
-		line_2d.add_point(preview_pos)
-
-# 检测：如果加上 preview_end_pos 这个点，是否会形成闭环？
-func is_preview_loop_closing(preview_end_pos: Vector2) -> bool:
-	# 构造一个虚拟的“完整路径点集”
-	# 包含：主角当前位置 -> 队列里的所有点
-	var check_points: Array[Vector2] = []
-	check_points.append(global_position)
-	check_points.append_array(dash_queue)
-	
-	# 至少要有2个点（加上新的预览点就是3个点），才能形成三角形/闭环
-	if check_points.size() < 2: 
-		return false
-		
-	var current_start = check_points.back()
-	
-	# 遍历历史点，检查“磁吸”和“交叉”
-	# 我们跳过最后1个点(current_start)，因为线是从那里发出的
-	for i in range(check_points.size() - 1):
-		var old_pos = check_points[i]
-		
-		# 1. 磁吸检测 (Magnetic Close)
-		# 如果预测点离某个旧点很近 -> 视为闭环
-		if preview_end_pos.distance_to(old_pos) < close_threshold:
-			return true
-			
-		# 2. 交叉检测 (Intersection)
-		# 只有当 i+1 存在时才能构成线段
-		if i < check_points.size() - 1:
-			var old_next = check_points[i+1]
-			# 检查：(current_start -> preview_end_pos) 是否撞上了 (old_pos -> old_next)
-			# 排除相邻线段（因为相邻线段端点重合，会被数学判定为相交）
-			if old_next != current_start:
-				var intersection = Geometry2D.segment_intersects_segment(current_start, preview_end_pos, old_pos, old_next)
-				if intersection:
-					return true
-					
-	return false
-
-# ==============================================================================
-# 14. 辅助功能 (Safe VFX)
-# ==============================================================================
+func create_explosion_range_visual(radius: float) -> void:
+	var circle_points = PackedVector2Array()
+	var steps = 32
+	for i in range(steps):
+		var angle = i * TAU / steps
+		circle_points.append(Vector2(cos(angle), sin(angle)) * radius)
+	var circle_node = Polygon2D.new()
+	circle_node.polygon = circle_points
+	circle_node.color = geometry_mask_color
+	circle_node.color.a = 0.6
+	circle_node.z_index = 90
+	circle_node.global_position = global_position
+	get_tree().current_scene.add_child(circle_node)
+	var tween = circle_node.create_tween()
+	tween.tween_property(circle_node, "color:a", 0.0, 0.4).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(circle_node.queue_free)
 
 func spawn_temp_vfx(scene: PackedScene, pos: Vector2, lifetime: float) -> void:
 	if not scene: return
@@ -454,31 +501,23 @@ func spawn_temp_vfx(scene: PackedScene, pos: Vector2, lifetime: float) -> void:
 
 func on_enemy_killed(enemy_unit: Unit):
 	kill_count += 1
-	print(">>> [击杀] 敌人阵亡 | 总击杀: %d <<<" % kill_count)
 	energy = min(energy + 0.25, max_energy)
 	update_ui_signals()
-	
 	if upgrades["cd_reduction"] and dash_cooldown_timer:
 		var new_time = dash_cooldown_timer.time_left - 0.5
 		dash_cooldown_timer.start(max(0.1, new_time))
-	
 	if upgrades["corpse_bowling"]:
 		spawn_corpse_bullet(enemy_unit.global_position)
 
-func spawn_corpse_bullet(pos: Vector2):
-	pass
-
+func spawn_corpse_bullet(pos: Vector2): pass
 func consume_energy(amount: float) -> void:
 	energy -= amount
 	update_ui_signals()
-
 func update_ui_signals() -> void:
 	energy_changed.emit(energy, max_energy)
-
 func calculate_art_score_final() -> float:
 	var segments = path_history.size() + dash_queue.size()
 	return 1.0 + (segments * 0.1)
-
 func update_rotation() -> void:
 	var facing_dir = Vector2.ZERO
 	if current_state == State.DASHING:
@@ -490,69 +529,31 @@ func update_rotation() -> void:
 	if facing_dir.x != 0:
 		visuals.scale.x = -0.5 if facing_dir.x > 0 else 0.5
 
-# ==============================================================================
-# 14. 玩家死亡与生命周期 (Player Life Cycle)
-# ==============================================================================
-
-# 玩家受伤 (你可以连接到你的 Hurtbox)
-func take_damage(amount: int) -> void:
-	# 这里如果你有 health 变量
-	# health -= amount
-	# if health <= 0:
-	#    die()
-	pass 
-
-# 【新增】玩家死亡逻辑：碎裂效果
 func die() -> void:
-	print(">>> 玩家死亡！播放碎裂特效 <<<")
-	
-	# 1. 播放音效 (玻璃/陶瓷破碎声)
 	Global.play_player_death()
-	
-	# 2. 视觉表现：时间慢放 -> 冻结
 	Engine.time_scale = 0.2
-	
-	# 3. 视觉表现：生成碎片
 	spawn_death_particles()
-	
-	# 4. 隐藏本体 (不要直接queue_free，否则摄像机会丢)
 	visuals.visible = false
 	collision.set_deferred("disabled", true)
 	dash_hitbox.set_deferred("monitorable", false)
-	
-	# 5. 游戏结束流程 (延迟一会)
-	var tween = create_tween().set_parallel(true)
-	# 比如让屏幕变红或变灰
-	# tween.tween_property(Camera, "zoom", Vector2(2,2), 0.5) 
-	
-	# 2秒后完全暂停或弹出菜单
 	await get_tree().create_timer(1.0).timeout
-	# Global.game_over() # 这里调用你的全局结束方法
 
-# 生成像素碎片 (模拟身体崩塌)
 func spawn_death_particles() -> void:
-	# 创建一个 CPU 粒子发射器
 	var emitter = CPUParticles2D.new()
 	emitter.emitting = false
 	emitter.one_shot = true
-	emitter.amount = 30 # 30个碎片
+	emitter.amount = 30
 	emitter.lifetime = 2.0
-	emitter.explosiveness = 1.0 # 瞬间全部炸开
-	
-	# 碎片外观 (方形像素块)
+	emitter.explosiveness = 1.0
 	emitter.scale_amount_min = 4.0
 	emitter.scale_amount_max = 8.0
-	emitter.color = Color.WHITE # 或者你的熊猫色
-	
-	# 物理动力学 (像玻璃一样炸开掉落)
-	emitter.direction = Vector2(0, -1) # 稍微向上炸
+	emitter.color = Color.WHITE
+	emitter.direction = Vector2(0, -1)
 	emitter.spread = 180.0
-	emitter.gravity = Vector2(0, 800) # 重力下落
+	emitter.gravity = Vector2(0, 800)
 	emitter.initial_velocity_min = 200.0
 	emitter.initial_velocity_max = 400.0
-	
 	emitter.global_position = global_position
 	emitter.z_index = 100
 	get_tree().current_scene.add_child(emitter)
 	emitter.emitting = true
-	

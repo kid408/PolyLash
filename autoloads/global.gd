@@ -59,12 +59,12 @@ func play_sfx(stream: AudioStream, min_pitch: float = 0.8, max_pitch: float = 1.
 # 专门用于敌人的死亡音效接口
 func play_enemy_death():
 	# 音量稍微小一点，因为数量多
-	play_sfx(sfx_enemy_pop, 0.9, 1.4, -5.0)
+	play_sfx(sfx_enemy_pop, 0.9, 1.4, -10.0)
 
 # 专门用于闭环绞杀的音效 (更有质感)
 func play_loop_kill_impact():
 	# 音调更低，更沉重，表示大量击杀
-	play_sfx(sfx_loop_kill, 0.6, 0.8, -2.0)
+	play_sfx(sfx_loop_kill, 0.6, 0.8, 5.0)
 
 # 玩家死亡音效
 func play_player_death():
@@ -74,12 +74,12 @@ func play_player_death():
 # 玩家冲撞音效
 func play_player_dash():
 	# 不随机音调，保持严肃和震撼
-	play_sfx(sfx_player_dash, 1.0, 1.0, 5.0)
+	play_sfx(sfx_player_dash,  1.0, 1.0, -2.0)
 	
 # 玩家爆炸音效
 func play_player_explosion():
 	# 不随机音调，保持严肃和震撼
-	play_sfx(sfx_player_explosion, 1.0, 1.0, 5.0)
+	play_sfx(sfx_player_explosion,  1.0, 1.0, 2.0)
 	
 # 是否暴击
 func get_chance_sucess(chance:float) -> bool:
