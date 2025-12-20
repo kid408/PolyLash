@@ -1,5 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1766198973
+::res://::1766208015
 icon.png::CompressedTexture2D::4198334022768452939::1759559642::1759622435::1::::<><><>0<>0<>fb6e1e7bfd910f0a20703a7a13bf3a7f<>res://.godot/imported/icon.png-487276ed1e3a0c39cad0279d744ee560.ctex::
 ::res://assets/::1761926297
 ::res://assets/audio/::1761926297
@@ -80,8 +80,8 @@ WeaponShotgun.png::CompressedTexture2D::7024380308258801515::1759559642::1759559
 WeaponSMG.png::CompressedTexture2D::6719343259487316355::1759559642::1759559643::1::::<><><>0<>0<>021afdb7393221911845b536ae3c020f<>res://.godot/imported/WeaponSMG.png-0bb94804a8aac39ff943aade4cb82412.ctex::
 ::res://autoloads/::1764466472
 global.gd::GDScript::143348280982661186::1764466472::0::1::::<>Node<><>0<>0<><>::
-::res://effects/::1764462443
-flash.gdshader::Shader::1257744766663505236::1764462443::0::1::::<><><>0<>0<><>::
+::res://effects/::1766199168
+flash.gdshader::Shader::1257744766663505236::1766199168::0::1::::<><><>0<>0<><>::
 flash_material.tres::ShaderMaterial::5773785310553720342::1759655675::0::1::::<><><>0<>0<><>::uid://r6i4wwvquocy::::res://effects/flash.gdshader
 ::res://resouce/::1761926297
 ::res://resouce/items/::1761926297
@@ -151,12 +151,12 @@ stats_player_well_rounded.tres::Resource/UnitStats::7968999946729998079::1764413
 ::res://resouce/waves/::1761926297
 wave_data.gd::GDScript::7898135794995127871::1759746779::0::1::::WaveData<>Resource<><>0<>0<><>::
 wave_unit.gd::GDScript::3815742617062575359::1759745350::0::1::::WaveUnitData<>Resource<><>0<>0<><>::
-::res://resouce/waves/date/::1764462443
-wave_1_to_5.tres::Resource/WaveData::7644401037641598919::1764462443::0::1::::<><><>0<>0<><>::uid://dkr6e34g4poq6::::res://resouce/waves/wave_data.gd<>uid://bummyuje53qyp::::res://resouce/waves/wave_unit.gd<>uid://d2gykr8m3idaq::::res://scenes/unit/enemy/enemy_chaser_slow.tscn<>uid://bmly4taxkg73t::::res://scenes/unit/enemy/enemy_charger.tscn<>uid://bjtqmtfqxufqq::::res://scenes/unit/enemy/enemy_shooter.tscn
+::res://resouce/waves/date/::1766199168
+wave_1_to_5.tres::Resource/WaveData::7644401037641598919::1766199168::0::1::::<><><>0<>0<><>::uid://dkr6e34g4poq6::::res://resouce/waves/wave_data.gd<>uid://bummyuje53qyp::::res://resouce/waves/wave_unit.gd<>uid://d2gykr8m3idaq::::res://scenes/unit/enemy/enemy_chaser_slow.tscn<>uid://bmly4taxkg73t::::res://scenes/unit/enemy/enemy_charger.tscn<>uid://bjtqmtfqxufqq::::res://scenes/unit/enemy/enemy_shooter.tscn
 ::res://scenes/::1764463204
-::res://scenes/arena/::1764466638
+::res://scenes/arena/::1766204345
 arena.gd::GDScript::401190298922256092::1764465042::0::1::::Arena<>Node2D<><>0<>0<><>::
-arena.tscn::PackedScene::3033604404464949307::1764466638::0::1::::<><><>0<>0<><>::uid://cy4xfx762bxgb::::res://assets/sprites/BG.png<>uid://fylssyuoxjey::::res://scenes/arena/arena.gd<>uid://ov4fmsbglo55::::res://assets/sprites/Map.png<>uid://r0yv7tny8sc8::::res://scenes/unit/players/player_well_rounded.tscn<>uid://xik4iqa2n4lo::::res://scenes/arena/camera_2d.gd<>uid://c1r0p6xkr6l1v::::res://scenes/arena/spawner.gd<>uid://dkr6e34g4poq6::::res://resouce/waves/wave_data.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf<>uid://dg6afyqcpnt4j::::res://resouce/waves/date/wave_1_to_5.tres
+arena.tscn::PackedScene::3033604404464949307::1766204345::0::1::::<><><>0<>0<><>::uid://cy4xfx762bxgb::::res://assets/sprites/BG.png<>uid://fylssyuoxjey::::res://scenes/arena/arena.gd<>uid://ov4fmsbglo55::::res://assets/sprites/Map.png<>uid://r0yv7tny8sc8::::res://scenes/unit/players/player_well_rounded.tscn<>uid://xik4iqa2n4lo::::res://scenes/arena/camera_2d.gd<>uid://c1r0p6xkr6l1v::::res://scenes/arena/spawner.gd<>uid://dkr6e34g4poq6::::res://resouce/waves/wave_data.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf<>uid://dg6afyqcpnt4j::::res://resouce/waves/date/wave_1_to_5.tres
 camera_2d.gd::GDScript::1631517828598427408::1764462677::0::1::::Camera<>Camera2D<><>0<>0<><>::
 spawner.gd::GDScript::6634392099754455357::1759797884::0::1::::Spawner<>Node2D<><>0<>0<><>::
 ::res://scenes/components/::1764474699
@@ -169,9 +169,9 @@ hurtbox_component.tscn::PackedScene::8271330136403215581::1759881133::0::1::::<>
 ::res://scenes/particles/::1764474699
 explosion.gd::GDScript::184496777629263266::1764474608::0::1::::<>CPUParticles2D<><>0<>0<><>::
 Explosion.tscn::PackedScene::8644122402630579671::1764474699::0::1::::<><><>0<>0<><>::uid://cvmvua7i3neg::::res://scenes/particles/explosion.gd
-::res://scenes/projectiles/::1764475054
+::res://scenes/projectiles/::1766202989
 projectile.gd::GDScript::1862959952578171375::1764475054::0::1::::Projectile<>Node2D<><>0<>0<><>::
-projectile_enemy.tscn::PackedScene::7447016350438285848::1764475054::0::1::::<><><>0<>0<><>::uid://cs4y516rwuuxm::::res://scenes/projectiles/projectile_pistol.tscn<>uid://dkji1b4um54aj::::res://assets/sprites/Projectiles/Projectile_enemy.png
+projectile_enemy.tscn::PackedScene::7447016350438285848::1766202989::0::1::::<><><>0<>0<><>::uid://cs4y516rwuuxm::::res://scenes/projectiles/projectile_pistol.tscn<>uid://dkji1b4um54aj::::res://assets/sprites/Projectiles/Projectile_enemy.png
 projectile_laser.tscn::PackedScene::5353760624649071985::1759722405::0::1::::<><><>0<>0<><>::uid://cs4y516rwuuxm::::res://scenes/projectiles/projectile_pistol.tscn<>uid://3c2kwaw7powj::::res://assets/sprites/Projectiles/Projectile_3.png
 projectile_pistol.tscn::PackedScene::6097619703680712778::1764423611::0::1::::<><><>0<>0<><>::uid://45dwbyxmy4wd::::res://assets/sprites/Projectiles/Projectile_2.png<>uid://1soxcbowsco2::::res://scenes/projectiles/projectile.gd<>uid://cyj3i1371tt7i::::res://scenes/components/hitbox_component.gd
 projectile_revolver.tscn::PackedScene::6607298431400530774::1759722524::0::1::::<><><>0<>0<><>::uid://cs4y516rwuuxm::::res://scenes/projectiles/projectile_pistol.tscn<>uid://d3m2aqwl8u1qx::::res://assets/sprites/Projectiles/Projectile_4.png
@@ -182,20 +182,20 @@ floating_text.gd::GDScript::693988724169907074::1759805180::0::1::::FloatingText
 floating_text.tscn::PackedScene::5895687726383318882::1759663762::0::1::::<><><>0<>0<><>::uid://j5f5mgkqcauk::::res://scenes/ui/floating_text.gd
 health_bar.gd::GDScript::6745345476856237189::1764424055::0::1::::HealthBar<>Control<><>0<>0<><>::
 health_bar.tscn::PackedScene::7679491042787671124::1764422417::0::1::::<><><>0<>0<><>::uid://c3dq4b2epo7g0::::res://scenes/ui/health_bar.gd
-::res://scenes/unit/::1764431486
+::res://scenes/unit/::1766207986
 unit.gd::GDScript::7544997064344766831::1759882724::0::1::::Unit<>Node2D<><>0<>0<><>::
-unit.tscn::PackedScene::6458692425737336959::1764431486::0::1::::<><><>0<>0<><>::uid://dfq388g7pq4pn::::res://scenes/unit/unit.gd<>uid://devt2xbk78rej::::res://assets/sprites/shadow.png<>uid://dp3xumk1n2wmf::::res://scenes/components/hurtbox_component.tscn<>uid://cstyo4wiq71vi::::res://scenes/components/health_component.gd<>uid://dhoadina0xqh5::::res://scenes/ui/health_bar.tscn
-::res://scenes/unit/enemy/::1764474664
+unit.tscn::PackedScene::6458692425737336959::1766207986::0::1::::<><><>0<>0<><>::uid://dfq388g7pq4pn::::res://scenes/unit/unit.gd<>uid://devt2xbk78rej::::res://assets/sprites/shadow.png<>uid://dp3xumk1n2wmf::::res://scenes/components/hurtbox_component.tscn<>uid://cstyo4wiq71vi::::res://scenes/components/health_component.gd<>uid://dhoadina0xqh5::::res://scenes/ui/health_bar.tscn
+::res://scenes/unit/enemy/::1766204995
 charge_behavior.gd::GDScript::4664305334423848685::1759748226::0::1::::ChargeBehavior<>Node2D<><>0<>0<><>::
-enemy.gd::GDScript::6059441820808193018::1764474664::0::1::::Enemy<>Unit<><>0<>0<><>::
+enemy.gd::GDScript::6059441820808193018::1766204995::0::1::::Enemy<>Unit<><>0<>0<><>::
 enemy_charger.tscn::PackedScene::3252904957496088955::1764432051::0::1::::<><><>0<>0<><>::uid://d2gykr8m3idaq::::res://scenes/unit/enemy/enemy_chaser_slow.tscn<>uid://yij4tb6h0gp4::::res://resouce/unit/enemies/stats_enemy_chaser_charger.tres<>uid://emsi6ifyt0vf::::res://assets/sprites/Enemies/Enemy_5.png<>uid://b7pooscks25b2::::res://scenes/unit/enemy/charge_behavior.gd
 enemy_chaser_fast.tscn::PackedScene::724848361600330466::1764432051::0::1::::<><><>0<>0<><>::uid://d2gykr8m3idaq::::res://scenes/unit/enemy/enemy_chaser_slow.tscn<>uid://c6vplmpl4q4jr::::res://assets/sprites/Enemies/Enemy_3.png<>uid://d1lfwh4cgfpp::::res://resouce/unit/enemies/stats_enemy_chaser_fast.tres
 enemy_chaser_mid.tscn::PackedScene::4020899880790637343::1764432050::0::1::::<><><>0<>0<><>::uid://d2gykr8m3idaq::::res://scenes/unit/enemy/enemy_chaser_slow.tscn<>uid://bf4ls8ho3cuqa::::res://assets/sprites/Enemies/Enemy_2.png<>uid://ble7jpsj2ie5j::::res://resouce/unit/enemies/stats_enemy_chaser_mid.tres
 enemy_chaser_slow.tscn::PackedScene::9068223106054438876::1764465754::0::1::::<><><>0<>0<><>::uid://cyavyrbpj6jjb::::res://scenes/unit/unit.tscn<>uid://d1ou504pylric::::res://assets/sprites/Enemies/Enemy_1.png<>uid://cslieepfyhg7k::::res://scenes/unit/enemy/enemy.gd<>uid://dvfjoyutjx5jf::::res://scenes/particles/Explosion.tscn<>uid://74yt7nqgvdqa::::res://resouce/unit/enemies/stats_enemy_chaser_slow.tres<>uid://3t6iqc1kav5h::::res://scenes/components/hitbox_component.tscn
 enemy_shooter.tscn::PackedScene::3058337361599820180::1764462443::0::1::::<><><>0<>0<><>::uid://d2gykr8m3idaq::::res://scenes/unit/enemy/enemy_chaser_slow.tscn<>uid://dth4gd7254dgs::::res://resouce/unit/enemies/stats_enemy_chaser_shooter.tres<>uid://4mllmwdfhmce::::res://assets/sprites/Enemies/Enemy_4.png<>uid://dpq6sblnribai::::res://scenes/unit/enemy/shooting_behavior.gd<>uid://dednjht7svpn1::::res://scenes/projectiles/projectile_enemy.tscn
 shooting_behavior.gd::GDScript::8247039190910686396::1759798048::0::1::::ShootingBehavior<>Node2D<><>0<>0<><>::
-::res://scenes/unit/players/::1764472617
-player.gd::GDScript::5684837682387502364::1764466472::0::1::::Player<>Unit<><>0<>0<><>::
+::res://scenes/unit/players/::1766207986
+player.gd::GDScript::5684837682387502364::1766207986::0::1::::Player<>Unit<><>0<>0<><>::
 player_brawler.tscn::PackedScene::4571285711409373645::1759576575::0::1::::<><><>0<>0<><>::uid://r0yv7tny8sc8::::res://scenes/unit/players/player_well_rounded.tscn<>uid://c8pewfk3oumo8::::res://resouce/unit/players/stats_player_brawler.tres<>uid://dpxw8tsbgrfse::::res://assets/sprites/Players/Player_2.png
 player_bunny.tscn::PackedScene::8836997566420208205::1759576589::0::1::::<><><>0<>0<><>::uid://r0yv7tny8sc8::::res://scenes/unit/players/player_well_rounded.tscn<>uid://ccl8uhqa6qbdb::::res://resouce/unit/players/stats_player_bunny.tres<>uid://dmox6e28kf6ax::::res://assets/sprites/Players/Player_4.png
 player_crazy.tscn::PackedScene::7880738426024607253::1759576603::0::1::::<><><>0<>0<><>::uid://r0yv7tny8sc8::::res://scenes/unit/players/player_well_rounded.tscn<>uid://7kgdno7ivioe::::res://resouce/unit/players/stats_player_crazy.tres<>uid://dq63ocnu3lset::::res://assets/sprites/Players/Player_3}.png

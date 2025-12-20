@@ -24,18 +24,23 @@ radius = 30.016663
 [node name="PlayerWellRound" instance=ExtResource("1_xa7el")]
 collision_mask = 2
 script = ExtResource("2_0kki1")
+max_energy = 100.0
+energy_regen = 0.5
+max_armor = 3
 fixed_dash_distance = 300.0
 max_charges = 12
 dash_speed = 1200.0
-dash_cooldown = 3.0
 slow_motion_scale = 0.1
-dash_damage = 50
+dash_base_damage = 10
 dash_knockback = 2.0
 geometry_mask_color = Color(1, 0.2, 0.2, 0.5)
+close_threshold = 80.0
+cost_per_segment = 0.3
+cost_explosion = 0.5
 poison_cloud_scene = null
-shockwave_scene = null
 mine_scene = null
 decoy_scene = null
+explosion_vfx_scene = null
 stats = ExtResource("3_viu20")
 
 [node name="Trail" type="Line2D" parent="Visuals" index="0" node_paths=PackedStringArray("player")]
