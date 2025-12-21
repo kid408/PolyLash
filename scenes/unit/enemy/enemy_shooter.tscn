@@ -7,6 +7,12 @@
 [ext_resource type="PackedScene" uid="uid://dednjht7svpn1" path="res://scenes/projectiles/projectile_enemy.tscn" id="4_6k67w"]
 
 [node name="EnemyShooter" instance=ExtResource("1_tty1r")]
+enemy_type = 2
+can_charge = false
+charge_prep_time = 0.8
+charge_duration = 0.6
+charge_speed_mult = 3.5
+charge_cooldown = 3.0
 stats = ExtResource("2_kpiq8")
 
 [node name="Sprite" parent="Visuals" index="1"]

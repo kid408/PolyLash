@@ -5,6 +5,11 @@
 [ext_resource type="Resource" uid="uid://ble7jpsj2ie5j" path="res://resouce/unit/enemies/stats_enemy_chaser_mid.tres" id="2_w0b3r"]
 
 [node name="EnemyChaserMid" instance=ExtResource("1_qulsm")]
+can_charge = false
+charge_prep_time = 0.8
+charge_duration = 0.6
+charge_speed_mult = 3.5
+charge_cooldown = 3.0
 stats = ExtResource("2_w0b3r")
 
 [node name="Sprite" parent="Visuals" index="1"]

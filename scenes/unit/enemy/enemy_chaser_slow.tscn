@@ -22,7 +22,14 @@ radius = 34.0
 [node name="EnemyChaserSlow" instance=ExtResource("1_idtdn")]
 collision_layer = 2
 script = ExtResource("2_oo7ju")
+enemy_type = 0
 flock_push = 20.0
+stop_distance = 60.0
+can_charge = false
+charge_prep_time = 0.8
+charge_duration = 0.6
+charge_speed_mult = 3.5
+charge_cooldown = 3.0
 death_vfx_scene = ExtResource("3_421q1")
 stats = ExtResource("3_lmqbh")
 

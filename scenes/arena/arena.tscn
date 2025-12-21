@@ -36,15 +36,7 @@ texture = ExtResource("2_5tue2")
 
 [node name="PlayerWellRound" parent="." instance=ExtResource("3_5tue2")]
 position = Vector2(-364, 0)
-max_energy = 100.0
-energy_regen = 0.5
-max_armor = 3
 fixed_dash_distance = 150.0
-dash_base_damage = 10
-close_threshold = 60.0
-cost_per_segment = 0.3
-cost_explosion = 0.5
-explosion_vfx_scene = null
 
 [node name="Camera2D" type="Camera2D" parent="."]
 script = ExtResource("4_aj7ud")

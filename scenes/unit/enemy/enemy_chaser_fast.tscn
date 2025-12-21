@@ -5,6 +5,7 @@
 [ext_resource type="Resource" uid="uid://d1lfwh4cgfpp" path="res://resouce/unit/enemies/stats_enemy_chaser_fast.tres" id="2_p0tt2"]
 
 [node name="EnemyChaserFast" instance=ExtResource("1_yb8ih")]
+enemy_type = 1
 stats = ExtResource("2_p0tt2")
 
 [node name="Sprite" parent="Visuals" index="1"]

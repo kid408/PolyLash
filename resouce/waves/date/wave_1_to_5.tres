@@ -1,26 +1,40 @@
-[gd_resource type="Resource" script_class="WaveData" load_steps=9 format=3 uid="uid://dg6afyqcpnt4j"]
+[gd_resource type="Resource" script_class="WaveData" load_steps=13 format=3 uid="uid://dg6afyqcpnt4j"]
 
 [ext_resource type="Script" uid="uid://dkr6e34g4poq6" path="res://resouce/waves/wave_data.gd" id="1_4k1kl"]
 [ext_resource type="Script" uid="uid://bummyuje53qyp" path="res://resouce/waves/wave_unit.gd" id="2_2bh1a"]
 [ext_resource type="PackedScene" uid="uid://d2gykr8m3idaq" path="res://scenes/unit/enemy/enemy_chaser_slow.tscn" id="3_dtlpu"]
 [ext_resource type="PackedScene" uid="uid://bmly4taxkg73t" path="res://scenes/unit/enemy/enemy_charger.tscn" id="4_epg6u"]
 [ext_resource type="PackedScene" uid="uid://bjtqmtfqxufqq" path="res://scenes/unit/enemy/enemy_shooter.tscn" id="5_3ve0b"]
+[ext_resource type="PackedScene" uid="uid://bxj0vsoce8j40" path="res://scenes/unit/enemy/enemy_chaser_mid.tscn" id="5_epg6u"]
+[ext_resource type="PackedScene" uid="uid://klee8qrodifa" path="res://scenes/unit/enemy/enemy_chaser_fast.tscn" id="7_3ve0b"]
 
 [sub_resource type="Resource" id="Resource_vdgxt"]
 script = ExtResource("2_2bh1a")
 unit_scene = ExtResource("3_dtlpu")
-weight = 6
+weight = 3
 metadata/_custom_type_script = "uid://bummyuje53qyp"
 
 [sub_resource type="Resource" id="Resource_0vski"]
 script = ExtResource("2_2bh1a")
 unit_scene = ExtResource("4_epg6u")
-weight = 3
+weight = 4
 metadata/_custom_type_script = "uid://bummyuje53qyp"
 
 [sub_resource type="Resource" id="Resource_w1q0r"]
 script = ExtResource("2_2bh1a")
+unit_scene = ExtResource("5_epg6u")
+weight = 4
+metadata/_custom_type_script = "uid://bummyuje53qyp"
+
+[sub_resource type="Resource" id="Resource_4svgx"]
+script = ExtResource("2_2bh1a")
 unit_scene = ExtResource("5_3ve0b")
+weight = 3
+metadata/_custom_type_script = "uid://bummyuje53qyp"
+
+[sub_resource type="Resource" id="Resource_hb5t5"]
+script = ExtResource("2_2bh1a")
+unit_scene = ExtResource("7_3ve0b")
 weight = 1
 metadata/_custom_type_script = "uid://bummyuje53qyp"
 
@@ -29,7 +43,7 @@ script = ExtResource("1_4k1kl")
 from = 1
 to = 5
 wave_time = 500.0
-units = Array[ExtResource("2_2bh1a")]([SubResource("Resource_vdgxt"), SubResource("Resource_0vski"), SubResource("Resource_w1q0r")])
+units = Array[ExtResource("2_2bh1a")]([SubResource("Resource_vdgxt"), SubResource("Resource_0vski"), SubResource("Resource_w1q0r"), SubResource("Resource_4svgx"), SubResource("Resource_hb5t5")])
 spawn_type = 0
 fixed_spawn_time = 0.5
 min_spawn_time = 0.5
