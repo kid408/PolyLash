@@ -31,7 +31,7 @@ enum UpgradeTier{
 	LEGENDARY
 }
 
-var player:Player
+var player:PlayerBase
 var game_paused:= false
 
 func _ready() -> void:

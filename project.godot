@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="Brotato Clone"
+config/name="PolyLash"
 run/main_scene="uid://bjhraywhhpn3h"
 config/features=PackedStringArray("4.5", "Mobile")
 config/icon="uid://b02x7h4bntic6"
@@ -18,6 +18,7 @@ config/icon="uid://b02x7h4bntic6"
 [autoload]
 
 Global="*res://autoloads/global.gd"
+DebugSwitcher="*res://scenes/arena/debug_switcher.gd"
 
 [display]
 

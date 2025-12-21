@@ -5,13 +5,12 @@
 
 [resource]
 script = ExtResource("1_xp7bb")
-name = "knight"
+name = "sapper"
 icon = ExtResource("1_fobxp")
 health = 50
 health_increase_per_wave = 0.0
 damage = 6
 speed = 260
-lock = 5.0
 block_chance = 10.0
 gold_drop = 0
 metadata/_custom_type_script = "uid://cfd55woyni5qt"

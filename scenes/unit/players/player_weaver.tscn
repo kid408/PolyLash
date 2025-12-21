@@ -1,0 +1,14 @@
+[gd_scene load_steps=4 format=3 uid="uid://b6emn4n6ogmg8"]
+
+[ext_resource type="PackedScene" uid="uid://r0yv7tny8sc8" path="res://scenes/unit/players/player_herder.tscn" id="1_t1ilm"]
+[ext_resource type="Script" uid="uid://8pswjoj27pug" path="res://scenes/unit/players/player_weaver.gd" id="2_7oj41"]
+[ext_resource type="Texture2D" uid="uid://dpxw8tsbgrfse" path="res://assets/sprites/Players/Player_2.png" id="2_tvi6w"]
+
+[node name="PlayerWeaver" instance=ExtResource("1_t1ilm")]
+script = ExtResource("2_7oj41")
+anchor_range = 400.0
+web_color = Color(0.8, 0.9, 1, 0.8)
+dash_speed_mult = 4.0
+
+[node name="Sprite" parent="Visuals" index="2"]
+texture = ExtResource("2_tvi6w")

@@ -1,10 +1,15 @@
-[gd_scene load_steps=11 format=3 uid="uid://cyavyrbpj6jjb"]
+[gd_scene load_steps=13 format=3 uid="uid://cyavyrbpj6jjb"]
 
 [ext_resource type="Script" uid="uid://dfq388g7pq4pn" path="res://scenes/unit/unit.gd" id="1_1jvru"]
 [ext_resource type="Texture2D" uid="uid://devt2xbk78rej" path="res://assets/sprites/shadow.png" id="1_k673f"]
+[ext_resource type="Script" uid="uid://cfd55woyni5qt" path="res://resouce/unit/unit_stats.gd" id="2_3po7s"]
 [ext_resource type="PackedScene" uid="uid://dp3xumk1n2wmf" path="res://scenes/components/hurtbox_component.tscn" id="3_vh40f"]
 [ext_resource type="Script" uid="uid://cstyo4wiq71vi" path="res://scenes/components/health_component.gd" id="4_bhlit"]
 [ext_resource type="PackedScene" uid="uid://dhoadina0xqh5" path="res://scenes/ui/health_bar.tscn" id="5_vgvef"]
+
+[sub_resource type="Resource" id="Resource_0wuuu"]
+script = ExtResource("2_3po7s")
+metadata/_custom_type_script = "uid://cfd55woyni5qt"
 
 [sub_resource type="Animation" id="Animation_k673f"]
 length = 0.001
@@ -239,6 +244,7 @@ _data = {
 
 [node name="Unit" type="Area2D"]
 script = ExtResource("1_1jvru")
+stats = SubResource("Resource_0wuuu")
 
 [node name="Visuals" type="Node2D" parent="."]
 unique_name_in_owner = true

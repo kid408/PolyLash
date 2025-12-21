@@ -3,10 +3,10 @@
 [ext_resource type="Script" uid="uid://dkr6e34g4poq6" path="res://resouce/waves/wave_data.gd" id="1_4k1kl"]
 [ext_resource type="Script" uid="uid://bummyuje53qyp" path="res://resouce/waves/wave_unit.gd" id="2_2bh1a"]
 [ext_resource type="PackedScene" uid="uid://d2gykr8m3idaq" path="res://scenes/unit/enemy/enemy_chaser_slow.tscn" id="3_dtlpu"]
-[ext_resource type="PackedScene" uid="uid://bmly4taxkg73t" path="res://scenes/unit/enemy/enemy_charger.tscn" id="4_epg6u"]
-[ext_resource type="PackedScene" uid="uid://bjtqmtfqxufqq" path="res://scenes/unit/enemy/enemy_shooter.tscn" id="5_3ve0b"]
+[ext_resource type="PackedScene" uid="uid://bmly4taxkg73t" path="res://scenes/unit/enemy/enemy_Spiked.tscn" id="4_epg6u"]
+[ext_resource type="PackedScene" uid="uid://bjtqmtfqxufqq" path="res://scenes/unit/enemy/enemy_Shielded.tscn" id="5_3ve0b"]
 [ext_resource type="PackedScene" uid="uid://bxj0vsoce8j40" path="res://scenes/unit/enemy/enemy_chaser_mid.tscn" id="5_epg6u"]
-[ext_resource type="PackedScene" uid="uid://klee8qrodifa" path="res://scenes/unit/enemy/enemy_chaser_fast.tscn" id="7_3ve0b"]
+[ext_resource type="PackedScene" uid="uid://klee8qrodifa" path="res://scenes/unit/enemy/enemy_Breaker.tscn" id="7_3ve0b"]
 
 [sub_resource type="Resource" id="Resource_vdgxt"]
 script = ExtResource("2_2bh1a")

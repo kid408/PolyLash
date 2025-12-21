@@ -1,0 +1,110 @@
+[gd_scene load_steps=5 format=3 uid="uid://d3jumh6cxe5k"]
+
+[ext_resource type="Texture2D" uid="uid://dxl550mv1d5l6" path="res://assets/sprites/Upgrades/3.png" id="2_0g43e"]
+[ext_resource type="Script" uid="uid://cyj3i1371tt7i" path="res://scenes/components/hitbox_component.gd" id="3_gujbo"]
+
+[sub_resource type="GDScript" id="GDScript_wu4j4"]
+script/source = "# scripts/components/Mine.gd
+extends Area2D
+class_name Mine
+
+# ==============================================================================
+# 地雷配置 (可在 Inspector 中调整)
+# ==============================================================================
+@export var damage: int = 150
+@export var radius: float = 80.0 # 爆炸范围
+@export var lifetime: float = 10.0 # 地雷存在时间 (秒)
+@export var detonation_delay: float = 0.1 # 踩中后的爆炸延迟
+
+# 【新增】视觉部分
+# TODO: 炸弹爆炸时的粒子特效
+@export var explosion_vfx_scene: PackedScene 
+# TODO: 爆炸音效
+@export var explosion_sfx: AudioStream
+
+signal on_hit_hurtbox(hurtbox:HurtboxComponent)
+
+# 状态
+var is_armed := true # 是否准备好爆炸
+
+func _ready() -> void:
+	# 1. 初始化碰撞层级 (假设敌人是 Layer 2)
+	collision_mask = 2 
+	
+	# 2. 设置生命周期
+	# 在指定时间后自动销毁
+	var timer = Timer.new()
+	timer.wait_time = lifetime
+	timer.one_shot = true
+	timer.autostart = true
+	add_child(timer)
+	timer.timeout.connect(self.queue_free)
+	
+	# 3. 预警视觉 (可选)
+	# TODO: 在这里可以加一个闪烁的视觉效果，提示地雷即将激活或存在
+
+# 实际的爆炸逻辑
+func _detonate() -> void:
+	is_armed = false # 触发一次后禁用
+	
+	# 1. 播放音效
+	if explosion_sfx: Global.play_sfx(explosion_sfx)
+	
+	# 2. 播放粒子特效
+	if explosion_vfx_scene:
+		var vfx = explosion_vfx_scene.instantiate()
+		vfx.global_position = global_position
+		get_tree().current_scene.add_child(vfx)
+		
+	# 3. 延迟爆炸，给玩家反应时间（虽然我们是自动触发）
+	# 这样可以确保爆炸特效和伤害同时发生
+	await get_tree().create_timer(detonation_delay).timeout
+	
+	# 4. 范围伤害
+	var enemies = get_tree().get_nodes_in_group(\"enemies\")
+	var hit_count = 0
+	for e in enemies:
+		if e.global_position.distance_to(global_position) < radius:
+			if e.has_node(\"HealthComponent\"):
+				e.health_component.take_damage(damage)
+				hit_count += 1
+	
+	if hit_count > 0:
+		Global.spawn_floating_text(global_position, \"Mine Boom!\", Color.ORANGE)
+	
+	# 5. 爆炸后销毁地雷
+	queue_free()
+
+
+func _on_hitbox_component_on_hit_hurtbox(hurtbox: HurtboxComponent) -> void:
+	# 打中人也销毁
+	queue_free()
+
+
+# 检测到单位，发送信号
+func _on_area_entered(area: Area2D) -> void:
+	# 如果和受击盒碰撞
+	if area is HurtboxComponent:
+		on_hit_hurtbox.emit(area)
+"
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_ke5al"]
+
+[node name="Mine" type="Node2D"]
+script = SubResource("GDScript_wu4j4")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(0.132, 0.112)
+texture = ExtResource("2_0g43e")
+
+[node name="HitboxComponent" type="Area2D" parent="."]
+collision_layer = 17
+collision_mask = 9
+script = ExtResource("3_gujbo")
+metadata/_custom_type_script = "uid://cyj3i1371tt7i"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitboxComponent"]
+shape = SubResource("CircleShape2D_ke5al")
+
+[connection signal="area_entered" from="HitboxComponent" to="." method="_on_hitbox_component_area_entered"]
+[connection signal="on_hit_hurtbox" from="HitboxComponent" to="." method="_on_hitbox_component_on_hit_hurtbox"]

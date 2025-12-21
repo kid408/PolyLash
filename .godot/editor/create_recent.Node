@@ -1,7 +1,8 @@
-CPUParticles2D
+Sprite2D
 CollisionShape2D
 HitboxComponent
 Node2D
+CPUParticles2D
 Line2D
 Label
 CanvasLayer
@@ -9,7 +10,5 @@ Timer
 Marker2D
 AnimationPlayer
 VisibleOnScreenNotifier2D
-Sprite2D
 WeaponBehavior
 Area2D
-ProgressBar

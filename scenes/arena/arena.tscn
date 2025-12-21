@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://cy4xfx762bxgb" path="res://assets/sprites/BG.png" id="1_8trdl"]
 [ext_resource type="Script" uid="uid://fylssyuoxjey" path="res://scenes/arena/arena.gd" id="1_asdgj"]
 [ext_resource type="Texture2D" uid="uid://ov4fmsbglo55" path="res://assets/sprites/Map.png" id="2_5tue2"]
-[ext_resource type="PackedScene" uid="uid://r0yv7tny8sc8" path="res://scenes/unit/players/player_well_rounded.tscn" id="3_5tue2"]
+[ext_resource type="PackedScene" uid="uid://r0yv7tny8sc8" path="res://scenes/unit/players/player_herder.tscn" id="3_5tue2"]
 [ext_resource type="Script" uid="uid://xik4iqa2n4lo" path="res://scenes/arena/camera_2d.gd" id="4_aj7ud"]
 [ext_resource type="Script" uid="uid://c1r0p6xkr6l1v" path="res://scenes/arena/spawner.gd" id="8_ii07k"]
 [ext_resource type="Script" uid="uid://dkr6e34g4poq6" path="res://resouce/waves/wave_data.gd" id="9_2ml6w"]
@@ -20,7 +20,7 @@ font_size = 64
 
 [node name="Arena" type="Node2D" node_paths=PackedStringArray("player")]
 script = ExtResource("1_asdgj")
-player = NodePath("PlayerWellRound")
+player = NodePath("")
 normal_color = Color(0.9691369, 0.9691369, 0.9691368, 1)
 blockedl_color = Color(1, 0.2901961, 0.45490196, 1)
 critical_color = Color(0.99607843, 0.78039217, 0.38039216, 1)
@@ -34,9 +34,7 @@ texture = ExtResource("1_8trdl")
 scale = Vector2(2, 4)
 texture = ExtResource("2_5tue2")
 
-[node name="PlayerWellRound" parent="." instance=ExtResource("3_5tue2")]
-position = Vector2(-364, 0)
-fixed_dash_distance = 150.0
+[node name="PlayerHerder" parent="." instance=ExtResource("3_5tue2")]
 
 [node name="Camera2D" type="Camera2D" parent="."]
 script = ExtResource("4_aj7ud")

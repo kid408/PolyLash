@@ -5,10 +5,9 @@
 
 [resource]
 script = ExtResource("1_thaqk")
-name = "bunny"
+name = "butcher"
 icon = ExtResource("1_ctqht")
 health = 20
 damage = 5
-lock = 5.0
 block_chance = 3.0
 metadata/_custom_type_script = "uid://cfd55woyni5qt"

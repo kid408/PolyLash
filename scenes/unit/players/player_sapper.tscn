@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://74uto1fjflvv"]
+
+[ext_resource type="PackedScene" uid="uid://r0yv7tny8sc8" path="res://scenes/unit/players/player_herder.tscn" id="1_n8107"]
+[ext_resource type="Texture2D" uid="uid://bt0lww88864ws" path="res://assets/sprites/Players/Player_5.png" id="2_l6pp3"]
+[ext_resource type="Script" uid="uid://c3y6jmuskdihv" path="res://scenes/unit/players/player_sapper.gd" id="2_o6fx1"]
+
+[node name="PlayerSapper" instance=ExtResource("1_n8107")]
+script = ExtResource("2_o6fx1")
+mine_damage = 150
+mine_trigger_radius = 20.0
+mine_explosion_radius = 120.0
+mine_density_distance = 50.0
+totem_duration = 8.0
+totem_max_health = 200.0
+cost_totem = 40.0
+cost_dash = 10.0
+
+[node name="Sprite" parent="Visuals" index="2"]
+texture = ExtResource("2_l6pp3")

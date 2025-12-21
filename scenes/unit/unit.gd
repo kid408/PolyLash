@@ -12,6 +12,12 @@ class_name Unit
 
 
 func _ready() -> void:	
+	 # --- 新增安全检查 ---
+	if stats == null:
+		printerr("[Unit Error] 致命错误！节点 '%s' 没有分配 Stats 资源！请在 Inspector 中赋值。" % name)
+		return # 直接返回，不执行 setup，防止红字报错
+	# ------------------
+
 	# 设置生命条数据
 	health_component.setup(stats)
 

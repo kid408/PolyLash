@@ -5,13 +5,12 @@
 
 [resource]
 script = ExtResource("1_5pp5k")
-name = "crazy"
+name = "tempest"
 icon = ExtResource("1_1kljk")
 health = 15
 health_increase_per_wave = 0.0
 damage = 3
 speed = 325
-lock = 5.0
 block_chance = 3.0
 gold_drop = 0
 metadata/_custom_type_script = "uid://cfd55woyni5qt"

@@ -5,7 +5,7 @@
 
 [resource]
 script = ExtResource("1_ft3hu")
-name = "Well Rounded"
+name = "herder"
 icon = ExtResource("1_joiwj")
 health = 5000
 damage = 10

@@ -1,8 +1,8 @@
 [gd_scene load_steps=7 format=3 uid="uid://bmly4taxkg73t"]
 
-[ext_resource type="PackedScene" uid="uid://d2gykr8m3idaq" path="res://scenes/unit/enemy/enemy_chaser_slow.tscn" id="1_ksdef"]
-[ext_resource type="Resource" uid="uid://yij4tb6h0gp4" path="res://resouce/unit/enemies/stats_enemy_chaser_charger.tres" id="2_4i178"]
-[ext_resource type="Texture2D" uid="uid://emsi6ifyt0vf" path="res://assets/sprites/Enemies/Enemy_5.png" id="2_knpng"]
+[ext_resource type="PackedScene" uid="uid://d2gykr8m3idaq" path="res://scenes/unit/enemy/enemy_chaser_slow.tscn" id="1_vablc"]
+[ext_resource type="Resource" uid="uid://yij4tb6h0gp4" path="res://resouce/unit/enemies/stats_enemy_chaser_charger.tres" id="2_35t28"]
+[ext_resource type="Texture2D" uid="uid://emsi6ifyt0vf" path="res://assets/sprites/Enemies/Enemy_5.png" id="3_6yjau"]
 
 [sub_resource type="Animation" id="Animation_1som8"]
 length = 0.001
@@ -41,17 +41,13 @@ _data = {
 &"charge": SubResource("Animation_4i178")
 }
 
-[node name="EnemyCharger" groups=["enemies"] instance=ExtResource("1_ksdef")]
+[node name="EnemyCharger" groups=["enemies"] instance=ExtResource("1_vablc")]
 enemy_type = 3
 can_charge = true
-charge_prep_time = 0.8
-charge_duration = 0.6
-charge_speed_mult = 3.5
-charge_cooldown = 3.0
-stats = ExtResource("2_4i178")
+stats = ExtResource("2_35t28")
 
 [node name="Sprite" parent="Visuals" index="1"]
-texture = ExtResource("2_knpng")
+texture = ExtResource("3_6yjau")
 
 [node name="AnimationEffects" type="AnimationPlayer" parent="." index="10"]
 libraries = {

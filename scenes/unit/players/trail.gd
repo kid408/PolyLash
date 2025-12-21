@@ -1,7 +1,7 @@
 extends Line2D
 class_name Trail
 
-@export var player: Player
+@export var player: PlayerBase
 # 【修改】把 25 改成 500！
 # 500帧 ≈ 8秒钟，足够你冲完整个连招，线条都不会断
 @export var trail_length := 500 
@@ -14,7 +14,8 @@ var is_active := false
 var width_multiplier:float
 
 func _process(delta: float) -> void:
-	if not is_active:
+	# 【修改 2】增加安全检查：如果没有激活，或者player没赋值，就别跑逻辑
+	if not is_active or not is_instance_valid(player):
 		return
 	
 	# 记录位置
@@ -27,18 +28,20 @@ func _process(delta: float) -> void:
 	points = points_array
 
 func start_trail() -> void:
+	# 【修改 3】启动前也检查一下
+	if not is_instance_valid(player):
+		print("Trail Error: Player 节点未赋值！")
+		return
+
 	is_active = true
-	width_multiplier = 1.0 # 重置宽度（为了配合下面的停止动画）
+	width_multiplier = 1.0 # 重置宽度
 	clear_points()         # 立刻清除旧的
 	points_array.clear()
-	# trail_timer.start(trail_duration) # 这行可以不要，由 Player 手动控制 stop
 
-# 【核心修改】优雅停止
 func stop() -> void:
 	is_active = false
-	trail_timer.stop() 
+	if trail_timer: trail_timer.stop() 
 	
-	# 修改点：把原来的 0.5 改成 0.1 (极速) 或者 0.05 (近乎瞬间)
 	var tween = create_tween()
 	tween.tween_property(self, "width_multiplier", 0.0, 0.1) 
 	
@@ -49,5 +52,4 @@ func stop() -> void:
 	)
 
 func _on_trail_timer_timeout() -> void:
-	# 如果你保留 timer，这里的逻辑也要改
 	stop()

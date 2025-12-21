@@ -44,7 +44,8 @@ const DEFAULT_EXPLOSION = preload("uid://dvfjoyutjx5jf")
 
 # 【新增】预警线节点 (代码动态生成，免去手动添加)
 var warning_line: Line2D 
-
+# 【新增】当前攻击目标 (默认为 null，逻辑里会回滚到 Global.player)
+var override_target: Node2D = null
 # ==============================================================================
 # 3. 逻辑变量
 # ==============================================================================
@@ -108,17 +109,40 @@ func _process(delta: float) -> void:
 
 # --- 状态：追逐 (默认) ---
 func _state_chase(delta: float) -> void:
-	if not can_move or not can_move_towards_player(): return
+	# 1. 检查能不能动
+	if not can_move: 
+		# print("敌人定身中...") # 太多log可以注释掉
+		return
 	
-	# 移动逻辑
+	# 2. 检查玩家是否存在
+	if not is_instance_valid(Global.player):
+		print("敌人待机: 找不到 Global.player")
+		return
+
+	# 3. 检查距离
+	var dist = global_position.distance_to(Global.player.global_position)
+	
+	# [DEBUG] 每 60 帧打印一次状态，防止刷屏
+	#if Engine.get_frames_drawn() % 60 == 0:
+	#	print("[%s] 追逐中 | 距离玩家: %.1f | 停止阈值: %.1f" % [name, dist, stop_distance])
+
+	# 如果距离小于停止距离 (例如贴脸了)，就不移动了
+	if dist <= stop_distance:
+		return
+	
+	# 4. 执行移动
 	var move_vec = get_move_direction() + (knockback_dir * knockback_power)
+	
+	# [DEBUG] 检查移动向量
+	# if move_vec == Vector2.ZERO and Engine.get_frames_drawn() % 60 == 0:
+	# 	print("[%s] 移动向量为零! 可能由于 flock_push 抵消?" % name)
+		
 	position += move_vec * stats.speed * delta
 	update_rotation()
 	
-	# 冲锋判定：如果在一定距离内，且开启了冲锋，且冷却好了
-	if can_charge and Global.player:
-		var dist = global_position.distance_to(Global.player.global_position)
-		if dist < 300.0 and dist > 100.0: # 距离合适才冲
+	# 5. 冲锋判定
+	if can_charge:
+		if dist < 300.0 and dist > 100.0: 
 			start_charge_sequence()
 
 # --- 1. 触发冲锋序列 (生成红线) ---
@@ -213,7 +237,10 @@ func _state_cooldown(delta: float) -> void:
 # ==============================================================================
 func _check_line_break() -> void:
 	if Global.player:
-		Global.player.try_break_line(global_position, break_radius)
+		# 【修复】先检查玩家是否有这个功能，再调用
+		# 这样以后做其他没有线的角色，也不会报错
+		if Global.player.has_method("try_break_line"):
+			Global.player.try_break_line(global_position, break_radius)
 
 func update_rotation() -> void:
 	if not is_instance_valid(Global.player): return
@@ -222,8 +249,17 @@ func update_rotation() -> void:
 	visuals.scale = Vector2(-0.5, 0.5) if moving_right else Vector2(0.5, 0.5)
 
 func get_move_direction() -> Vector2:
-	if not is_instance_valid(Global.player): return Vector2.ZERO
-	var direction := global_position.direction_to(Global.player.position)
+	# 1. 确定目标：如果有嘲讽目标且存活，就追嘲讽目标；否则追玩家
+	var target_node = Global.player
+	if is_instance_valid(override_target):
+		target_node = override_target
+	
+	if not is_instance_valid(target_node): return Vector2.ZERO
+	
+	# 2. 计算方向
+	var direction := global_position.direction_to(target_node.global_position)
+	
+	# 3. 群聚逻辑 (保持不变)
 	for area: Node2D in vision_area.get_overlapping_areas():
 		if area != self and area.is_inside_tree():
 			var vector := global_position - area.global_position
@@ -232,9 +268,22 @@ func get_move_direction() -> Vector2:
 	return direction
 
 func can_move_towards_player() -> bool:
-	return is_instance_valid(Global.player) and \
-		   global_position.distance_to(Global.player.global_position) > stop_distance
+	var target_node = Global.player
+	if is_instance_valid(override_target):
+		target_node = override_target
+		
+	# 【修复】将 stop_distance_distance 改为 stop_distance
+	return is_instance_valid(target_node) and \
+		   global_position.distance_to(target_node.global_position) > stop_distance
 
+# 【新增】设置强制目标 (嘲讽接口)
+func set_taunt_target(target: Node2D) -> void:
+	override_target = target
+	# 视觉反馈：变个颜色表示被嘲讽了
+	var tween = create_tween()
+	tween.tween_property(visuals, "modulate", Color.MAGENTA, 0.2)
+	tween.tween_property(visuals, "modulate", Color.WHITE, 0.2)
+	
 # ==============================================================================
 # 击退与受击 (保持之前的修复)
 # ==============================================================================

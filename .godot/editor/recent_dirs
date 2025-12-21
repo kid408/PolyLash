@@ -1,3 +1,4 @@
+res://scenes/arena
 res://scenes/particles
 res://resouce/waves/date
 res://scenes/projectiles
@@ -14,7 +15,6 @@ res://assets/font
 res://scenes/components
 res://scenes/unit
 res://scenes/unit/enemy
-res://scenes/arena
 res://resouce/unit/enemies
 res://
 res://autoloads

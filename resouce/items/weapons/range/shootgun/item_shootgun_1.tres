@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://dx2oqsohwycoa" path="res://assets/sprites/Weapons/Icons/weapon_shotgun_icon.png" id="1_6fqm4"]
 [ext_resource type="Script" uid="uid://c1gqkylu74grc" path="res://resouce/items/weapons/item_weapon.gd" id="1_chpcy"]
-[ext_resource type="PackedScene" uid="uid://bjtqmtfqxufqq" path="res://scenes/unit/enemy/enemy_shooter.tscn" id="2_8jqid"]
+[ext_resource type="PackedScene" uid="uid://bjtqmtfqxufqq" path="res://scenes/unit/enemy/enemy_Shielded.tscn" id="2_8jqid"]
 [ext_resource type="Resource" uid="uid://rfw441w6twet" path="res://resouce/items/weapons/range/shootgun/stats_shootgun_1.tres" id="4_ac61a"]
 [ext_resource type="Resource" uid="uid://bsc48chqu1p62" path="res://resouce/items/weapons/range/shootgun/item_shootgun_2.tres" id="5_8jqid"]
 

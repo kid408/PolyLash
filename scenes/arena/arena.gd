@@ -1,7 +1,7 @@
 extends Node2D
 class_name Arena
 
-@export var player:Player
+@export var player:PlayerBase
 @export var normal_color:Color
 @export var blockedl_color:Color
 @export var critical_color:Color
@@ -13,7 +13,7 @@ class_name Arena
 
 func _ready() -> void:
 	# 将角色添加到全局变量中
-	Global.player = player
+	#Global.player = player
 	# 闪避飘字信号 Unit类 _on_hurtbox_component_on_damaged 调用
 	Global.on_create_block_text.connect(_on_create_block_text)
 	# 伤害飘字信号
