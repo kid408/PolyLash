@@ -4,9 +4,11 @@ extends Node
 var character_paths = {
 	KEY_1: "res://scenes/unit/players/player_herder.tscn", # 牧羊人
 	KEY_2: "res://scenes/unit/players/player_weaver.tscn", # 织网者
-	KEY_3: "res://scenes/unit/players/player_butcher.tscn", # 屠夫
-	KEY_4: "res://scenes/unit/players/player_tempest.tscn", # 风暴使者
-	KEY_5: "res://scenes/unit/players/player_sapper.tscn"  # 工兵
+	KEY_3: "res://scenes/unit/players/player_pyro.tscn", # 纵火者
+	KEY_4: "res://scenes/unit/players/player_wind.tscn", # 御风者
+	KEY_5: "res://scenes/unit/players/player_sapper.tscn",  # 工兵
+	KEY_6: "res://scenes/unit/players/player_butcher.tscn", # 屠夫
+	KEY_7: "res://scenes/unit/players/player_tempest.tscn", # 风暴使者
 }
 
 func _unhandled_input(event: InputEvent) -> void:

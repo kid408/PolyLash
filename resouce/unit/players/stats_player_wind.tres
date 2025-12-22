@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3 uid="uid://drlr54y3yfew0"]
+
+[ext_resource type="Texture2D" uid="uid://bt0lww88864ws" path="res://assets/sprites/Players/Player_5.png" id="1_iqmbb"]
+[ext_resource type="Script" uid="uid://cfd55woyni5qt" path="res://resouce/unit/unit_stats.gd" id="2_omy58"]
+
+[resource]
+script = ExtResource("2_omy58")
+name = "wind"
+icon = ExtResource("1_iqmbb")
+health = 5000
+damage = 10
+speed = 600
+block_chance = 10.0
+metadata/_custom_type_script = "uid://cfd55woyni5qt"

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3 uid="uid://do8a0uragno1n"]
+
+[ext_resource type="Texture2D" uid="uid://dmox6e28kf6ax" path="res://assets/sprites/Players/Player_4.png" id="1_x2pmw"]
+[ext_resource type="Script" uid="uid://cfd55woyni5qt" path="res://resouce/unit/unit_stats.gd" id="2_wostl"]
+
+[resource]
+script = ExtResource("2_wostl")
+name = "pyro"
+icon = ExtResource("1_x2pmw")
+health = 5000
+damage = 10
+speed = 600
+block_chance = 10.0
+metadata/_custom_type_script = "uid://cfd55woyni5qt"

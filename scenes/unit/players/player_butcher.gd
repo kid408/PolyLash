@@ -13,7 +13,7 @@ class_name PlayerButcher
 @export var mine_damage: int = 200            # 血肉地雷伤害
 @export var mine_trigger_radius: float = 30.0 # 地雷触发半径
 @export var pull_force_damage: int = 50       # E技能拉扯伤害
-@export var pull_width: float = 60.0          # 【新增】E技能拉扯的判定宽度
+@export var pull_width: float = 60.0          # E技能拉扯的判定宽度
 
 @export_group("Dash Settings")
 @export var dash_distance: float = 400.0      
@@ -40,8 +40,11 @@ func _ready() -> void:
 	super._ready()
 	add_child(chain_container)
 	chain_container.top_level = true 
-	print(">>> 屠夫就绪 (Ripcord Fixed)")
-
+	print(">>> 屠夫就绪 (Type Hints Removed)")
+	
+func can_move() -> bool:
+	return not is_dashing
+	
 func _process_subclass(delta: float) -> void:
 	if is_dashing:
 		position = position.move_toward(dash_target, dash_speed * delta)
@@ -84,7 +87,7 @@ func _end_dash() -> void:
 	_spawn_rift(dash_start_pos, global_position)
 
 # --- Q技能: 死亡角斗场 ---
-func charge_skill_q(delta: float) -> void:
+func charge_skill_q(_delta: float) -> void:
 	pass
 
 func release_skill_q() -> void:
@@ -99,7 +102,7 @@ func release_skill_q() -> void:
 	Global.spawn_floating_text(mouse_pos, "KILL ZONE!", Color.DARK_RED)
 	Global.on_camera_shake.emit(10.0, 0.3)
 
-# --- E技能: 回拉 (核心修复) ---
+# --- E技能: 回拉 ---
 func use_skill_e() -> void:
 	if active_rifts.is_empty(): return
 	if not consume_energy(cost_ripcord): return
@@ -109,42 +112,39 @@ func use_skill_e() -> void:
 	var rifts_to_pull = active_rifts.duplicate()
 	active_rifts.clear()
 	
-	# 获取全场敌人一次，优化性能
 	var all_enemies = get_tree().get_nodes_in_group("enemies")
 	
 	for rift in rifts_to_pull:
 		if not is_instance_valid(rift): continue
 		
-		var start_p = rift.global_position
-		var end_p = global_position # 拉向玩家
+		# 停止内部 Timer，防止在拉回途中造成伤害
+		for child in rift.get_children():
+			if child is Timer: child.stop()
 		
-		# 1. 【修复】使用几何计算检测路径上的敌人
-		# 这种方式比物理射线更宽容，像一个宽激光扫过
+		var start_p = rift.global_position
+		var end_p = global_position 
+		
 		for enemy in all_enemies:
 			if not is_instance_valid(enemy): continue
 			
-			# 计算敌人到[裂痕->玩家]连线的距离
 			var closest_point = Geometry2D.get_closest_point_to_segment(enemy.global_position, start_p, end_p)
 			var dist = enemy.global_position.distance_to(closest_point)
 			
 			if dist < pull_width:
-				# 2. 拉扯效果
 				var tween = create_tween()
 				tween.tween_property(enemy, "global_position", global_position, 0.3).set_trans(Tween.TRANS_BACK)
 				
-				# 造成伤害
 				if enemy.has_node("HealthComponent"):
 					enemy.health_component.take_damage(pull_force_damage)
 					Global.spawn_floating_text(enemy.global_position, "RIP!", Color.RED)
 
-		# 3. 裂痕视觉飞回并销毁
 		var rtween = create_tween()
 		rtween.tween_property(rift, "global_position", global_position, 0.2).set_ease(Tween.EASE_IN)
 		rtween.tween_property(rift, "scale", Vector2.ZERO, 0.1) 
 		rtween.tween_callback(rift.queue_free)
 
 # ==============================================================================
-# 4. 核心对象生成
+# 4. 核心对象生成 (Callback 类型限制已移除)
 # ==============================================================================
 
 func _spawn_rift(start: Vector2, end: Vector2) -> void:
@@ -178,23 +178,31 @@ func _spawn_rift(start: Vector2, end: Vector2) -> void:
 	damage_timer.autostart = true
 	rift.add_child(damage_timer)
 	
-	damage_timer.timeout.connect(func():
-		if not is_instance_valid(rift): return
-		var targets = rift.get_overlapping_bodies() + rift.get_overlapping_areas()
-		for t in targets:
-			var enemy = null
-			if t.is_in_group("enemies"): enemy = t
-			elif t.owner and t.owner.is_in_group("enemies"): enemy = t.owner
-			
-			if enemy and enemy.has_node("HealthComponent"):
-				enemy.health_component.take_damage(rift_damage_per_tick)
-	)
+	damage_timer.timeout.connect(_on_rift_damage_tick.bind(rift))
 	
-	get_tree().create_timer(rift_duration).timeout.connect(func():
-		if is_instance_valid(rift):
-			active_rifts.erase(rift)
-			rift.queue_free()
-	)
+	var life_timer = get_tree().create_timer(rift_duration)
+	life_timer.timeout.connect(_on_rift_expired.bind(rift))
+
+# 【关键修改】参数去掉 : Area2D，防止传入已释放对象时报错
+func _on_rift_damage_tick(rift) -> void:
+	if not is_instance_valid(rift) or rift.is_queued_for_deletion(): return
+	
+	var targets = rift.get_overlapping_bodies() + rift.get_overlapping_areas()
+	for t in targets:
+		var enemy = null
+		if t.is_in_group("enemies"): enemy = t
+		elif t.owner and t.owner.is_in_group("enemies"): enemy = t.owner
+		
+		if enemy and enemy.has_node("HealthComponent"):
+			enemy.health_component.take_damage(rift_damage_per_tick)
+
+# 【关键修改】参数去掉 : Area2D
+func _on_rift_expired(rift) -> void:
+	if is_instance_valid(rift):
+		active_rifts.erase(rift)
+		rift.queue_free()
+
+# ------------------------------------------------------------------------------
 
 func _create_kill_zone(center_pos: Vector2) -> Area2D:
 	var zone = Area2D.new()
@@ -223,28 +231,34 @@ func _create_kill_zone(center_pos: Vector2) -> Area2D:
 	tick_timer.autostart = true
 	zone.add_child(tick_timer)
 	
-	tick_timer.timeout.connect(func():
-		if not is_instance_valid(zone): return
-		var targets = zone.get_overlapping_bodies() + zone.get_overlapping_areas()
-		for t in targets:
-			var enemy = null
-			if t.is_in_group("enemies"): enemy = t
-			elif t.owner and t.owner.is_in_group("enemies"): enemy = t.owner
-			
-			if enemy and enemy.has_node("HealthComponent"):
-				enemy.health_component.take_damage(kill_zone_damage)
-				Global.spawn_floating_text(enemy.global_position, str(kill_zone_damage), Color.DARK_RED)
-	)
+	tick_timer.timeout.connect(_on_kill_zone_tick.bind(zone))
 	
 	var life_timer = get_tree().create_timer(kill_zone_duration)
-	life_timer.timeout.connect(func(): 
-		if is_instance_valid(zone): 
-			var tw = zone.create_tween()
-			tw.tween_property(vis, "modulate:a", 0.0, 0.5)
-			tw.tween_callback(zone.queue_free)
-	)
+	life_timer.timeout.connect(_on_kill_zone_expired.bind(zone, vis))
 	
 	return zone
+
+# 【关键修改】参数去掉类型限制
+func _on_kill_zone_tick(zone) -> void:
+	if not is_instance_valid(zone) or zone.is_queued_for_deletion(): return
+	
+	var targets = zone.get_overlapping_bodies() + zone.get_overlapping_areas()
+	for t in targets:
+		var enemy = null
+		if t.is_in_group("enemies"): enemy = t
+		elif t.owner and t.owner.is_in_group("enemies"): enemy = t.owner
+		
+		if enemy and enemy.has_node("HealthComponent"):
+			enemy.health_component.take_damage(kill_zone_damage)
+			Global.spawn_floating_text(enemy.global_position, str(kill_zone_damage), Color.DARK_RED)
+
+# 【关键修改】参数去掉类型限制
+func _on_kill_zone_expired(zone, vis) -> void:
+	if is_instance_valid(zone): 
+		var tw = zone.create_tween()
+		if is_instance_valid(vis):
+			tw.tween_property(vis, "modulate:a", 0.0, 0.5)
+		tw.tween_callback(zone.queue_free)
 
 # ==============================================================================
 # 5. 血肉地雷逻辑
@@ -257,12 +271,12 @@ func on_enemy_killed(enemy_unit: Unit) -> void:
 	if is_instance_valid(active_kill_zone):
 		var dist = enemy_unit.global_position.distance_to(active_kill_zone.global_position)
 		if dist <= kill_zone_radius:
-			_spawn_flesh_mine(enemy_unit.global_position)
+			call_deferred("_spawn_flesh_mine", enemy_unit.global_position)
 
 func _spawn_flesh_mine(pos: Vector2) -> void:
 	var mine = Area2D.new()
 	mine.global_position = pos
-	mine.collision_mask = 2
+	mine.collision_mask = 2 
 	mine.monitorable = false
 	mine.monitoring = true
 	
@@ -271,9 +285,8 @@ func _spawn_flesh_mine(pos: Vector2) -> void:
 	col.shape.radius = mine_trigger_radius
 	mine.add_child(col)
 	
-	# 【修复1】显式命名 Visual 节点
 	var vis = Polygon2D.new()
-	vis.name = "Visual" 
+	vis.name = "Visual"
 	var points = PackedVector2Array()
 	for i in range(8): points.append(Vector2(cos(i*TAU/8), sin(i*TAU/8)) * (mine_trigger_radius * 0.8))
 	vis.polygon = points
@@ -283,16 +296,22 @@ func _spawn_flesh_mine(pos: Vector2) -> void:
 	get_tree().current_scene.add_child(mine)
 	Global.spawn_floating_text(pos, "FLESH!", Color.RED)
 	
-	mine.body_entered.connect(func(body): _explode_flesh_mine(mine))
-	mine.area_entered.connect(func(area): 
-		if area.owner and area.owner.is_in_group("enemies"):
-			_explode_flesh_mine(mine)
-		elif area.is_in_group("enemies"):
-			_explode_flesh_mine(mine)
-	)
+	# Mine 的信号不需要去类型，因为 Mine 销毁后信号也就断了，不会触发回调
+	mine.body_entered.connect(_on_mine_body_entered.bind(mine))
+	mine.area_entered.connect(_on_mine_area_entered.bind(mine))
+
+func _on_mine_body_entered(_body: Node2D, mine: Area2D) -> void:
+	_explode_flesh_mine(mine)
+
+func _on_mine_area_entered(area: Area2D, mine: Area2D) -> void:
+	if (area.owner and area.owner.is_in_group("enemies")) or area.is_in_group("enemies"):
+		_explode_flesh_mine(mine)
 
 func _explode_flesh_mine(mine: Node2D) -> void:
-	if not is_instance_valid(mine) or mine.is_queued_for_deletion(): return
+	if not is_instance_valid(mine) or mine.is_queued_for_deletion():
+		return
+	
+	mine.set_deferred("monitoring", false)
 	
 	Global.on_camera_shake.emit(8.0, 0.1)
 	Global.spawn_floating_text(mine.global_position, "SPLAT!", Color.RED)
@@ -301,16 +320,14 @@ func _explode_flesh_mine(mine: Node2D) -> void:
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	
 	for e in enemies:
-		if e.global_position.distance_to(mine.global_position) < explosion_radius:
+		if is_instance_valid(e) and e.global_position.distance_to(mine.global_position) < explosion_radius:
 			if e.has_node("HealthComponent"):
 				e.health_component.take_damage(mine_damage)
 	
-	# 【修复2】安全获取 Polygon 数据
 	var flash = Polygon2D.new()
 	if mine.has_node("Visual"):
 		flash.polygon = mine.get_node("Visual").polygon
 	else:
-		# 兜底：如果找不到Visual，画个默认圆
 		var temp_points = PackedVector2Array()
 		for i in range(8): temp_points.append(Vector2(cos(i*TAU/8), sin(i*TAU/8)) * 20.0)
 		flash.polygon = temp_points
