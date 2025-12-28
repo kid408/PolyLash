@@ -130,8 +130,9 @@ func _handle_movement(delta: float) -> void:
 	if is_planning: speed_mod = 0.2 
 	
 	position += move_dir * stats.speed * speed_mod * delta
-	position.x = clamp(position.x, -1000, 1000)
-	position.y = clamp(position.y, -1000, 1000)
+	# 移除移动限制，允许无限移动
+	# position.x = clamp(position.x, -1000, 1000)
+	# position.y = clamp(position.y, -1000, 1000)
 
 # ==============================================================================
 # 9. 技能输入
@@ -347,23 +348,29 @@ func trigger_geometry_kill(polygon_points: PackedVector2Array):
 	tween.tween_callback(Global.play_loop_kill_impact)
 	
 	tween.set_parallel(false)
-	tween.tween_callback(func(): 
-		if is_instance_valid(mask_node): mask_node.color = Color(2, 2, 2, 1)
-		_perform_geometry_damage(polygon_points)
-	)
+	tween.tween_callback(_on_geometry_kill_flash.bind(mask_node, polygon_points))
 	
 	tween.tween_interval(0.15)
 	tween.tween_property(mask_node, "color", geometry_mask_color, 0.05)
 	tween.tween_property(mask_node, "color:a", 0.0, 0.3)
 	
-	tween.tween_callback(func():
-		is_executing_kill = false
-		if is_instance_valid(mask_node): mask_node.queue_free()
-	)
+	tween.tween_callback(_on_geometry_kill_complete.bind(mask_node))
 	
-	get_tree().create_timer(3.0).timeout.connect(func():
-		if is_executing_kill: is_executing_kill = false
-	)
+	get_tree().create_timer(3.0).timeout.connect(_on_geometry_kill_timeout)
+
+func _on_geometry_kill_flash(mask_node: Polygon2D, polygon_points: PackedVector2Array) -> void:
+	if is_instance_valid(mask_node):
+		mask_node.color = Color(2, 2, 2, 1)
+	_perform_geometry_damage(polygon_points)
+
+func _on_geometry_kill_complete(mask_node: Polygon2D) -> void:
+	is_executing_kill = false
+	if is_instance_valid(mask_node):
+		mask_node.queue_free()
+
+func _on_geometry_kill_timeout() -> void:
+	if is_executing_kill:
+		is_executing_kill = false
 
 # ==============================================================================
 # 核心修复区域：闭环绞杀逻辑

@@ -1,3 +1,4 @@
+res://assets/sprites/Chests
 res://scenes/arena
 res://scenes/particles
 res://resouce/waves/date
@@ -19,4 +20,3 @@ res://resouce/unit/enemies
 res://
 res://autoloads
 res://resouce/unit/players
-res://scenes/unit/players

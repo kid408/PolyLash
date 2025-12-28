@@ -15,10 +15,6 @@ class_name PlayerButcher
 @export var pull_force_damage: int = 50       # E技能拉扯伤害
 @export var pull_width: float = 60.0          # E技能拉扯的判定宽度
 
-@export_group("Dash Settings")
-@export var dash_distance: float = 400.0      
-@export var dash_speed: float = 2000.0        
-
 @export_group("Skill Costs")
 @export var cost_dash: float = 10.0
 @export var cost_kill_zone: float = 50.0
@@ -29,17 +25,18 @@ class_name PlayerButcher
 # ==============================================================================
 var active_rifts: Array[Area2D] = []   
 var active_kill_zone: Area2D = null    
-var is_dashing: bool = false
-var dash_target: Vector2 = Vector2.ZERO
-var dash_start_pos: Vector2 = Vector2.ZERO
 
 @onready var chain_container: Node2D = Node2D.new()
-@onready var trail: Trail = %Trail
 
 func _ready() -> void:
 	super._ready()
 	add_child(chain_container)
 	chain_container.top_level = true 
+	
+	# 确保 trail 引用正确
+	if not trail:
+		trail = %Trail if has_node("%Trail") else null
+	
 	print(">>> 屠夫就绪 (Type Hints Removed)")
 	
 func can_move() -> bool:
@@ -141,7 +138,7 @@ func use_skill_e() -> void:
 		var rtween = create_tween()
 		rtween.tween_property(rift, "global_position", global_position, 0.2).set_ease(Tween.EASE_IN)
 		rtween.tween_property(rift, "scale", Vector2.ZERO, 0.1) 
-		rtween.tween_callback(rift.queue_free)
+		rtween.tween_callback(_cleanup_visual_node.bind(rift))
 
 # ==============================================================================
 # 4. 核心对象生成 (Callback 类型限制已移除)
@@ -258,7 +255,7 @@ func _on_kill_zone_expired(zone, vis) -> void:
 		var tw = zone.create_tween()
 		if is_instance_valid(vis):
 			tw.tween_property(vis, "modulate:a", 0.0, 0.5)
-		tw.tween_callback(zone.queue_free)
+		tw.tween_callback(_cleanup_visual_node.bind(zone))
 
 # ==============================================================================
 # 5. 血肉地雷逻辑
@@ -339,9 +336,13 @@ func _explode_flesh_mine(mine: Node2D) -> void:
 	
 	var tw = flash.create_tween()
 	tw.tween_property(flash, "modulate:a", 0.0, 0.2)
-	tw.tween_callback(flash.queue_free)
+	tw.tween_callback(_cleanup_visual_node.bind(flash))
 	
 	mine.queue_free()
+
+func _cleanup_visual_node(node: Node) -> void:
+	if is_instance_valid(node):
+		node.queue_free()
 
 func _update_chains() -> void:
 	for c in chain_container.get_children(): c.queue_free()

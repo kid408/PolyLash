@@ -8,8 +8,6 @@ class_name PlayerWeaver
 @export var web_color: Color = Color(0.6, 0.8, 1.0, 0.8) # 连线颜色
 @export var web_damage: int = 50       # 收网时的基础伤害
 @export var cut_damage: int = 30       # 线段切割路径上敌人的伤害
-@export var dash_speed: float = 1200.0 # 冲刺速度
-@export var dash_distance: float = 450.0 # 单次冲刺距离
 @export var anchor_catch_radius: float = 80.0 # 冲刺时捕捉锚点的宽度
 
 @export_group("Trap Settings (E Skill)")
@@ -27,8 +25,6 @@ class_name PlayerWeaver
 # 2. 运行时变量
 # ==============================================================================
 var active_anchors: Array[Node2D] = []    # 存储被标记为锚点的敌人
-var is_dashing: bool = false
-var dash_target: Vector2 = Vector2.ZERO
 
 # 连线绘制容器
 @onready var web_line_container: Node2D = Node2D.new()
@@ -260,10 +256,13 @@ func _on_trap_triggered(trap: Node2D) -> void:
 				enemy.can_move = false
 				Global.spawn_floating_text(enemy.global_position, "STUCK!", Color.YELLOW)
 				
-				# 恢复计时器
+				# 恢复计时器 - 使用 WeakRef 避免引用已销毁的对象
 				var timer = get_tree().create_timer(trap_pin_duration)
+				var enemy_ref = weakref(enemy)
 				timer.timeout.connect(func():
-					if is_instance_valid(enemy): enemy.can_move = true
+					var e = enemy_ref.get_ref()
+					if e and is_instance_valid(e) and "can_move" in e:
+						e.can_move = true
 				)
 	
 	if hit_count > 0:
@@ -284,4 +283,20 @@ func _spawn_web_explosion_visual(pos: Vector2) -> void:
 	var tween = circle.create_tween()
 	tween.tween_property(circle, "scale", Vector2(1.2, 1.2), 0.1)
 	tween.tween_property(circle, "modulate:a", 0.0, 0.2)
-	tween.tween_callback(circle.queue_free)
+	tween.tween_callback(_cleanup_visual_node.bind(circle))
+
+func _cleanup_visual_node(node: Node) -> void:
+	if is_instance_valid(node):
+		node.queue_free()
+
+# 清理所有技能效果（角色切换时调用）
+func _cleanup_skill_effects() -> void:
+	# 清理所有锚点标记
+	_clear_all_anchors()
+	
+	# 清理连线容器
+	if web_line_container:
+		for c in web_line_container.get_children():
+			c.queue_free()
+	
+	print("[PlayerWeaver] 技能效果已清理")

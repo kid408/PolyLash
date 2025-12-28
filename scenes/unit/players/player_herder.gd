@@ -6,11 +6,7 @@ class_name PlayerHerder
 # ==============================================================================
 @export_group("Herder Settings")
 @export var fixed_dash_distance: float = 600.0  # 默认值
-# 冲刺速度，建议比 base_speed 快很多
-@export var dash_speed = 1000.0 
-@export var close_threshold: float = 60.0
 @export var dash_base_damage: int = 10
-@export var dash_knockback: float = 2.0
 @export var geometry_mask_color: Color = Color(1, 0.0, 0.0, 0.6)
 # 新增：爆炸半径控制
 @export var explosion_radius: float = 200.0
@@ -20,7 +16,6 @@ class_name PlayerHerder
 @export var cost_explosion: float = 0.5    # 默认极低
 
 @onready var line_2d: Line2D = $Line2D
-@onready var trail: Trail = %Trail
 @export var explosion_vfx_scene: PackedScene 
 
 var dash_queue: Array[Vector2] = []
@@ -28,13 +23,16 @@ var current_target: Vector2 = Vector2.ZERO
 var is_planning: bool = false
 var path_history: Array[Vector2] = []
 var is_executing_kill: bool = false
-var is_dashing: bool = false
 var upgrades = {"closed_loop": true}
 
 func _ready() -> void:
 	super._ready()
 	line_2d.top_level = true
 	line_2d.clear_points()
+	
+	# 确保 trail 引用正确
+	if not trail:
+		trail = %Trail if has_node("%Trail") else null
 	
 	# ============================================================
 	# 【检查点】现在这里只负责打印，绝对不修改数值！
@@ -232,17 +230,21 @@ func trigger_geometry_kill(polygon_points: PackedVector2Array):
 	tween.tween_property(mask_node, "color:a", 0.8, 0.2).from(0.0)
 	tween.tween_callback(Global.play_loop_kill_impact)
 	tween.set_parallel(false)
-	tween.tween_callback(func(): 
-		if is_instance_valid(mask_node): mask_node.color = Color(2, 2, 2, 1)
-		_perform_geometry_damage(polygon_points)
-	)
+	tween.tween_callback(_on_geometry_kill_flash.bind(mask_node, polygon_points))
 	tween.tween_interval(0.15)
 	tween.tween_property(mask_node, "color", geometry_mask_color, 0.05)
 	tween.tween_property(mask_node, "color:a", 0.0, 0.3)
-	tween.tween_callback(func():
-		is_executing_kill = false
-		if is_instance_valid(mask_node): mask_node.queue_free()
-	)
+	tween.tween_callback(_on_geometry_kill_complete.bind(mask_node))
+
+func _on_geometry_kill_flash(mask_node: Polygon2D, polygon_points: PackedVector2Array) -> void:
+	if is_instance_valid(mask_node):
+		mask_node.color = Color(2, 2, 2, 1)
+	_perform_geometry_damage(polygon_points)
+
+func _on_geometry_kill_complete(mask_node: Polygon2D) -> void:
+	is_executing_kill = false
+	if is_instance_valid(mask_node):
+		mask_node.queue_free()
 
 func _perform_geometry_damage(polygon_points: PackedVector2Array):
 	Global.on_camera_shake.emit(20.0, 0.5) 
@@ -323,4 +325,25 @@ func create_explosion_range_visual(radius: float) -> void:
 	get_tree().current_scene.add_child(circle_node)
 	var tween = circle_node.create_tween()
 	tween.tween_property(circle_node, "color:a", 0.0, 0.4)
-	tween.tween_callback(circle_node.queue_free)
+	tween.tween_callback(_cleanup_visual_node.bind(circle_node))
+
+func _cleanup_visual_node(node: Node2D) -> void:
+	if is_instance_valid(node):
+		node.queue_free()
+
+# 清理所有技能效果（角色切换时调用）
+func _cleanup_skill_effects() -> void:
+	# 清理规划线
+	if line_2d:
+		line_2d.clear_points()
+	
+	# 重置状态
+	is_planning = false
+	is_dashing = false
+	is_executing_kill = false
+	dash_queue.clear()
+	path_history.clear()
+	current_target = Vector2.ZERO
+	Engine.time_scale = 1.0
+	
+	print("[PlayerHerder] 技能效果已清理")

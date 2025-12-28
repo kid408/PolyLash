@@ -22,8 +22,10 @@ radius = 32.01562
 radius = 30.016663
 
 [node name="PlayerHerder" instance=ExtResource("1_xa7el")]
-collision_mask = 2
+collision_layer = 1
+collision_mask = 6
 script = ExtResource("2_ak6fa")
+player_id = "herder"
 fixed_dash_distance = 300.0
 dash_speed = 1000.0
 close_threshold = 60.0

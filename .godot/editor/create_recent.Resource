@@ -1,3 +1,4 @@
+SpriteFrames
 WaveData
 WeaponStats
 ItemWeapon

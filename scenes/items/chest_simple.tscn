@@ -1,0 +1,29 @@
+[gd_scene load_steps=4 format=3 uid="uid://co2a2sija6icf"]
+
+[ext_resource type="Script" uid="uid://mdd0m5d5ne0c" path="res://scenes/items/chest_simple.gd" id="1"]
+[ext_resource type="SpriteFrames" uid="uid://hwr7ky8d2kgf" path="res://assets/sprites/Chests/chest_animations.tres" id="2"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 38.0
+
+[node name="ChestSimple" type="Area2D"]
+collision_layer = 4
+script = ExtResource("1")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(2, 2)
+sprite_frames = ExtResource("2")
+animation = &"wood_chests"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-18, 9)
+shape = SubResource("CircleShape2D_1")
+
+[node name="InteractionLabel" type="Label" parent="."]
+offset_left = -60.0
+offset_top = -100.0
+offset_right = 60.0
+offset_bottom = -70.0
+text = "触碰打开"
+horizontal_alignment = 1
+vertical_alignment = 1

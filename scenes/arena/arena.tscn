@@ -1,11 +1,14 @@
-[gd_scene load_steps=12 format=3 uid="uid://bjhraywhhpn3h"]
+[gd_scene load_steps=15 format=3 uid="uid://bjhraywhhpn3h"]
 
-[ext_resource type="Texture2D" uid="uid://cy4xfx762bxgb" path="res://assets/sprites/BG.png" id="1_8trdl"]
 [ext_resource type="Script" uid="uid://fylssyuoxjey" path="res://scenes/arena/arena.gd" id="1_asdgj"]
 [ext_resource type="Texture2D" uid="uid://ov4fmsbglo55" path="res://assets/sprites/Map.png" id="2_5tue2"]
 [ext_resource type="PackedScene" uid="uid://r0yv7tny8sc8" path="res://scenes/unit/players/player_herder.tscn" id="3_5tue2"]
 [ext_resource type="Script" uid="uid://xik4iqa2n4lo" path="res://scenes/arena/camera_2d.gd" id="4_aj7ud"]
+[ext_resource type="Script" uid="uid://ba7a7f4xdjhru" path="res://scenes/arena/background_manager.gd" id="5_bg"]
+[ext_resource type="Script" uid="uid://b2bivn8xpy1ko" path="res://scenes/arena/chest_manager.gd" id="6_chest"]
+[ext_resource type="PackedScene" path="res://scenes/ui/upgrade_selection_ui.tscn" id="7_upgrade"]
 [ext_resource type="Script" uid="uid://c1r0p6xkr6l1v" path="res://scenes/arena/spawner.gd" id="8_ii07k"]
+[ext_resource type="PackedScene" path="res://scenes/ui/chest_indicator.tscn" id="8_indicator"]
 [ext_resource type="Script" uid="uid://dkr6e34g4poq6" path="res://resouce/waves/wave_data.gd" id="9_2ml6w"]
 [ext_resource type="FontFile" uid="uid://kfh6ooeul77g" path="res://assets/font/Bake Soda.otf" id="9_6w4xk"]
 [ext_resource type="Resource" uid="uid://dg6afyqcpnt4j" path="res://resouce/waves/date/wave_1_to_5.tres" id="10_xgbxb"]
@@ -18,9 +21,8 @@ font_size = 64
 font = ExtResource("9_6w4xk")
 font_size = 64
 
-[node name="Arena" type="Node2D" node_paths=PackedStringArray("player")]
+[node name="Arena" type="Node2D"]
 script = ExtResource("1_asdgj")
-player = NodePath("")
 normal_color = Color(0.9691369, 0.9691369, 0.9691368, 1)
 blockedl_color = Color(1, 0.2901961, 0.45490196, 1)
 critical_color = Color(0.99607843, 0.78039217, 0.38039216, 1)
@@ -28,16 +30,18 @@ hp_color = Color(0, 0.627451, 0.48235294, 1)
 
 [node name="BlackBG" type="Sprite2D" parent="."]
 scale = Vector2(2, 2)
-texture = ExtResource("1_8trdl")
-
-[node name="GrassBG" type="Sprite2D" parent="."]
-scale = Vector2(2, 4)
 texture = ExtResource("2_5tue2")
+
+[node name="BackgroundManager" type="Node2D" parent="."]
+script = ExtResource("5_bg")
 
 [node name="PlayerHerder" parent="." instance=ExtResource("3_5tue2")]
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." groups=["camera"]]
 script = ExtResource("4_aj7ud")
+
+[node name="ChestManager" type="Node2D" parent="."]
+script = ExtResource("6_chest")
 
 [node name="Marker2D" type="Marker2D" parent="."]
 
@@ -76,6 +80,10 @@ offset_bottom = 120.0
 grow_horizontal = 2
 text = "Wave 1"
 label_settings = SubResource("LabelSettings_xgbxb")
+
+[node name="UpgradeSelectionUI" parent="." instance=ExtResource("7_upgrade")]
+
+[node name="ChestIndicator" parent="." instance=ExtResource("8_indicator")]
 
 [connection signal="timeout" from="Spawner/SpawnTimer" to="Spawner" method="_on_spawn_timer_timeout"]
 [connection signal="timeout" from="Spawner/WaveTimer" to="Spawner" method="_on_wave_timer_timeout"]

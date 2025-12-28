@@ -33,7 +33,25 @@ func _process(delta: float) -> void:
 
 func setup_weapon(data:ItemWeapon) -> void:
 	self.data = data
+	
+	# 确保 weapon_behavior 有正确的 weapon 引用
+	if weapon_behavior and not weapon_behavior.weapon:
+		weapon_behavior.weapon = self
+	
+	# 验证数据完整性
+	if not data.stats:
+		printerr("[Weapon] 错误: 武器数据缺少 stats - ", data.item_name)
+		return
+	
 	collision.shape.radius = data.stats.max_range
+	
+	# 对于远程武器，验证子弹场景
+	if data.type == ItemWeapon.WeaponType.RANGE:
+		if not data.stats.projectile_scene:
+			printerr("[Weapon] 错误: 远程武器缺少 projectile_scene - ", data.item_name)
+			return
+	
+	print("[Weapon] 武器设置完成: ", data.item_name)
 	
 func use_weapon() -> void:
 	calculate_spread()
@@ -85,15 +103,21 @@ func update_closest_target() -> void:
 
 func get_closest_target() -> Node2D:
 	if targets.size() == 0:
-		return
-	var closest_enemy:=targets[0]
+		return null
+	
+	var closest_enemy: Enemy = targets[0]
 	var closest_distance := global_position.distance_to(closest_enemy.global_position)
-	for i in range(1,targets.size()):
-		var target:Enemy = targets[i]
+	
+	for i in range(1, targets.size()):
+		var target: Enemy = targets[i]
+		# 安全检查：确保目标仍然有效
+		if not is_instance_valid(target):
+			continue
+		
 		var distance := global_position.distance_to(target.global_position)
 		
 		if distance < closest_distance:
-			closest_target = target
+			closest_enemy = target
 			closest_distance = distance
 	
 	return closest_enemy

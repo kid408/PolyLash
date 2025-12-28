@@ -6,6 +6,9 @@ class_name MeleeBehavior
 func execute_attack() -> void:
 	weapon.is_attacking = true
 	
+	# 增强打击感：攻击时轻微顿帧
+	Global.frame_freeze(0.03, 0.3)
+	
 	var tween := create_tween()
 	
 	var recoil_pos := Vector2(weapon.atk_start_pos.x - weapon.data.stats.recoil,weapon.atk_start_pos.y)

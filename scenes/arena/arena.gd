@@ -10,6 +10,11 @@ class_name Arena
 @onready var wave_index_lable: Label = %waveIndexLable
 @onready var wave_time_lable: Label = %waveTimeLable
 @onready var spawner: Spawner = $Spawner
+@onready var chest_manager: ChestManager = $ChestManager
+@onready var upgrade_ui: UpgradeSelectionUI = $UpgradeSelectionUI
+@onready var chest_indicator: ChestIndicator = $ChestIndicator
+
+var current_chest: ChestSimple = null  # 保存当前打开的宝箱引用
 
 func _ready() -> void:
 	# 将角色添加到全局变量中
@@ -18,8 +23,40 @@ func _ready() -> void:
 	Global.on_create_block_text.connect(_on_create_block_text)
 	# 伤害飘字信号
 	Global.on_create_damage_text.connect(_on_create_damage_text)
+	
+	# 连接宝箱系统
+	if chest_manager:
+		chest_manager.chest_opened.connect(_on_chest_opened)
+	
+	# 连接升级选择信号
+	if upgrade_ui:
+		upgrade_ui.upgrade_selected.connect(_on_upgrade_selected)
+	
+	# 设置宝箱指示器
+	if chest_indicator and chest_manager:
+		chest_indicator.set_chest_manager(chest_manager)
 
+func _on_chest_opened(chest: ChestSimple) -> void:
+	print("[Arena] Chest opened signal received, chest tier: %d" % chest.get_tier())
+	
+	# 保存宝箱引用
+	current_chest = chest
+	
+	if not upgrade_ui:
+		printerr("[Arena] UpgradeSelectionUI not found!")
+		return
+	
+	print("[Arena] Showing upgrade UI")
+	# 显示升级选择UI
+	upgrade_ui.show_upgrades(chest.get_tier())
 
+func _on_upgrade_selected(attribute_id: String) -> void:
+	print("[Arena] Upgrade selected: %s" % attribute_id)
+	
+	# 隐藏宝箱
+	if is_instance_valid(current_chest):
+		current_chest.hide_chest()
+		current_chest = null
 
 func _process(delta: float) -> void:
 	if Global.game_paused: return

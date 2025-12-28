@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://cwisnpjnuht1e"
+
+[deps]
+
+files=["res://resouce/player_config.display.translation", "res://resouce/player_config.dash.translation", "res://resouce/player_config.dash.translation", "res://resouce/player_config.dash.translation", "res://resouce/player_config.dash.translation", "res://resouce/player_config.dash.translation", "res://resouce/player_config.skill.translation", "res://resouce/player_config.skill.translation", "res://resouce/player_config.close.translation", "res://resouce/player_config.energy.translation", "res://resouce/player_config.max.translation", "res://resouce/player_config.max.translation", "res://resouce/player_config.base.translation"]
+
+source_file="res://resouce/player_config.csv"
+dest_files=["res://resouce/player_config.display.translation", "res://resouce/player_config.dash.translation", "res://resouce/player_config.dash.translation", "res://resouce/player_config.dash.translation", "res://resouce/player_config.dash.translation", "res://resouce/player_config.dash.translation", "res://resouce/player_config.skill.translation", "res://resouce/player_config.skill.translation", "res://resouce/player_config.close.translation", "res://resouce/player_config.energy.translation", "res://resouce/player_config.max.translation", "res://resouce/player_config.max.translation", "res://resouce/player_config.base.translation"]
+
+[params]
+
+compress=true
+delimiter=0

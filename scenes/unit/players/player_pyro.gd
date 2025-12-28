@@ -7,10 +7,7 @@ class_name PlayerPyro
 @export_group("Pyro Settings")
 # 统一冲刺距离 (300)
 @export var fixed_dash_distance: float = 300.0  
-@export var dash_speed: float = 1200.0          
-@export var close_threshold: float = 60.0       
 @export var dash_base_damage: int = 10          
-@export var dash_knockback: float = 2.0         
 
 @export_group("Fire Skills Stats")
 # --- Q技能生成的火线 (未闭合时的伤害带) ---
@@ -36,7 +33,6 @@ class_name PlayerPyro
 # 2. 运行时变量
 # ==============================================================================
 @onready var line_2d: Line2D = $Line2D
-@onready var trail: Trail = %Trail 
 
 var dash_queue: Array[Dictionary] = []      
 var current_target: Vector2 = Vector2.ZERO
@@ -44,7 +40,6 @@ var current_is_fire_dash: bool = false
 
 var is_planning: bool = false            
 var path_history: Array[Vector2] = []    
-var is_dashing: bool = false
 var upgrades = {"closed_loop": true}
 
 func _ready() -> void:
@@ -53,6 +48,11 @@ func _ready() -> void:
 	line_2d.clear_points()
 	# 初始规划线的颜色 (高亮金橙色)
 	line_2d.default_color = Color(2.0, 1.0, 0.3, 1.0) 
+	
+	# 确保 trail 引用正确
+	if not trail:
+		trail = %Trail if has_node("%Trail") else null
+	
 	print(">>> 烈焰角色就绪 (PlayerPyro - Bug Fixed)")
 
 func can_move() -> bool:
@@ -384,9 +384,29 @@ func _on_object_expired(area_ref, visual_ref) -> void:
 		if is_instance_valid(visual_ref):
 			var tween = area_ref.create_tween()
 			tween.tween_property(visual_ref, "modulate:a", 0.0, 0.3)
-			tween.tween_callback(area_ref.queue_free)
+			tween.tween_callback(_cleanup_visual_node.bind(area_ref))
 		else:
 			area_ref.queue_free()
+
+func _cleanup_visual_node(node: Node) -> void:
+	if is_instance_valid(node):
+		node.queue_free()
+
+# 清理所有技能效果（角色切换时调用）
+func _cleanup_skill_effects() -> void:
+	# 清理规划线
+	if line_2d:
+		line_2d.clear_points()
+	
+	# 重置状态
+	is_planning = false
+	is_dashing = false
+	dash_queue.clear()
+	path_history.clear()
+	current_target = Vector2.ZERO
+	Engine.time_scale = 1.0
+	
+	print("[PlayerPyro] 技能效果已清理")
 
 # ==============================================================================
 # 7. 几何算法

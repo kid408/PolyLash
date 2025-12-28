@@ -1,0 +1,13 @@
+setting,value
+-1,配置项,值
+map_width,2000
+map_height,2000
+arena_radius,800
+boundary_damage,10
+boundary_knockback,500
+spawn_safe_radius,200
+map_tile_size,2000
+chest_spawn_density,10
+chest_spawn_radius,2000
+background_extend_threshold,1000
+indicator_show_range,3000

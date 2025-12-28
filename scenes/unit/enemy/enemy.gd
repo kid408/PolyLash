@@ -20,6 +20,9 @@ enum AIState {
 
 @export var enemy_type: EnemyType = EnemyType.NORMAL
 
+# 敌人ID，用于从CSV加载配置
+@export var enemy_id: String = "basic_enemy"
+
 @export_group("Movement")
 @export var flock_push: float = 20.0 
 @export var stop_distance: float = 60.0 
@@ -318,7 +321,7 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 		
 		if Global.player.has_method("apply_knockback_self"):
 			var dir = global_position.direction_to(Global.player.global_position)
-			Global.player.apply_knockback_self(dir * 800.0) # 强力反弹
+			Global.player.apply_knockback_self(dir * 300.0) # 减小反弹力度，从800.0改为300.0
 			
 		Global.on_camera_shake.emit(5.0, 0.2)
 		return 
@@ -327,12 +330,18 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 	super._on_hurtbox_component_on_damaged(hitbox)
 	
 	if hitbox.knockback_power > 0:
-		var dir := hitbox.source.global_position.direction_to(global_position)
-		apply_knockback(dir, hitbox.knockback_power)
+		# 安全检查：确保 source 仍然有效
+		if hitbox.source and is_instance_valid(hitbox.source):
+			var dir := hitbox.source.global_position.direction_to(global_position)
+			apply_knockback(dir, hitbox.knockback_power)
 	
-	if hitbox.source == Global.player: 
-		Global.frame_freeze(0.1, 0.1) 
-		Global.on_camera_shake.emit(3.0, 0.1)
+	# 增强打击感：敌人受击时的反馈
+	# 安全检查：确保 source 和 Global.player 仍然有效
+	if hitbox.source and is_instance_valid(hitbox.source) and hitbox.source == Global.player: 
+		# 根据伤害大小调整顿帧强度
+		var freeze_duration = clamp(hitbox.damage / 100.0, 0.02, 0.08)
+		Global.frame_freeze(freeze_duration, 0.2) 
+		Global.on_camera_shake.emit(2.0 + hitbox.damage / 20.0, 0.08)
 
 func destroy_enemy() -> void:
 	if is_dead: return
@@ -346,12 +355,20 @@ func destroy_enemy() -> void:
 	if collision_shape:
 		collision_shape.set_deferred("disabled", true)
 	
+	# 给玩家能量奖励
+	if is_instance_valid(Global.player) and Global.player.has_method("gain_energy"):
+		var enemy_config = ConfigManager.get_enemy_config(enemy_id)
+		var energy_drop = enemy_config.get("energy_drop", 5)
+		Global.player.gain_energy(energy_drop)
+	
 	if Global.player and Global.player.has_method("on_enemy_killed"):
 		Global.player.on_enemy_killed(self)
 	
 	Global.play_enemy_death()
 	spawn_explosion_safe()
-	Global.on_camera_shake.emit(2.0, 0.1)
+	# 增强打击感：敌人死亡时的反馈
+	Global.frame_freeze(0.04, 0.3)
+	Global.on_camera_shake.emit(3.0, 0.12)
 	
 	var tween = create_tween()
 	tween.set_parallel(true)

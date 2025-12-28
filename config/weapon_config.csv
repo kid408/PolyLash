@@ -1,0 +1,14 @@
+weapon_id,display_name,resource_path,type
+-1,武器ID,显示名,资源路径,类型
+punch_1,拳头1级,res://resouce/items/weapons/melee/punch/item_punch_1.tres,melee
+punch_2,拳头2级,res://resouce/items/weapons/melee/punch/item_punch_2.tres,melee
+punch_3,拳头3级,res://resouce/items/weapons/melee/punch/item_punch_3.tres,melee
+punch_4,拳头4级,res://resouce/items/weapons/melee/punch/item_punch_4.tres,melee
+laser_1,激光1级,res://resouce/items/weapons/range/laser/item_laser_1.tres,range
+laser_2,激光2级,res://resouce/items/weapons/range/laser/item_laser_2.tres,range
+laser_3,激光3级,res://resouce/items/weapons/range/laser/item_laser_3.tres,range
+laser_4,激光4级,res://resouce/items/weapons/range/laser/item_laser_4.tres,range
+pistol_1,手枪1级,res://resouce/items/weapons/range/pistol/item_pistol_1.tres,range
+pistol_2,手枪2级,res://resouce/items/weapons/range/pistol/item_pistol_2.tres,range
+pistol_3,手枪3级,res://resouce/items/weapons/range/pistol/item_pistol_3.tres,range
+pistol_4,手枪4级,res://resouce/items/weapons/range/pistol/item_pistol_4.tres,range

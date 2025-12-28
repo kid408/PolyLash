@@ -17,7 +17,10 @@ config/icon="uid://b02x7h4bntic6"
 
 [autoload]
 
+ConfigManager="*res://autoloads/config_manager.gd"
 Global="*res://autoloads/global.gd"
+PlayerConfigLoader="*res://autoloads/player_config_loader.gd"
+UpgradeManager="*res://autoloads/upgrade_manager.gd"
 DebugSwitcher="*res://scenes/arena/debug_switcher.gd"
 
 [display]

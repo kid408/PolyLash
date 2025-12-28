@@ -17,9 +17,7 @@ class_name PlayerSapper
 
 @export_group("Dash Settings")
 @export var fixed_dash_distance: float = 600.0
-@export var dash_speed: float = 1500.0
 @export var dash_base_damage: int = 20
-@export var close_threshold: float = 60.0     # 闭环判定阈值
 
 @export_group("Skill Costs")
 @export var cost_per_segment: float = 10.0
@@ -28,10 +26,8 @@ class_name PlayerSapper
 
 # 引用
 @onready var line_2d: Line2D = $Line2D
-@onready var trail: Trail = %Trail
 
 # 运行时状态
-var is_dashing: bool = false
 var is_planning: bool = false
 
 # 队列: { "pos": Vector2, "lay_mines": bool }
@@ -46,6 +42,11 @@ func _ready() -> void:
 	super._ready()
 	line_2d.top_level = true
 	line_2d.clear_points()
+	
+	# 确保 trail 引用正确
+	if not trail:
+		trail = %Trail if has_node("%Trail") else null
+	
 	print(">>> 工兵就绪 (Area Mine Fix)")
 
 func _process_subclass(delta: float) -> void:
@@ -288,6 +289,14 @@ func _spawn_mine(pos: Vector2) -> void:
 	
 	mine.area_entered.connect(_on_mine_trigger_area.bind(mine))
 	mine.body_entered.connect(_on_mine_trigger_body.bind(mine))
+	
+	# 添加5秒自动爆炸定时器
+	var auto_explode_timer = Timer.new()
+	auto_explode_timer.wait_time = 5.0
+	auto_explode_timer.one_shot = true
+	auto_explode_timer.autostart = true
+	mine.add_child(auto_explode_timer)
+	auto_explode_timer.timeout.connect(_explode_mine.bind(mine))
 
 func _on_mine_trigger_area(area: Area2D, mine: Area2D) -> void:
 	if area.owner and area.owner.is_in_group("enemies"):
@@ -333,9 +342,13 @@ func _explode_mine(mine: Node2D) -> void:
 	
 	var tw = flash.create_tween()
 	tw.tween_property(flash, "modulate:a", 0.0, 0.3)
-	tw.tween_callback(flash.queue_free)
+	tw.tween_callback(_cleanup_visual_node.bind(flash))
 	
 	mine.queue_free()
+
+func _cleanup_visual_node(node: Node) -> void:
+	if is_instance_valid(node):
+		node.queue_free()
 
 # ==============================================================================
 # 5. 图腾与辅助函数

@@ -6,10 +6,7 @@ class_name PlayerWind
 # ==============================================================================
 @export_group("Wind Settings")
 @export var fixed_dash_distance: float = 300.0  
-@export var dash_speed: float = 1200.0          
-@export var close_threshold: float = 60.0       
 @export var dash_base_damage: int = 10          
-@export var dash_knockback: float = 2.0         
 
 @export_group("Wind Skills Stats")
 # --- Q技能: 风墙 (物理拉扯 + 伤害) ---
@@ -39,7 +36,6 @@ class_name PlayerWind
 # 2. 运行时变量
 # ==============================================================================
 @onready var line_2d: Line2D = $Line2D
-@onready var trail: Trail = %Trail 
 
 var dash_queue: Array[Dictionary] = []      
 var current_target: Vector2 = Vector2.ZERO
@@ -47,7 +43,6 @@ var current_is_wind_dash: bool = false
 
 var is_planning: bool = false            
 var path_history: Array[Vector2] = []    
-var is_dashing: bool = false
 var upgrades = {"closed_loop": true}
 
 func _ready() -> void:
@@ -56,6 +51,11 @@ func _ready() -> void:
 	line_2d.clear_points()
 	# 颜色: 高亮青色/天蓝色
 	line_2d.default_color = Color(0.2, 1.5, 1.5, 1.0) 
+	
+	# 确保 trail 引用正确
+	if not trail:
+		trail = %Trail if has_node("%Trail") else null
+	
 	print(">>> 御风者就绪 (PlayerWind - Physics Fixed)")
 
 func can_move() -> bool:
@@ -444,9 +444,29 @@ func _on_object_expired(area_ref, visual_ref) -> void:
 		if is_instance_valid(visual_ref):
 			var tween = area_ref.create_tween()
 			tween.tween_property(visual_ref, "modulate:a", 0.0, 0.3)
-			tween.tween_callback(area_ref.queue_free)
+			tween.tween_callback(_cleanup_visual_node.bind(area_ref))
 		else:
 			area_ref.queue_free()
+
+func _cleanup_visual_node(node: Node) -> void:
+	if is_instance_valid(node):
+		node.queue_free()
+
+# 清理所有技能效果（角色切换时调用）
+func _cleanup_skill_effects() -> void:
+	# 清理规划线
+	if line_2d:
+		line_2d.clear_points()
+	
+	# 重置状态
+	is_planning = false
+	is_dashing = false
+	dash_queue.clear()
+	path_history.clear()
+	current_target = Vector2.ZERO
+	Engine.time_scale = 1.0
+	
+	print("[PlayerWind] 技能效果已清理")
 
 # ==============================================================================
 # 7. 几何算法
@@ -497,7 +517,7 @@ func _update_visuals() -> void:
 	var poly = find_closing_polygon(points_to_draw)
 	
 	if poly.size() > 0:
-		line_2d.default_color = Color(0.1, 0.8, 2.0, 1.0) 
+		line_2d.default_color = Color(2.0, 0.1, 0.1, 1.0) # 闭合提示 (高亮红)
 	elif energy < cost_per_segment:
 		line_2d.default_color = Color(0.5, 0.5, 0.5, 0.5)
 	else:

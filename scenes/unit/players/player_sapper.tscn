@@ -6,6 +6,7 @@
 
 [node name="PlayerSapper" instance=ExtResource("1_n8107")]
 script = ExtResource("2_o6fx1")
+player_id = "sapper"
 mine_damage = 150
 mine_trigger_radius = 20.0
 mine_explosion_radius = 120.0

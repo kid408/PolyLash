@@ -6,6 +6,7 @@
 
 [node name="PlayerTempest" instance=ExtResource("1_5054k")]
 script = ExtResource("2_o3wmg")
+player_id = "tempest"
 cost_dash = 15.0
 cost_wall = 40.0
 cost_blast = 30.0

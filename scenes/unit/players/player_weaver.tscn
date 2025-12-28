@@ -6,6 +6,7 @@
 
 [node name="PlayerWeaver" instance=ExtResource("1_t1ilm")]
 script = ExtResource("2_7oj41")
+player_id = "weaver"
 anchor_range = 400.0
 web_color = Color(0.8, 0.9, 1, 0.8)
 dash_speed_mult = 4.0

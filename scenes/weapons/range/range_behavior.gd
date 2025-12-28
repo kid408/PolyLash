@@ -6,6 +6,10 @@ class_name RangeBehavior
 func execute_attack() -> void:
 	weapon.is_attacking = true
 	
+	# 增强打击感：射击时轻微顿帧和屏幕震动
+	Global.frame_freeze(0.02, 0.5)
+	Global.on_camera_shake.emit(1.5, 0.05)
+	
 	create_projectile()
 	var tween := create_tween()
 	var attack_pos:= Vector2(weapon.atk_start_pos.x - weapon.data.stats.recoil,weapon.atk_start_pos.y)
@@ -18,6 +22,15 @@ func execute_attack() -> void:
 	critical = false
 	
 func create_projectile() -> void:
+	# 安全检查
+	if not weapon or not weapon.data or not weapon.data.stats:
+		printerr("[RangeBehavior] 错误: weapon 或 weapon.data 或 weapon.data.stats 为空")
+		return
+	
+	if not weapon.data.stats.projectile_scene:
+		printerr("[RangeBehavior] 错误: projectile_scene 为空 - 武器: ", weapon.data.item_name if weapon.data else "未知")
+		return
+	
 	var instance := weapon.data.stats.projectile_scene.instantiate() as Projectile
 	get_tree().root.add_child(instance)
 	instance.global_position = muzzle.global_position

@@ -1,0 +1,10 @@
+setting,value
+-1,配置项,值
+zoom_level,1.0
+min_zoom,0.5
+max_zoom,2.0
+follow_smoothness,5.0
+shake_enabled,1
+shake_decay,5.0
+offset_x,0
+offset_y,0

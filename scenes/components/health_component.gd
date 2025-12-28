@@ -9,9 +9,18 @@ signal on_unit_died
 # 生命值变回信号
 signal on_health_changed(current:float,max:float)
 # 最大生命值
-var max_health:= 1.0
+var max_health:= 1.0:
+	set(value):
+		max_health = value
+		# 当最大生命值改变时，发送信号更新UI
+		on_health_changed.emit(current_health, max_health)
+		
 # 当前生命值
-var current_health := 1.0
+var current_health := 1.0:
+	set(value):
+		current_health = value
+		# 当当前生命值改变时，发送信号更新UI
+		on_health_changed.emit(current_health, max_health)
 
 # 设置生命值数据
 func setup(stats:UnitStats) -> void:

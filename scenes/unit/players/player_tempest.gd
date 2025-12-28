@@ -27,8 +27,7 @@ class_name PlayerTempest
 @export var tornado_push_force: float = 200.0   
 
 @export_group("Dash Settings")
-@export var dash_speed: float = 1500.0
-@export var dash_distance: float = 500.0
+@export var dash_base_damage: int = 20
 
 @export_group("Skill Costs")
 @export var cost_dash: float = 15.0
@@ -38,14 +37,15 @@ class_name PlayerTempest
 # ==============================================================================
 # 2. 运行时变量
 # ==============================================================================
-var is_dashing: bool = false
-var dash_target: Vector2 = Vector2.ZERO
 var active_storm_zone: Area2D = null
-
-@onready var trail: Trail = %Trail
 
 func _ready() -> void:
 	super._ready()
+	
+	# 确保 trail 引用正确
+	if not trail:
+		trail = %Trail if has_node("%Trail") else null
+	
 	print(">>> 风暴使者就绪 | Q范围:%.1f | E范围:%.1f" % [storm_radius, tornado_radius])
 
 func _process_subclass(delta: float) -> void:
@@ -288,12 +288,13 @@ func _spawn_tornado(pos: Vector2) -> void:
 				enemy.global_position += push_dir * tornado_push_force * 0.1
 	)
 	
-	get_tree().create_timer(tornado_duration).timeout.connect(func():
-		if is_instance_valid(tornado):
-			var end_tween = tornado.create_tween()
-			end_tween.tween_property(vis, "scale", Vector2.ZERO, 0.3)
-			end_tween.tween_callback(tornado.queue_free)
-	)
+	get_tree().create_timer(tornado_duration).timeout.connect(_on_tornado_expired.bind(tornado, vis))
+
+func _on_tornado_expired(tornado: Area2D, vis: Polygon2D) -> void:
+	if is_instance_valid(tornado):
+		var end_tween = tornado.create_tween()
+		end_tween.tween_property(vis, "scale", Vector2.ZERO, 0.3)
+		end_tween.tween_callback(_cleanup_visual_node.bind(tornado))
 
 # 辅助：获取 Enemy 节点
 func _get_enemy_from_target(target: Node) -> Node2D:
@@ -356,4 +357,8 @@ func _draw_lightning(start: Vector2, end: Vector2) -> void:
 	get_tree().current_scene.add_child(line)
 	var tw = line.create_tween()
 	tw.tween_property(line, "modulate:a", 0.0, 0.2)
-	tw.tween_callback(line.queue_free)
+	tw.tween_callback(_cleanup_visual_node.bind(line))
+
+func _cleanup_visual_node(node: Node) -> void:
+	if is_instance_valid(node):
+		node.queue_free()
