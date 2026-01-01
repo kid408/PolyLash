@@ -1,16 +1,10 @@
-[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3 uid="uid://d1lfwh4cgfpp"]
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
 
-[ext_resource type="Texture2D" uid="uid://c6vplmpl4q4jr" path="res://assets/sprites/Enemies/Enemy_3.png" id="1_onkeu"]
-[ext_resource type="Script" uid="uid://cfd55woyni5qt" path="res://resouce/unit/unit_stats.gd" id="2_g6gph"]
+[ext_resource type="Script" path="res://resouce/unit/unit_stats.gd" id="1"]
 
 [resource]
-script = ExtResource("2_g6gph")
-name = "ChaserFast"
-type = 1
-icon = ExtResource("1_onkeu")
-health = 60
-damage = 2
-speed = 350
-block_chance = 5.0
-gold_drop = 2
-metadata/_custom_type_script = "uid://cfd55woyni5qt"
+script = ExtResource("1")
+health = 50.0
+damage = 5.0
+speed = 200.0
+block_chance = 0.0

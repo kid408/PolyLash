@@ -1,0 +1,13 @@
+setting,value,description
+-1,配置项,值,说明
+map_width,2000,地图宽度（像素）
+map_height,2000,地图高度（像素）
+arena_radius,800,竞技场半径（战斗区域）
+boundary_damage,10,边界伤害（超出边界时受到的伤害）
+boundary_knockback,500,边界击退力度
+spawn_safe_radius,200,生成安全半径（敌人不会在此范围内生成）
+map_tile_size,2000,地图瓦片大小
+chest_spawn_density,10,宝箱生成密度
+chest_spawn_radius,2000,宝箱生成半径
+background_extend_threshold,1000,背景扩展阈值（相机移动多远后扩展背景）
+indicator_show_range,3000,指示器显示范围（宝箱指示器显示距离）

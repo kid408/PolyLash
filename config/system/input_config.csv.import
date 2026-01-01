@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://1w2esfn34tt4"
+
+[deps]
+
+files=["res://config/system/input_config.key.translation", "res://config/system/input_config.description.translation", "res://config/system/input_config.player.translation"]
+
+source_file="res://config/system/input_config.csv"
+dest_files=["res://config/system/input_config.key.translation", "res://config/system/input_config.description.translation", "res://config/system/input_config.player.translation"]
+
+[params]
+
+compress=true
+delimiter=0

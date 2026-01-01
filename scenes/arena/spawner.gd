@@ -30,25 +30,32 @@ class_name Spawner
 # ============================================================================
 
 @export var spawn_area_size:= Vector2(1000,500)  # 生成区域大小
-@export var waves_data: Array[WaveData]          # 波次数据配置
-@export var enemy_collection: Array[UnitStats]   # 敌人属性集合
+
+# 注意：波次配置现在从CSV加载，不再使用.tres资源
+# @export var waves_data: Array[WaveData]          # 已废弃
+# @export var enemy_collection: Array[UnitStats]   # 已废弃
 
 # ============================================================================
 # 节点引用
 # ============================================================================
 
-@onready var spawn_timer: Timer = $SpawnTimer    # 敌人生成计时器
-@onready var wave_timer: Timer = $WaveTimer      # 波次计时器
+@onready var spawn_timer: Timer = get_node("SpawnTimer")    # 敌人生成计时器
+@onready var wave_timer: Timer = get_node("WaveTimer")      # 波次计时器
 
 # ============================================================================
 # 波次状态
 # ============================================================================
 
 var wave_index := 1                               # 当前波次（从1开始）
-var current_wave_data:WaveData                    # 当前波次配置
+var current_wave_config: Dictionary = {}          # 当前波次配置（从CSV加载）
+var current_wave_units: Array = []                # 当前波次的敌人配置
 var spawned_enemies:Array[Enemy] = []             # 已生成的敌人列表
 var max_waves: int = 10                           # 最大波次数（修改为10波）
 var _l_key_pressed: bool = false                  # L键防抖标志
+
+# 敌人属性增强（每波递增）
+var enemy_health_per_wave: float = 10.0           # 每波增加的生命值
+var enemy_damage_per_wave: float = 2.0            # 每波增加的伤害
 
 # ============================================================================
 # 初始化
@@ -99,37 +106,49 @@ func _process(delta: float) -> void:
 # 波次管理
 # ============================================================================
 
-func find_wave_data() -> WaveData:
+func find_wave_data() -> bool:
 	"""
-	查找当前波次的配置数据
+	查找当前波次的配置数据（从CSV）
 	
 	返回:
-	- WaveData: 波次配置，如果未找到返回 null
+	- bool: 是否找到有效配置
 	"""
-	for wave in waves_data:
-		if wave and wave.is_valid_index(wave_index):
-			return wave
-	return null
+	# 遍历所有波次配置，找到包含当前波次的配置
+	for wave_id in ConfigManager.wave_configs.keys():
+		var config = ConfigManager.get_wave_config(wave_id)
+		var from_wave = config.get("from_wave", 1)
+		var to_wave = config.get("to_wave", 1)
+		
+		if wave_index >= from_wave and wave_index <= to_wave:
+			current_wave_config = config
+			current_wave_units = ConfigManager.get_wave_units(wave_id)
+			print("[Spawner] 找到波次配置: ", wave_id, " (波次 ", from_wave, "-", to_wave, ")")
+			print("[Spawner] 敌人种类数: ", current_wave_units.size())
+			return true
+	
+	print("[Spawner] 警告: 未找到波次 ", wave_index, " 的配置")
+	return false
 
 func start_wave() -> void:
 	"""
 	开始新的波次
 	
 	流程:
-	1. 查找波次配置
+	1. 从CSV查找波次配置
 	2. 启动波次计时器
 	3. 设置敌人生成计时器
 	"""
-	current_wave_data = find_wave_data()
-	if not current_wave_data:
-		printerr("No valid wave.")
+	if not find_wave_data():
+		printerr("[Spawner] 错误: 无法找到波次配置")
 		spawn_timer.stop()
 		wave_timer.stop()
 		return
 		
-	wave_timer.wait_time = current_wave_data.wave_time
+	var wave_time = current_wave_config.get("wave_time", 20.0)
+	wave_timer.wait_time = wave_time
 	wave_timer.start()
 	
+	print("[Spawner] 开始波次 ", wave_index, " - 时长: ", wave_time, "秒")
 	set_spawn_timer()
 
 func update_enemies_new_wave() -> void:
@@ -137,12 +156,13 @@ func update_enemies_new_wave() -> void:
 	更新敌人属性（每波递增）
 	
 	说明:
-	- 每波结束后，所有敌人的生命值和伤害都会增加
-	- 增加量在 UnitStats 中配置
+	- 每波结束后，敌人的生命值和伤害都会增加
+	- 增加量在spawner中配置（enemy_health_per_wave, enemy_damage_per_wave）
+	- 注意：这个函数现在不做任何事，因为敌人属性在生成时动态计算
 	"""
-	for stat:UnitStats in enemy_collection:
-		stat.health += stat.health_increase_per_wave
-		stat.damage += stat.damage_increase_per_wave
+	# 不再需要修改UnitStats资源
+	# 敌人属性增强在spawn_enemy()中动态计算
+	pass
 
 func clear_enemies() -> void:
 	"""
@@ -171,13 +191,15 @@ func set_spawn_timer() -> void:
 	- FIXED: 固定间隔
 	- RANDOM: 随机间隔（在最小和最大值之间）
 	"""
-	match current_wave_data.spawn_type:
-		WaveData.SpawnType.FIXED:
-			spawn_timer.wait_time = current_wave_data.fixed_spawn_time
-		WaveData.SpawnType.RANDOM:
-			var min_t := current_wave_data.min_spawn_time
-			var max_t := current_wave_data.max_spawn_time
-			spawn_timer.wait_time = randf_range(min_t,max_t)
+	var spawn_type = current_wave_config.get("spawn_type", "RANDOM")
+	
+	if spawn_type == "FIXED":
+		var fixed_time = current_wave_config.get("fixed_spawn_time", 1.0)
+		spawn_timer.wait_time = fixed_time
+	else:  # RANDOM
+		var min_t = current_wave_config.get("min_spawn_time", 0.8)
+		var max_t = current_wave_config.get("max_spawn_time", 1.5)
+		spawn_timer.wait_time = randf_range(min_t, max_t)
 		
 	if spawn_timer.is_stopped():
 		spawn_timer.start()
@@ -210,21 +232,72 @@ func spawn_enemy() -> void:
 	生成一个敌人
 	
 	流程:
-	1. 从波次配置中随机选择敌人场景
+	1. 从波次配置中随机选择敌人场景（基于权重）
 	2. 在随机位置实例化敌人
-	3. 添加到场景树
-	4. 记录到已生成列表
-	5. 重新设置生成计时器
+	3. 应用波次增强（生命值、伤害）
+	4. 添加到场景树
+	5. 记录到已生成列表
+	6. 重新设置生成计时器
 	"""
-	var enemy_scene := current_wave_data.get_random_unit_scene() as PackedScene
-	if enemy_scene:
-		var spawn_pos := get_random_spawn_position()
-		var enemy_instance := enemy_scene.instantiate() as Enemy
-		enemy_instance.global_position = spawn_pos
-		get_parent().add_child(enemy_instance)
-		spawned_enemies.append(enemy_instance)
-		
+	if current_wave_units.is_empty():
+		print("[Spawner] 警告: 当前波次没有敌人配置")
+		return
+	
+	# 根据权重随机选择敌人
+	var enemy_scene_path = get_random_enemy_scene()
+	if enemy_scene_path == "":
+		print("[Spawner] 错误: 无法获取敌人场景")
+		return
+	
+	var enemy_scene = load(enemy_scene_path) as PackedScene
+	if not enemy_scene:
+		print("[Spawner] 错误: 无法加载敌人场景: ", enemy_scene_path)
+		return
+	
+	var spawn_pos = get_random_spawn_position()
+	var enemy_instance = enemy_scene.instantiate() as Enemy
+	enemy_instance.global_position = spawn_pos
+	
+	# 应用波次增强（如果敌人有stats）
+	if enemy_instance.stats:
+		enemy_instance.stats.health += (wave_index - 1) * enemy_health_per_wave
+		enemy_instance.stats.damage += (wave_index - 1) * enemy_damage_per_wave
+	
+	get_parent().add_child(enemy_instance)
+	spawned_enemies.append(enemy_instance)
+	
 	set_spawn_timer()
+
+func get_random_enemy_scene() -> String:
+	"""
+	根据权重随机选择敌人场景
+	
+	返回:
+	- String: 敌人场景路径
+	"""
+	if current_wave_units.is_empty():
+		return ""
+	
+	# 收集所有敌人和权重
+	var enemies: Array[String] = []
+	var weights: Array[float] = []
+	
+	for unit in current_wave_units:
+		var scene_path = unit.get("enemy_scene", "")
+		var weight = unit.get("weight", 1.0)
+		
+		if scene_path != "":
+			enemies.append(scene_path)
+			weights.append(weight)
+	
+	if enemies.is_empty():
+		return ""
+	
+	# 根据权重随机选择
+	var rng = RandomNumberGenerator.new()
+	var index = rng.rand_weighted(weights)
+	
+	return enemies[index]
 
 # ============================================================================
 # UI 辅助方法
@@ -260,7 +333,7 @@ func _on_spawn_timer_timeout() -> void:
 	- 如果波次已结束，停止生成
 	- 否则生成一个敌人
 	"""
-	if not current_wave_data or  wave_timer.is_stopped():
+	if current_wave_config.is_empty() or wave_timer.is_stopped():
 		spawn_timer.stop()
 		return
 		

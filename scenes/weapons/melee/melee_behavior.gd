@@ -7,7 +7,11 @@ func execute_attack() -> void:
 	weapon.is_attacking = true
 	
 	# 增强打击感：攻击时轻微顿帧
-	Global.frame_freeze(0.03, 0.3)
+	Global.frame_freeze(0.02, 0.5)
+	
+	# 指向性震动：根据武器朝向产生震动（减弱强度）
+	var attack_direction = Vector2.RIGHT.rotated(weapon.rotation)
+	Global.on_directional_shake.emit(attack_direction, 0.8)  # 从2.0降低到0.8
 	
 	var tween := create_tween()
 	

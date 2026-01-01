@@ -1,0 +1,10 @@
+res://config/item/chest_config.spawn.translation
+res://config/enemy/enemy_weapons.weapon.translation
+res://config/system/camera_config.value.translation
+res://config/item/upgrade_attributes.display.translation
+res://config/weapon/weapon_config.display.translation
+res://config/wave/wave_chest_config.wave.translation
+res://config/player/player_weapons.weapon.translation
+res://config/wave/wave_config.from.translation
+res://config/player/player_visual.sprite.translation
+res://config/player/player_config.display.translation

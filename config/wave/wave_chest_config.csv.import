@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dvrclkytsoaq0"
+
+[deps]
+
+files=["res://config/wave/wave_chest_config.wave.translation", "res://config/wave/wave_chest_config.min.translation", "res://config/wave/wave_chest_config.max.translation", "res://config/wave/wave_chest_config.chest.translation", "res://config/wave/wave_chest_config.spawn.translation"]
+
+source_file="res://config/wave/wave_chest_config.csv"
+dest_files=["res://config/wave/wave_chest_config.wave.translation", "res://config/wave/wave_chest_config.min.translation", "res://config/wave/wave_chest_config.max.translation", "res://config/wave/wave_chest_config.chest.translation", "res://config/wave/wave_chest_config.spawn.translation"]
+
+[params]
+
+compress=true
+delimiter=0

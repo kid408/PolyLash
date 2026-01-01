@@ -12,8 +12,9 @@ class_name PlayerHerder
 @export var explosion_radius: float = 200.0
 
 @export_group("Skill Costs")
-@export var cost_per_segment: float = 0.3  # 默认极低
-@export var cost_explosion: float = 0.5    # 默认极低
+# 注意：技能消耗现在从player_config.csv读取
+# cost_per_segment使用skill_q_cost
+# cost_explosion使用skill_e_cost
 
 @onready var line_2d: Line2D = $Line2D
 @export var explosion_vfx_scene: PackedScene 
@@ -39,7 +40,8 @@ func _ready() -> void:
 	# ============================================================
 	print("----------- 牧羊人数值确认 -----------")
 	print("冲撞距离 (Editor值): ", fixed_dash_distance)
-	print("每段消耗 (Editor值): ", cost_per_segment)
+	print("Q技能消耗 (CSV值): ", skill_q_cost)
+	print("E技能消耗 (CSV值): ", skill_e_cost)
 	print("爆炸半径 (Editor值): ", explosion_radius)
 	print("------------------------------------")
 
@@ -80,7 +82,7 @@ func release_skill_q() -> void:
 
 # E键: 爆炸
 func use_skill_e() -> void:
-	if not consume_energy(cost_explosion): return
+	if not consume_energy(skill_e_cost): return
 	
 	Global.on_camera_shake.emit(10.0, 0.3)
 	Global.play_player_explosion()
@@ -118,7 +120,7 @@ func exit_planning_mode_and_dash() -> void:
 		start_dash_sequence()
 
 func try_add_path_segment() -> bool:
-	if consume_energy(cost_per_segment):
+	if consume_energy(skill_q_cost):
 		add_path_point(get_global_mouse_position())
 		return true
 	return false
@@ -135,7 +137,7 @@ func add_path_point(mouse_pos: Vector2) -> void:
 func undo_last_point() -> void:
 	if dash_queue.size() > 0:
 		dash_queue.pop_back()
-		energy += cost_per_segment
+		energy += skill_q_cost
 		update_ui_signals()
 
 func start_dash_sequence() -> void:
@@ -249,6 +251,8 @@ func _on_geometry_kill_complete(mask_node: Polygon2D) -> void:
 func _perform_geometry_damage(polygon_points: PackedVector2Array):
 	Global.on_camera_shake.emit(20.0, 0.5) 
 	var enemies = get_tree().get_nodes_in_group("enemies")
+	var kill_count = 0
+	
 	for enemy in enemies:
 		if not is_instance_valid(enemy): continue
 		if Geometry2D.is_point_in_polygon(enemy.global_position, polygon_points):
@@ -258,7 +262,12 @@ func _perform_geometry_damage(polygon_points: PackedVector2Array):
 				continue 
 			if enemy.has_method("destroy_enemy"):
 				enemy.destroy_enemy()
-				Global.spawn_floating_text(enemy.global_position, "LOOP KILL!", Color.GOLD)
+				# 移除单个击杀的飘字，改为在奖励中统一显示
+				# Global.spawn_floating_text(enemy.global_position, "LOOP KILL!", Color.GOLD)
+				kill_count += 1
+	
+	# 画圈奖励机制（会显示累积的奖励）
+	_apply_circle_rewards(kill_count, polygon_points)
 
 func _update_visuals() -> void:
 	# 1. 基础清理
@@ -286,7 +295,7 @@ func _update_visuals() -> void:
 	if poly.size() > 0:
 		# 只有真的形成闭环了，才变红
 		final_color = Color(1.0, 0.2, 0.2, 1.0) 
-	elif energy < cost_per_segment:
+	elif energy < skill_q_cost:
 		final_color = Color(0.5, 0.5, 0.5, 0.5)
 		
 	line_2d.default_color = final_color
@@ -347,3 +356,52 @@ func _cleanup_skill_effects() -> void:
 	Engine.time_scale = 1.0
 	
 	print("[PlayerHerder] 技能效果已清理")
+
+# 画圈奖励机制
+func _apply_circle_rewards(kill_count: int, polygon: PackedVector2Array) -> void:
+	if kill_count <= 0:
+		return
+	
+	# 显示击杀数量
+	Global.spawn_floating_text(global_position, "KILLED x%d" % kill_count, Color.GOLD)
+	
+	# 小圈奖励 (1-2个怪)
+	if kill_count >= 1 and kill_count <= 2:
+		# 返还80% Q技能能量
+		var energy_refund = skill_q_cost * 0.8 * (dash_queue.size() + path_history.size())
+		if energy_refund > 0:
+			gain_energy(energy_refund)
+			# 移除单独的能量飘字，改为在gain_energy中统一显示
+		Global.spawn_floating_text(global_position, "GOOD!", Color(0.5, 1.0, 0.5))
+		Global.on_camera_shake.emit(5.0, 0.1)
+	
+	# 大圈奖励 (10+个怪)
+	elif kill_count >= 10:
+		# 掉落临时Buff：增加5点护甲
+		if armor < max_armor:
+			armor = min(armor + 5, max_armor)
+			armor_changed.emit(armor)
+		
+		# 恢复一些生命
+		var heal_amount = 0
+		if health_component.current_health < health_component.max_health:
+			heal_amount = 20
+			health_component.current_health = min(health_component.current_health + heal_amount, health_component.max_health)
+			health_component.on_health_changed.emit(health_component.current_health, health_component.max_health)
+		
+		# 累积显示回血和回能量
+		if heal_amount > 0:
+			Global.spawn_floating_text(global_position, "+%d HP" % heal_amount, Color.GREEN)
+		
+		Global.spawn_floating_text(global_position, "DIVINE!", Color(2.0, 2.0, 0.0))
+		Global.on_camera_shake.emit(15.0, 0.3)
+	
+	# 中圈奖励 (3-9个怪)
+	else:
+		# 返还50% Q技能能量
+		var energy_refund = skill_q_cost * 0.5 * (dash_queue.size() + path_history.size())
+		if energy_refund > 0:
+			gain_energy(energy_refund)
+			# 移除单独的能量飘字，改为在gain_energy中统一显示
+		Global.spawn_floating_text(global_position, "PERFECT!", Color(1.0, 1.0, 0.0))
+		Global.on_camera_shake.emit(10.0, 0.2)

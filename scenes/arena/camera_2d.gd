@@ -7,6 +7,7 @@ var rng = RandomNumberGenerator.new()
 
 func _ready() -> void:
 	Global.on_camera_shake.connect(apply_shake)
+	Global.on_directional_shake.connect(apply_directional_shake)
 	rng.randomize()
 	
 	# 【修改】设置缩放，数值越小，视野越大 (Godot 4.x)
@@ -15,6 +16,12 @@ func _ready() -> void:
 	
 func apply_shake(intensity: float, duration: float = 0.2) -> void:
 	shake_strength = max(shake_strength, intensity)
+
+# 指向性震动：根据攻击方向产生定向震动
+func apply_directional_shake(direction: Vector2, strength: float) -> void:
+	shake_strength = max(shake_strength, strength)
+	# 在攻击方向上产生更强的震动
+	offset = direction.normalized() * strength * 0.5
 	
 func _process(delta: float) -> void:
 	if is_instance_valid(Global.player):

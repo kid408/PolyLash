@@ -28,9 +28,10 @@ class_name PlayerWind
 @export var storm_eye_duration: float = 3.0     
 
 @export_group("Skill Costs")
-@export var cost_per_segment: float = 5.0       
-@export var cost_dash_normal: float = 10.0      
-@export var cost_storm_eye: float = 40.0        
+# 注意：技能消耗现在从player_config.csv读取
+# cost_per_segment使用skill_q_cost
+# cost_storm_eye使用skill_e_cost
+@export var cost_dash_normal: float = 10.0        
 
 # ==============================================================================
 # 2. 运行时变量
@@ -103,7 +104,7 @@ func release_skill_q() -> void:
 		exit_planning_mode_and_dash()
 
 func use_skill_e() -> void:
-	if not consume_energy(cost_storm_eye): return
+	if not consume_energy(skill_e_cost): return
 	
 	Global.on_camera_shake.emit(8.0, 0.2)
 	call_deferred("_spawn_storm_eye", global_position)
@@ -129,7 +130,7 @@ func add_dash_task(pos: Vector2, is_wind: bool) -> void:
 	})
 
 func try_add_wind_path_segment() -> bool:
-	if consume_energy(cost_per_segment):
+	if consume_energy(skill_q_cost):
 		var start_pos = global_position
 		if dash_queue.size() > 0:
 			start_pos = dash_queue.back()["pos"]
@@ -145,7 +146,7 @@ func try_add_wind_path_segment() -> bool:
 func undo_last_point() -> void:
 	if dash_queue.size() > 0:
 		dash_queue.pop_back()
-		energy += cost_per_segment
+		energy += skill_q_cost
 		update_ui_signals()
 
 func try_break_line(enemy_pos: Vector2, radius: float) -> void:
@@ -330,6 +331,10 @@ func _spawn_storm_zone(points: PackedVector2Array) -> void:
 	
 	var life = get_tree().create_timer(storm_zone_duration)
 	life.timeout.connect(_on_object_expired.bind(area, vis_poly))
+	
+	# 画圈奖励
+	await get_tree().process_frame
+	_apply_circle_rewards(area, points)
 
 # --- E技能: 暴风眼 (吸向中心 + 伤害) ---
 func _spawn_storm_eye(center_pos: Vector2) -> void:
@@ -444,7 +449,10 @@ func _on_object_expired(area_ref, visual_ref) -> void:
 		if is_instance_valid(visual_ref):
 			var tween = area_ref.create_tween()
 			tween.tween_property(visual_ref, "modulate:a", 0.0, 0.3)
-			tween.tween_callback(_cleanup_visual_node.bind(area_ref))
+			tween.tween_callback(func(): 
+				if is_instance_valid(area_ref):
+					area_ref.queue_free()
+			)
 		else:
 			area_ref.queue_free()
 
@@ -467,6 +475,56 @@ func _cleanup_skill_effects() -> void:
 	Engine.time_scale = 1.0
 	
 	print("[PlayerWind] 技能效果已清理")
+
+# 画圈奖励机制
+func _apply_circle_rewards(area_ref: Area2D, polygon: PackedVector2Array) -> void:
+	if not is_instance_valid(area_ref):
+		return
+	
+	# 计算圈内敌人数量
+	var enemies_in_circle = 0
+	var enemies = get_tree().get_nodes_in_group("enemies")
+	for enemy in enemies:
+		if is_instance_valid(enemy) and Geometry2D.is_point_in_polygon(enemy.global_position, polygon):
+			enemies_in_circle += 1
+	
+	if enemies_in_circle <= 0:
+		return
+	
+	# 显示击杀数量
+	Global.spawn_floating_text(global_position, "TRAPPED x%d" % enemies_in_circle, Color.CYAN)
+	
+	# 小圈奖励 (1-2个怪)
+	if enemies_in_circle >= 1 and enemies_in_circle <= 2:
+		var energy_refund = skill_q_cost * 0.8 * 2
+		if energy_refund > 0:
+			gain_energy(energy_refund)
+		Global.spawn_floating_text(global_position, "GOOD!", Color(0.5, 1.0, 0.5))
+	
+	# 大圈奖励 (10+个怪)
+	elif enemies_in_circle >= 10:
+		if armor < max_armor:
+			armor = min(armor + 3, max_armor)
+			armor_changed.emit(armor)
+		
+		var heal_amount = 0
+		if health_component.current_health < health_component.max_health:
+			heal_amount = 15
+			health_component.current_health = min(health_component.current_health + heal_amount, health_component.max_health)
+			health_component.on_health_changed.emit(health_component.current_health, health_component.max_health)
+		
+		if heal_amount > 0:
+			Global.spawn_floating_text(global_position, "+%d HP" % heal_amount, Color.GREEN)
+		
+		Global.spawn_floating_text(global_position, "DIVINE!", Color(2.0, 2.0, 0.0))
+		Global.on_camera_shake.emit(15.0, 0.3)
+	
+	# 中圈奖励 (3-9个怪)
+	else:
+		var energy_refund = skill_q_cost * 0.5 * 2
+		if energy_refund > 0:
+			gain_energy(energy_refund)
+		Global.spawn_floating_text(global_position, "PERFECT!", Color(1.0, 1.0, 0.0))
 
 # ==============================================================================
 # 7. 几何算法
@@ -518,7 +576,7 @@ func _update_visuals() -> void:
 	
 	if poly.size() > 0:
 		line_2d.default_color = Color(2.0, 0.1, 0.1, 1.0) # 闭合提示 (高亮红)
-	elif energy < cost_per_segment:
+	elif energy < skill_q_cost:
 		line_2d.default_color = Color(0.5, 0.5, 0.5, 0.5)
 	else:
 		line_2d.default_color = Color(0.2, 1.5, 1.5, 1.0) 

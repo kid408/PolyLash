@@ -58,8 +58,8 @@ func _ready() -> void:
 	# 隐藏交互提示
 	interaction_label.visible = false
 	
-	print("[Chest] 宝箱初始化完成 - 等级: %d, 位置: %v, Layer: %d, Mask: %d, Monitoring: %s, Monitorable: %s" % 
-		  [chest_tier, global_position, collision_layer, collision_mask, monitoring, monitorable])
+	#print("[Chest] 宝箱初始化完成 - 等级: %d, 位置: %v, Layer: %d, Mask: %d, Monitoring: %s, Monitorable: %s" % 
+	#	  [chest_tier, global_position, collision_layer, collision_mask, monitoring, monitorable])
 
 func _setup_interaction_label() -> void:
 	if not interaction_label:

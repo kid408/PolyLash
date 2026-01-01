@@ -8,7 +8,8 @@ enum EnemyType {
 	NORMAL,         # 0
 	LINE_BREAKER,   # 1
 	SHIELDED,       # 2
-	SPIKED          # 3
+	SPIKED,         # 3
+	MINE_LAYER      # 4 - 新增：地雷怪，死后留毒池
 }
 
 enum AIState {
@@ -83,11 +84,32 @@ func _ready() -> void:
 	warning_line.top_level = true # 必须顶级，不随怪物旋转
 	add_child(warning_line)
 	
+	# 应用CSV配置的颜色
+	_apply_color_from_config()
+	
 	original_modulate = visuals.modulate
 	
 	# 如果是刺猬，默认开启冲锋
 	if enemy_type == EnemyType.SPIKED:
 		can_charge = true
+
+# 从CSV配置应用颜色
+func _apply_color_from_config() -> void:
+	var config = ConfigManager.get_enemy_config(enemy_id)
+	if config.is_empty():
+		return
+	
+	# 检查是否配置了颜色（color_r, color_g, color_b）
+	if config.has("color_r") and config.has("color_g") and config.has("color_b"):
+		var r = config.get("color_r", "")
+		var g = config.get("color_g", "")
+		var b = config.get("color_b", "")
+		
+		# 如果颜色值不为空，应用颜色
+		if r != "" and g != "" and b != "":
+			var color = Color(float(r), float(g), float(b), 1.0)
+			visuals.modulate = color
+			print("[Enemy] 应用颜色配置: ", enemy_id, " -> ", color)
 
 # ==============================================================================
 # 5. 物理处理 (带状态机)
@@ -311,20 +333,18 @@ func _on_knockback_timer_timeout() -> void:
 func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 	if is_dead: return
 
-	# 1. 硬壳龟反伤逻辑 (修复版)
+	# 1. 硬壳龟反伤逻辑 (修改为减伤而不是完全格挡)
 	if enemy_type == EnemyType.SHIELDED and hitbox.source == Global.player:
-		Global.spawn_floating_text(global_position, "BLOCK!", Color.CYAN)
+		Global.spawn_floating_text(global_position, "SHIELD!", Color.CYAN)
 		
-		# 调用刚才在 Player 中修复的函数
+		# 减少伤害到 30%
+		hitbox.damage *= 0.3
+		
+		# 轻微反伤玩家
 		if Global.player.has_method("take_damage"):
 			Global.player.take_damage(1) 
 		
-		if Global.player.has_method("apply_knockback_self"):
-			var dir = global_position.direction_to(Global.player.global_position)
-			Global.player.apply_knockback_self(dir * 300.0) # 减小反弹力度，从800.0改为300.0
-			
-		Global.on_camera_shake.emit(5.0, 0.2)
-		return 
+		# 不再 return，继续执行正常伤害逻辑
 
 	# 2. 正常伤害
 	super._on_hurtbox_component_on_damaged(hitbox)
@@ -348,12 +368,19 @@ func destroy_enemy() -> void:
 	is_dead = true
 	can_move = false
 	
+	print("[Enemy] 敌人死亡: ", name, " 类型: ", enemy_type)
+	
 	# 死亡时清理红线
 	if warning_line:
 		warning_line.queue_free()
 	
 	if collision_shape:
 		collision_shape.set_deferred("disabled", true)
+	
+	# 地雷怪特殊效果：死后留毒池
+	if enemy_type == EnemyType.MINE_LAYER:
+		print("[Enemy] 地雷怪死亡，准备生成毒池")
+		call_deferred("_spawn_poison_pool", global_position)
 	
 	# 给玩家能量奖励
 	if is_instance_valid(Global.player) and Global.player.has_method("gain_energy"):
@@ -387,3 +414,109 @@ func spawn_explosion_safe() -> void:
 	var vfx_tween = vfx.create_tween()
 	vfx_tween.tween_interval(2.0)
 	vfx_tween.tween_callback(vfx.queue_free)
+
+# 地雷怪死后生成毒池
+func _spawn_poison_pool(pos: Vector2) -> void:
+	print("[MineLayer] === 开始生成毒池 ===")
+	print("[MineLayer] 生成毒池于位置: ", pos)
+	
+	var poison = Area2D.new()
+	poison.global_position = pos
+	poison.collision_layer = 0
+	poison.collision_mask = 1
+	poison.monitorable = false
+	poison.monitoring = true
+	poison.name = "PoisonPool_" + str(Time.get_ticks_msec())
+	
+	# 碰撞体
+	var col = CollisionShape2D.new()
+	var shape = CircleShape2D.new()
+	shape.radius = 60.0
+	col.shape = shape
+	poison.add_child(col)
+	print("[MineLayer] 碰撞体已添加，半径: 60")
+	
+	# 视觉效果：完整的圆形毒池
+	var vis = Polygon2D.new()
+	var points = PackedVector2Array()
+	for i in range(32):  # 增加点数，确保是完整的圆
+		var angle = i * TAU / 32
+		points.append(Vector2(cos(angle), sin(angle)) * 60.0)
+	vis.polygon = points
+	vis.color = Color(0.2, 1.0, 0.2, 0.0)  # 初始透明
+	vis.z_index = -1
+	poison.add_child(vis)
+	print("[MineLayer] 视觉效果已添加，点数: ", points.size())
+	
+	# 先添加到场景树，这样Timer才能正常工作
+	get_tree().current_scene.add_child(poison)
+	print("[MineLayer] 毒池已添加到场景，节点路径: ", poison.get_path())
+	
+	# 淡入效果
+	var tween = poison.create_tween()
+	tween.tween_property(vis, "color:a", 0.5, 0.3)
+	print("[MineLayer] 淡入动画已启动")
+	
+	# 伤害计时器：每0.5秒伤害一次
+	var dmg_timer = Timer.new()
+	dmg_timer.name = "DamageTimer"
+	dmg_timer.wait_time = 0.5
+	dmg_timer.one_shot = false
+	poison.add_child(dmg_timer)
+	
+	# 使用lambda函数，避免依赖Enemy实例
+	# 使用Area2D的碰撞检测而不是距离检测
+	dmg_timer.timeout.connect(func():
+		if not is_instance_valid(poison) or poison.is_queued_for_deletion():
+			dmg_timer.stop()
+			return
+		
+		# 检测所有在毒池范围内的玩家（使用Area2D碰撞检测）
+		var bodies = poison.get_overlapping_bodies()
+		var areas = poison.get_overlapping_areas()
+		var all_targets = bodies + areas
+		
+		for target in all_targets:
+			var player_node = null
+			
+			# 检查是否是玩家或玩家的子节点
+			if target.is_in_group("player"):
+				player_node = target
+			elif target.owner and target.owner.is_in_group("player"):
+				player_node = target.owner
+			
+			# 对玩家造成伤害
+			if is_instance_valid(player_node) and player_node.has_method("take_damage"):
+				player_node.take_damage(5)
+				Global.spawn_floating_text(player_node.global_position, "-5", Color(0.5, 1.0, 0.5))
+	)
+	
+	dmg_timer.start()
+	print("[MineLayer] 伤害计时器已启动，使用Area2D碰撞检测")
+	
+	# 生命计时器：8秒后消失
+	var life_timer = Timer.new()
+	life_timer.name = "LifeTimer"
+	life_timer.wait_time = 8.0
+	life_timer.one_shot = true
+	poison.add_child(life_timer)
+	
+	# 使用lambda函数，避免依赖Enemy实例
+	life_timer.timeout.connect(func():
+		if is_instance_valid(poison):
+			if is_instance_valid(vis):
+				var fade_tween = poison.create_tween()
+				fade_tween.tween_property(vis, "color:a", 0.0, 0.5)
+				fade_tween.finished.connect(func():
+					if is_instance_valid(poison):
+						poison.queue_free()
+				)
+			else:
+				poison.queue_free()
+	)
+	
+	life_timer.start()
+	print("[MineLayer] 生命计时器已启动，8秒后毒池将消失")
+	
+	Global.spawn_floating_text(pos, "TOXIC!", Color(0.5, 1.0, 0.5))
+	print("[MineLayer] === 毒池生成完成 ===")

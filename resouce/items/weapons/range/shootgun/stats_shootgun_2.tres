@@ -1,9 +1,0 @@
-[gd_resource type="Resource" script_class="WeaponStats" load_steps=3 format=3 uid="uid://dsl3jkygmop17"]
-
-[ext_resource type="PackedScene" uid="uid://nvi5ivklpxnn" path="res://scenes/projectiles/projectile_shootgun.tscn" id="1_2flci"]
-[ext_resource type="Script" uid="uid://dkttq8qhi07rl" path="res://resouce/items/weapons/weapon_stats.gd" id="2_6bbfi"]
-
-[resource]
-script = ExtResource("2_6bbfi")
-projectile_scene = ExtResource("1_2flci")
-metadata/_custom_type_script = "uid://dkttq8qhi07rl"

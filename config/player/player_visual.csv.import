@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://chu3qipf04dfi"
+
+[deps]
+
+files=["res://config/player/player_visual.sprite.translation", "res://config/player/player_visual.scale.translation", "res://config/player/player_visual.scale.translation", "res://config/player/player_visual.color.translation", "res://config/player/player_visual.color.translation", "res://config/player/player_visual.color.translation", "res://config/player/player_visual.color.translation", "res://config/player/player_visual.z.translation"]
+
+source_file="res://config/player/player_visual.csv"
+dest_files=["res://config/player/player_visual.sprite.translation", "res://config/player/player_visual.scale.translation", "res://config/player/player_visual.scale.translation", "res://config/player/player_visual.color.translation", "res://config/player/player_visual.color.translation", "res://config/player/player_visual.color.translation", "res://config/player/player_visual.color.translation", "res://config/player/player_visual.z.translation"]
+
+[params]
+
+compress=true
+delimiter=0

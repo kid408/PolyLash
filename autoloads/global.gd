@@ -7,6 +7,7 @@ signal on_create_damage_text(unit:Node2D,hitbox:HitboxComponent)
 
 # --- 新增信号 ---
 signal on_camera_shake(intensity: float, duration: float)
+signal on_directional_shake(direction: Vector2, strength: float)  # 新增：指向性震动
 
 const FLASH_MATERIAL = preload("uid://coi4nu8ohpgeo")
 const FLOATING_TEXT_SCENE = preload("uid://cp86d6q6156la")
@@ -109,6 +110,10 @@ func spawn_floating_text(pos: Vector2, value: String, color: Color) -> void:
 		var text_instance = FLOATING_TEXT_SCENE.instantiate()
 		# 添加到当前场景中
 		get_tree().current_scene.add_child(text_instance)
-		text_instance.global_position = pos
+		
+		# 随机偏移位置（在主角四周）
+		var random_offset = Vector2(randf_range(-40, 40), randf_range(-40, 40))
+		text_instance.global_position = pos + random_offset
+		
 		text_instance.setup(value, color)
 		

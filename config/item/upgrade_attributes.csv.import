@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dmdtyvvfsf30v"
+
+[deps]
+
+files=["res://config/item/upgrade_attributes.display.translation", "res://config/item/upgrade_attributes.description.translation", "res://config/item/upgrade_attributes.value.translation", "res://config/item/upgrade_attributes.tier1.translation", "res://config/item/upgrade_attributes.tier2.translation", "res://config/item/upgrade_attributes.tier3.translation", "res://config/item/upgrade_attributes.tier4.translation", "res://config/item/upgrade_attributes.max.translation"]
+
+source_file="res://config/item/upgrade_attributes.csv"
+dest_files=["res://config/item/upgrade_attributes.display.translation", "res://config/item/upgrade_attributes.description.translation", "res://config/item/upgrade_attributes.value.translation", "res://config/item/upgrade_attributes.tier1.translation", "res://config/item/upgrade_attributes.tier2.translation", "res://config/item/upgrade_attributes.tier3.translation", "res://config/item/upgrade_attributes.tier4.translation", "res://config/item/upgrade_attributes.max.translation"]
+
+[params]
+
+compress=true
+delimiter=0

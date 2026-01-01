@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dyl55vbggo1kl"
+
+[deps]
+
+files=["res://config/weapon/weapon_stats_config.display.translation", "res://config/weapon/weapon_stats_config.damage.translation", "res://config/weapon/weapon_stats_config.accuracy.translation", "res://config/weapon/weapon_stats_config.cooldown.translation", "res://config/weapon/weapon_stats_config.crit.translation", "res://config/weapon/weapon_stats_config.crit.translation", "res://config/weapon/weapon_stats_config.max.translation", "res://config/weapon/weapon_stats_config.knockback.translation", "res://config/weapon/weapon_stats_config.life.translation", "res://config/weapon/weapon_stats_config.recoil.translation", "res://config/weapon/weapon_stats_config.recoil.translation", "res://config/weapon/weapon_stats_config.attack.translation", "res://config/weapon/weapon_stats_config.back.translation", "res://config/weapon/weapon_stats_config.projectile.translation", "res://config/weapon/weapon_stats_config.weapon.translation", "res://config/weapon/weapon_stats_config.projectile.translation", "res://config/weapon/weapon_stats_config.upgrade.translation", "res://config/weapon/weapon_stats_config.item.translation", "res://config/weapon/weapon_stats_config.icon.translation"]
+
+source_file="res://config/weapon/weapon_stats_config.csv"
+dest_files=["res://config/weapon/weapon_stats_config.display.translation", "res://config/weapon/weapon_stats_config.damage.translation", "res://config/weapon/weapon_stats_config.accuracy.translation", "res://config/weapon/weapon_stats_config.cooldown.translation", "res://config/weapon/weapon_stats_config.crit.translation", "res://config/weapon/weapon_stats_config.crit.translation", "res://config/weapon/weapon_stats_config.max.translation", "res://config/weapon/weapon_stats_config.knockback.translation", "res://config/weapon/weapon_stats_config.life.translation", "res://config/weapon/weapon_stats_config.recoil.translation", "res://config/weapon/weapon_stats_config.recoil.translation", "res://config/weapon/weapon_stats_config.attack.translation", "res://config/weapon/weapon_stats_config.back.translation", "res://config/weapon/weapon_stats_config.projectile.translation", "res://config/weapon/weapon_stats_config.weapon.translation", "res://config/weapon/weapon_stats_config.projectile.translation", "res://config/weapon/weapon_stats_config.upgrade.translation", "res://config/weapon/weapon_stats_config.item.translation", "res://config/weapon/weapon_stats_config.icon.translation"]
+
+[params]
+
+compress=true
+delimiter=0

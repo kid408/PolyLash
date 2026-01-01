@@ -24,7 +24,7 @@ extends Node
 #   SoundManager.play_player_attack()
 # 
 # 配置方法:
-#   在 config/sound_config.csv 中添加音效配置:
+#   在 config/system/sound_config.csv 中添加音效配置:
 #   sound_id,sound_path,volume_db,min_pitch,max_pitch,description
 #   my_sound,res://assets/audio/my_sound.wav,0.0,0.9,1.1,我的音效
 # 

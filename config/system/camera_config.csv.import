@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://butn406hvc2bp"
+
+[deps]
+
+files=["res://config/system/camera_config.value.translation"]
+
+source_file="res://config/system/camera_config.csv"
+dest_files=["res://config/system/camera_config.value.translation"]
+
+[params]
+
+compress=true
+delimiter=0

@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://bjhraywhhpn3h"]
+[gd_scene load_steps=13 format=3 uid="uid://bjhraywhhpn3h"]
 
 [ext_resource type="Script" uid="uid://fylssyuoxjey" path="res://scenes/arena/arena.gd" id="1_asdgj"]
 [ext_resource type="Texture2D" uid="uid://ov4fmsbglo55" path="res://assets/sprites/Map.png" id="2_5tue2"]
@@ -9,9 +9,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/upgrade_selection_ui.tscn" id="7_upgrade"]
 [ext_resource type="Script" uid="uid://c1r0p6xkr6l1v" path="res://scenes/arena/spawner.gd" id="8_ii07k"]
 [ext_resource type="PackedScene" path="res://scenes/ui/chest_indicator.tscn" id="8_indicator"]
-[ext_resource type="Script" uid="uid://dkr6e34g4poq6" path="res://resouce/waves/wave_data.gd" id="9_2ml6w"]
 [ext_resource type="FontFile" uid="uid://kfh6ooeul77g" path="res://assets/font/Bake Soda.otf" id="9_6w4xk"]
-[ext_resource type="Resource" uid="uid://dg6afyqcpnt4j" path="res://resouce/waves/date/wave_1_to_5.tres" id="10_xgbxb"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_2ml6w"]
 font = ExtResource("9_6w4xk")
@@ -47,7 +45,6 @@ script = ExtResource("6_chest")
 
 [node name="Spawner" type="Node2D" parent="."]
 script = ExtResource("8_ii07k")
-waves_data = Array[ExtResource("9_2ml6w")]([ExtResource("10_xgbxb")])
 
 [node name="SpawnTimer" type="Timer" parent="Spawner"]
 

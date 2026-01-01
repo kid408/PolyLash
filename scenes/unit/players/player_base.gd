@@ -54,13 +54,16 @@ var dash_start_pos: Vector2 = Vector2.ZERO
 @onready var weapon_container: WeaponContainer = $WeaponContainer if has_node("WeaponContainer") else null
 
 # 武器管理
-var current_weapons: Array[Weapon] = [] 
+var current_weapons: Array[Weapon] = []
+
+# UI元素
+var energy_bar_ui: Control = null 
 
 func _ready() -> void:
-	super._ready() # 初始化 Stats
-	
-	# 从CSV加载配置
+	# 从CSV加载配置（必须在super._ready()之前，这样才能设置stats）
 	_load_config_from_csv()
+	
+	super._ready() # 初始化 Stats
 	
 	# 加载武器
 	_load_weapons_from_config()
@@ -80,6 +83,9 @@ func _ready() -> void:
 	energy = max_energy
 	armor = max_armor
 	update_ui_signals()
+	
+	# 创建能量槽UI
+	_create_energy_bar_ui()
 	
 	print(">>> 玩家加载完成: %s (ID: %s, 武器数: %d)" % [self.name, player_id, current_weapons.size()])
 
@@ -117,6 +123,24 @@ func _load_config_from_csv() -> void:
 	# 加载初始能量值
 	var initial_energy = config.get("initial_energy", max_energy)
 	energy = initial_energy
+	
+	# 【关键修复】从CSV加载生命值和速度，覆盖场景文件中的stats
+	# 如果stats不存在，创建一个新的
+	if stats == null:
+		stats = UnitStats.new()
+	
+	# 从CSV设置生命值和速度
+	var csv_health = config.get("health", 5000.0)
+	var csv_speed = config.get("base_speed", 300.0)
+	
+	stats.health = csv_health
+	stats.speed = csv_speed
+	
+	print("[PlayerBase] 从CSV加载属性:")
+	print("  - health: %d" % csv_health)
+	print("  - speed: %d" % csv_speed)
+	print("  - dash_distance: %d" % dash_distance)
+	print("  - dash_speed: %d" % dash_speed)
 
 func _load_weapons_from_config() -> void:
 	if player_id.is_empty() or not weapon_container:
@@ -133,18 +157,67 @@ func _load_weapons_from_config() -> void:
 		var weapon_id = weapon_cfg.get(slot_key, "")
 		
 		if weapon_id != "":
-			var weapon_data = ConfigManager.get_weapon_config(weapon_id)
-			var resource_path = weapon_data.get("resource_path", "")
-			
-			if resource_path != "":
-				var item_weapon = load(resource_path) as ItemWeapon
-				if item_weapon:
-					add_weapon(item_weapon)
-				else:
-					print("[PlayerBase] 无法加载武器资源: ", resource_path)
+			# 从CSV创建ItemWeapon对象
+			var item_weapon = _create_item_weapon_from_csv(weapon_id)
+			if item_weapon:
+				_add_weapon(item_weapon)
 
-# 添加武器
-func add_weapon(data: ItemWeapon) -> void:
+func _create_item_weapon_from_csv(weapon_id: String) -> ItemWeapon:
+	"""从CSV配置创建ItemWeapon对象"""
+	var weapon_stats_data = ConfigManager.get_weapon_stats(weapon_id)
+	if weapon_stats_data.is_empty():
+		print("[PlayerBase] 未找到武器配置: ", weapon_id)
+		return null
+	
+	# 创建WeaponStats对象
+	var weapon_stats = WeaponStats.new()
+	weapon_stats.damage = weapon_stats_data.get("damage", 10.0)
+	weapon_stats.accuracy = weapon_stats_data.get("accuracy", 0.9)
+	weapon_stats.cooldown = weapon_stats_data.get("cooldown", 1.0)
+	weapon_stats.crit_chance = weapon_stats_data.get("crit_chance", 0.05)
+	weapon_stats.crit_damage = weapon_stats_data.get("crit_damage", 1.5)
+	weapon_stats.max_range = weapon_stats_data.get("max_range", 150.0)
+	weapon_stats.knockback = weapon_stats_data.get("knockback", 0.0)
+	weapon_stats.life_steal = weapon_stats_data.get("life_steal", 0.0)
+	weapon_stats.recoil = weapon_stats_data.get("recoil", 25.0)
+	weapon_stats.recoil_duration = weapon_stats_data.get("recoil_duration", 0.1)
+	weapon_stats.attack_duration = weapon_stats_data.get("attack_duration", 0.2)
+	weapon_stats.back_duration = weapon_stats_data.get("back_duration", 0.15)
+	weapon_stats.projectile_speed = weapon_stats_data.get("projectile_speed", 1600.0)
+	
+	# 加载子弹场景（如果有）
+	var projectile_scene_path = weapon_stats_data.get("projectile_scene", "")
+	if projectile_scene_path != "":
+		weapon_stats.projectile_scene = load(projectile_scene_path) as PackedScene
+		if not weapon_stats.projectile_scene:
+			printerr("[PlayerBase] 错误: 无法加载子弹场景: ", projectile_scene_path)
+	
+	# 创建ItemWeapon对象
+	var item_weapon = ItemWeapon.new()
+	item_weapon.item_name = weapon_stats_data.get("display_name", weapon_id)
+	item_weapon.stats = weapon_stats
+	
+	# 加载武器场景
+	var weapon_scene_path = weapon_stats_data.get("weapon_scene", "")
+	if weapon_scene_path == "":
+		print("[PlayerBase] 武器场景路径为空: ", weapon_id)
+		return null
+	
+	item_weapon.scene = load(weapon_scene_path) as PackedScene
+	if not item_weapon.scene:
+		print("[PlayerBase] 无法加载武器场景: ", weapon_scene_path)
+		return null
+	
+	# 设置武器类型（根据是否有子弹场景判断）
+	if projectile_scene_path != "":
+		item_weapon.type = ItemWeapon.WeaponType.RANGE
+	else:
+		item_weapon.type = ItemWeapon.WeaponType.MELEE
+	
+	return item_weapon
+
+func _add_weapon(data: ItemWeapon) -> void:
+	"""添加武器到玩家"""
 	if not data or not data.scene:
 		return
 	
@@ -319,6 +392,74 @@ func gain_energy(amount: float) -> void:
 func update_ui_signals() -> void:
 	energy_changed.emit(energy, max_energy)
 	armor_changed.emit(armor)
+	
+	# 同时更新能量槽UI（如果存在）
+	if energy_bar_ui and energy_bar_ui.has_method("update_bar"):
+		var value = energy / max_energy if max_energy > 0 else 0
+		energy_bar_ui.update_bar(value, energy)
+
+func _create_energy_bar_ui() -> void:
+	print("[PlayerBase] 开始创建能量槽UI")
+	
+	# 加载能量槽脚本
+	var energy_bar_script = load("res://scenes/ui/energy_bar.gd")
+	if not energy_bar_script:
+		print("[PlayerBase] 错误：无法加载energy_bar.gd")
+		return
+	
+	# 创建能量槽控件
+	energy_bar_ui = Control.new()
+	energy_bar_ui.name = "EnergyBarUI"
+	energy_bar_ui.set_script(energy_bar_script)
+	
+	# 设置为Canvas Layer的子节点，这样UI会显示在屏幕上
+	var canvas_layer = CanvasLayer.new()
+	canvas_layer.name = "EnergyBarLayer"
+	add_child(canvas_layer)
+	
+	# 创建ProgressBar
+	var progress_bar = ProgressBar.new()
+	progress_bar.name = "ProgressBar"
+	progress_bar.custom_minimum_size = Vector2(200, 30)
+	progress_bar.max_value = 1.0
+	progress_bar.value = 1.0
+	progress_bar.show_percentage = false
+	energy_bar_ui.add_child(progress_bar)
+	
+	# 创建Label
+	var label = Label.new()
+	label.name = "EnergyAmount"
+	label.position = Vector2(10, 5)
+	label.text = str(int(energy))
+	label.add_theme_font_size_override("font_size", 16)
+	energy_bar_ui.add_child(label)
+	
+	# 设置位置（屏幕左上角，血条下方）
+	energy_bar_ui.position = Vector2(20, 80)
+	energy_bar_ui.custom_minimum_size = Vector2(200, 30)
+	
+	# 添加到Canvas Layer
+	canvas_layer.add_child(energy_bar_ui)
+	
+	# 设置颜色
+	energy_bar_ui.set("back_color", Color(0.2, 0.2, 0.3))
+	energy_bar_ui.set("fill_color", Color(0.3, 0.8, 1.0))
+	
+	# 调用_ready初始化
+	if energy_bar_ui.has_method("_ready"):
+		energy_bar_ui._ready()
+	
+	# 连接信号
+	if not energy_changed.is_connected(_on_energy_changed_for_ui):
+		energy_changed.connect(_on_energy_changed_for_ui)
+	
+	print("[PlayerBase] 能量槽UI创建完成")
+	print("  位置: ", energy_bar_ui.position)
+	print("  大小: ", energy_bar_ui.custom_minimum_size)
+
+func _on_energy_changed_for_ui(current: float, max_val: float) -> void:
+	if energy_bar_ui and energy_bar_ui.has_method("_on_player_energy_changed"):
+		energy_bar_ui._on_player_energy_changed(current, max_val)
 
 func update_rotation() -> void:
 	var facing_dir = get_global_mouse_position() - global_position

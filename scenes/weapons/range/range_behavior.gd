@@ -6,9 +6,12 @@ class_name RangeBehavior
 func execute_attack() -> void:
 	weapon.is_attacking = true
 	
-	# 增强打击感：射击时轻微顿帧和屏幕震动
-	Global.frame_freeze(0.02, 0.5)
-	Global.on_camera_shake.emit(1.5, 0.05)
+	# 增强打击感：射击时轻微顿帧和指向性震动
+	Global.frame_freeze(0.01, 0.7)  # 减弱顿帧
+	
+	# 指向性震动：根据射击方向产生后坐力震动（减弱强度）
+	var shoot_direction = Vector2.RIGHT.rotated(weapon.rotation)
+	Global.on_directional_shake.emit(shoot_direction, 0.5)  # 从1.5降低到0.5
 	
 	create_projectile()
 	var tween := create_tween()

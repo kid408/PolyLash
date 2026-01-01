@@ -1,30 +1,10 @@
 extends Resource
 class_name UnitStats
 
-# 单位类型枚举
-enum UnitType{
-	PLAYER,
-	ENEMY
-}
-# 名字
-@export var name:String
-# 类型
-@export var type:UnitType
-# 图标
-@export var icon:Texture2D
-# 生命
-@export var health:=1
-# 每波之后增加的生命
-@export var health_increase_per_wave := 1.0
-# 伤害
-@export var damage:=1
-# 每波之后增加的伤害
-@export var damage_increase_per_wave := 1.0
-# 速度
-@export var speed := 300
-# 幸运值
-@export var luck:=1.0
-# 闪避
-@export var block_chance:=1.0
-# 金币掉落
-@export var gold_drop := 1
+# 单位属性资源类
+# 用于存储单位的基础属性（生命值、伤害、速度等）
+
+@export var health: float = 100.0
+@export var damage: float = 10.0
+@export var speed: float = 200.0
+@export var block_chance: float = 0.0

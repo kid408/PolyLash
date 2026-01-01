@@ -1,0 +1,10 @@
+setting,value,description
+-1,配置项,值,说明
+difficulty,1.0,游戏难度系数（影响敌人强度）
+starting_wave,1,起始波次
+max_waves,10,最大波次数
+enemy_spawn_rate,1.0,敌人生成速率倍率
+player_damage_multiplier,1.0,玩家伤害倍率
+enemy_damage_multiplier,1.0,敌人伤害倍率
+xp_gain_multiplier,1.0,经验获取倍率
+gold_gain_multiplier,1.0,金币获取倍率

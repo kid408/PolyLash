@@ -9,6 +9,15 @@ extends Node
 # - 将配置数据缓存到内存中，提供快速访问
 # - 提供便捷的访问方法，避免直接操作字典
 # 
+# 目录结构:
+#   config/
+#   ├── system/   - 系统配置（游戏、地图、摄像机、输入、音效）
+#   ├── player/   - 玩家配置（属性、视觉、武器）
+#   ├── enemy/    - 敌人配置（属性、视觉、武器）
+#   ├── weapon/   - 武器配置（基础、详细属性）
+#   ├── wave/     - 波次配置（波次、单位、宝箱）
+#   └── item/     - 物品配置（宝箱、升级属性）
+# 
 # 使用方法:
 #   var config = ConfigManager.get_player_config("player_herder")
 #   var weapon = ConfigManager.get_weapon_config("weapon_sword")
@@ -34,6 +43,11 @@ var enemy_weapon_configs: Dictionary = {}        # 敌人武器配置 (enemy_id 
 
 # 武器配置
 var weapon_configs: Dictionary = {}              # 武器属性配置 (weapon_id -> config)
+var weapon_stats_configs: Dictionary = {}        # 武器详细属性配置 (weapon_id -> stats)
+
+# 波次配置
+var wave_configs: Dictionary = {}                # 波次配置 (wave_id -> config)
+var wave_units_configs: Dictionary = {}          # 波次单位配置 (wave_id -> [units])
 
 # 输入配置
 var input_configs: Dictionary = {}               # 输入映射配置 (action -> key)
@@ -55,21 +69,24 @@ var sound_configs: Dictionary = {}               # 音效配置 (sound_id -> con
 
 # 配置文件路径
 const CONFIG_DIR = "res://config/"
-const PLAYER_CONFIG = CONFIG_DIR + "player_config.csv"
-const PLAYER_VISUAL = CONFIG_DIR + "player_visual.csv"
-const PLAYER_WEAPONS = CONFIG_DIR + "player_weapons.csv"
-const ENEMY_CONFIG = CONFIG_DIR + "enemy_config.csv"
-const ENEMY_VISUAL = CONFIG_DIR + "enemy_visual.csv"
-const ENEMY_WEAPONS = CONFIG_DIR + "enemy_weapons.csv"
-const WEAPON_CONFIG = CONFIG_DIR + "weapon_config.csv"
-const INPUT_CONFIG = CONFIG_DIR + "input_config.csv"
-const GAME_CONFIG = CONFIG_DIR + "game_config.csv"
-const CAMERA_CONFIG = CONFIG_DIR + "camera_config.csv"
-const MAP_CONFIG = CONFIG_DIR + "map_config.csv"
-const UPGRADE_ATTRIBUTES = CONFIG_DIR + "upgrade_attributes.csv"
-const CHEST_CONFIG = CONFIG_DIR + "chest_config.csv"
-const WAVE_CHEST_CONFIG = CONFIG_DIR + "wave_chest_config.csv"
-const SOUND_CONFIG = CONFIG_DIR + "sound_config.csv"
+const PLAYER_CONFIG = CONFIG_DIR + "player/player_config.csv"
+const PLAYER_VISUAL = CONFIG_DIR + "player/player_visual.csv"
+const PLAYER_WEAPONS = CONFIG_DIR + "player/player_weapons.csv"
+const ENEMY_CONFIG = CONFIG_DIR + "enemy/enemy_config.csv"
+const ENEMY_VISUAL = CONFIG_DIR + "enemy/enemy_visual.csv"
+const ENEMY_WEAPONS = CONFIG_DIR + "enemy/enemy_weapons.csv"
+const WEAPON_CONFIG = CONFIG_DIR + "weapon/weapon_config.csv"
+const WEAPON_STATS_CONFIG = CONFIG_DIR + "weapon/weapon_stats_config.csv"
+const WAVE_CONFIG = CONFIG_DIR + "wave/wave_config.csv"
+const WAVE_UNITS_CONFIG = CONFIG_DIR + "wave/wave_units_config.csv"
+const INPUT_CONFIG = CONFIG_DIR + "system/input_config.csv"
+const GAME_CONFIG = CONFIG_DIR + "system/game_config.csv"
+const CAMERA_CONFIG = CONFIG_DIR + "system/camera_config.csv"
+const MAP_CONFIG = CONFIG_DIR + "system/map_config.csv"
+const UPGRADE_ATTRIBUTES = CONFIG_DIR + "item/upgrade_attributes.csv"
+const CHEST_CONFIG = CONFIG_DIR + "item/chest_config.csv"
+const WAVE_CHEST_CONFIG = CONFIG_DIR + "wave/wave_chest_config.csv"
+const SOUND_CONFIG = CONFIG_DIR + "system/sound_config.csv"
 
 # ============================================================================
 # 初始化
@@ -111,6 +128,11 @@ func load_all_configs() -> void:
 	
 	# 武器配置
 	weapon_configs = load_csv_as_dict(WEAPON_CONFIG, "weapon_id")
+	weapon_stats_configs = load_csv_as_dict(WEAPON_STATS_CONFIG, "weapon_id")
+	
+	# 波次配置
+	wave_configs = load_csv_as_dict(WAVE_CONFIG, "wave_id")
+	wave_units_configs = load_wave_units_grouped(WAVE_UNITS_CONFIG)
 	
 	# 输入配置
 	input_configs = load_csv_as_dict(INPUT_CONFIG, "action")
@@ -295,6 +317,15 @@ func get_player_weapons(player_id: String) -> Dictionary:
 func get_weapon_config(weapon_id: String) -> Dictionary:
 	return weapon_configs.get(weapon_id, {})
 
+func get_weapon_stats(weapon_id: String) -> Dictionary:
+	return weapon_stats_configs.get(weapon_id, {})
+
+func get_wave_config(wave_id: String) -> Dictionary:
+	return wave_configs.get(wave_id, {})
+
+func get_wave_units(wave_id: String) -> Array:
+	return wave_units_configs.get(wave_id, [])
+
 func get_enemy_config(enemy_id: String) -> Dictionary:
 	return enemy_configs.get(enemy_id, {})
 
@@ -355,8 +386,8 @@ func load_csv_as_array(path: String) -> Array[Dictionary]:
 	  2,2,3
 	  
 	  返回: [
-	    {"wave": 1, "min_tier": 1, "max_tier": 2},
-	    {"wave": 2, "min_tier": 2, "max_tier": 3}
+		{"wave": 1, "min_tier": 1, "max_tier": 2},
+		{"wave": 2, "min_tier": 2, "max_tier": 3}
 	  ]
 	"""
 	var result: Array[Dictionary] = []
@@ -421,3 +452,74 @@ func get_wave_chest_config(wave_index: int) -> Dictionary:
 		return wave_chest_configs[0]
 	
 	return {}
+
+func load_wave_units_grouped(path: String) -> Dictionary:
+	"""
+	加载波次单位配置并按wave_id分组
+	
+	参数:
+	- path: CSV 文件路径
+	
+	返回:
+	- Dictionary: {wave_id: [{enemy_scene: "...", weight: 1.0}, ...], ...}
+	
+	说明:
+	- 将同一个wave_id的所有单位配置组合成数组
+	- 用于波次系统快速查找某个波次的所有敌人配置
+	"""
+	var result = {}
+	var file = FileAccess.open(path, FileAccess.READ)
+	
+	if not file:
+		print("[ConfigManager] 警告: 无法打开文件 ", path)
+		return result
+	
+	var headers = []
+	var line_num = 0
+	
+	while not file.eof_reached():
+		var line = file.get_csv_line()
+		line_num += 1
+		
+		# 跳过空行
+		if line.size() == 0 or (line.size() == 1 and line[0].strip_edges() == ""):
+			continue
+		
+		# 第一行：列名
+		if line_num == 1:
+			headers = line
+			continue
+		
+		# 第二行：如果第一列是 -1，跳过（注释行）
+		if line_num == 2 and line[0].strip_edges() == "-1":
+			continue
+		
+		# 数据行
+		if headers.size() > 0:
+			var row_data = {}
+			var wave_id = ""
+			
+			for i in range(min(line.size(), headers.size())):
+				var header = headers[i].strip_edges()
+				var value = line[i].strip_edges()
+				
+				if header == "wave_id":
+					wave_id = value
+				
+				# 尝试转换数值
+				if value.is_valid_float():
+					row_data[header] = float(value)
+				elif value.is_valid_int():
+					row_data[header] = int(value)
+				else:
+					row_data[header] = value
+			
+			# 按wave_id分组
+			if wave_id != "":
+				if not result.has(wave_id):
+					result[wave_id] = []
+				result[wave_id].append(row_data)
+	
+	file.close()
+	print("[ConfigManager] 加载波次单位配置: ", path, " - ", result.size(), " 个波次")
+	return result

@@ -1,15 +1,10 @@
-[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3 uid="uid://yij4tb6h0gp4"]
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
 
-[ext_resource type="Texture2D" uid="uid://emsi6ifyt0vf" path="res://assets/sprites/Enemies/Enemy_5.png" id="1_cf6s4"]
-[ext_resource type="Script" uid="uid://cfd55woyni5qt" path="res://resouce/unit/unit_stats.gd" id="2_cc5go"]
+[ext_resource type="Script" path="res://resouce/unit/unit_stats.gd" id="1"]
 
 [resource]
-script = ExtResource("2_cc5go")
-name = "Chaser"
-type = 1
-icon = ExtResource("1_cf6s4")
-health = 60
-damage = 2
-speed = 248
-block_chance = 3.0
-metadata/_custom_type_script = "uid://cfd55woyni5qt"
+script = ExtResource("1")
+health = 50.0
+damage = 5.0
+speed = 180.0
+block_chance = 0.0

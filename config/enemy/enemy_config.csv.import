@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://2b2mfdkjghds"
+
+[deps]
+
+files=["res://config/enemy/enemy_config.display.translation", "res://config/enemy/enemy_config.health.translation", "res://config/enemy/enemy_config.speed.translation", "res://config/enemy/enemy_config.damage.translation", "res://config/enemy/enemy_config.attack.translation", "res://config/enemy/enemy_config.attack.translation", "res://config/enemy/enemy_config.xp.translation", "res://config/enemy/enemy_config.gold.translation", "res://config/enemy/enemy_config.knockback.translation", "res://config/enemy/enemy_config.energy.translation", "res://config/enemy/enemy_config.color.translation", "res://config/enemy/enemy_config.color.translation", "res://config/enemy/enemy_config.color.translation"]
+
+source_file="res://config/enemy/enemy_config.csv"
+dest_files=["res://config/enemy/enemy_config.display.translation", "res://config/enemy/enemy_config.health.translation", "res://config/enemy/enemy_config.speed.translation", "res://config/enemy/enemy_config.damage.translation", "res://config/enemy/enemy_config.attack.translation", "res://config/enemy/enemy_config.attack.translation", "res://config/enemy/enemy_config.xp.translation", "res://config/enemy/enemy_config.gold.translation", "res://config/enemy/enemy_config.knockback.translation", "res://config/enemy/enemy_config.energy.translation", "res://config/enemy/enemy_config.color.translation", "res://config/enemy/enemy_config.color.translation", "res://config/enemy/enemy_config.color.translation"]
+
+[params]
+
+compress=true
+delimiter=0

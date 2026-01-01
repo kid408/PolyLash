@@ -9,7 +9,7 @@ func _ready() -> void:
 	load_player_configs()
 
 func load_player_configs() -> void:
-	var file_path = "res://config/player_config.csv"
+	var file_path = "res://config/player/player_config.csv"
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	
 	if file == null:

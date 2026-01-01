@@ -20,8 +20,9 @@ class_name PlayerSapper
 @export var dash_base_damage: int = 20
 
 @export_group("Skill Costs")
-@export var cost_per_segment: float = 10.0
-@export var cost_totem: float = 40.0
+# 注意：技能消耗现在从player_config.csv读取
+# cost_per_segment使用skill_q_cost
+# cost_totem使用skill_e_cost
 @export var cost_dash: float = 10.0
 
 # 引用
@@ -83,7 +84,7 @@ func charge_skill_q(_delta: float) -> void:
 		Engine.time_scale = 0.1
 		
 	if Input.is_action_just_pressed("click_left"):
-		if consume_energy(cost_per_segment):
+		if consume_energy(skill_q_cost):
 			_add_path_point()
 	
 	if Input.is_action_just_pressed("click_right"):
@@ -94,7 +95,7 @@ func release_skill_q() -> void:
 		_execute_mine_deployment()
 
 func use_skill_e() -> void:
-	if not consume_energy(cost_totem): return
+	if not consume_energy(skill_e_cost): return
 	
 	var totem = _create_totem_logic()
 	totem.global_position = global_position
@@ -132,7 +133,7 @@ func _add_path_point() -> void:
 func _undo_last_point() -> void:
 	if not dash_queue.is_empty():
 		dash_queue.pop_back()
-		energy += cost_per_segment
+		energy += skill_q_cost
 		update_ui_signals()
 
 # 部署地雷 (核心逻辑修正)
@@ -429,7 +430,7 @@ func _update_visuals() -> void:
 	
 	if poly.size() > 0:
 		line_2d.default_color = Color(1.0, 0.2, 0.2, 0.8)
-	elif energy < cost_per_segment:
+	elif energy < skill_q_cost:
 		line_2d.default_color = Color(0.5, 0.5, 0.5, 0.5)
 	else:
 		line_2d.default_color = Color(1.0, 0.8, 0.0, 0.8)
