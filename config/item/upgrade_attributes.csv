@@ -1,8 +1,8 @@
 attribute_id,display_name,description,value_type,tier1_value,tier2_value,tier3_value,tier4_value,max_level
--1,属性ID,显示名称,描述,数值类型,1级提升,2级提升,3级提升,4级提升,最大等级
+-1,显示名称,描述,数值类型,1级提升,2级提升,3级提升,4级提升,最大等级
 max_health,最大生命值,增加生命上限,flat,10,25,60,150,10
 max_energy,最大能量值,增加能量上限,flat,20,50,120,300,10
-energy_regen,能量恢复,每秒恢复能量,flat,0.5,1.0,2.5,5.0,10
+energy_regen,能量恢复,每秒恢复能量,flat,0.5,1,2.5,5,10
 base_speed,移动速度,提升移动速度,flat,10,30,70,150,5
 dash_distance,冲刺距离,增加冲刺距离,flat,30,70,150,300,5
 dash_damage,冲刺伤害,增加冲刺伤害,flat,5,15,35,80,10

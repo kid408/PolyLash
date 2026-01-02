@@ -1,6 +1,6 @@
 enemy_id,sprite_path,scale_x,scale_y,color_r,color_g,color_b,color_a,z_index
--1,敌人ID,精灵路径,X缩放,Y缩放,红色,绿色,蓝色,透明度,Z层级
-basic_enemy,res://assets/sprites/Enemies/Enemy_1.png,1.0,1.0,1.0,1.0,1.0,1.0,0
-fast_enemy,res://assets/sprites/Enemies/Enemy_2.png,0.8,0.8,1.0,1.0,1.0,1.0,0
-tank_enemy,res://assets/sprites/Enemies/Enemy_3.png,1.5,1.5,1.0,1.0,1.0,1.0,0
-boss_enemy,res://assets/sprites/Enemies/Boss_1.png,2.0,2.0,1.0,1.0,1.0,1.0,0
+-1,精灵路径,X缩放,Y缩放,红色,绿色,蓝色,透明度,Z层级
+basic_enemy,res://assets/sprites/Enemies/Enemy_1.png,1,1,1,1,1,1,0
+fast_enemy,res://assets/sprites/Enemies/Enemy_2.png,0.8,0.8,1,1,1,1,0
+tank_enemy,res://assets/sprites/Enemies/Enemy_3.png,1.5,1.5,1,1,1,1,0
+boss_enemy,res://assets/sprites/Enemies/Boss_1.png,2,2,1,1,1,1,0

@@ -1,5 +1,5 @@
 weapon_id,display_name,resource_path,type
--1,武器ID,显示名,资源路径,类型
+-1,显示名,资源路径,类型
 punch_1,拳头1级,res://resouce/items/weapons/melee/punch/item_punch_1.tres,melee
 punch_2,拳头2级,res://resouce/items/weapons/melee/punch/item_punch_2.tres,melee
 punch_3,拳头3级,res://resouce/items/weapons/melee/punch/item_punch_3.tres,melee

@@ -1,5 +1,5 @@
 player_id,display_name,health,dash_distance,dash_speed,dash_damage,dash_knockback,dash_cost,skill_q_cost,skill_e_cost,close_threshold,energy_regen,max_energy,initial_energy,max_armor,base_speed,description
--1,角色ID,显示名,生命值,冲刺距离,冲刺速度,冲刺伤害,冲刺击退,冲刺消耗,Q技能消耗,E技能消耗,近战阈值,能量恢复,最大能量,初始能量,最大护甲,移动速度,说明
+-1,显示名,生命值,冲刺距离,冲刺速度,冲刺伤害,冲刺击退,冲刺消耗,Q技能消耗,E技能消耗,近战阈值,能量恢复,最大能量,初始能量,最大护甲,移动速度,说明
 butcher,屠夫,100,400,2000,20,2,10,50,30,60,0.5,999,800,3,500,近战型角色，高冲刺伤害
 pyro,火焰,100,300,1200,10,2,10,20,20,60,0.5,999,700,3,500,火焰系角色，技能消耗低
 sapper,工兵,100,600,1500,20,2,10,10,40,60,0.5,999,550,3,500,远程型角色，冲刺距离长

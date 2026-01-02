@@ -1,5 +1,5 @@
 enemy_id,weapon_slot_1,weapon_slot_2,weapon_slot_3,weapon_slot_4,weapon_slot_5,weapon_slot_6
--1,敌人ID,武器槽1,武器槽2,武器槽3,武器槽4,武器槽5,武器槽6
+-1,武器槽1,武器槽2,武器槽3,武器槽4,武器槽5,武器槽6
 basic_enemy,melee,,,,,
 fast_enemy,melee,melee,,,,
 tank_enemy,melee,melee,melee,,,

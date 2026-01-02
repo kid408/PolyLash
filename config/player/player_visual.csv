@@ -1,9 +1,9 @@
 player_id,sprite_path,scale_x,scale_y,color_r,color_g,color_b,color_a,z_index
--1,角色ID,精灵路径,X缩放,Y缩放,红色,绿色,蓝色,透明度,Z层级
-butcher,res://assets/sprites/Players/Player_4.png,1.0,1.0,1.0,1.0,1.0,1.0,1
-pyro,res://assets/sprites/Players/Player_4.png,1.0,1.0,1.0,1.0,1.0,1.0,1
-sapper,res://assets/sprites/Players/Player_5.png,1.0,1.0,1.0,1.0,1.0,1.0,1
-tempest,res://assets/sprites/Players/Player_3}.png,1.0,1.0,1.0,1.0,1.0,1.0,1
-weaver,res://assets/sprites/Players/Player_1.png,1.0,1.0,1.0,1.0,1.0,1.0,1
-wind,res://assets/sprites/Players/Player_5.png,1.0,1.0,1.0,1.0,1.0,1.0,1
-herder,res://assets/sprites/Players/Player_2.png,1.0,1.0,1.0,1.0,1.0,1.0,1
+-1,精灵路径,X缩放,Y缩放,红色,绿色,蓝色,透明度,Z层级
+butcher,res://assets/sprites/Players/Player_4.png,1,1,1,1,1,1,1
+pyro,res://assets/sprites/Players/Player_4.png,1,1,1,1,1,1,1
+sapper,res://assets/sprites/Players/Player_5.png,1,1,1,1,1,1,1
+tempest,res://assets/sprites/Players/Player_3}.png,1,1,1,1,1,1,1
+weaver,res://assets/sprites/Players/Player_1.png,1,1,1,1,1,1,1
+wind,res://assets/sprites/Players/Player_5.png,1,1,1,1,1,1,1
+herder,res://assets/sprites/Players/Player_2.png,1,1,1,1,1,1,1

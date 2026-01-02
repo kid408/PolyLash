@@ -1,5 +1,5 @@
 chest_tier,spawn_weight,indicator_color,attribute_count,min_distance,max_distance
--1,宝箱等级,生成权重,指示器颜色,提供属性数量,最小生成距离,最大生成距离
+-1,生成权重,指示器颜色,提供属性数量,最小生成距离,最大生成距离
 1,60,FFFFFF,3,500,2000
 2,25,00FF00,3,800,3000
 3,12,0080FF,3,1200,4000

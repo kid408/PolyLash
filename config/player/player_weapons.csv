@@ -1,9 +1,9 @@
 player_id,weapon_slot_1,weapon_slot_2,weapon_slot_3,weapon_slot_4,weapon_slot_5,weapon_slot_6
--1,角色ID,武器槽1,武器槽2,武器槽3,武器槽4,武器槽5,武器槽6
-butcher,punch_1,punch_2,,,,,
-pyro,laser_1,laser_2,,,,,
-sapper,pistol_1,pistol_2,,,,,
-tempest,punch_1,punch_2,,,,,
-weaver,pistol_1,pistol_2,,,,,
-wind,laser_1,laser_2,,,,,
+-1,武器槽1,武器槽2,武器槽3,武器槽4,武器槽5,武器槽6
+butcher,punch_1,punch_2,,,,
+pyro,laser_1,laser_2,,,,
+sapper,pistol_1,pistol_2,,,,
+tempest,punch_1,punch_2,,,,
+weaver,pistol_1,pistol_2,,,,
+wind,laser_1,laser_2,,,,
 herder,punch_1,punch_2,,,,

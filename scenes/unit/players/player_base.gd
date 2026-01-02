@@ -94,7 +94,7 @@ func _load_config_from_csv() -> void:
 		printerr("[PlayerBase] 警告: player_id 未设置，使用默认值")
 		return
 	
-	config = PlayerConfigLoader.get_config(player_id)
+	config = ConfigManager.get_player_config(player_id)
 	
 	if config.is_empty():
 		printerr("[PlayerBase] 警告: 未找到配置 '%s'，使用默认值" % player_id)

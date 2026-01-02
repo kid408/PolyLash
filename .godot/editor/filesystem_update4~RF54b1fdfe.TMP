@@ -1,0 +1,6 @@
+res://scenes/arena/arena.tscn
+res://assets/sprites/Chests/chest_animations.tres
+res://autoloads/player_config_loader.gd
+res://autoloads/config_manager.gd
+res://config/enemy/enemy_weapons.weapon.translation
+res://config/item/chest_config.spawn.translation

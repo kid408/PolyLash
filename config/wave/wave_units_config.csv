@@ -1,11 +1,11 @@
 wave_id,enemy_scene,weight
--1,波次ID,敌人场景路径,权重
-wave_1_to_5,res://scenes/unit/enemy/enemy_chaser_slow.tscn,3.0
-wave_1_to_5,res://scenes/unit/enemy/enemy_chaser_mid.tscn,2.0
+-1,敌人场景路径,权重
+wave_1_to_5,res://scenes/unit/enemy/enemy_chaser_slow.tscn,3
+wave_1_to_5,res://scenes/unit/enemy/enemy_chaser_mid.tscn,2
 wave_1_to_5,res://scenes/unit/enemy/enemy_Breaker.tscn,1.5
-wave_1_to_5,res://scenes/unit/enemy/enemy_Shielded.tscn,1.0
-wave_6_to_10,res://scenes/unit/enemy/enemy_chaser_mid.tscn,3.0
+wave_1_to_5,res://scenes/unit/enemy/enemy_Shielded.tscn,1
+wave_6_to_10,res://scenes/unit/enemy/enemy_chaser_mid.tscn,3
 wave_6_to_10,res://scenes/unit/enemy/enemy_Breaker.tscn,2.5
-wave_6_to_10,res://scenes/unit/enemy/enemy_Shielded.tscn,2.0
+wave_6_to_10,res://scenes/unit/enemy/enemy_Shielded.tscn,2
 wave_6_to_10,res://scenes/unit/enemy/enemy_Spiked.tscn,1.5
 wave_6_to_10,res://scenes/unit/enemy/enemy_mine_layer.tscn,0.8

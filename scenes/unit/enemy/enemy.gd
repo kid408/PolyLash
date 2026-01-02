@@ -106,8 +106,9 @@ func _apply_color_from_config() -> void:
 		var b = config.get("color_b", "")
 		
 		# 如果颜色值不为空，应用颜色
-		if r != "" and g != "" and b != "":
-			var color = Color(float(r), float(g), float(b), 1.0)
+		if r != null and g != null and b != null:
+			#var color = Color(float(r), float(g), float(b), 1)
+			var color = Color(float(r), float(g), float(b), 1)
 			visuals.modulate = color
 			print("[Enemy] 应用颜色配置: ", enemy_id, " -> ", color)
 

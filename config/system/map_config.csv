@@ -1,5 +1,5 @@
 setting,value,description
--1,配置项,值,说明
+-1,值,说明
 map_width,2000,地图宽度（像素）
 map_height,2000,地图高度（像素）
 arena_radius,800,竞技场半径（战斗区域）

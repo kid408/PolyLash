@@ -1,5 +1,5 @@
 action,key_code,description,player_switch_index
--1,动作名,按键码,说明,切换角色索引
+-1,按键码,说明,切换角色索引
 switch_player_1,49,切换到角色1,0
 switch_player_2,50,切换到角色2,1
 switch_player_3,51,切换到角色3,2

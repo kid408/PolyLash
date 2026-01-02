@@ -21,6 +21,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		# 数字键 1-6 切换武器
 		elif event.keycode >= KEY_1 and event.keycode <= KEY_6:
 			_switch_weapon(event.keycode - KEY_1)
+	 # 检测是否按下了键盘上的 Escape 键
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		get_tree().quit()
+
 
 func _switch_to_next_character() -> void:
 	# 循环切换到下一个角色

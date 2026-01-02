@@ -1,0 +1,4 @@
+res://scenes/arena/arena.tscn
+res://assets/sprites/Chests/chest_animations.tres
+res://autoloads/player_config_loader.gd
+res://autoloads/config_manager.gd
