@@ -6,6 +6,18 @@
 
 [node name="PlayerButcher" instance=ExtResource("1_tex7i")]
 script = ExtResource("2_hs0af")
+rift_damage_per_tick = 20
+rift_duration = 5.0
+kill_zone_radius = 250.0
+kill_zone_damage = 30
+kill_zone_duration = 8.0
+mine_damage = 200
+mine_trigger_radius = 30.0
+pull_force_damage = 50
+pull_width = 60.0
+cost_dash = 10.0
+cost_kill_zone = 50.0
+cost_ripcord = 30.0
 player_id = "butcher"
 
 [node name="Sprite" parent="Visuals" index="2"]

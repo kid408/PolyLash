@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://cyavyrbpj6jjb" path="res://scenes/unit/unit.tscn" id="1_xa7el"]
 [ext_resource type="Script" uid="uid://bixfa3sidiiko" path="res://scenes/unit/players/player_herder.gd" id="2_ak6fa"]
 [ext_resource type="Texture2D" uid="uid://cproxhccob85g" path="res://assets/sprites/Players/Player_1.png" id="3_ht2l1"]
-[ext_resource type="Resource" uid="uid://dlsijaffps5qh" path="res://resouce/unit/players/stats_player_herder.tres" id="3_viu20"]
+[ext_resource type="Resource" path="res://resouce/unit/players/stats_player_herder.tres" id="3_viu20"]
 [ext_resource type="Script" uid="uid://c0mirjaxbhe0q" path="res://scenes/unit/players/trail.gd" id="5_ht2l1"]
 [ext_resource type="Script" uid="uid://3xhc8o3yr61w" path="res://scenes/unit/players/weapon_container.gd" id="6_viu20"]
 [ext_resource type="Script" uid="uid://cyj3i1371tt7i" path="res://scenes/components/hitbox_component.gd" id="7_20xkg"]
@@ -22,24 +22,14 @@ radius = 32.01562
 radius = 30.016663
 
 [node name="PlayerHerder" instance=ExtResource("1_xa7el")]
-collision_layer = 1
 collision_mask = 6
 script = ExtResource("2_ak6fa")
-player_id = "herder"
 fixed_dash_distance = 300.0
-dash_speed = 1000.0
-close_threshold = 60.0
 dash_base_damage = 10
-dash_knockback = 2.0
 geometry_mask_color = Color(1, 0, 0, 0.6)
 explosion_radius = 200.0
-cost_per_segment = 20.0
-cost_explosion = 20.0
 explosion_vfx_scene = null
-max_energy = 999.0
-energy_regen = 0.5
-max_armor = 3
-base_speed = 300.0
+player_id = "herder"
 dash_vfx_scene = null
 stats = ExtResource("3_viu20")
 

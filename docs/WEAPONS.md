@@ -192,7 +192,7 @@ weapon_spread = randf_range(-1 + accuracy, 1 - accuracy)
 **触发条件**:
 ```gdscript
 if randf() < crit_chance:
-    damage *= crit_damage
+	damage *= crit_damage
 ```
 
 **示例**:

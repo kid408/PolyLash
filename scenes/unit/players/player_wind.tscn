@@ -2,9 +2,9 @@
 
 [ext_resource type="PackedScene" uid="uid://cyavyrbpj6jjb" path="res://scenes/unit/unit.tscn" id="1_skpnh"]
 [ext_resource type="Script" uid="uid://d1vh45rlvuo3s" path="res://scenes/unit/players/player_wind.gd" id="2_obfx6"]
-[ext_resource type="Resource" uid="uid://drlr54y3yfew0" path="res://resouce/unit/players/stats_player_wind.tres" id="3_skpnh"]
+[ext_resource type="Resource" path="res://resouce/unit/players/stats_player_wind.tres" id="3_skpnh"]
 [ext_resource type="Script" uid="uid://c0mirjaxbhe0q" path="res://scenes/unit/players/trail.gd" id="5_icnjr"]
-[ext_resource type="Texture2D" uid="uid://bt0lww88864ws" path="res://assets/sprites/Players/Player_5.png" id="5_skpnh"]
+[ext_resource type="Texture2D" uid="uid://dq63ocnu3lset" path="res://assets/sprites/Players/Player_3}.png" id="5_skpnh"]
 [ext_resource type="Script" uid="uid://3xhc8o3yr61w" path="res://scenes/unit/players/weapon_container.gd" id="6_soplr"]
 [ext_resource type="Script" uid="uid://cyj3i1371tt7i" path="res://scenes/components/hitbox_component.gd" id="7_dvx5u"]
 
@@ -24,12 +24,8 @@ radius = 30.016663
 [node name="PlayerWind" instance=ExtResource("1_skpnh")]
 collision_mask = 2
 script = ExtResource("2_obfx6")
-player_id = "wind"
 fixed_dash_distance = 300.0
-dash_speed = 1200.0
-close_threshold = 60.0
 dash_base_damage = 10
-dash_knockback = 2.0
 wind_wall_pull_force = 350.0
 wind_wall_damage = 15
 wind_wall_duration = 3.0
@@ -42,13 +38,8 @@ storm_eye_radius = 140.0
 storm_eye_damage = 35
 storm_eye_pull_force = 500.0
 storm_eye_duration = 3.0
-cost_per_segment = 20.0
 cost_dash_normal = 10.0
-cost_storm_eye = 20.0
-max_energy = 999.0
-energy_regen = 0.5
-max_armor = 3
-base_speed = 300.0
+player_id = "wind"
 dash_vfx_scene = null
 stats = ExtResource("3_skpnh")
 

@@ -38,11 +38,11 @@
 **工作原理**:
 ```gdscript
 if Global.game_paused:
-    spawn_timer.set_paused(true)
-    wave_timer.set_paused(true)
+	spawn_timer.set_paused(true)
+	wave_timer.set_paused(true)
 else:
-    spawn_timer.set_paused(false)
-    wave_timer.set_paused(false)
+	spawn_timer.set_paused(false)
+	wave_timer.set_paused(false)
 ```
 
 **应用场景**:
@@ -64,9 +64,9 @@ else:
 **实现**:
 ```gdscript
 if Input.is_physical_key_pressed(KEY_L):
-    if not _l_key_pressed:
-        _l_key_pressed = true
-        go_to_next_wave()
+	if not _l_key_pressed:
+		_l_key_pressed = true
+		go_to_next_wave()
 ```
 
 **效果**:
@@ -281,20 +281,20 @@ var spawn_pos = center_pos + Vector2(random_x, random_y)
 **代码示例**:
 ```gdscript
 func spawn_enemy() -> void:
-    var enemy_scene_path = get_random_enemy_scene()
-    var enemy_scene = load(enemy_scene_path) as PackedScene
-    var spawn_pos = get_random_spawn_position()
-    var enemy_instance = enemy_scene.instantiate() as Enemy
-    enemy_instance.global_position = spawn_pos
-    
-    # 应用波次增强
-    if enemy_instance.stats:
-        enemy_instance.stats.health += (wave_index - 1) * enemy_health_per_wave
-        enemy_instance.stats.damage += (wave_index - 1) * enemy_damage_per_wave
-    
-    get_parent().add_child(enemy_instance)
-    spawned_enemies.append(enemy_instance)
-    set_spawn_timer()
+	var enemy_scene_path = get_random_enemy_scene()
+	var enemy_scene = load(enemy_scene_path) as PackedScene
+	var spawn_pos = get_random_spawn_position()
+	var enemy_instance = enemy_scene.instantiate() as Enemy
+	enemy_instance.global_position = spawn_pos
+	
+	# 应用波次增强
+	if enemy_instance.stats:
+		enemy_instance.stats.health += (wave_index - 1) * enemy_health_per_wave
+		enemy_instance.stats.damage += (wave_index - 1) * enemy_damage_per_wave
+	
+	get_parent().add_child(enemy_instance)
+	spawned_enemies.append(enemy_instance)
+	set_spawn_timer()
 ```
 
 ---
@@ -480,10 +480,10 @@ wave,max,chest
 **获取方法**:
 ```gdscript
 func get_wave_text() -> String:
-    return "Wave %s" % wave_index
+	return "Wave %s" % wave_index
 
 func get_wave_timer_text() -> String:
-    return str(max(0, int(wave_timer.time_left)))
+	return str(max(0, int(wave_timer.time_left)))
 ```
 
 **更新频率**:
@@ -644,21 +644,21 @@ func get_wave_timer_text() -> String:
 
 ```gdscript
 func _on_wave_timer_timeout() -> void:
-    spawn_timer.stop()
-    clear_enemies()
-    update_enemies_new_wave()
-    
-    # 无尽模式：循环波次
-    if endless_mode:
-        wave_index += 1
-        start_wave()
-    # 普通模式：检查最大波次
-    elif wave_index >= max_waves:
-        _end_game()
-    else:
-        wave_index += 1
-        await get_tree().create_timer(1.0).timeout
-        start_wave()
+	spawn_timer.stop()
+	clear_enemies()
+	update_enemies_new_wave()
+	
+	# 无尽模式：循环波次
+	if endless_mode:
+		wave_index += 1
+		start_wave()
+	# 普通模式：检查最大波次
+	elif wave_index >= max_waves:
+		_end_game()
+	else:
+		wave_index += 1
+		await get_tree().create_timer(1.0).timeout
+		start_wave()
 ```
 
 ---
@@ -690,16 +690,16 @@ func _on_wave_timer_timeout() -> void:
 
 ```gdscript
 func adjust_difficulty() -> void:
-    var player_health_percent = Global.player.health / Global.player.max_health
-    
-    if player_health_percent > 0.8:
-        # 玩家状态良好，增加难度
-        enemy_health_per_wave *= 1.1
-        enemy_damage_per_wave *= 1.1
-    elif player_health_percent < 0.3:
-        # 玩家状态不佳，降低难度
-        enemy_health_per_wave *= 0.9
-        enemy_damage_per_wave *= 0.9
+	var player_health_percent = Global.player.health / Global.player.max_health
+	
+	if player_health_percent > 0.8:
+		# 玩家状态良好，增加难度
+		enemy_health_per_wave *= 1.1
+		enemy_damage_per_wave *= 1.1
+	elif player_health_percent < 0.3:
+		# 玩家状态不佳，降低难度
+		enemy_health_per_wave *= 0.9
+		enemy_damage_per_wave *= 0.9
 ```
 
 ---

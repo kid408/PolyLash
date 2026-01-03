@@ -3,12 +3,11 @@ extends Node
 # 所有角色场景路径列表
 var character_paths = [
 	"res://scenes/unit/players/player_herder.tscn",   # 0 - 牧羊人
-	"res://scenes/unit/players/player_weaver.tscn",   # 1 - 织网者
-	"res://scenes/unit/players/player_pyro.tscn",     # 2 - 纵火者
-	"res://scenes/unit/players/player_wind.tscn",     # 3 - 御风者
-	"res://scenes/unit/players/player_sapper.tscn",   # 4 - 工兵
-	"res://scenes/unit/players/player_butcher.tscn",  # 5 - 屠夫
-	"res://scenes/unit/players/player_tempest.tscn",  # 6 - 风暴使者
+	"res://scenes/unit/players/player_pyro.tscn",     # 1 - 纵火者
+	"res://scenes/unit/players/player_wind.tscn",     # 2 - 御风者
+	"res://scenes/unit/players/player_sapper.tscn",   # 3 - 工兵
+	"res://scenes/unit/players/player_butcher.tscn",  # 4 - 屠夫
+	"res://scenes/unit/players/player_weaver.tscn",   # 5 - 织网者
 ]
 
 var current_character_index: int = 0

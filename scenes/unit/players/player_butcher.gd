@@ -2,356 +2,315 @@ extends PlayerBase
 class_name PlayerButcher
 
 # ==============================================================================
-# 1. 屠夫专属设置
+# 屠夫角色 - 使用肉桩和锯条控制战场
+# ==============================================================================
+# Q技能：绘制锯条路径
+#   - 按住Q进入规划模式（子弹时间）
+#   - 左键：向鼠标方向延伸固定距离添加路径点
+#   - 右键：撤销最后一个路径点
+#   - 松开Q：发射锯条
+#   - 闭合状态（线段相交）：捕获并拉扯敌人，钉在终点8秒
+#   - 非闭合状态：击退敌人，到达终点立即消失
+# E技能：投掷肉桩
+#   - 肉桩飞行时拉扯沿途敌人
+#   - 着陆后用链条控制范围内敌人
+#   - 持续6秒
+# ==============================================================================
+
+# ==============================================================================
+# 配置参数
 # ==============================================================================
 @export_group("Butcher Settings")
-@export var rift_damage_per_tick: int = 20    # 裂痕持续伤害
-@export var rift_duration: float = 5.0        # 裂痕存活时间
-@export var kill_zone_radius: float = 250.0   # 死斗场半径
-@export var kill_zone_damage: int = 30        # 死斗场秒伤
-@export var kill_zone_duration: float = 8.0   
-@export var mine_damage: int = 200            # 血肉地雷伤害
-@export var mine_trigger_radius: float = 30.0 # 地雷触发半径
-@export var pull_force_damage: int = 50       # E技能拉扯伤害
-@export var pull_width: float = 60.0          # E技能拉扯的判定宽度
+@export var stake_duration: float = 6.0         # 肉桩持续时间
+@export var chain_radius: float = 250.0         # 链条控制半径
+@export var stake_throw_speed: float = 1200.0   # 肉桩飞行速度
+@export var stake_impact_damage: int = 20       # 肉桩着陆伤害
 
-@export_group("Skill Costs")
-@export var cost_dash: float = 10.0
-@export var cost_kill_zone: float = 50.0
-@export var cost_ripcord: float = 30.0
+@export_group("Saw Skills")
+@export var fixed_segment_length: float = 400.0 # 每段锯条的固定长度
+@export var saw_fly_speed: float = 1100.0       # 锯条飞行速度
+@export var saw_rotation_speed: float = 25.0    # 锯条旋转速度（闭合状态）
+@export var saw_push_force: float = 1000.0      # 锯条击退力度（非闭合状态）
+@export var saw_damage_tick: int = 3            # 锯条伤害（闭合状态）
+@export var saw_damage_open: int = 1            # 锯条伤害（非闭合状态，降低以便看到击退效果）
+@export var dismember_damage: int = 200         # 肢解伤害（锯条+肉桩组合技）
+@export var saw_max_distance: float = 900.0     # 锯条最大飞行距离
+
+@export_group("Visuals")
+@export var chain_color: Color = Color(0.3, 0.1, 0.1, 0.8)      # 链条颜色
+@export var saw_color: Color = Color(0.8, 0.2, 0.2, 0.8)        # 锯条颜色
+@export var planning_color_normal: Color = Color(1.0, 1.0, 1.0, 0.5)  # 规划线条颜色（未闭合）
+@export var planning_color_closed: Color = Color(1.0, 0.0, 0.0, 1.0)  # 规划线条颜色（已闭合）
 
 # ==============================================================================
-# 2. 运行时变量
+# 状态变量
 # ==============================================================================
-var active_rifts: Array[Area2D] = []   
-var active_kill_zone: Area2D = null    
+var is_planning: bool = false           # 是否处于Q技能规划模式
+var is_path_closed: bool = false        # 路径是否已闭合（线段相交）
+var path_points: Array[Vector2] = []    # 已确认的路径点
+var active_stake: Node2D = null         # 当前激活的肉桩
+var active_saw: Node2D = null           # 当前激活的锯条
 
-@onready var chain_container: Node2D = Node2D.new()
+@onready var line_2d: Line2D = $Line2D if has_node("Line2D") else null
 
+# ==============================================================================
+# 初始化
+# ==============================================================================
 func _ready() -> void:
 	super._ready()
-	add_child(chain_container)
-	chain_container.top_level = true 
 	
-	# 确保 trail 引用正确
-	if not trail:
-		trail = %Trail if has_node("%Trail") else null
+	# 从CSV加载技能配置
+	_load_skill_config_from_csv()
 	
-	print(">>> 屠夫就绪 (Type Hints Removed)")
+	# 初始化Line2D用于绘制规划路径
+	if not line_2d:
+		line_2d = Line2D.new()
+		line_2d.name = "Line2D"
+		add_child(line_2d)
 	
-func can_move() -> bool:
-	return not is_dashing
-	
-func _process_subclass(delta: float) -> void:
-	if is_dashing:
-		position = position.move_toward(dash_target, dash_speed * delta)
-		if position.distance_to(dash_target) < 10.0:
-			_end_dash()
-	
-	_update_chains()
+	line_2d.top_level = true
+	line_2d.width = 6.0
+	line_2d.z_index = 100
+	line_2d.global_position = Vector2.ZERO
 
-func _handle_input(delta: float) -> void:
-	var speed_multiplier = 1.0
-	if is_instance_valid(active_kill_zone):
-		var dist = global_position.distance_to(active_kill_zone.global_position)
-		if dist < kill_zone_radius:
-			speed_multiplier = 1.6 
-	
-	super._handle_input(delta * speed_multiplier)
-
-# ==============================================================================
-# 3. 输入技能实现
-# ==============================================================================
-
-# --- 左键: 电锯冲袭 ---
-func use_dash() -> void:
-	if is_dashing or not consume_energy(cost_dash): return
-	
-	var mouse_pos = get_global_mouse_position()
-	var dir = (mouse_pos - global_position).normalized()
-	dash_start_pos = global_position
-	dash_target = dash_start_pos + dir * dash_distance
-	
-	is_dashing = true
-	collision.set_deferred("disabled", true)
-	if trail: trail.start_trail()
-	Global.play_player_dash()
-
-func _end_dash() -> void:
-	is_dashing = false
-	collision.set_deferred("disabled", false)
-	if trail: trail.stop()
-	_spawn_rift(dash_start_pos, global_position)
-
-# --- Q技能: 死亡角斗场 ---
-func charge_skill_q(_delta: float) -> void:
-	pass
-
-func release_skill_q() -> void:
-	if not consume_energy(cost_kill_zone): return
-	
-	if is_instance_valid(active_kill_zone):
-		active_kill_zone.queue_free()
-	
-	var mouse_pos = get_global_mouse_position()
-	active_kill_zone = _create_kill_zone(mouse_pos)
-	
-	Global.spawn_floating_text(mouse_pos, "KILL ZONE!", Color.DARK_RED)
-	Global.on_camera_shake.emit(10.0, 0.3)
-
-# --- E技能: 回拉 ---
-func use_skill_e() -> void:
-	if active_rifts.is_empty(): return
-	if not consume_energy(cost_ripcord): return
-	
-	Global.on_camera_shake.emit(8.0, 0.2)
-	
-	var rifts_to_pull = active_rifts.duplicate()
-	active_rifts.clear()
-	
-	var all_enemies = get_tree().get_nodes_in_group("enemies")
-	
-	for rift in rifts_to_pull:
-		if not is_instance_valid(rift): continue
-		
-		# 停止内部 Timer，防止在拉回途中造成伤害
-		for child in rift.get_children():
-			if child is Timer: child.stop()
-		
-		var start_p = rift.global_position
-		var end_p = global_position 
-		
-		for enemy in all_enemies:
-			if not is_instance_valid(enemy): continue
-			
-			var closest_point = Geometry2D.get_closest_point_to_segment(enemy.global_position, start_p, end_p)
-			var dist = enemy.global_position.distance_to(closest_point)
-			
-			if dist < pull_width:
-				var tween = create_tween()
-				tween.tween_property(enemy, "global_position", global_position, 0.3).set_trans(Tween.TRANS_BACK)
-				
-				if enemy.has_node("HealthComponent"):
-					enemy.health_component.take_damage(pull_force_damage)
-					Global.spawn_floating_text(enemy.global_position, "RIP!", Color.RED)
-
-		var rtween = create_tween()
-		rtween.tween_property(rift, "global_position", global_position, 0.2).set_ease(Tween.EASE_IN)
-		rtween.tween_property(rift, "scale", Vector2.ZERO, 0.1) 
-		rtween.tween_callback(_cleanup_visual_node.bind(rift))
-
-# ==============================================================================
-# 4. 核心对象生成 (Callback 类型限制已移除)
-# ==============================================================================
-
-func _spawn_rift(start: Vector2, end: Vector2) -> void:
-	var rift = Area2D.new()
-	rift.global_position = start
-	rift.collision_mask = 2
-	rift.monitorable = false
-	rift.monitoring = true
-	
-	var col = CollisionShape2D.new()
-	var shape = SegmentShape2D.new()
-	shape.a = Vector2.ZERO
-	shape.b = end - start
-	col.shape = shape
-	rift.add_child(col)
-	
-	var line = Line2D.new()
-	line.add_point(Vector2.ZERO)
-	line.add_point(end - start)
-	line.width = 16.0
-	line.default_color = Color(0.8, 0.1, 0.1, 0.8)
-	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	line.end_cap_mode = Line2D.LINE_CAP_ROUND
-	rift.add_child(line)
-	
-	get_tree().current_scene.add_child(rift)
-	active_rifts.append(rift)
-	
-	var damage_timer = Timer.new()
-	damage_timer.wait_time = 0.5
-	damage_timer.autostart = true
-	rift.add_child(damage_timer)
-	
-	damage_timer.timeout.connect(_on_rift_damage_tick.bind(rift))
-	
-	var life_timer = get_tree().create_timer(rift_duration)
-	life_timer.timeout.connect(_on_rift_expired.bind(rift))
-
-# 【关键修改】参数去掉 : Area2D，防止传入已释放对象时报错
-func _on_rift_damage_tick(rift) -> void:
-	if not is_instance_valid(rift) or rift.is_queued_for_deletion(): return
-	
-	var targets = rift.get_overlapping_bodies() + rift.get_overlapping_areas()
-	for t in targets:
-		var enemy = null
-		if t.is_in_group("enemies"): enemy = t
-		elif t.owner and t.owner.is_in_group("enemies"): enemy = t.owner
-		
-		if enemy and enemy.has_node("HealthComponent"):
-			enemy.health_component.take_damage(rift_damage_per_tick)
-
-# 【关键修改】参数去掉 : Area2D
-func _on_rift_expired(rift) -> void:
-	if is_instance_valid(rift):
-		active_rifts.erase(rift)
-		rift.queue_free()
-
-# ------------------------------------------------------------------------------
-
-func _create_kill_zone(center_pos: Vector2) -> Area2D:
-	var zone = Area2D.new()
-	zone.global_position = center_pos
-	zone.collision_mask = 2
-	zone.monitorable = false
-	zone.monitoring = true
-	
-	var col = CollisionShape2D.new()
-	var shape = CircleShape2D.new()
-	shape.radius = kill_zone_radius
-	col.shape = shape
-	zone.add_child(col)
-	
-	var vis = Polygon2D.new()
-	var points = PackedVector2Array()
-	for i in range(32): points.append(Vector2(cos(i*TAU/32), sin(i*TAU/32)) * kill_zone_radius)
-	vis.polygon = points
-	vis.color = Color(0.5, 0.0, 0.0, 0.4)
-	zone.add_child(vis)
-	
-	get_tree().current_scene.add_child(zone)
-	
-	var tick_timer = Timer.new()
-	tick_timer.wait_time = 1.0
-	tick_timer.autostart = true
-	zone.add_child(tick_timer)
-	
-	tick_timer.timeout.connect(_on_kill_zone_tick.bind(zone))
-	
-	var life_timer = get_tree().create_timer(kill_zone_duration)
-	life_timer.timeout.connect(_on_kill_zone_expired.bind(zone, vis))
-	
-	return zone
-
-# 【关键修改】参数去掉类型限制
-func _on_kill_zone_tick(zone) -> void:
-	if not is_instance_valid(zone) or zone.is_queued_for_deletion(): return
-	
-	var targets = zone.get_overlapping_bodies() + zone.get_overlapping_areas()
-	for t in targets:
-		var enemy = null
-		if t.is_in_group("enemies"): enemy = t
-		elif t.owner and t.owner.is_in_group("enemies"): enemy = t.owner
-		
-		if enemy and enemy.has_node("HealthComponent"):
-			enemy.health_component.take_damage(kill_zone_damage)
-			Global.spawn_floating_text(enemy.global_position, str(kill_zone_damage), Color.DARK_RED)
-
-# 【关键修改】参数去掉类型限制
-func _on_kill_zone_expired(zone, vis) -> void:
-	if is_instance_valid(zone): 
-		var tw = zone.create_tween()
-		if is_instance_valid(vis):
-			tw.tween_property(vis, "modulate:a", 0.0, 0.5)
-		tw.tween_callback(_cleanup_visual_node.bind(zone))
-
-# ==============================================================================
-# 5. 血肉地雷逻辑
-# ==============================================================================
-
-func on_enemy_killed(enemy_unit: Unit) -> void:
-	energy = min(energy + 2.0, max_energy)
-	update_ui_signals()
-	
-	if is_instance_valid(active_kill_zone):
-		var dist = enemy_unit.global_position.distance_to(active_kill_zone.global_position)
-		if dist <= kill_zone_radius:
-			call_deferred("_spawn_flesh_mine", enemy_unit.global_position)
-
-func _spawn_flesh_mine(pos: Vector2) -> void:
-	var mine = Area2D.new()
-	mine.global_position = pos
-	mine.collision_mask = 2 
-	mine.monitorable = false
-	mine.monitoring = true
-	
-	var col = CollisionShape2D.new()
-	col.shape = CircleShape2D.new()
-	col.shape.radius = mine_trigger_radius
-	mine.add_child(col)
-	
-	var vis = Polygon2D.new()
-	vis.name = "Visual"
-	var points = PackedVector2Array()
-	for i in range(8): points.append(Vector2(cos(i*TAU/8), sin(i*TAU/8)) * (mine_trigger_radius * 0.8))
-	vis.polygon = points
-	vis.color = Color(0.6, 0.0, 0.0, 1.0)
-	mine.add_child(vis)
-	
-	get_tree().current_scene.add_child(mine)
-	Global.spawn_floating_text(pos, "FLESH!", Color.RED)
-	
-	# Mine 的信号不需要去类型，因为 Mine 销毁后信号也就断了，不会触发回调
-	mine.body_entered.connect(_on_mine_body_entered.bind(mine))
-	mine.area_entered.connect(_on_mine_area_entered.bind(mine))
-
-func _on_mine_body_entered(_body: Node2D, mine: Area2D) -> void:
-	_explode_flesh_mine(mine)
-
-func _on_mine_area_entered(area: Area2D, mine: Area2D) -> void:
-	if (area.owner and area.owner.is_in_group("enemies")) or area.is_in_group("enemies"):
-		_explode_flesh_mine(mine)
-
-func _explode_flesh_mine(mine: Node2D) -> void:
-	if not is_instance_valid(mine) or mine.is_queued_for_deletion():
+func _load_skill_config_from_csv() -> void:
+	"""从CSV加载技能配置参数"""
+	var skills = ConfigManager.get_player_skills("butcher")
+	if skills.is_empty():
+		print("[PlayerButcher] 警告：未找到技能配置，使用默认值")
 		return
 	
-	mine.set_deferred("monitoring", false)
+	# 加载所有技能参数
+	if "fixed_segment_length" in skills: fixed_segment_length = skills["fixed_segment_length"]
+	if "stake_duration" in skills: stake_duration = skills["stake_duration"]
+	if "chain_radius" in skills: chain_radius = skills["chain_radius"]
+	if "stake_throw_speed" in skills: stake_throw_speed = skills["stake_throw_speed"]
+	if "stake_impact_damage" in skills: stake_impact_damage = skills["stake_impact_damage"]
+	if "saw_fly_speed" in skills: saw_fly_speed = skills["saw_fly_speed"]
+	if "saw_rotation_speed" in skills: saw_rotation_speed = skills["saw_rotation_speed"]
+	if "saw_push_force" in skills: saw_push_force = skills["saw_push_force"]
+	if "saw_damage_tick" in skills: saw_damage_tick = skills["saw_damage_tick"]
+	if "saw_damage_open" in skills: saw_damage_open = skills["saw_damage_open"]
+	if "dismember_damage" in skills: dismember_damage = skills["dismember_damage"]
+	if "saw_max_distance" in skills: saw_max_distance = skills["saw_max_distance"]
 	
-	Global.on_camera_shake.emit(8.0, 0.1)
-	Global.spawn_floating_text(mine.global_position, "SPLAT!", Color.RED)
+	print("[PlayerButcher] 技能配置加载完成: 线段长度=", fixed_segment_length, " 锯条速度=", saw_fly_speed)
+
+# ==============================================================================
+# 主循环
+# ==============================================================================
+func _process_subclass(delta: float) -> void:
+	# 处理冲刺移动
+	if is_dashing:
+		_process_dashing_movement(delta)
+		return 
+
+	# 规划模式：子弹时间 + 起点跟随玩家
+	if is_planning:
+		if Engine.time_scale > 0.2: 
+			Engine.time_scale = 0.1
+		if not path_points.is_empty():
+			path_points[0] = global_position
 	
-	var explosion_radius = 120.0
+	# 更新规划路径的视觉效果
+	_update_planning_visuals()
+
+# ==============================================================================
+# 冲刺技能
+# ==============================================================================
+func use_dash() -> void:
+	if is_planning: return  # 规划模式下禁止冲刺
+	if is_dashing or not consume_energy(dash_cost): return
+	
+	var dir = (get_global_mouse_position() - global_position).normalized()
+	dash_target = position + dir * dash_distance 
+	is_dashing = true
+	collision.set_deferred("disabled", true) 
+	Global.play_player_dash()
+
+func _process_dashing_movement(delta: float) -> void:
+	position = position.move_toward(dash_target, dash_speed * delta)
+	
+	# 冲刺时击退敌人
 	var enemies = get_tree().get_nodes_in_group("enemies")
-	
 	for e in enemies:
-		if is_instance_valid(e) and e.global_position.distance_to(mine.global_position) < explosion_radius:
-			if e.has_node("HealthComponent"):
-				e.health_component.take_damage(mine_damage)
+		if global_position.distance_to(e.global_position) < 80:
+			if e.has_method("apply_knockback"):
+				var push_dir = (e.global_position - global_position).normalized()
+				e.apply_knockback(push_dir, 800.0)
 	
-	var flash = Polygon2D.new()
-	if mine.has_node("Visual"):
-		flash.polygon = mine.get_node("Visual").polygon
-	else:
-		var temp_points = PackedVector2Array()
-		for i in range(8): temp_points.append(Vector2(cos(i*TAU/8), sin(i*TAU/8)) * 20.0)
-		flash.polygon = temp_points
+	# 到达目标位置
+	if position.distance_to(dash_target) < 10.0:
+		is_dashing = false
+		collision.set_deferred("disabled", false)
+
+# ==============================================================================
+# Q技能：锯条规划与发射
+# ==============================================================================
+func charge_skill_q(delta: float) -> void:
+	# 如果已有激活的锯条，再按Q就手动消失
+	if is_instance_valid(active_saw) and not is_planning:
+		if active_saw.has_method("manual_dismiss"):
+			active_saw.manual_dismiss()
+		active_saw = null
+		Global.spawn_floating_text(global_position, "Dismissed!", Color.YELLOW)
+		return
+	
+	# 进入规划模式
+	if not is_planning:
+		enter_planning_mode()
+	
+	# 左键：添加路径点
+	if Input.is_action_just_pressed("click_left"):
+		handle_add_point()
+	
+	# 右键：撤销路径点
+	if Input.is_action_just_pressed("click_right"):
+		undo_last_point()
+
+func release_skill_q() -> void:
+	if is_planning:
+		launch_saw_construct()
+
+func enter_planning_mode() -> void:
+	is_planning = true
+	is_path_closed = false
+	Engine.time_scale = 0.1
+	path_points.clear()
+	line_2d.clear_points()
+	path_points.append(global_position)  # 起点
+
+func handle_add_point() -> void:
+	# 已闭合则禁止继续添加点
+	if is_path_closed:
+		Global.spawn_floating_text(get_global_mouse_position(), "LOCKED!", Color.RED)
+		return
 		
-	flash.global_position = mine.global_position
-	flash.scale = Vector2(3, 3)
-	flash.color = Color(1, 0, 0, 0.5)
-	get_tree().current_scene.add_child(flash)
+	if path_points.is_empty(): return
 	
-	var tw = flash.create_tween()
-	tw.tween_property(flash, "modulate:a", 0.0, 0.2)
-	tw.tween_callback(_cleanup_visual_node.bind(flash))
+	var start_pos = path_points.back()
+	var mouse_pos = get_global_mouse_position()
 	
-	mine.queue_free()
+	# 计算延伸点（固定距离）
+	var dir = (mouse_pos - start_pos).normalized()
+	var next_pos = start_pos + (dir * fixed_segment_length)
+	
+	# 检测线段相交（闭合判定）
+	if path_points.size() >= 3:
+		var new_line_start = path_points.back()
+		var new_line_end = next_pos
+		
+		# 检查新线段是否与之前的线段相交
+		for i in range(path_points.size() - 2):
+			var old_line_start = path_points[i]
+			var old_line_end = path_points[i + 1]
+			
+			var intersection = Geometry2D.segment_intersects_segment(
+				old_line_start, old_line_end,
+				new_line_start, new_line_end
+			)
+			
+			if intersection != null:
+				is_path_closed = true
+				Global.spawn_floating_text(intersection, "CLOSED!", Color.RED)
+				print("[Butcher] 线段相交闭合! 交点: ", intersection)
+				break
+	
+	# 扣除能量并添加点（保持完整路径，不剪裁）
+	if consume_energy(skill_q_cost):
+		path_points.append(next_pos)
+		if not is_path_closed:
+			Global.spawn_floating_text(next_pos, "Node", Color.WHITE)
+	else:
+		Global.spawn_floating_text(global_position, "No Energy!", Color.RED)
 
-func _cleanup_visual_node(node: Node) -> void:
-	if is_instance_valid(node):
-		node.queue_free()
+func undo_last_point() -> void:
+	if path_points.size() > 1:
+		path_points.pop_back()
+		is_path_closed = false
+		energy += skill_q_cost
+		update_ui_signals()
 
-func _update_chains() -> void:
-	for c in chain_container.get_children(): c.queue_free()
-	if active_rifts.is_empty(): return
-	for rift in active_rifts:
-		if is_instance_valid(rift):
-			var line = Line2D.new()
-			line.width = 2.0
-			line.default_color = Color(0.5, 0.5, 0.5, 0.5)
-			line.add_point(position)
-			line.add_point(rift.global_position)
-			chain_container.add_child(line)
+func launch_saw_construct() -> void:
+	is_planning = false
+	Engine.time_scale = 1.0
+	line_2d.clear_points()
+	
+	# 至少需要2个点
+	if path_points.size() < 2:
+		path_points.clear()
+		return
+
+	# 清除旧锯条
+	if is_instance_valid(active_saw):
+		active_saw.queue_free()
+		active_saw = null
+
+	print("[Butcher] 发射", "闭合" if is_path_closed else "开放", "锯条")
+
+	var fly_dir = (path_points[1] - path_points[0]).normalized()
+	
+	var saw = SawProjectile.new()
+	saw.name = "Saw_" + str(Time.get_ticks_msec())
+	get_parent().add_child(saw)
+	saw.global_position = global_position
+	saw.setup(path_points, is_path_closed, fly_dir, self)
+	
+	active_saw = saw
+	
+	Global.on_camera_shake.emit(5.0, 0.2)
+	path_points.clear()
+	is_path_closed = false
+
+func _update_planning_visuals() -> void:
+	if not is_planning: 
+		if line_2d: line_2d.clear_points()
+		return
+	
+	line_2d.global_position = Vector2.ZERO
+	line_2d.clear_points()
+	
+	if path_points.is_empty(): return
+	
+	# 绘制已确认的点
+	for p in path_points:
+		line_2d.add_point(p)
+	
+	# 绘制预览线（不参与闭合检测）
+	if not is_path_closed:
+		var last_point = path_points.back()
+		var mouse_pos = get_global_mouse_position()
+		var dir = (mouse_pos - last_point).normalized()
+		var preview_pos = last_point + (dir * fixed_segment_length)
+		line_2d.add_point(preview_pos)
+		
+		# 预览线永远是正常颜色
+		line_2d.default_color = planning_color_normal
+		line_2d.width = 6.0
+	else:
+		# 已闭合：红色粗线
+		line_2d.default_color = planning_color_closed
+		line_2d.width = 8.0
+
+# ==============================================================================
+# E技能：肉桩投掷
+# ==============================================================================
+func use_skill_e() -> void:
+	if not consume_energy(skill_e_cost): return
+	
+	# 清除旧肉桩
+	if is_instance_valid(active_stake): 
+		active_stake.queue_free()
+	
+	var target_pos = get_global_mouse_position()
+	var dir = (target_pos - global_position).normalized()
+	var dist = min(global_position.distance_to(target_pos), 800)
+	var final_pos = global_position + dir * dist
+	
+	var stake = MeatStake.new()
+	stake.setup(final_pos, self)
+	get_parent().add_child(stake)
+	stake.global_position = global_position
+	active_stake = stake
+	
+	Global.on_camera_shake.emit(10.0, 0.2)

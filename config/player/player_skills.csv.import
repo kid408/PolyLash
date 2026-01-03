@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://ba4v3dpi36wuh"
+
+[deps]
+
+files=["res://config/player/player_skills.fixed.translation", "res://config/player/player_skills.stake.translation", "res://config/player/player_skills.chain.translation", "res://config/player/player_skills.stake.translation", "res://config/player/player_skills.stake.translation", "res://config/player/player_skills.saw.translation", "res://config/player/player_skills.saw.translation", "res://config/player/player_skills.saw.translation", "res://config/player/player_skills.saw.translation", "res://config/player/player_skills.saw.translation", "res://config/player/player_skills.dismember.translation", "res://config/player/player_skills.saw.translation", "res://config/player/player_skills.recall.translation", "res://config/player/player_skills.recall.translation", "res://config/player/player_skills.recall.translation", "res://config/player/player_skills.auto.translation", "res://config/player/player_skills.stun.translation", "res://config/player/player_skills.stun.translation", "res://config/player/player_skills.web.translation", "res://config/player/player_skills.web.translation", "res://config/player/player_skills.web.translation", "res://config/player/player_skills.web.translation"]
+
+source_file="res://config/player/player_skills.csv"
+dest_files=["res://config/player/player_skills.fixed.translation", "res://config/player/player_skills.stake.translation", "res://config/player/player_skills.chain.translation", "res://config/player/player_skills.stake.translation", "res://config/player/player_skills.stake.translation", "res://config/player/player_skills.saw.translation", "res://config/player/player_skills.saw.translation", "res://config/player/player_skills.saw.translation", "res://config/player/player_skills.saw.translation", "res://config/player/player_skills.saw.translation", "res://config/player/player_skills.dismember.translation", "res://config/player/player_skills.saw.translation", "res://config/player/player_skills.recall.translation", "res://config/player/player_skills.recall.translation", "res://config/player/player_skills.recall.translation", "res://config/player/player_skills.auto.translation", "res://config/player/player_skills.stun.translation", "res://config/player/player_skills.stun.translation", "res://config/player/player_skills.web.translation", "res://config/player/player_skills.web.translation", "res://config/player/player_skills.web.translation", "res://config/player/player_skills.web.translation"]
+
+[params]
+
+compress=true
+delimiter=0
