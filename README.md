@@ -18,6 +18,7 @@
 - [核心特性](#核心特性)
 - [快速开始](#快速开始)
 - [游戏操作](#游戏操作)
+- [技术架构](#技术架构)
 - [项目结构](#项目结构)
 - [系统文档](#系统文档)
 - [配置系统](#配置系统)
@@ -110,6 +111,62 @@ PolyLash是一款快节奏的2D动作生存游戏。玩家需要在无限生成�
 | **L键** | 进入下一波 | 跳过当前波次剩余时间 |
 | **Tab键** | 切换角色 | 在7个角色之间循环切换 |
 | **1-6键** | 切换武器 | 查看不同武器槽位 |
+
+---
+
+## 🏗️ 技术架构
+
+### 核心设计理念
+
+PolyLash采用**数据驱动**和**模块化**的架构设计，所有游戏数据通过CSV配置文件管理，代码高度解耦，易于扩展和维护。
+
+### 架构层次
+
+```
+┌─────────────────────────────────────────┐
+│          游戏场景层 (Scenes)             │
+│  Arena, UI, Players, Enemies, Weapons   │
+└─────────────────┬───────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│         系统管理层 (Managers)            │
+│  SkillManager, UpgradeManager, etc.     │
+└─────────────────┬───────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│        全局单例层 (Autoloads)            │
+│  ConfigManager, Global, SoundManager    │
+└─────────────────┬───────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│         配置数据层 (CSV Files)           │
+│  Player, Enemy, Weapon, Wave, Item      │
+└─────────────────────────────────────────┘
+```
+
+### 关键系统
+
+#### 1. 配置管理系统 (ConfigManager)
+- **职责**: 统一加载和管理所有CSV配置
+- **特点**: 启动时一次性加载，内存缓存，快速访问
+- **位置**: `autoloads/config_manager.gd`
+
+#### 2. 技能系统 (SkillManager + SkillBase)
+- **职责**: 管理角色技能的加载、执行和生命周期
+- **特点**: 基于继承的技能类，CSV配置参数，槽位管理
+- **位置**: `scenes/skills/`
+
+#### 3. 升级系统 (UpgradeManager)
+- **职责**: 处理属性升级逻辑和效果应用
+- **特点**: 支持flat和percent两种数值类型
+- **位置**: `autoloads/upgrade_manager.gd`
+
+#### 4. 组件系统 (Components)
+- **职责**: 可复用的游戏逻辑组件
+- **组件**: HealthComponent, HitboxComponent, HurtboxComponent
+- **位置**: `scenes/components/`
+
+详细架构文档请查看 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ---
 
@@ -232,28 +289,58 @@ PolyLash_Project/
 
 详细的系统文档请查看 `docs/` 目录：
 
+### 游戏系统文档
 - **[SYSTEMS.md](docs/SYSTEMS.md)** - 游戏系统详解（波次、宝箱、升级、音效等）
 - **[PLAYERS.md](docs/PLAYERS.md)** - 玩家角色详解（7个角色的技能和玩法）
 - **[ENEMIES.md](docs/ENEMIES.md)** - 敌人系统详解（敌人类型和AI行为）
 - **[WEAPONS.md](docs/WEAPONS.md)** - 武器系统详解（武器类型和属性）
 - **[WAVES.md](docs/WAVES.md)** - 波次系统详解（波次配置和生成规则）
 
+### 技术文档
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - 系统架构和设计模式
+- **[CONFIGURATION.md](docs/CONFIGURATION.md)** - 配置系统详解和CSV格式说明
+- **[SKILL_SYSTEM.md](docs/SKILL_SYSTEM.md)** - 技能系统技术文档
+- **[DEVELOPMENT.md](docs/DEVELOPMENT.md)** - 开发指南和最佳实践
+
 ---
 
 ## ⚙️ 配置系统
 
-游戏使用CSV文件进行配置，所有游戏数据都可以通过修改CSV文件来调整。
+游戏使用**CSV文件驱动**的配置系统，所有游戏数据都可以通过修改CSV文件来调整，无需修改代码。
 
 ### 配置文件位置
 
 所有配置文件位于 `config/` 目录，按功能分类：
 
-- `system/` - 系统配置（游戏、地图、摄像机、输入、音效）
-- `player/` - 玩家配置（属性、视觉、武器）
-- `enemy/` - 敌人配置（属性、视觉、武器）
-- `weapon/` - 武器配置（基础、详细属性）
-- `wave/` - 波次配置（波次、单位、宝箱）
-- `item/` - 物品配置（宝箱、升级属性）
+```
+config/
+├── system/          # 系统配置
+│   ├── game_config.csv
+│   ├── map_config.csv
+│   ├── camera_config.csv
+│   ├── input_config.csv
+│   └── sound_config.csv
+├── player/          # 玩家配置
+│   ├── player_config.csv
+│   ├── player_visual.csv
+│   ├── player_weapons.csv
+│   ├── player_skill_bindings.csv
+│   └── skill_params.csv
+├── enemy/           # 敌人配置
+│   ├── enemy_config.csv
+│   ├── enemy_visual.csv
+│   └── enemy_weapons.csv
+├── weapon/          # 武器配置
+│   ├── weapon_config.csv
+│   └── weapon_stats_config.csv
+├── wave/            # 波次配置
+│   ├── wave_config.csv
+│   ├── wave_units_config.csv
+│   └── wave_chest_config.csv
+└── item/            # 物品配置
+    ├── chest_config.csv
+    └── upgrade_attributes.csv
+```
 
 ### CSV文件格式
 
@@ -265,18 +352,35 @@ column1,column2,column3
 data1,data2,data3
 ```
 
-- **第一行**：列名（英文）
+- **第一行**：列名（英文，用作代码中的key）
 - **第二行**：注释行（第一列为 -1，其余列为中文说明）
 - **第三行及以后**：数据行
+
+### 配置加载流程
+
+1. **启动时加载**: ConfigManager在游戏启动时自动加载所有CSV
+2. **内存缓存**: 配置数据缓存在内存中，提供快速访问
+3. **便捷访问**: 通过ConfigManager提供的方法访问配置
+
+```gdscript
+# 获取玩家配置
+var config = ConfigManager.get_player_config("player_herder")
+
+# 获取技能参数
+var params = ConfigManager.get_skill_params("skill_dash")
+
+# 获取武器配置
+var weapon = ConfigManager.get_weapon_config("weapon_sword")
+```
 
 ### 修改配置
 
 1. 使用文本编辑器或Excel打开CSV文件
 2. 修改数据行（不要修改第一行和第二行）
-3. 保存文件（确保使用UTF-8编码）
+3. 保存文件（**确保使用UTF-8编码**）
 4. 重启游戏以加载新配置
 
-详细的配置说明请查看 `config/README.md`
+详细的配置说明请查看 [docs/CONFIGURATION.md](docs/CONFIGURATION.md)
 
 ---
 

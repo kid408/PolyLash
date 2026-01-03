@@ -36,6 +36,8 @@ var player_configs: Dictionary = {}              # 玩家基础属性配置 (pla
 var player_visual_configs: Dictionary = {}       # 玩家视觉配置 (player_id -> visual)
 var player_weapon_configs: Dictionary = {}       # 玩家武器配置 (player_id -> weapons)
 var player_skill_configs: Dictionary = {}        # 玩家技能配置 (player_id -> skills)
+var player_skill_bindings: Dictionary = {}       # 玩家技能绑定 (player_id -> bindings)
+var skill_params: Dictionary = {}                # 技能参数配置 (skill_id -> params)
 
 # 敌人相关配置
 var enemy_configs: Dictionary = {}               # 敌人基础属性配置 (enemy_id -> config)
@@ -74,6 +76,8 @@ const PLAYER_CONFIG = CONFIG_DIR + "player/player_config.csv"
 const PLAYER_VISUAL = CONFIG_DIR + "player/player_visual.csv"
 const PLAYER_WEAPONS = CONFIG_DIR + "player/player_weapons.csv"
 const PLAYER_SKILLS = CONFIG_DIR + "player/player_skills.csv"
+const PLAYER_SKILL_BINDINGS = CONFIG_DIR + "player/player_skill_bindings.csv"
+const SKILL_PARAMS = CONFIG_DIR + "player/skill_params.csv"
 const ENEMY_CONFIG = CONFIG_DIR + "enemy/enemy_config.csv"
 const ENEMY_VISUAL = CONFIG_DIR + "enemy/enemy_visual.csv"
 const ENEMY_WEAPONS = CONFIG_DIR + "enemy/enemy_weapons.csv"
@@ -123,6 +127,8 @@ func load_all_configs() -> void:
 	player_visual_configs = load_csv_as_dict(PLAYER_VISUAL, "player_id")
 	player_weapon_configs = load_csv_as_dict(PLAYER_WEAPONS, "player_id")
 	player_skill_configs = load_csv_as_dict(PLAYER_SKILLS, "player_id")
+	player_skill_bindings = load_csv_as_dict(PLAYER_SKILL_BINDINGS, "player_id")
+	skill_params = load_csv_as_dict(SKILL_PARAMS, "skill_id")
 	
 	# 敌人配置
 	enemy_configs = load_csv_as_dict(ENEMY_CONFIG, "enemy_id")
@@ -319,6 +325,12 @@ func get_player_weapons(player_id: String) -> Dictionary:
 
 func get_player_skills(player_id: String) -> Dictionary:
 	return player_skill_configs.get(player_id, {})
+
+func get_player_skill_bindings(player_id: String) -> Dictionary:
+	return player_skill_bindings.get(player_id, {})
+
+func get_skill_params(skill_id: String) -> Dictionary:
+	return skill_params.get(skill_id, {})
 
 func get_weapon_config(weapon_id: String) -> Dictionary:
 	return weapon_configs.get(weapon_id, {})

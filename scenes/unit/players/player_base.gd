@@ -22,13 +22,6 @@ var energy_regen: float = 0.5
 var max_armor: int = 3
 var base_speed: float = 300.0
 
-# 冲刺相关（从CSV加载）
-var dash_distance: float = 400.0
-var dash_speed: float = 2000.0
-var dash_damage: int = 20
-var dash_knockback: float = 2.0
-var dash_cost: float = 10.0
-
 # 技能消耗（从CSV加载）
 var skill_q_cost: float = 50.0
 var skill_e_cost: float = 30.0
@@ -43,14 +36,7 @@ var move_dir: Vector2 = Vector2.ZERO
 var external_force: Vector2 = Vector2.ZERO
 var external_force_decay: float = 50.0  # 进一步增加衰减速度，从30.0改为50.0
 
-# 冲刺状态
-var is_dashing: bool = false
-var dash_target: Vector2 = Vector2.ZERO
-var dash_start_pos: Vector2 = Vector2.ZERO
-
 @onready var collision: CollisionShape2D = $CollisionShape2D
-@onready var dash_hitbox: HitboxComponent = $DashHitbox
-@onready var trail: Trail = %Trail if has_node("%Trail") else null
 @onready var weapon_container: WeaponContainer = $WeaponContainer if has_node("WeaponContainer") else null
 
 # 武器管理
@@ -86,8 +72,6 @@ func _ready() -> void:
 	
 	# 创建能量槽UI
 	_create_energy_bar_ui()
-	
-	print(">>> 玩家加载完成: %s (ID: %s, 武器数: %d)" % [self.name, player_id, current_weapons.size()])
 
 func _load_config_from_csv() -> void:
 	if player_id.is_empty():
@@ -105,13 +89,6 @@ func _load_config_from_csv() -> void:
 	energy_regen = config.get("energy_regen", 0.5)
 	max_armor = config.get("max_armor", 3)
 	base_speed = config.get("base_speed", 300.0)
-	
-	# 加载冲刺属性
-	dash_distance = config.get("dash_distance", 400.0)
-	dash_speed = config.get("dash_speed", 2000.0)
-	dash_damage = config.get("dash_damage", 20)
-	dash_knockback = config.get("dash_knockback", 2.0)
-	dash_cost = config.get("dash_cost", 10.0)
 	
 	# 加载技能消耗
 	skill_q_cost = config.get("skill_q_cost", 50.0)
@@ -135,12 +112,6 @@ func _load_config_from_csv() -> void:
 	
 	stats.health = csv_health
 	stats.speed = csv_speed
-	
-	print("[PlayerBase] 从CSV加载属性:")
-	print("  - health: %d" % csv_health)
-	print("  - speed: %d" % csv_speed)
-	print("  - dash_distance: %d" % dash_distance)
-	print("  - dash_speed: %d" % dash_speed)
 
 func _load_weapons_from_config() -> void:
 	if player_id.is_empty() or not weapon_container:
@@ -148,7 +119,6 @@ func _load_weapons_from_config() -> void:
 	
 	var weapon_cfg = ConfigManager.get_player_weapons(player_id)
 	if weapon_cfg.is_empty():
-		print("[PlayerBase] 未找到武器配置 for ", player_id)
 		return
 	
 	# 加载每个武器槽位
@@ -166,7 +136,6 @@ func _create_item_weapon_from_csv(weapon_id: String) -> ItemWeapon:
 	"""从CSV配置创建ItemWeapon对象"""
 	var weapon_stats_data = ConfigManager.get_weapon_stats(weapon_id)
 	if weapon_stats_data.is_empty():
-		print("[PlayerBase] 未找到武器配置: ", weapon_id)
 		return null
 	
 	# 创建WeaponStats对象
@@ -200,12 +169,10 @@ func _create_item_weapon_from_csv(weapon_id: String) -> ItemWeapon:
 	# 加载武器场景
 	var weapon_scene_path = weapon_stats_data.get("weapon_scene", "")
 	if weapon_scene_path == "":
-		print("[PlayerBase] 武器场景路径为空: ", weapon_id)
 		return null
 	
 	item_weapon.scene = load(weapon_scene_path) as PackedScene
 	if not item_weapon.scene:
-		print("[PlayerBase] 无法加载武器场景: ", weapon_scene_path)
 		return null
 	
 	# 设置武器类型（根据是否有子弹场景判断）
@@ -231,8 +198,6 @@ func _add_weapon(data: ItemWeapon) -> void:
 	
 	if weapon_container:
 		weapon_container.update_weapons_position(current_weapons)
-	
-	print("[PlayerBase] 添加武器: ", data.item_name)
 
 func _process(delta: float) -> void:
 	if Global.game_paused: return
@@ -254,7 +219,7 @@ func _process(delta: float) -> void:
 	update_rotation()
 
 func _handle_input(delta: float) -> void:
-	# 1. 移动逻辑
+	# 移动逻辑
 	move_dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if can_move():
 		var current_speed = base_speed 
@@ -265,87 +230,14 @@ func _handle_input(delta: float) -> void:
 		# position.x = clamp(position.x, -2000, 2000)
 		# position.y = clamp(position.y, -2000, 2000)
 
-	# 2. 技能按键分发 (核心修复在这里！)
-	
-	# === 优先级 1: E 技能 ===
-	if Input.is_action_just_pressed("skill_e"):
-		use_skill_e()
-		return # 阻止其他输入
-
-	# === 优先级 2: Q 技能 (规划模式) ===
-	if Input.is_action_pressed("skill_q"):
-		charge_skill_q(delta)
-		# 【关键】如果正在按 Q，左键点击只属于 Q 技能，
-		# 哪怕你点了左键，也不要往下执行 use_dash！
-		return 
-	
-	elif Input.is_action_just_released("skill_q"):
-		release_skill_q()
-		return
-
-	# === 优先级 3: 普通左键冲刺 ===
-	# 只有没按 Q 也没按 E 的时候，左键才算冲刺
-	if Input.is_action_just_pressed("click_left"):
-		use_dash()
+	# 技能按键分发由各个子类的SkillManager处理
 
 # --- 虚函数 (子类重写) ---
-func can_move() -> bool: return not is_dashing
+func can_move() -> bool: 
+	return true  # 移动控制现在由SkillManager和各个技能处理
+
 func _process_subclass(delta: float) -> void: 
-	# 处理冲刺移动
-	_process_dash_movement(delta)
-
-# 通用冲刺实现（子类可以重写）
-func use_dash() -> void: 
-	if is_dashing or not consume_energy(dash_cost): 
-		return
-	
-	var mouse_pos = get_global_mouse_position()
-	var dir = (mouse_pos - global_position).normalized()
-	dash_start_pos = global_position
-	dash_target = dash_start_pos + dir * dash_distance
-	
-	_start_dash()
-
-func _start_dash() -> void:
-	is_dashing = true
-	collision.set_deferred("disabled", true)
-	dash_hitbox.set_deferred("monitorable", true)
-	dash_hitbox.set_deferred("monitoring", true)
-	dash_hitbox.setup(dash_damage, false, dash_knockback, self)
-	
-	if trail: 
-		trail.start_trail()
-	
-	Global.play_player_dash()
-
-func _process_dash_movement(delta: float) -> void:
-	if not is_dashing:
-		return
-		
-	position = position.move_toward(dash_target, dash_speed * delta)
-	
-	if position.distance_to(dash_target) < 10.0:
-		_end_dash()
-
-func _end_dash() -> void:
-	is_dashing = false
-	collision.set_deferred("disabled", false)
-	dash_hitbox.set_deferred("monitorable", false)
-	dash_hitbox.set_deferred("monitoring", false)
-	
-	if trail: 
-		trail.stop()
-	
-	_on_dash_complete()
-
-# 子类可重写此方法来添加冲刺结束后的逻辑
-func _on_dash_complete() -> void:
-	pass
-
-# 技能虚函数（子类必须实现）       
-func charge_skill_q(delta:float) -> void: pass 
-func release_skill_q() -> void: pass   
-func use_skill_e() -> void: pass       
+	pass  # 子类可以重写此方法添加额外逻辑       
 
 # --- 战斗逻辑 ---
 func take_damage(raw_amount: float) -> void:
@@ -399,12 +291,9 @@ func update_ui_signals() -> void:
 		energy_bar_ui.update_bar(value, energy)
 
 func _create_energy_bar_ui() -> void:
-	print("[PlayerBase] 开始创建能量槽UI")
-	
 	# 加载能量槽脚本
 	var energy_bar_script = load("res://scenes/ui/energy_bar.gd")
 	if not energy_bar_script:
-		print("[PlayerBase] 错误：无法加载energy_bar.gd")
 		return
 	
 	# 创建能量槽控件
@@ -452,10 +341,6 @@ func _create_energy_bar_ui() -> void:
 	# 连接信号
 	if not energy_changed.is_connected(_on_energy_changed_for_ui):
 		energy_changed.connect(_on_energy_changed_for_ui)
-	
-	print("[PlayerBase] 能量槽UI创建完成")
-	print("  位置: ", energy_bar_ui.position)
-	print("  大小: ", energy_bar_ui.custom_minimum_size)
 
 func _on_energy_changed_for_ui(current: float, max_val: float) -> void:
 	if energy_bar_ui and energy_bar_ui.has_method("_on_player_energy_changed"):
@@ -472,7 +357,6 @@ func is_facing_right() -> bool:
 	return visuals.scale.x < 0
 
 func _on_death() -> void:
-	print(">>> 玩家死亡 <<<")
 	Global.play_player_death()
 	visuals.visible = false
 	# 简单的死亡粒子生成

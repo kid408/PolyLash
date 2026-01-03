@@ -1,9 +1,0 @@
-player_id,fixed_segment_length,stake_duration,chain_radius,stake_throw_speed,stake_impact_damage,saw_fly_speed,saw_rotation_speed,saw_push_force,saw_damage_tick,saw_damage_open,dismember_damage,saw_max_distance,recall_fly_speed,recall_damage,recall_execute_mult,auto_recall_delay,stun_radius,stun_duration,web_color_open_r,web_color_open_g,web_color_open_b,web_color_open_a
--1,线段长度,肉桩持续,链条半径,肉桩速度,肉桩伤害,锯条速度,锯条旋转,锯条推力,锯条伤害闭,锯条伤害开,肢解伤害,锯条距离,收网速度,收网伤害,处决倍率,自动收网,定身半径,定身时长,蛛网颜色R,蛛网颜色G,蛛网颜色B,蛛网颜色A
-butcher,400,6,250,1200,20,1100,25,1000,3,1,200,900,0,0,0,0,0,0,0,0,0,0
-weaver,320,0,0,0,0,0,0,0,0,0,0,0,3,40,3,8,300,2.5,0.6,0.8,1.0,0.8
-pyro,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-sapper,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-tempest,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-wind,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-herder,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

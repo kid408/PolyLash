@@ -1,0 +1,9 @@
+player_id,slot_q,slot_e,slot_lmb,slot_rmb
+-1,Q技能ID,E技能ID,左键技能ID,右键技能ID
+butcher,skill_saw_path,skill_meat_stake,skill_dash,
+weaver,skill_web_weave,skill_stun_bomb,skill_dash,
+herder,skill_herder_loop,skill_herder_explosion,skill_dash,
+pyro,skill_fire_path,skill_fire_nova,skill_dash,
+wind,skill_wind_path,skill_storm_eye,skill_dash,
+sapper,skill_mine_path,skill_totem,skill_dash,
+tempest,,,skill_dash,
