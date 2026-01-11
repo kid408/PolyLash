@@ -84,8 +84,10 @@ func _ready() -> void:
 	warning_line.top_level = true # 必须顶级，不随怪物旋转
 	add_child(warning_line)
 	
-	# 应用CSV配置的颜色
-	_apply_color_from_config()
+	# 应用CSV配置
+	_apply_visual_from_config()  # 应用视觉配置（精灵、缩放、碰撞体等）
+	_apply_color_from_config()   # 应用颜色配置
+	_apply_behavior_from_config() # 应用行为配置
 	
 	original_modulate = visuals.modulate
 	
@@ -111,6 +113,98 @@ func _apply_color_from_config() -> void:
 			var color = Color(float(r), float(g), float(b), 1)
 			visuals.modulate = color
 			print("[Enemy] 应用颜色配置: ", enemy_id, " -> ", color)
+
+# 从CSV配置应用视觉属性（精灵、缩放、碰撞体等）
+func _apply_visual_from_config() -> void:
+	var visual_config = ConfigManager.get_enemy_visual(enemy_id)
+	if visual_config.is_empty():
+		return
+	
+	print("[Enemy] 应用视觉配置: ", enemy_id)
+	
+	# 设置精灵
+	if visual_config.has("sprite_path"):
+		var sprite_path = visual_config.get("sprite_path", "")
+		if sprite_path != "" and sprite_path != null:
+			var texture = load(sprite_path)
+			if texture and visuals.has_node("Sprite2D"):
+				visuals.get_node("Sprite2D").texture = texture
+				print("[Enemy] 应用精灵: ", sprite_path)
+	
+	# 设置缩放
+	if visual_config.has("scale_x") and visual_config.has("scale_y"):
+		var scale_x = visual_config.get("scale_x", 1.0)
+		var scale_y = visual_config.get("scale_y", 1.0)
+		if scale_x != null and scale_y != null:
+			visuals.scale = Vector2(float(scale_x), float(scale_y))
+			print("[Enemy] 应用缩放: ", visuals.scale)
+	
+	# 设置偏移
+	if visual_config.has("offset_x") and visual_config.has("offset_y"):
+		var offset_x = visual_config.get("offset_x", 0.0)
+		var offset_y = visual_config.get("offset_y", 0.0)
+		if offset_x != null and offset_y != null and visuals.has_node("Sprite2D"):
+			visuals.get_node("Sprite2D").offset = Vector2(float(offset_x), float(offset_y))
+	
+	# 设置碰撞体半径
+	if visual_config.has("collision_radius") and collision_shape:
+		var radius = visual_config.get("collision_radius", 20.0)
+		if radius != null and collision_shape.shape is CircleShape2D:
+			collision_shape.shape.radius = float(radius)
+			print("[Enemy] 应用碰撞半径: ", radius)
+	
+	# 设置受击框大小
+	if visual_config.has("hitbox_width") and visual_config.has("hitbox_height"):
+		var hitbox_width = visual_config.get("hitbox_width", 40.0)
+		var hitbox_height = visual_config.get("hitbox_height", 40.0)
+		if hitbox_width != null and hitbox_height != null:
+			var hitbox = get_node_or_null("Hitbox")
+			if hitbox:
+				var hitbox_shape = hitbox.get_node_or_null("CollisionShape2D")
+				if hitbox_shape and hitbox_shape.shape is RectangleShape2D:
+					hitbox_shape.shape.size = Vector2(float(hitbox_width), float(hitbox_height))
+					print("[Enemy] 应用受击框: ", hitbox_shape.shape.size)
+	
+	# 设置Z层级
+	if visual_config.has("z_index"):
+		var z = visual_config.get("z_index", 0)
+		if z != null:
+			z_index = int(z)
+	
+	# 设置颜色（从visual_config，覆盖enemy_config中的颜色）
+	if visual_config.has("color_r") and visual_config.has("color_g") and visual_config.has("color_b"):
+		var r = visual_config.get("color_r", 1.0)
+		var g = visual_config.get("color_g", 1.0)
+		var b = visual_config.get("color_b", 1.0)
+		var a = visual_config.get("color_a", 1.0)
+		if r != null and g != null and b != null:
+			visuals.modulate = Color(float(r), float(g), float(b), float(a) if a != null else 1.0)
+
+# 从CSV配置应用行为参数
+func _apply_behavior_from_config() -> void:
+	var config = ConfigManager.get_enemy_config(enemy_id)
+	if config.is_empty():
+		return
+	
+	# 加载行为参数
+	if config.has("flock_push"):
+		flock_push = float(config.get("flock_push", 20.0))
+	if config.has("stop_distance"):
+		stop_distance = float(config.get("stop_distance", 60.0))
+	if config.has("charge_prep_time"):
+		charge_prep_time = float(config.get("charge_prep_time", 0.8))
+	if config.has("charge_duration"):
+		charge_duration = float(config.get("charge_duration", 0.6))
+	if config.has("charge_speed_mult"):
+		charge_speed_mult = float(config.get("charge_speed_mult", 3.5))
+	if config.has("charge_cooldown"):
+		charge_cooldown = float(config.get("charge_cooldown", 3.0))
+	if config.has("break_radius"):
+		break_radius = float(config.get("break_radius", 40.0))
+	if config.has("can_charge"):
+		can_charge = int(config.get("can_charge", 0)) == 1
+	
+	print("[Enemy] 应用行为配置: ", enemy_id, " can_charge=", can_charge)
 
 # ==============================================================================
 # 5. 物理处理 (带状态机)

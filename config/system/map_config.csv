@@ -11,3 +11,7 @@ chest_spawn_density,10,宝箱生成密度
 chest_spawn_radius,2000,宝箱生成半径
 background_extend_threshold,1000,背景扩展阈值（相机移动多远后扩展背景）
 indicator_show_range,3000,指示器显示范围（宝箱指示器显示距离）
+spawn_area_width,1000,敌人生成区域宽度
+spawn_area_height,500,敌人生成区域高度
+camera_view_range,1500,相机视野范围
+min_distance_between_chests,500,宝箱最小间距

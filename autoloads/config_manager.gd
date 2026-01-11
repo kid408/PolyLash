@@ -357,12 +357,18 @@ func get_input_mapping(action: String) -> Dictionary:
 	return input_configs.get(action, {})
 
 func get_game_setting(key: String, default_value = null):
+	if not game_config.has(key) and default_value != null:
+		push_warning("[ConfigManager] game_config 缺少键 '%s'，使用默认值: %s" % [key, str(default_value)])
 	return game_config.get(key, default_value)
 
 func get_camera_setting(key: String, default_value = null):
+	if not camera_config.has(key) and default_value != null:
+		push_warning("[ConfigManager] camera_config 缺少键 '%s'，使用默认值: %s" % [key, str(default_value)])
 	return camera_config.get(key, default_value)
 
 func get_map_setting(key: String, default_value = null):
+	if not map_config.has(key) and default_value != null:
+		push_warning("[ConfigManager] map_config 缺少键 '%s'，使用默认值: %s" % [key, str(default_value)])
 	return map_config.get(key, default_value)
 
 func get_upgrade_attribute(attribute_id: String) -> Dictionary:
@@ -382,6 +388,101 @@ func get_sound_config(sound_id: String) -> Dictionary:
 
 func get_all_sound_configs() -> Dictionary:
 	return sound_configs
+
+# ============================================================================
+# 配置值获取辅助方法（带默认值回退和警告）
+# ============================================================================
+
+func get_config_value(config: Dictionary, key: String, default_value, config_name: String = "config"):
+	"""
+	从配置字典中获取值，缺失时使用默认值并输出警告
+	
+	参数:
+	- config: 配置字典
+	- key: 键名
+	- default_value: 默认值
+	- config_name: 配置名称（用于警告信息）
+	
+	返回:
+	- 配置值或默认值
+	"""
+	if not config.has(key):
+		if default_value != null:
+			push_warning("[ConfigManager] %s 缺少键 '%s'，使用默认值: %s" % [config_name, key, str(default_value)])
+		return default_value
+	return config.get(key)
+
+func get_skill_param_value(skill_id: String, key: String, default_value = null):
+	"""
+	获取技能参数值，缺失时使用默认值并输出警告
+	
+	参数:
+	- skill_id: 技能ID
+	- key: 参数键名
+	- default_value: 默认值
+	
+	返回:
+	- 参数值或默认值
+	"""
+	var params = get_skill_params(skill_id)
+	if params.is_empty():
+		push_warning("[ConfigManager] 未找到技能配置 '%s'，使用默认值: %s" % [skill_id, str(default_value)])
+		return default_value
+	return get_config_value(params, key, default_value, "skill_params[%s]" % skill_id)
+
+func get_enemy_config_value(enemy_id: String, key: String, default_value = null):
+	"""
+	获取敌人配置值，缺失时使用默认值并输出警告
+	
+	参数:
+	- enemy_id: 敌人ID
+	- key: 配置键名
+	- default_value: 默认值
+	
+	返回:
+	- 配置值或默认值
+	"""
+	var config = get_enemy_config(enemy_id)
+	if config.is_empty():
+		push_warning("[ConfigManager] 未找到敌人配置 '%s'，使用默认值: %s" % [enemy_id, str(default_value)])
+		return default_value
+	return get_config_value(config, key, default_value, "enemy_config[%s]" % enemy_id)
+
+func get_enemy_visual_value(enemy_id: String, key: String, default_value = null):
+	"""
+	获取敌人视觉配置值，缺失时使用默认值并输出警告
+	
+	参数:
+	- enemy_id: 敌人ID
+	- key: 配置键名
+	- default_value: 默认值
+	
+	返回:
+	- 配置值或默认值
+	"""
+	var config = get_enemy_visual(enemy_id)
+	if config.is_empty():
+		push_warning("[ConfigManager] 未找到敌人视觉配置 '%s'，使用默认值: %s" % [enemy_id, str(default_value)])
+		return default_value
+	return get_config_value(config, key, default_value, "enemy_visual[%s]" % enemy_id)
+
+func get_player_config_value(player_id: String, key: String, default_value = null):
+	"""
+	获取玩家配置值，缺失时使用默认值并输出警告
+	
+	参数:
+	- player_id: 玩家ID
+	- key: 配置键名
+	- default_value: 默认值
+	
+	返回:
+	- 配置值或默认值
+	"""
+	var config = get_player_config(player_id)
+	if config.is_empty():
+		push_warning("[ConfigManager] 未找到玩家配置 '%s'，使用默认值: %s" % [player_id, str(default_value)])
+		return default_value
+	return get_config_value(config, key, default_value, "player_config[%s]" % player_id)
 
 func load_csv_as_array(path: String) -> Array[Dictionary]:
 	"""

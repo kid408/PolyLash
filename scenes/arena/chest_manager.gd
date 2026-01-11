@@ -60,9 +60,10 @@ var next_chest_id: int = 0
 # 配置参数
 # ============================================================================
 
-var spawn_density: int = 3              # 宝箱生成密度
-var spawn_radius: float = 2000.0        # 宝箱生成半径
-var camera_view_range: float = 1500.0   # 摄像机视野范围
+var spawn_density: int = 3              # 宝箱生成密度（从CSV加载）
+var spawn_radius: float = 2000.0        # 宝箱生成半径（从CSV加载）
+var camera_view_range: float = 1500.0   # 摄像机视野范围（从CSV加载）
+var min_distance_between_chests: float = 500.0  # 宝箱最小间距（从CSV加载）
 
 # ============================================================================
 # 动态生成
@@ -95,6 +96,8 @@ func _ready() -> void:
 	# 加载配置
 	spawn_density = ConfigManager.get_map_setting("chest_spawn_density", 3)
 	spawn_radius = ConfigManager.get_map_setting("chest_spawn_radius", 2000.0)
+	camera_view_range = ConfigManager.get_map_setting("camera_view_range", 1500.0)
+	min_distance_between_chests = ConfigManager.get_map_setting("min_distance_between_chests", 500.0)
 	
 	# 预生成宝箱位置
 	_generate_chest_positions()
@@ -149,8 +152,7 @@ func _generate_chest_positions() -> void:
 	var max_tier = wave_config.get("max_tier", 2)
 	var chest_count = wave_config.get("chest_count", 3)
 	
-	# 宝箱之间的最小距离
-	const MIN_DISTANCE_BETWEEN_CHESTS = 500.0
+	# 宝箱之间的最小距离（从CSV加载）
 	const MAX_RETRIES = 20
 	
 	# 生成初始宝箱位置
@@ -169,7 +171,7 @@ func _generate_chest_positions() -> void:
 			# 检查与其他宝箱的距离
 			valid_position = true
 			for existing_chest in chest_positions:
-				if pos.distance_to(existing_chest["position"]) < MIN_DISTANCE_BETWEEN_CHESTS:
+				if pos.distance_to(existing_chest["position"]) < min_distance_between_chests:
 					valid_position = false
 					break
 			
@@ -212,8 +214,7 @@ func _generate_new_chests_around_player(player_pos: Vector2) -> void:
 	var max_tier = wave_config.get("max_tier", 2)
 	var chest_count = wave_config.get("chest_count", 3)
 	
-	# 宝箱之间的最小距离
-	const MIN_DISTANCE_BETWEEN_CHESTS = 500.0
+	# 宝箱之间的最小距离（从CSV加载）
 	const MAX_RETRIES = 20
 	
 	# 检查玩家周围是否需要生成新宝箱
@@ -243,7 +244,7 @@ func _generate_new_chests_around_player(player_pos: Vector2) -> void:
 				# 检查与其他宝箱的距离
 				valid_position = true
 				for existing_chest in chest_positions:
-					if not existing_chest["is_opened"] and pos.distance_to(existing_chest["position"]) < MIN_DISTANCE_BETWEEN_CHESTS:
+					if not existing_chest["is_opened"] and pos.distance_to(existing_chest["position"]) < min_distance_between_chests:
 						valid_position = false
 						break
 				

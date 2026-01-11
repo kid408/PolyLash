@@ -8,3 +8,6 @@ player_damage_multiplier,1,玩家伤害倍率
 enemy_damage_multiplier,1,敌人伤害倍率
 xp_gain_multiplier,1,经验获取倍率
 gold_gain_multiplier,1,金币获取倍率
+enemy_health_per_wave,10.0,每波增加的敌人生命值
+enemy_damage_per_wave,2.0,每波增加的敌人伤害
+armor_reduction_per_level,0.2,每点护甲减伤比例

@@ -29,7 +29,7 @@ class_name Spawner
 # 导出变量（在编辑器中配置）
 # ============================================================================
 
-@export var spawn_area_size:= Vector2(1000,500)  # 生成区域大小
+@export var spawn_area_size:= Vector2(1000,500)  # 从CSV加载
 
 # 注意：波次配置现在从CSV加载，不再使用.tres资源
 # @export var waves_data: Array[WaveData]          # 已废弃
@@ -50,10 +50,10 @@ var wave_index := 1                               # 当前波次（从1开始）
 var current_wave_config: Dictionary = {}          # 当前波次配置（从CSV加载）
 var current_wave_units: Array = []                # 当前波次的敌人配置
 var spawned_enemies:Array[Enemy] = []             # 已生成的敌人列表
-var max_waves: int = 10                           # 最大波次数（修改为10波）
+var max_waves: int = 10                           # 从CSV加载
 var _l_key_pressed: bool = false                  # L键防抖标志
 
-# 敌人属性增强（每波递增）
+# 敌人属性增强（从CSV加载）
 var enemy_health_per_wave: float = 10.0           # 每波增加的生命值
 var enemy_damage_per_wave: float = 2.0            # 每波增加的伤害
 
@@ -63,9 +63,28 @@ var enemy_damage_per_wave: float = 2.0            # 每波增加的伤害
 
 func _ready() -> void:
 	"""
-	初始化生成器，开始第一波
+	初始化生成器，从CSV加载配置，开始第一波
 	"""
+	_load_config_from_csv()
 	start_wave()
+
+func _load_config_from_csv() -> void:
+	"""
+	从CSV加载配置参数
+	"""
+	# 从map_config加载生成区域大小
+	var spawn_width = ConfigManager.get_map_setting("spawn_area_width", 1000.0)
+	var spawn_height = ConfigManager.get_map_setting("spawn_area_height", 500.0)
+	spawn_area_size = Vector2(spawn_width, spawn_height)
+	
+	# 从game_config加载波次相关参数
+	max_waves = int(ConfigManager.get_game_setting("max_waves", 10))
+	enemy_health_per_wave = ConfigManager.get_game_setting("enemy_health_per_wave", 10.0)
+	enemy_damage_per_wave = ConfigManager.get_game_setting("enemy_damage_per_wave", 2.0)
+	
+	print("[Spawner] 从CSV加载配置: spawn_area=%s, max_waves=%d, health_per_wave=%.1f, damage_per_wave=%.1f" % [
+		spawn_area_size, max_waves, enemy_health_per_wave, enemy_damage_per_wave
+	])
 
 # ============================================================================
 # 暂停机制

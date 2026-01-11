@@ -1,6 +1,7 @@
-enemy_id,sprite_path,scale_x,scale_y,color_r,color_g,color_b,color_a,z_index
--1,精灵路径,X缩放,Y缩放,红色,绿色,蓝色,透明度,Z层级
-basic_enemy,res://assets/sprites/Enemies/Enemy_1.png,1,1,1,1,1,1,0
-fast_enemy,res://assets/sprites/Enemies/Enemy_2.png,0.8,0.8,1,1,1,1,0
-tank_enemy,res://assets/sprites/Enemies/Enemy_3.png,1.5,1.5,1,1,1,1,0
-boss_enemy,res://assets/sprites/Enemies/Boss_1.png,2,2,1,1,1,1,0
+enemy_id,sprite_path,scale_x,scale_y,color_r,color_g,color_b,color_a,z_index,offset_x,offset_y,collision_radius,hitbox_width,hitbox_height,animation_speed,flash_color_r,flash_color_g,flash_color_b
+-1,精灵路径,X缩放,Y缩放,红色,绿色,蓝色,透明度,Z层级,X偏移,Y偏移,碰撞半径,受击框宽,受击框高,动画速度,闪烁红,闪烁绿,闪烁蓝
+basic_enemy,res://assets/sprites/Enemies/Enemy_1.png,1,1,1,1,1,1,0,0,0,20,40,40,1,1,1,1
+fast_enemy,res://assets/sprites/Enemies/Enemy_2.png,0.8,0.8,1,1,1,1,0,0,0,16,32,32,1.2,1,1,1
+tank_enemy,res://assets/sprites/Enemies/Enemy_3.png,1.5,1.5,1,1,1,1,0,0,0,30,60,60,0.8,1,1,1
+boss_enemy,res://assets/sprites/Enemies/Boss_1.png,2,2,1,1,1,1,0,0,0,40,80,80,1,1,1,1
+mine_layer,res://assets/sprites/Enemies/Enemy_1.png,1,1,1,1,1,1,0,0,0,20,40,40,1,0.5,1,0.5

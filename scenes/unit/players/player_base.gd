@@ -34,7 +34,9 @@ var energy: float = 0.0
 var armor: int = 0
 var move_dir: Vector2 = Vector2.ZERO
 var external_force: Vector2 = Vector2.ZERO
-var external_force_decay: float = 50.0  # 进一步增加衰减速度，从30.0改为50.0
+var external_force_decay: float = 50.0  # 从CSV加载
+var knockback_scale: float = 0.3  # 从CSV加载
+var reduction_per_armor: float = 0.2  # 从game_config加载
 
 @onready var collision: CollisionShape2D = $CollisionShape2D
 @onready var weapon_container: WeaponContainer = $WeaponContainer if has_node("WeaponContainer") else null
@@ -96,6 +98,11 @@ func _load_config_from_csv() -> void:
 	
 	# 加载其他配置
 	close_threshold = config.get("close_threshold", 60.0)
+	external_force_decay = config.get("external_force_decay", 50.0)
+	knockback_scale = config.get("knockback_scale", 0.3)
+	
+	# 从game_config加载护甲减伤系数
+	reduction_per_armor = ConfigManager.get_game_setting("armor_reduction_per_level", 0.2)
 	
 	# 加载初始能量值
 	var initial_energy = config.get("initial_energy", max_energy)
@@ -241,7 +248,6 @@ func _process_subclass(delta: float) -> void:
 
 # --- 战斗逻辑 ---
 func take_damage(raw_amount: float) -> void:
-	var reduction_per_armor = 0.2
 	var damage_multiplier = 1.0 - (clamp(armor, 0, max_armor) * reduction_per_armor)
 	var final_damage = max(1, raw_amount * damage_multiplier)
 	
@@ -261,8 +267,7 @@ func take_damage(raw_amount: float) -> void:
 	health_component.take_damage(final_damage)
 
 func apply_knockback_self(force: Vector2) -> void:
-	# 应用击退力缩放系数，减少击退效果
-	var knockback_scale = 0.3  # 只应用30%的击退力
+	# 应用击退力缩放系数，减少击退效果（从CSV加载）
 	external_force = force * knockback_scale
 	Global.on_camera_shake.emit(5.0, 0.1)
 
