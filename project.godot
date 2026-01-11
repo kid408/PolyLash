@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="PolyLash"
-run/main_scene="uid://bjhraywhhpn3h"
+run/main_scene="uid://c4v80wbm6lca5"
 config/features=PackedStringArray("4.5", "Mobile")
 config/icon="uid://b02x7h4bntic6"
 
@@ -19,6 +19,7 @@ config/icon="uid://b02x7h4bntic6"
 
 ConfigManager="*res://autoloads/config_manager.gd"
 Global="*res://autoloads/global.gd"
+DataManager="*res://autoloads/data_manager.gd"
 UpgradeManager="*res://autoloads/upgrade_manager.gd"
 DebugSwitcher="*res://scenes/arena/debug_switcher.gd"
 
@@ -77,6 +78,11 @@ skill_e={
 skill_q={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":81,"key_label":0,"unicode":113,"location":0,"echo":false,"script":null)
+]
+}
+switch_player={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194306,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
 ]
 }
 

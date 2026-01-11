@@ -11,3 +11,10 @@ gold_gain_multiplier,1,金币获取倍率
 enemy_health_per_wave,10.0,每波增加的敌人生命值
 enemy_damage_per_wave,2.0,每波增加的敌人伤害
 armor_reduction_per_level,0.2,每点护甲减伤比例
+selection_players_per_row,5,角色选择界面每行显示的角色数量
+max_selected_players,3,最多可选择的角色数量
+max_upgrade_level,5,属性最大升级等级
+default_gold,1000,初始金币数量
+reset_attributes_on_new_game,0,新游戏时是否重置属性升级(1=重置 0=保留)
+enable_starting_weapon_shop,1,是否显示随机武器商店(1=显示 0=隐藏)
+starting_weapon_price,100,随机初始武器价格

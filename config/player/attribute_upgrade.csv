@@ -1,0 +1,6 @@
+attribute_name,display_name,cost,value_increase
+hp,生命值,50,10
+max_energy,最大能量,30,20
+energy_regen,能量恢复,40,0.2
+base_speed,移动速度,35,15
+max_armor,最大护甲,45,1

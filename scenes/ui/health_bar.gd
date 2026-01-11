@@ -20,7 +20,7 @@ func _ready() -> void:
 
 func update_bar(value:float,health:float) -> void:
 	progress_bar.value = value
-	health_amount.text = str(health)
+	health_amount.text = str(int(health))
 	#if health <60:
 	#	print("UI 更新: ", value, " 显示血量: ", health)
 

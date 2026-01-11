@@ -112,7 +112,7 @@ func _apply_color_from_config() -> void:
 			#var color = Color(float(r), float(g), float(b), 1)
 			var color = Color(float(r), float(g), float(b), 1)
 			visuals.modulate = color
-			print("[Enemy] 应用颜色配置: ", enemy_id, " -> ", color)
+			# print("[Enemy] 应用颜色配置: ", enemy_id, " -> ", color)
 
 # 从CSV配置应用视觉属性（精灵、缩放、碰撞体等）
 func _apply_visual_from_config() -> void:
@@ -120,7 +120,7 @@ func _apply_visual_from_config() -> void:
 	if visual_config.is_empty():
 		return
 	
-	print("[Enemy] 应用视觉配置: ", enemy_id)
+	# print("[Enemy] 应用视觉配置: ", enemy_id)
 	
 	# 设置精灵
 	if visual_config.has("sprite_path"):
@@ -129,7 +129,7 @@ func _apply_visual_from_config() -> void:
 			var texture = load(sprite_path)
 			if texture and visuals.has_node("Sprite2D"):
 				visuals.get_node("Sprite2D").texture = texture
-				print("[Enemy] 应用精灵: ", sprite_path)
+				# print("[Enemy] 应用精灵: ", sprite_path)
 	
 	# 设置缩放
 	if visual_config.has("scale_x") and visual_config.has("scale_y"):
@@ -137,7 +137,7 @@ func _apply_visual_from_config() -> void:
 		var scale_y = visual_config.get("scale_y", 1.0)
 		if scale_x != null and scale_y != null:
 			visuals.scale = Vector2(float(scale_x), float(scale_y))
-			print("[Enemy] 应用缩放: ", visuals.scale)
+			# print("[Enemy] 应用缩放: ", visuals.scale)
 	
 	# 设置偏移
 	if visual_config.has("offset_x") and visual_config.has("offset_y"):
@@ -151,7 +151,7 @@ func _apply_visual_from_config() -> void:
 		var radius = visual_config.get("collision_radius", 20.0)
 		if radius != null and collision_shape.shape is CircleShape2D:
 			collision_shape.shape.radius = float(radius)
-			print("[Enemy] 应用碰撞半径: ", radius)
+			# print("[Enemy] 应用碰撞半径: ", radius)
 	
 	# 设置受击框大小
 	if visual_config.has("hitbox_width") and visual_config.has("hitbox_height"):
@@ -163,7 +163,7 @@ func _apply_visual_from_config() -> void:
 				var hitbox_shape = hitbox.get_node_or_null("CollisionShape2D")
 				if hitbox_shape and hitbox_shape.shape is RectangleShape2D:
 					hitbox_shape.shape.size = Vector2(float(hitbox_width), float(hitbox_height))
-					print("[Enemy] 应用受击框: ", hitbox_shape.shape.size)
+					# print("[Enemy] 应用受击框: ", hitbox_shape.shape.size)
 	
 	# 设置Z层级
 	if visual_config.has("z_index"):
@@ -204,7 +204,7 @@ func _apply_behavior_from_config() -> void:
 	if config.has("can_charge"):
 		can_charge = int(config.get("can_charge", 0)) == 1
 	
-	print("[Enemy] 应用行为配置: ", enemy_id, " can_charge=", can_charge)
+	# print("[Enemy] 应用行为配置: ", enemy_id, " can_charge=", can_charge)
 
 # ==============================================================================
 # 5. 物理处理 (带状态机)
@@ -463,7 +463,7 @@ func destroy_enemy() -> void:
 	is_dead = true
 	can_move = false
 	
-	print("[Enemy] 敌人死亡: ", name, " 类型: ", enemy_type)
+	# print("[Enemy] 敌人死亡: ", name, " 类型: ", enemy_type)
 	
 	# 死亡时清理红线
 	if warning_line:
@@ -474,14 +474,27 @@ func destroy_enemy() -> void:
 	
 	# 地雷怪特殊效果：死后留毒池
 	if enemy_type == EnemyType.MINE_LAYER:
-		print("[Enemy] 地雷怪死亡，准备生成毒池")
+		# print("[Enemy] 地雷怪死亡，准备生成毒池")
 		call_deferred("_spawn_poison_pool", global_position)
 	
-	# 给玩家能量奖励
-	if is_instance_valid(Global.player) and Global.player.has_method("gain_energy"):
+	# 给玩家奖励（能量、经验、金币）
+	if is_instance_valid(Global.player):
 		var enemy_config = ConfigManager.get_enemy_config(enemy_id)
-		var energy_drop = enemy_config.get("energy_drop", 5)
-		Global.player.gain_energy(energy_drop)
+		
+		# 能量奖励
+		if Global.player.has_method("gain_energy"):
+			var energy_drop = enemy_config.get("energy_drop", 5)
+			Global.player.gain_energy(energy_drop)
+		
+		# 经验奖励
+		if Global.player.has_method("add_xp"):
+			var xp_value = int(enemy_config.get("xp_value", 10))
+			Global.player.add_xp(xp_value)
+		
+		# 金币奖励
+		if Global.player.has_method("add_gold"):
+			var gold_value = int(enemy_config.get("gold_value", 5))
+			Global.player.add_gold(gold_value)
 	
 	if Global.player and Global.player.has_method("on_enemy_killed"):
 		Global.player.on_enemy_killed(self)
@@ -515,13 +528,18 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 	print("[MineLayer] === 开始生成毒池 ===")
 	print("[MineLayer] 生成毒池于位置: ", pos)
 	
+	# 安全检查：确保场景树可用
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null or tree.current_scene == null:
+		print("[MineLayer] 错误: 无法获取场景树!")
+		return
+	
 	var poison = Area2D.new()
-	poison.global_position = pos
+	poison.name = "PoisonPool_" + str(Time.get_ticks_msec())
 	poison.collision_layer = 0
 	poison.collision_mask = 1
 	poison.monitorable = false
 	poison.monitoring = true
-	poison.name = "PoisonPool_" + str(Time.get_ticks_msec())
 	
 	# 碰撞体
 	var col = CollisionShape2D.new()
@@ -533,24 +551,49 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 	
 	# 视觉效果：完整的圆形毒池
 	var vis = Polygon2D.new()
+	vis.name = "PoisonVisual"
 	var points = PackedVector2Array()
-	for i in range(32):  # 增加点数，确保是完整的圆
-		var angle = i * TAU / 32
-		points.append(Vector2(cos(angle), sin(angle)) * 60.0)
+	var radius = 60.0
+	var segments = 32
+	
+	print("[MineLayer] 开始生成多边形点，segments=", segments, " radius=", radius)
+	
+	# 生成圆形多边形点
+	for i in range(segments):
+		var angle = float(i) * TAU / float(segments)
+		var point = Vector2(cos(angle), sin(angle)) * radius
+		points.append(point)
+	
+	print("[MineLayer] 多边形点数组大小: ", points.size())
+	print("[MineLayer] 第一个点: ", points[0])
+	print("[MineLayer] 最后一个点: ", points[points.size()-1])
+	print("[MineLayer] 点[8] (90度): ", points[8] if points.size() > 8 else "无")
+	print("[MineLayer] 点[16] (180度): ", points[16] if points.size() > 16 else "无")
+	print("[MineLayer] 点[24] (270度): ", points[24] if points.size() > 24 else "无")
+	
+	# 设置多边形
 	vis.polygon = points
-	vis.color = Color(0.2, 1.0, 0.2, 0.0)  # 初始透明
+	vis.color = Color(0.2, 1.0, 0.2, 0.5)  # 直接设置为半透明，不用淡入
 	vis.z_index = -1
 	poison.add_child(vis)
-	print("[MineLayer] 视觉效果已添加，点数: ", points.size())
 	
-	# 先添加到场景树，这样Timer才能正常工作
-	get_tree().current_scene.add_child(poison)
-	print("[MineLayer] 毒池已添加到场景，节点路径: ", poison.get_path())
+	print("[MineLayer] Polygon2D设置完成:")
+	print("[MineLayer]   - polygon点数: ", vis.polygon.size())
+	print("[MineLayer]   - color: ", vis.color)
+	print("[MineLayer]   - z_index: ", vis.z_index)
 	
-	# 淡入效果
-	var tween = poison.create_tween()
-	tween.tween_property(vis, "color:a", 0.5, 0.3)
-	print("[MineLayer] 淡入动画已启动")
+	# 先添加到场景树
+	tree.current_scene.add_child(poison)
+	
+	# 设置位置（在添加到场景后设置）
+	poison.global_position = pos
+	
+	print("[MineLayer] 毒池已添加到场景")
+	print("[MineLayer] 毒池global_position: ", poison.global_position)
+	print("[MineLayer] 毒池position: ", poison.position)
+	print("[MineLayer] vis.polygon验证: ", vis.polygon.size(), " 点")
+	print("[MineLayer] vis.global_position: ", vis.global_position)
+	print("[MineLayer] vis.position: ", vis.position)
 	
 	# 伤害计时器：每0.5秒伤害一次
 	var dmg_timer = Timer.new()
@@ -560,13 +603,12 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 	poison.add_child(dmg_timer)
 	
 	# 使用lambda函数，避免依赖Enemy实例
-	# 使用Area2D的碰撞检测而不是距离检测
 	dmg_timer.timeout.connect(func():
 		if not is_instance_valid(poison) or poison.is_queued_for_deletion():
 			dmg_timer.stop()
 			return
 		
-		# 检测所有在毒池范围内的玩家（使用Area2D碰撞检测）
+		# 检测所有在毒池范围内的玩家
 		var bodies = poison.get_overlapping_bodies()
 		var areas = poison.get_overlapping_areas()
 		var all_targets = bodies + areas
@@ -574,20 +616,18 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 		for target in all_targets:
 			var player_node = null
 			
-			# 检查是否是玩家或玩家的子节点
 			if target.is_in_group("player"):
 				player_node = target
 			elif target.owner and target.owner.is_in_group("player"):
 				player_node = target.owner
 			
-			# 对玩家造成伤害
 			if is_instance_valid(player_node) and player_node.has_method("take_damage"):
 				player_node.take_damage(5)
 				Global.spawn_floating_text(player_node.global_position, "-5", Color(0.5, 1.0, 0.5))
 	)
 	
 	dmg_timer.start()
-	print("[MineLayer] 伤害计时器已启动，使用Area2D碰撞检测")
+	print("[MineLayer] 伤害计时器已启动")
 	
 	# 生命计时器：8秒后消失
 	var life_timer = Timer.new()
@@ -596,7 +636,6 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 	life_timer.one_shot = true
 	poison.add_child(life_timer)
 	
-	# 使用lambda函数，避免依赖Enemy实例
 	life_timer.timeout.connect(func():
 		if is_instance_valid(poison):
 			if is_instance_valid(vis):

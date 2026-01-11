@@ -55,6 +55,24 @@ func setup_weapon(data:ItemWeapon) -> void:
 	
 func use_weapon() -> void:
 	calculate_spread()
+	
+	# [DEBUG] 瞄准调试日志（已注释）
+	# if closest_target and is_instance_valid(closest_target):
+	# 	var weapon_pos = global_position
+	# 	var target_pos = closest_target.global_position
+	# 	var direction = weapon_pos.direction_to(target_pos)
+	# 	var angle_deg = rad_to_deg(direction.angle())
+	# 	var distance = weapon_pos.distance_to(target_pos)
+	# 	print("[Weapon] === 射击调试 ===")
+	# 	print("[Weapon] 武器位置: ", weapon_pos)
+	# 	print("[Weapon] 目标位置: ", target_pos)
+	# 	print("[Weapon] 目标名称: ", closest_target.name)
+	# 	print("[Weapon] 瞄准方向: ", direction, " 角度: ", angle_deg, "°")
+	# 	print("[Weapon] 距离: ", distance)
+	# 	print("[Weapon] 武器旋转: ", rad_to_deg(rotation), "°")
+	# 	print("[Weapon] 散布值: ", rad_to_deg(weapon_spread), "°")
+	# 	print("[Weapon] 最终射击角度: ", rad_to_deg(rotation + weapon_spread), "°")
+	
 	weapon_behavior.execute_attack()
 	cooldown_timer.wait_time = data.stats.cooldown
 	cooldown_timer.start()
@@ -95,7 +113,8 @@ func update_visuals() -> void:
 
 # 计算武器选择朝向
 func calculate_spread() -> void:
-	weapon_spread += randf_range(-1 + data.stats.accuracy,1- data.stats.accuracy)
+	# 【修复】每次射击重新计算散布，而不是累加
+	weapon_spread = randf_range(-1 + data.stats.accuracy, 1 - data.stats.accuracy)
 	rotation += weapon_spread
 	
 func update_closest_target() -> void:

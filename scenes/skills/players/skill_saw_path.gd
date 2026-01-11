@@ -96,6 +96,9 @@ var total_distance_drawn: float = 0.0
 ## 路径是否已闭合（线段相交）
 var is_path_closed: bool = false
 
+## 是否已显示能量不足提示（防止重复弹出）
+var has_shown_no_energy_hint: bool = false
+
 ## 已确认的路径点
 var path_points: Array[Vector2] = []
 
@@ -210,9 +213,11 @@ func charge(delta: float) -> void:
 					# 更新状态
 					last_point = new_point
 				else:
-					# 能量不足
+					# 能量不足 - 只弹一次提示
 					is_drawing = false
-					Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
+					if not has_shown_no_energy_hint:
+						has_shown_no_energy_hint = true
+						Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
 					break
 		else:
 			# 鼠标左键松开
@@ -238,6 +243,7 @@ func _enter_planning_mode() -> void:
 	is_charging = true
 	is_drawing = false
 	is_path_closed = false
+	has_shown_no_energy_hint = false  # 重置能量提示标志
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
 	
@@ -273,7 +279,7 @@ func _check_intersection_and_closure() -> void:
 		var old_seg = path_segments[i]
 		
 		if _segments_intersect(latest_seg, old_seg):
-			print("[SkillSawPath] >>> 实时检测到线段交叉！线段 %d 和最新线段 <<<" % i)
+			# print("[SkillSawPath] >>> 实时检测到线段交叉！线段 %d 和最新线段 <<<" % i)
 			is_path_closed = true
 			return
 	
@@ -281,7 +287,7 @@ func _check_intersection_and_closure() -> void:
 	if path_points.size() >= 20:
 		var current_point = path_points[path_points.size() - 1]
 		if current_point.distance_to(path_points[0]) < close_threshold:
-			print("[SkillSawPath] >>> 实时检测到距离闭合（接近起点）<<<")
+			# print("[SkillSawPath] >>> 实时检测到距离闭合（接近起点）<<<")
 			is_path_closed = true
 			return
 
@@ -371,20 +377,20 @@ func _launch_saw_construct() -> void:
 		active_saw.queue_free()
 		active_saw = null
 	
-	print("[SkillSawPath] ========== 发射锯条 ==========")
-	print("[SkillSawPath] is_path_closed: %s" % is_path_closed)
-	print("[SkillSawPath] path_points: %d" % path_points.size())
-	print("[SkillSawPath] path_segments: %d" % path_segments.size())
+	# print("[SkillSawPath] ========== 发射锯条 ==========")
+	# print("[SkillSawPath] is_path_closed: %s" % is_path_closed)
+	# print("[SkillSawPath] path_points: %d" % path_points.size())
+	# print("[SkillSawPath] path_segments: %d" % path_segments.size())
 	
 	# 如果是闭合状态，显示红色遮罩
 	if is_path_closed and path_points.size() >= 3:
-		print("[SkillSawPath] >>> 触发闭合锯条！多边形点数: %d <<<" % path_points.size())
+		# print("[SkillSawPath] >>> 触发闭合锯条！多边形点数: %d <<<" % path_points.size())
 		var polygon = PackedVector2Array()
 		for p in path_points:
 			polygon.append(p)
 		_create_butcher_closure_mask(polygon)
-	else:
-		print("[SkillSawPath] !!! 未闭合，发射开放锯条 !!!")
+	# else:
+		# print("[SkillSawPath] !!! 未闭合，发射开放锯条 !!!")
 	
 	# ✅ 计算飞行方向：从玩家位置指向路径中心
 	var player_pos = skill_owner.global_position if skill_owner else path_points[0]
@@ -402,9 +408,9 @@ func _launch_saw_construct() -> void:
 	if player_pos.distance_to(path_center) < 50.0:
 		fly_dir = (path_points[path_points.size() - 1] - path_points[0]).normalized()
 	
-	print("[SkillSawPath] 玩家位置: %s" % player_pos)
-	print("[SkillSawPath] 路径中心: %s" % path_center)
-	print("[SkillSawPath] 飞行方向: %s" % fly_dir)
+	# print("[SkillSawPath] 玩家位置: %s" % player_pos)
+	# print("[SkillSawPath] 路径中心: %s" % path_center)
+	# print("[SkillSawPath] 飞行方向: %s" % fly_dir)
 	
 	# 创建锯条投射物
 	var saw = SawProjectile.new()
@@ -444,7 +450,7 @@ func _perform_final_closure_check() -> void:
 			var seg2 = path_segments[j]
 			
 			if _segments_intersect(seg1, seg2):
-				print("[SkillSawPath] >>> 检测到线段交叉！线段 %d 和 %d <<<" % [i, j])
+				# print("[SkillSawPath] >>> 检测到线段交叉！线段 %d 和 %d <<<" % [i, j])
 				is_path_closed = true
 				return
 	
@@ -454,7 +460,7 @@ func _perform_final_closure_check() -> void:
 		
 		# 检查是否接近起点
 		if last_point.distance_to(path_points[0]) < close_threshold:
-			print("[SkillSawPath] >>> 检测到距离闭合（接近起点）<<<")
+			# print("[SkillSawPath] >>> 检测到距离闭合（接近起点）<<<")
 			is_path_closed = true
 			return
 		
@@ -462,7 +468,7 @@ func _perform_final_closure_check() -> void:
 		var check_until = max(0, path_points.size() - 20)
 		for i in range(check_until):
 			if last_point.distance_to(path_points[i]) < close_threshold:
-				print("[SkillSawPath] >>> 检测到距离闭合（接近点 %d）<<<" % i)
+				# print("[SkillSawPath] >>> 检测到距离闭合（接近点 %d）<<<" % i)
 				is_path_closed = true
 				return
 

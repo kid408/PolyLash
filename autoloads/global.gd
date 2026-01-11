@@ -8,6 +8,7 @@ signal on_create_damage_text(unit:Node2D,hitbox:HitboxComponent)
 # --- 新增信号 ---
 signal on_camera_shake(intensity: float, duration: float)
 signal on_directional_shake(direction: Vector2, strength: float)  # 新增：指向性震动
+signal on_player_switch_requested(player_id: String)  # 角色切换请求
 
 const FLASH_MATERIAL = preload("uid://coi4nu8ohpgeo")
 const FLOATING_TEXT_SCENE = preload("uid://cp86d6q6156la")
@@ -35,12 +36,67 @@ enum UpgradeTier{
 var player:PlayerBase
 var game_paused:= false
 
+# ============================================================================
+# 角色选择系统
+# ============================================================================
+
+# 已选角色ID列表（从选择界面传入）
+var selected_player_ids: Array[String] = []
+
+# 已选角色武器配置 {player_id: weapon_type}
+var selected_player_weapons: Dictionary = {}
+
+# 当前激活角色索引
+var current_player_index: int = 0
+
+# 角色状态存储（独立血量和能量）
+# 格式: {player_id: {health, max_health, energy, max_energy, armor, health_regen, energy_regen}}
+var player_states: Dictionary = {}
+
+# 是否游戏结束
+var is_game_over: bool = false
+
 func _ready() -> void:
 	# 初始化对象池，防止频繁创建销毁音频节点
 	for i in range(POOL_SIZE):
 		var player = AudioStreamPlayer.new()
 		add_child(player)
 		pool.append(player)
+
+func _process(delta: float) -> void:
+	# 更新未激活角色的恢复
+	_update_inactive_players_regen(delta)
+
+# 更新未激活角色的恢复
+func _update_inactive_players_regen(delta: float) -> void:
+	if is_game_over or game_paused:
+		return
+	
+	var active_player_id = ""
+	if is_instance_valid(player):
+		active_player_id = player.player_id
+	
+	for player_id in selected_player_ids:
+		# 跳过当前激活的角色（激活角色由自身处理恢复）
+		if player_id == active_player_id:
+			continue
+		
+		# 跳过没有状态记录的角色
+		if not player_states.has(player_id):
+			continue
+		
+		var state = player_states[player_id]
+		
+		# 能量恢复
+		var energy_regen = state.get("energy_regen", 0.5)
+		state.energy = min(state.energy + energy_regen * delta, state.max_energy)
+		
+		# 血量恢复
+		var health_regen = state.get("health_regen", 0.0)
+		if health_regen > 0:
+			state.health = min(state.health + health_regen * delta, state.max_health)
+		
+		player_states[player_id] = state
 		
 # 播放普通音效 (带音调随机，这很关键！)
 func play_sfx(stream: AudioStream, min_pitch: float = 0.8, max_pitch: float = 1.2, volume_db: float = 0.0):
@@ -117,3 +173,125 @@ func spawn_floating_text(pos: Vector2, value: String, color: Color) -> void:
 		
 		text_instance.setup(value, color)
 		
+
+
+# ============================================================================
+# 角色选择系统方法
+# ============================================================================
+
+# 初始化角色状态（从选择界面调用）
+func init_player_states() -> void:
+	player_states.clear()
+	is_game_over = false
+	
+	for player_id in selected_player_ids:
+		var config = ConfigManager.get_player_config(player_id)
+		if config.is_empty():
+			continue
+		
+		player_states[player_id] = {
+			"health": float(config.get("health", 100)),
+			"max_health": float(config.get("health", 100)),
+			"energy": float(config.get("initial_energy", 500)),
+			"max_energy": float(config.get("max_energy", 999)),
+			"armor": int(config.get("max_armor", 3)),
+			"health_regen": float(config.get("health_regen", 0.0)),
+			"energy_regen": float(config.get("energy_regen", 0.5))
+		}
+	
+	print("[Global] 初始化 %d 个角色状态" % player_states.size())
+
+# 保存当前角色状态
+func save_current_player_state() -> void:
+	if not is_instance_valid(player):
+		return
+	
+	var player_id = player.player_id
+	if not player_states.has(player_id):
+		player_states[player_id] = {}
+	
+	player_states[player_id] = {
+		"health": player.health_component.current_health,
+		"max_health": player.health_component.max_health,
+		"energy": player.energy,
+		"max_energy": player.max_energy,
+		"armor": player.armor,
+		"health_regen": player_states[player_id].get("health_regen", 0.0),
+		"energy_regen": player_states[player_id].get("energy_regen", 0.5)
+	}
+
+# 切换到下一个角色
+func switch_to_next_player() -> void:
+	print("[Global] switch_to_next_player 调用")
+	print("[Global] selected_player_ids.size() = %d" % selected_player_ids.size())
+	
+	if selected_player_ids.size() <= 1:
+		print("[Global] 只有一个或没有角色，无法切换")
+		return
+	
+	if is_game_over:
+		print("[Global] 游戏已结束，无法切换")
+		return
+	
+	# 1. 保存当前角色状态
+	save_current_player_state()
+	
+	# 2. 计算下一个角色索引（循环）
+	current_player_index = (current_player_index + 1) % selected_player_ids.size()
+	
+	# 3. 获取下一个角色ID
+	var next_player_id = selected_player_ids[current_player_index]
+	
+	print("[Global] 切换到角色: %s (索引 %d)" % [next_player_id, current_player_index])
+	
+	# 4. 通知Arena生成新角色
+	# 这里发出信号，由Arena处理实际的角色切换
+	print("[Global] 发出 on_player_switch_requested 信号")
+	emit_signal("on_player_switch_requested", next_player_id)
+
+# 获取当前角色ID
+func get_current_player_id() -> String:
+	if current_player_index >= 0 and current_player_index < selected_player_ids.size():
+		return selected_player_ids[current_player_index]
+	return ""
+
+# 获取角色状态
+func get_player_state(player_id: String) -> Dictionary:
+	return player_states.get(player_id, {})
+
+# 恢复角色状态到实例
+func restore_player_state(player_instance: PlayerBase) -> void:
+	var player_id = player_instance.player_id
+	if not player_states.has(player_id):
+		return
+	
+	var state = player_states[player_id]
+	player_instance.health_component.current_health = state.get("health", 100)
+	player_instance.health_component.max_health = state.get("max_health", 100)
+	player_instance.energy = state.get("energy", 500)
+	player_instance.max_energy = state.get("max_energy", 999)
+	player_instance.armor = state.get("armor", 3)
+
+# 游戏结束
+func game_over() -> void:
+	if is_game_over:
+		return
+	
+	is_game_over = true
+	print("[Global] 游戏结束!")
+	
+	# 暂停游戏
+	game_paused = true
+	
+	# 可以在这里添加游戏结束UI显示逻辑
+	# 或者重新加载场景
+	await get_tree().create_timer(2.0).timeout
+	get_tree().reload_current_scene()
+
+# 重置选择数据（用于返回主菜单时）
+func reset_selection() -> void:
+	selected_player_ids.clear()
+	selected_player_weapons.clear()
+	player_states.clear()
+	current_player_index = 0
+	is_game_over = false

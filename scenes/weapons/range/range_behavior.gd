@@ -39,4 +39,12 @@ func create_projectile() -> void:
 	instance.global_position = muzzle.global_position
 	
 	var velocity := Vector2.RIGHT.rotated(weapon.rotation) * weapon.data.stats.projectile_speed
+	
+	# [DEBUG] 子弹发射调试日志（已注释）
+	# print("[RangeBehavior] === 子弹发射 ===")
+	# print("[RangeBehavior] 枪口位置: ", muzzle.global_position)
+	# print("[RangeBehavior] 武器旋转: ", rad_to_deg(weapon.rotation), "°")
+	# print("[RangeBehavior] 子弹速度向量: ", velocity)
+	# print("[RangeBehavior] 子弹速度大小: ", velocity.length())
+	
 	instance.set_projectile(velocity,get_damage(),critical,weapon.data.stats.knockback,weapon.get_parent())

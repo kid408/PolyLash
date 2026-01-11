@@ -107,6 +107,9 @@ var total_distance_drawn: float = 0.0
 ## 是否正在冲刺
 var is_dashing: bool = false
 
+## 是否已显示能量不足提示（防止重复弹出）
+var has_shown_no_energy_hint: bool = false
+
 # ==============================================================================
 # 节点引用
 # ==============================================================================
@@ -223,9 +226,11 @@ func charge(delta: float) -> void:
 					# 更新状态
 					last_point = new_point
 				else:
-					# 能量不足
+					# 能量不足 - 只弹一次提示
 					is_drawing = false
-					Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
+					if not has_shown_no_energy_hint:
+						has_shown_no_energy_hint = true
+						Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
 					break
 		else:
 			# 鼠标左键松开
@@ -253,6 +258,7 @@ func _enter_planning_mode() -> void:
 	accumulated_distance = 0.0
 	has_closure = false
 	total_distance_drawn = 0.0
+	has_shown_no_energy_hint = false  # 重置能量提示标志
 	
 	# 清空路径数据
 	path_points.clear()

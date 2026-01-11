@@ -35,8 +35,8 @@ extends Node
 var player_configs: Dictionary = {}              # 玩家基础属性配置 (player_id -> config)
 var player_visual_configs: Dictionary = {}       # 玩家视觉配置 (player_id -> visual)
 var player_weapon_configs: Dictionary = {}       # 玩家武器配置 (player_id -> weapons)
-var player_skill_configs: Dictionary = {}        # 玩家技能配置 (player_id -> skills)
 var player_skill_bindings: Dictionary = {}       # 玩家技能绑定 (player_id -> bindings)
+var player_available_weapons: Dictionary = {}    # 玩家可用武器类型 (player_id -> weapon_types)
 var skill_params: Dictionary = {}                # 技能参数配置 (skill_id -> params)
 
 # 敌人相关配置
@@ -75,9 +75,9 @@ const CONFIG_DIR = "res://config/"
 const PLAYER_CONFIG = CONFIG_DIR + "player/player_config.csv"
 const PLAYER_VISUAL = CONFIG_DIR + "player/player_visual.csv"
 const PLAYER_WEAPONS = CONFIG_DIR + "player/player_weapons.csv"
-const PLAYER_SKILLS = CONFIG_DIR + "player/player_skills.csv"
 const PLAYER_SKILL_BINDINGS = CONFIG_DIR + "player/player_skill_bindings.csv"
 const SKILL_PARAMS = CONFIG_DIR + "player/skill_params.csv"
+const PLAYER_AVAILABLE_WEAPONS = CONFIG_DIR + "player/player_available_weapons.csv"
 const ENEMY_CONFIG = CONFIG_DIR + "enemy/enemy_config.csv"
 const ENEMY_VISUAL = CONFIG_DIR + "enemy/enemy_visual.csv"
 const ENEMY_WEAPONS = CONFIG_DIR + "enemy/enemy_weapons.csv"
@@ -126,8 +126,8 @@ func load_all_configs() -> void:
 	player_configs = load_csv_as_dict(PLAYER_CONFIG, "player_id")
 	player_visual_configs = load_csv_as_dict(PLAYER_VISUAL, "player_id")
 	player_weapon_configs = load_csv_as_dict(PLAYER_WEAPONS, "player_id")
-	player_skill_configs = load_csv_as_dict(PLAYER_SKILLS, "player_id")
 	player_skill_bindings = load_csv_as_dict(PLAYER_SKILL_BINDINGS, "player_id")
+	player_available_weapons = load_csv_as_dict(PLAYER_AVAILABLE_WEAPONS, "player_id")
 	skill_params = load_csv_as_dict(SKILL_PARAMS, "skill_id")
 	
 	# 敌人配置
@@ -156,10 +156,10 @@ func load_all_configs() -> void:
 	# 音效配置
 	sound_configs = load_csv_as_dict(SOUND_CONFIG, "sound_id")
 	
-	# 全局配置
-	game_config = load_csv_as_single(GAME_CONFIG)
-	camera_config = load_csv_as_single(CAMERA_CONFIG)
-	map_config = load_csv_as_single(MAP_CONFIG)
+	# 全局配置 (key-value 格式)
+	game_config = _load_key_value_config(GAME_CONFIG)
+	camera_config = _load_key_value_config(CAMERA_CONFIG)
+	map_config = _load_key_value_config(MAP_CONFIG)
 
 # ============================================================================
 # CSV 加载方法
@@ -310,6 +310,67 @@ func load_csv_as_single(path: String) -> Dictionary:
 	print("[ConfigManager] 加载配置: ", path, " - ", result.size(), " 个字段")
 	return result
 
+func _load_key_value_config(path: String) -> Dictionary:
+	"""
+	加载 key-value 格式的 CSV 配置文件
+	
+	格式:
+	  setting,value,description
+	  -1,值,说明
+	  key1,value1,desc1
+	  key2,value2,desc2
+	
+	返回:
+	  {key1: value1, key2: value2, ...}
+	"""
+	var result = {}
+	var file = FileAccess.open(path, FileAccess.READ)
+	
+	if not file:
+		print("[ConfigManager] 警告: 无法打开文件 ", path)
+		return result
+	
+	var line_num = 0
+	
+	while not file.eof_reached():
+		var line = file.get_csv_line()
+		line_num += 1
+		
+		# 跳过空行
+		if line.size() == 0 or (line.size() == 1 and line[0].strip_edges() == ""):
+			continue
+		
+		# 第一行：列名，跳过
+		if line_num == 1:
+			continue
+		
+		# 第二行：如果第一列是 -1，跳过（注释行）
+		if line_num == 2 and line[0].strip_edges() == "-1":
+			continue
+		
+		# 数据行：setting, value, description
+		if line.size() >= 2:
+			var key = line[0].strip_edges()
+			var value_str = line[1].strip_edges()
+			
+			if key == "":
+				continue
+			
+			# 尝试转换数值
+			var value
+			if value_str.is_valid_float():
+				value = float(value_str)
+			elif value_str.is_valid_int():
+				value = int(value_str)
+			else:
+				value = value_str
+			
+			result[key] = value
+	
+	file.close()
+	print("[ConfigManager] 加载 key-value 配置: ", path, " - ", result.size(), " 条记录")
+	return result
+
 # ============================================================================
 # 便捷访问方法
 # ============================================================================
@@ -323,9 +384,6 @@ func get_player_visual(player_id: String) -> Dictionary:
 func get_player_weapons(player_id: String) -> Dictionary:
 	return player_weapon_configs.get(player_id, {})
 
-func get_player_skills(player_id: String) -> Dictionary:
-	return player_skill_configs.get(player_id, {})
-
 func get_player_skill_bindings(player_id: String) -> Dictionary:
 	return player_skill_bindings.get(player_id, {})
 
@@ -337,6 +395,10 @@ func get_weapon_config(weapon_id: String) -> Dictionary:
 
 func get_weapon_stats(weapon_id: String) -> Dictionary:
 	return weapon_stats_configs.get(weapon_id, {})
+
+func get_all_weapon_stats() -> Dictionary:
+	"""获取所有武器详细配置"""
+	return weapon_stats_configs
 
 func get_wave_config(wave_id: String) -> Dictionary:
 	return wave_configs.get(wave_id, {})
@@ -388,6 +450,76 @@ func get_sound_config(sound_id: String) -> Dictionary:
 
 func get_all_sound_configs() -> Dictionary:
 	return sound_configs
+
+# ============================================================================
+# 角色选择相关方法
+# ============================================================================
+
+func get_enabled_players() -> Array[Dictionary]:
+	"""
+	获取所有启用的角色配置（按display_order排序）
+	
+	返回:
+	- Array[Dictionary]: 启用的角色配置数组，按display_order升序排列
+	"""
+	var result: Array[Dictionary] = []
+	for player_id in player_configs.keys():
+		var config = player_configs[player_id]
+		if int(config.get("enabled", 0)) == 1:
+			result.append(config)
+	
+	# 按 display_order 排序
+	result.sort_custom(func(a, b): return a.get("display_order", 999) < b.get("display_order", 999))
+	return result
+
+func get_player_available_weapon_types(player_id: String) -> Array[String]:
+	"""
+	获取角色可用武器类型列表
+	
+	参数:
+	- player_id: 角色ID
+	
+	返回:
+	- Array[String]: 可用武器类型数组（如 ["punch", "laser"]）
+	"""
+	var config = player_available_weapons.get(player_id, {})
+	var weapons: Array[String] = []
+	for i in range(1, 5):
+		var weapon_type = config.get("weapon_type_%d" % i, "")
+		if weapon_type != "" and weapon_type != null:
+			weapons.append(str(weapon_type))
+	return weapons
+
+func get_weapon_by_type_level(weapon_type: String, level: int = 1) -> Dictionary:
+	"""
+	获取指定类型和等级的武器配置
+	
+	参数:
+	- weapon_type: 武器类型（如 "punch", "laser"）
+	- level: 武器等级（默认1）
+	
+	返回:
+	- Dictionary: 武器配置，如果未找到返回空字典
+	"""
+	var weapon_id = "%s_%d" % [weapon_type, level]
+	return weapon_configs.get(weapon_id, {})
+
+func get_weapons_by_type(weapon_type: String) -> Array[Dictionary]:
+	"""
+	获取指定类型的所有武器配置
+	
+	参数:
+	- weapon_type: 武器类型（如 "punch", "laser"）
+	
+	返回:
+	- Array[Dictionary]: 该类型所有武器的配置数组
+	"""
+	var result: Array[Dictionary] = []
+	for weapon_id in weapon_configs.keys():
+		var config = weapon_configs[weapon_id]
+		if config.get("type", "") == weapon_type:
+			result.append(config)
+	return result
 
 # ============================================================================
 # 配置值获取辅助方法（带默认值回退和警告）

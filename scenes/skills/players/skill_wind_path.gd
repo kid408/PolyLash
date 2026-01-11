@@ -116,6 +116,9 @@ var total_distance_drawn: float = 0.0
 ## 是否正在冲刺
 var is_dashing: bool = false
 
+## 是否已显示能量不足提示（防止重复弹出）
+var has_shown_no_energy_hint: bool = false
+
 # ==============================================================================
 # 节点引用
 # ==============================================================================
@@ -127,6 +130,9 @@ var collision: CollisionShape2D
 var dash_hitbox: Node
 var trail: Node
 var visuals: Node2D
+
+## 跟踪所有生成的效果节点（风墙、暴风区域等）
+var spawned_effects: Array[Node] = []
 
 # ==============================================================================
 # 生命周期
@@ -232,9 +238,11 @@ func charge(delta: float) -> void:
 					# 更新状态
 					last_point = new_point
 				else:
-					# 能量不足
+					# 能量不足 - 只弹一次提示
 					is_drawing = false
-					Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
+					if not has_shown_no_energy_hint:
+						has_shown_no_energy_hint = true
+						Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
 					break
 		else:
 			# 鼠标左键松开
@@ -262,6 +270,7 @@ func _enter_planning_mode() -> void:
 	accumulated_distance = 0.0
 	has_closure = false
 	total_distance_drawn = 0.0
+	has_shown_no_energy_hint = false  # 重置能量提示标志
 	
 	# 清空路径数据
 	path_points.clear()
@@ -601,6 +610,9 @@ func _spawn_wind_wall(start: Vector2, end: Vector2) -> void:
 	
 	get_tree().current_scene.add_child(area)
 	
+	# 跟踪生成的效果节点
+	spawned_effects.append(area)
+	
 	# 物理Tick（吸附逻辑）
 	var timer = Timer.new()
 	timer.wait_time = 0.05
@@ -649,6 +661,10 @@ func _spawn_storm_zone(points: PackedVector2Array) -> void:
 	area.add_child(vis_poly)
 	
 	get_tree().current_scene.add_child(area)
+	
+	# 跟踪生成的效果节点
+	spawned_effects.append(area)
+	
 	Global.spawn_floating_text(points[0], "STORM!", Color.CYAN)
 	
 	# 淡入动画
@@ -754,6 +770,10 @@ func _spawn_storm_zone_no_mask(points: PackedVector2Array) -> void:
 	area.add_child(vis_poly)
 	
 	get_tree().current_scene.add_child(area)
+	
+	# 跟踪生成的效果节点
+	spawned_effects.append(area)
+	
 	Global.spawn_floating_text(points[0], "STORM!", Color.CYAN)
 	
 	# 淡入动画
@@ -853,6 +873,11 @@ func _on_damage_tick(area_ref: Area2D, amount: int) -> void:
 ## 对象过期
 func _on_object_expired(area_ref: Area2D, visual_ref: Node) -> void:
 	if is_instance_valid(area_ref):
+		# 从跟踪列表中移除
+		var idx = spawned_effects.find(area_ref)
+		if idx >= 0:
+			spawned_effects.remove_at(idx)
+		
 		if is_instance_valid(visual_ref):
 			var tween = area_ref.create_tween()
 			tween.tween_property(visual_ref, "modulate:a", 0.0, 0.3)
@@ -924,12 +949,21 @@ func _apply_circle_rewards(area_ref: Area2D, polygon: PackedVector2Array) -> voi
 
 ## 清理资源
 func cleanup() -> void:
+	# 清理Line2D
 	if is_instance_valid(line_2d):
 		line_2d.queue_free()
 	
+	# 清理所有生成的效果节点（风墙、暴风区域等）
+	for effect in spawned_effects:
+		if is_instance_valid(effect):
+			effect.queue_free()
+	spawned_effects.clear()
+	
+	# 重置状态
 	is_planning = false
 	is_dashing = false
 	is_drawing = false
+	has_shown_no_energy_hint = false
 	path_points.clear()
 	path_segments.clear()
 	path_history.clear()

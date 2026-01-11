@@ -3,12 +3,17 @@ setlocal
 cd /d "%~dp0"
 
 echo ========================================================
-echo   GBK (Excel) to UTF-8 No BOM Converter
+echo   CSV Encoding Converter (GBK to UTF-8 No BOM)
 echo ========================================================
 echo.
 echo Target: %CD%
-echo WARNING: This script assumes source files are GBK/ANSI.
 echo.
+echo WARNING: This script converts GBK/ANSI encoded files to UTF-8.
+echo          DO NOT run this on files that are already UTF-8!
+echo          Running on UTF-8 files will corrupt Chinese characters.
+echo.
+echo Press Ctrl+C to cancel, or any key to continue...
+pause > nul
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "$gbk = [System.Text.Encoding]::GetEncoding(936); " ^
@@ -28,6 +33,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
 
 echo.
 echo ========================================================
-echo Done.
+echo Done. Files have been converted from GBK to UTF-8.
 echo ========================================================
 pause

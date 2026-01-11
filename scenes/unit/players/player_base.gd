@@ -6,6 +6,8 @@ class_name PlayerBase
 # ==============================================================================
 signal energy_changed(current, max_val)
 signal armor_changed(current)
+signal xp_changed(current)
+signal gold_changed(current)
 
 # 玩家ID，用于从CSV加载配置
 @export var player_id: String = ""
@@ -32,6 +34,8 @@ var close_threshold: float = 60.0
 # 状态相关
 var energy: float = 0.0
 var armor: int = 0
+var xp: int = 0           # 经验值
+var gold: int = 0         # 金币
 var move_dir: Vector2 = Vector2.ZERO
 var external_force: Vector2 = Vector2.ZERO
 var external_force_decay: float = 50.0  # 从CSV加载
@@ -48,8 +52,12 @@ var current_weapons: Array[Weapon] = []
 var energy_bar_ui: Control = null 
 
 func _ready() -> void:
+	print("[PlayerBase] _ready() 开始, player_id=%s" % player_id)
 	# 从CSV加载配置（必须在super._ready()之前，这样才能设置stats）
 	_load_config_from_csv()
+	
+	# 从CSV加载精灵图片
+	_load_sprite_from_csv()
 	
 	super._ready() # 初始化 Stats
 	
@@ -120,24 +128,79 @@ func _load_config_from_csv() -> void:
 	stats.health = csv_health
 	stats.speed = csv_speed
 
+func _load_sprite_from_csv() -> void:
+	"""从CSV加载角色精灵图片，覆盖场景文件中的硬编码纹理"""
+	if player_id.is_empty():
+		return
+	
+	var visual_config = ConfigManager.get_player_visual(player_id)
+	if visual_config.is_empty():
+		print("[PlayerBase] 警告: 未找到视觉配置 '%s'" % player_id)
+		return
+	
+	var sprite_path = visual_config.get("sprite_path", "")
+	if sprite_path == "":
+		print("[PlayerBase] 警告: 视觉配置 '%s' 缺少 sprite_path" % player_id)
+		return
+	
+	# 获取Sprite节点（在Visuals下）
+	var sprite_node = null
+	if has_node("Visuals/Sprite"):
+		sprite_node = get_node("Visuals/Sprite")
+	elif visuals and visuals.has_node("Sprite"):
+		sprite_node = visuals.get_node("Sprite")
+	
+	if not sprite_node:
+		print("[PlayerBase] 警告: 未找到 Sprite 节点")
+		return
+	
+	# 加载纹理
+	var texture = load(sprite_path) as Texture2D
+	if texture:
+		sprite_node.texture = texture
+		print("[PlayerBase] 从CSV加载精灵: %s -> %s" % [player_id, sprite_path])
+	else:
+		printerr("[PlayerBase] 错误: 无法加载精灵纹理: %s" % sprite_path)
+
 func _load_weapons_from_config() -> void:
 	if player_id.is_empty() or not weapon_container:
+		print("[PlayerBase] _load_weapons_from_config: player_id=%s, weapon_container=%s" % [player_id, weapon_container])
 		return
 	
-	var weapon_cfg = ConfigManager.get_player_weapons(player_id)
-	if weapon_cfg.is_empty():
+	print("[PlayerBase] _load_weapons_from_config 开始: player_id=%s" % player_id)
+	print("[PlayerBase] Global.selected_player_weapons = %s" % str(Global.selected_player_weapons))
+	
+	# 检查是否有从选择界面传入的武器类型
+	var selected_weapon_type = ""
+	if Global.selected_player_weapons.has(player_id):
+		selected_weapon_type = Global.selected_player_weapons[player_id]
+		print("[PlayerBase] 使用选择的武器类型: %s" % selected_weapon_type)
+	else:
+		print("[PlayerBase] 未找到选择的武器，使用默认配置")
+	
+	# 如果有选择的武器类型，只加载1级武器
+	if selected_weapon_type != "":
+		var weapon_id = "%s_1" % selected_weapon_type
+		var item_weapon = _create_item_weapon_from_csv(weapon_id)
+		if item_weapon:
+			_add_weapon(item_weapon)
+			print("[PlayerBase] 加载武器: %s" % weapon_id)
 		return
 	
-	# 加载每个武器槽位
-	for i in range(1, 7):
-		var slot_key = "weapon_slot_%d" % i
-		var weapon_id = weapon_cfg.get(slot_key, "")
-		
-		if weapon_id != "":
-			# 从CSV创建ItemWeapon对象
-			var item_weapon = _create_item_weapon_from_csv(weapon_id)
-			if item_weapon:
-				_add_weapon(item_weapon)
+	# 否则使用默认配置（从CSV表加载，暂时禁用）
+	# var weapon_cfg = ConfigManager.get_player_weapons(player_id)
+	# if weapon_cfg.is_empty():
+	#     return
+	# 
+	# # 加载每个武器槽位
+	# for i in range(1, 7):
+	#     var slot_key = "weapon_slot_%d" % i
+	#     var weapon_id = weapon_cfg.get(slot_key, "")
+	#     if weapon_id != "":
+	#         var item_weapon = _create_item_weapon_from_csv(weapon_id)
+	#         if item_weapon:
+	#             _add_weapon(item_weapon)
+	print("[PlayerBase] 未选择武器，跳过默认配置加载")
 
 func _create_item_weapon_from_csv(weapon_id: String) -> ItemWeapon:
 	"""从CSV配置创建ItemWeapon对象"""
@@ -286,6 +349,18 @@ func gain_energy(amount: float) -> void:
 	update_ui_signals()
 	Global.spawn_floating_text(global_position, "+%d Energy" % amount, Color.CYAN)
 
+# 获得经验值
+func add_xp(amount: int) -> void:
+	xp += amount
+	xp_changed.emit(xp)
+	Global.spawn_floating_text(global_position + Vector2(20, -10), "+%d XP" % amount, Color.MEDIUM_PURPLE)
+
+# 获得金币
+func add_gold(amount: int) -> void:
+	gold += amount
+	gold_changed.emit(gold)
+	Global.spawn_floating_text(global_position + Vector2(-20, -10), "+%d Gold" % amount, Color.GOLD)
+
 func update_ui_signals() -> void:
 	energy_changed.emit(energy, max_energy)
 	armor_changed.emit(armor)
@@ -379,8 +454,17 @@ func _on_death() -> void:
 	set_process(false)
 	set_physics_process(false)
 	
-	# 慢动作后重开
-	Engine.time_scale = 0.2
-	await get_tree().create_timer(1.0).timeout
-	Engine.time_scale = 1.0
-	get_tree().reload_current_scene()
+	# 调用全局游戏结束逻辑
+	Global.game_over()
+
+## 清理技能效果（角色切换时调用）
+func _cleanup_skill_effects() -> void:
+	# 检查子类是否有skill_manager
+	if "skill_manager" in self and self.skill_manager:
+		var sm = self.skill_manager as SkillManager
+		if sm:
+			# 遍历所有技能并调用cleanup
+			for skill in sm.get_all_skills():
+				if skill and skill.has_method("cleanup"):
+					skill.cleanup()
+			print("[PlayerBase] 已清理所有技能效果")

@@ -14,13 +14,19 @@ var current_character_index: int = 0
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		# Tab 键切换角色
-		if event.keycode == KEY_TAB:
-			_switch_to_next_character()
+		# Tab 键切换角色 - 只在没有选择角色时使用调试切换
+		# 使用 is_action_pressed 来检测，与 arena.gd 保持一致
+		if event.is_action_pressed("switch_player"):
+			# 如果有选择的角色，由arena.gd的_input处理，这里不做任何事
+			if Global.selected_player_ids.size() > 0:
+				return  # 直接返回，不处理
+			else:
+				_switch_to_next_character()
+				get_viewport().set_input_as_handled()  # 消费事件
 		# 数字键 1-6 切换武器
 		elif event.keycode >= KEY_1 and event.keycode <= KEY_6:
 			_switch_weapon(event.keycode - KEY_1)
-	 # 检测是否按下了键盘上的 Escape 键
+	# 检测是否按下了键盘上的 Escape 键
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		get_tree().quit()
 

@@ -6,18 +6,21 @@
 
 [node name="PlayerButcher" instance=ExtResource("1_tex7i")]
 script = ExtResource("2_hs0af")
-rift_damage_per_tick = 20
-rift_duration = 5.0
-kill_zone_radius = 250.0
-kill_zone_damage = 30
-kill_zone_duration = 8.0
-mine_damage = 200
-mine_trigger_radius = 30.0
-pull_force_damage = 50
-pull_width = 60.0
-cost_dash = 10.0
-cost_kill_zone = 50.0
-cost_ripcord = 30.0
+stake_duration = 6.0
+chain_radius = 250.0
+stake_throw_speed = 1200.0
+stake_impact_damage = 20
+saw_fly_speed = 1100.0
+saw_rotation_speed = 25.0
+saw_push_force = 1000.0
+saw_damage_tick = 3
+saw_damage_open = 1
+dismember_damage = 200
+saw_max_distance = 900.0
+chain_color = Color(0.3, 0.1, 0.1, 0.8)
+saw_color = Color(0.8, 0.2, 0.2, 0.8)
+planning_color_normal = Color(1, 1, 1, 0.5)
+planning_color_closed = Color(1, 0, 0, 1)
 player_id = "butcher"
 
 [node name="Sprite" parent="Visuals" index="2"]

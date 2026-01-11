@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://d1vh45rlvuo3s" path="res://scenes/unit/players/player_wind.gd" id="2_obfx6"]
 [ext_resource type="Resource" path="res://resouce/unit/players/stats_player_wind.tres" id="3_skpnh"]
 [ext_resource type="Script" uid="uid://c0mirjaxbhe0q" path="res://scenes/unit/players/trail.gd" id="5_icnjr"]
-[ext_resource type="Texture2D" uid="uid://dq63ocnu3lset" path="res://assets/sprites/Players/Player_3}.png" id="5_skpnh"]
+[ext_resource type="Texture2D" uid="uid://dq63ocnu3lset" path="res://assets/sprites/Players/Player_3.png" id="5_skpnh"]
 [ext_resource type="Script" uid="uid://3xhc8o3yr61w" path="res://scenes/unit/players/weapon_container.gd" id="6_soplr"]
 [ext_resource type="Script" uid="uid://cyj3i1371tt7i" path="res://scenes/components/hitbox_component.gd" id="7_dvx5u"]
 
