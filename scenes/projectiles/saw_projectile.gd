@@ -150,7 +150,8 @@ func _process_flying(delta: float) -> void:
 func _push_enemies_like_blade(old_pos: Vector2, new_pos: Vector2, delta: float) -> void:
 	"""非闭合状态：像刮板一样推着敌人走"""
 	var enemies = get_tree().get_nodes_in_group("enemies")
-	var push_radius = 200.0  # 进一步增大检测半径
+	# ✅ 减小检测半径，从200改为80
+	var push_radius = player_ref.saw_push_radius if "saw_push_radius" in player_ref else 80.0
 	
 	# 获取锯条的所有线段（全局坐标）
 	var poly_global = []
@@ -195,11 +196,11 @@ func _push_enemies_like_blade(old_pos: Vector2, new_pos: Vector2, delta: float) 
 			e.global_position += push_vec
 			
 			# 调试输出
-			if pushed_count == 1:  # 只输出第一个敌人，避免刷屏
-				print("[SawProjectile] 推动敌人: 距离=", min_dist, " 推力=", push_vec.length())
+			#if pushed_count == 1:  # 只输出第一个敌人，避免刷屏
+			#	print("[SawProjectile] 推动敌人: 距离=", min_dist, " 推力=", push_vec.length())
 	
-	if pushed_count > 0:
-		print("[SawProjectile] 本帧推动了 ", pushed_count, " 个敌人")
+	#if pushed_count > 0:
+	#	print("[SawProjectile] 本帧推动了 ", pushed_count, " 个敌人")
 
 func _damage_enemies_in_path(delta: float) -> void:
 	tick_timer -= delta
@@ -248,6 +249,9 @@ func _land() -> void:
 	
 	# 闭合状态：钉在那里
 	Global.spawn_floating_text(global_position, "LOCKED!", Color.RED)
+	
+	# 创建闭合遮罩视觉效果
+	_create_butcher_closure_mask()
 	
 	# 闭合状态：扫描并链接范围内的所有敌人
 	var enemies = get_tree().get_nodes_in_group("enemies")
@@ -355,8 +359,9 @@ func _is_enemy_inside(enemy: Node2D) -> bool:
 			return false
 		return Geometry2D.is_point_in_polygon(enemy.global_position, PackedVector2Array(poly_global))
 	else:
-		# 开放状态：线段检测（增大检测半径）
-		var hit_radius = 200.0  # 从150增加到200，确保能命中敌人
+		# 开放状态：线段检测
+		# ✅ 减小检测半径，从200改为80，与push_radius保持一致
+		var hit_radius = player_ref.saw_hit_radius if "saw_hit_radius" in player_ref else 80.0
 		for i in range(poly_global.size() - 1):
 			var p1 = poly_global[i]
 			var p2 = poly_global[i+1]
@@ -390,3 +395,29 @@ func _check_dismember(enemy: Node2D) -> void:
 			var damage = player_ref.dismember_damage if "dismember_damage" in player_ref else 200
 			enemy.health_component.take_damage(damage)
 		stake.chained_enemies.remove_at(chain_index)
+
+## 创建屠夫闭合遮罩视觉效果
+func _create_butcher_closure_mask() -> void:
+	# 获取全局坐标的多边形点
+	var poly_global = PackedVector2Array()
+	for p in visual_line.points:
+		poly_global.append(to_global(p))
+	
+	if poly_global.size() < 3:
+		return
+	
+	var mask = Polygon2D.new()
+	mask.polygon = poly_global
+	mask.color = Color(1.0, 0.0, 0.0, 0.0)  # 红色
+	mask.z_index = 100
+	get_tree().current_scene.add_child(mask)
+	
+	# 动画序列：淡入 -> 闪光 -> 淡出
+	var tween = create_tween()
+	tween.tween_property(mask, "color:a", 0.7, 0.15)  # 淡入
+	tween.tween_property(mask, "color", Color(2.0, 0.5, 0.5, 1.0), 0.1)  # 闪光
+	tween.tween_property(mask, "color:a", 0.0, 0.3)  # 淡出
+	tween.tween_callback(func():
+		if is_instance_valid(mask):
+			mask.queue_free()
+	)
