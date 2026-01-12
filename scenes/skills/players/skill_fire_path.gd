@@ -110,6 +110,9 @@ var is_dashing: bool = false
 ## 是否已显示能量不足提示（防止重复弹出）
 var has_shown_no_energy_hint: bool = false
 
+## 已生成的效果节点列表（用于清理）
+var spawned_effects: Array[Node] = []
+
 # ==============================================================================
 # 节点引用
 # ==============================================================================
@@ -597,6 +600,7 @@ func _spawn_fire_line(start: Vector2, end: Vector2) -> void:
 	area.add_child(vis_line)
 	
 	get_tree().current_scene.add_child(area)
+	spawned_effects.append(area)  # 追踪效果节点
 	
 	# 伤害逻辑
 	var timer = Timer.new()
@@ -639,6 +643,7 @@ func _spawn_fire_sea(points: PackedVector2Array) -> void:
 	area.add_child(vis_poly)
 	
 	get_tree().current_scene.add_child(area)
+	spawned_effects.append(area)  # 追踪效果节点
 	Global.spawn_floating_text(points[0], "INFERNO!", Color(2.0, 1.0, 0.0))
 	
 	# 淡入动画
@@ -731,6 +736,7 @@ func _spawn_fire_sea_no_mask(points: PackedVector2Array) -> void:
 	area.add_child(vis_poly)
 	
 	get_tree().current_scene.add_child(area)
+	spawned_effects.append(area)  # 追踪效果节点
 	Global.spawn_floating_text(points[0], "INFERNO!", Color(2.0, 1.0, 0.0))
 	
 	# 淡入动画
@@ -846,9 +852,17 @@ func _apply_circle_rewards(area_ref: Area2D, polygon: PackedVector2Array) -> voi
 
 ## 清理资源
 func cleanup() -> void:
+	# 清理规划线
 	if is_instance_valid(line_2d):
 		line_2d.queue_free()
 	
+	# 清理所有已生成的效果节点（火线、火海等）
+	for effect in spawned_effects:
+		if is_instance_valid(effect):
+			effect.queue_free()
+	spawned_effects.clear()
+	
+	# 重置状态
 	is_planning = false
 	is_dashing = false
 	is_drawing = false
@@ -860,3 +874,13 @@ func cleanup() -> void:
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
 	Engine.time_scale = 1.0
+	
+	# 恢复玩家状态（如果在冲刺中切换）
+	if skill_owner:
+		if visuals:
+			visuals.modulate.a = 1.0
+		if collision:
+			collision.set_deferred("disabled", false)
+		if dash_hitbox:
+			dash_hitbox.set_deferred("monitorable", false)
+			dash_hitbox.set_deferred("monitoring", false)

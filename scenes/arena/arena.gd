@@ -7,10 +7,8 @@ class_name Arena
 @export var critical_color:Color
 @export var hp_color:Color
 
-@onready var wave_index_lable: Label = %waveIndexLable
-@onready var wave_time_lable: Label = %waveTimeLable
-@onready var xp_label: Label = %xpLabel
-@onready var gold_label: Label = %goldLabel
+@onready var global_hud: GlobalHUD = %GlobalHUD
+@onready var squad_hud: SquadHUD = %SquadHUD
 @onready var spawner: Spawner = $Spawner
 @onready var chest_manager: ChestManager = $ChestManager
 @onready var upgrade_ui: UpgradeSelectionUI = $UpgradeSelectionUI
@@ -47,6 +45,12 @@ func _ready() -> void:
 	await _init_player_from_selection()
 	print("[Arena] 玩家初始化完成")
 	
+	# 初始化小队 HUD
+	_init_squad_hud()
+	
+	# 重置局内数据
+	Global.reset_session_data()
+	
 	# 连接玩家的 XP 和 Gold 信号
 	_connect_player_signals()
 
@@ -74,9 +78,10 @@ func _on_upgrade_selected(attribute_id: String) -> void:
 
 func _process(delta: float) -> void:
 	if Global.game_paused: return
-	if not spawner.spawn_timer.is_stopped():
-		wave_index_lable.text = spawner.get_wave_text()
-		wave_time_lable.text = spawner.get_wave_timer_text()
+	# 更新 Global HUD 波次信息
+	if global_hud and spawner and not spawner.spawn_timer.is_stopped():
+		global_hud.set_wave_text(spawner.get_wave_text())
+		global_hud.set_wave_time_text(spawner.get_wave_timer_text())
 
 # 创建具体飘字数据
 func create_floating_text(unit: Node2D) -> FloatingText:
@@ -120,23 +125,42 @@ func _connect_player_signals() -> void:
 				Global.player.gold_changed.disconnect(_on_player_gold_changed)
 			Global.player.gold_changed.connect(_on_player_gold_changed)
 		
-		# 初始化显示
-		_update_xp_display(Global.player.xp)
-		_update_gold_display(Global.player.gold)
+		# 同步玩家本地变量与全局值（角色切换后保持一致）
+		Global.player.xp = Global.session_xp
+		Global.player.gold = DataManager.get_total_gold()
+		
+		# 初始化显示 - 使用全局值而非玩家实例值
+		_update_xp_display(Global.session_xp)
+		_update_gold_display(DataManager.get_total_gold())
 
 func _on_player_xp_changed(current: int) -> void:
-	_update_xp_display(current)
+	# XP 已经由 player_base.add_xp() 更新到 Global.session_xp
+	# GlobalHUD 通过信号自动更新，这里不需要额外处理
+	pass
 
 func _on_player_gold_changed(current: int) -> void:
-	_update_gold_display(current)
+	# Gold 已经由 player_base.add_gold() 更新到 DataManager
+	# 直接更新 GlobalHUD 显示
+	_update_gold_display(DataManager.get_total_gold())
 
 func _update_xp_display(value: int) -> void:
-	if xp_label:
-		xp_label.text = "XP: %d" % value
+	# GlobalHUD 通过 Global.on_session_xp_changed 信号自动更新
+	# 这里仅作为初始化时的备用调用
+	if global_hud:
+		global_hud.update_xp(value)
 
 func _update_gold_display(value: int) -> void:
-	if gold_label:
-		gold_label.text = "Gold: %d" % value
+	if global_hud:
+		global_hud.update_gold(value)
+
+# 初始化小队 HUD
+func _init_squad_hud() -> void:
+	if squad_hud and Global.selected_player_ids.size() > 0:
+		var player_ids: Array[String] = []
+		for id in Global.selected_player_ids:
+			player_ids.append(id)
+		squad_hud.init_squad(player_ids)
+		print("[Arena] 小队 HUD 初始化完成")
 
 
 # ============================================================================
@@ -248,8 +272,32 @@ func _on_player_switch_requested(player_id: String) -> void:
 	_spawn_player(player_id, old_pos)
 
 func _input(event: InputEvent) -> void:
-	# TAB键切换角色 - 只在有选择角色时处理
-	if event.is_action_pressed("switch_player"):
-		if Global.selected_player_ids.size() > 0:
-			Global.switch_to_next_player()
-			get_viewport().set_input_as_handled()  # 消费事件，防止传递给debug_switcher
+	# 1-2-3 键精准切换角色
+	if event.is_action_pressed("switch_player_1"):
+		_try_switch_to_index(0)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("switch_player_2"):
+		_try_switch_to_index(1)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("switch_player_3"):
+		_try_switch_to_index(2)
+		get_viewport().set_input_as_handled()
+	
+	# 移除 TAB 键切换逻辑 - 不再响应 switch_player action
+
+# 尝试切换到指定索引的角色
+func _try_switch_to_index(index: int) -> void:
+	if Global.selected_player_ids.size() == 0:
+		return
+	
+	if not Global.switch_to_player_by_index(index):
+		# 切换失败，检查原因
+		if Global.is_player_dead(index):
+			# 播放无效音效
+			_play_invalid_switch_sound()
+			# UI 抖动由 SquadHUD 通过信号处理
+
+func _play_invalid_switch_sound() -> void:
+	# 播放拒绝音效 - 使用现有的音效或静默
+	# 如果有 ui_reject.wav 则播放，否则使用 player_shatter 的变体
+	Global.play_sfx(Global.sfx_player_shatter, 1.5, 1.8, -15.0)

@@ -10,6 +10,12 @@ signal on_camera_shake(intensity: float, duration: float)
 signal on_directional_shake(direction: Vector2, strength: float)  # 新增：指向性震动
 signal on_player_switch_requested(player_id: String)  # 角色切换请求
 
+# --- HUD 小队系统信号 ---
+signal on_session_xp_changed(current: int)  # 局内 XP 变化
+signal on_active_character_changed(index: int)  # 激活角色变化
+signal on_switch_rejected(index: int, reason: String)  # 切换被拒绝
+signal on_squad_state_changed(index: int, state: Dictionary)  # 角色状态变化
+
 const FLASH_MATERIAL = preload("uid://coi4nu8ohpgeo")
 const FLOATING_TEXT_SCENE = preload("uid://cp86d6q6156la")
 
@@ -56,6 +62,11 @@ var player_states: Dictionary = {}
 # 是否游戏结束
 var is_game_over: bool = false
 
+# ============================================================================
+# 局内数据 (Session Data) - 每局重置
+# ============================================================================
+var session_xp: int = 0  # 局内经验值，每局重置
+
 func _ready() -> void:
 	# 初始化对象池，防止频繁创建销毁音频节点
 	for i in range(POOL_SIZE):
@@ -87,14 +98,22 @@ func _update_inactive_players_regen(delta: float) -> void:
 		
 		var state = player_states[player_id]
 		
-		# 能量恢复
-		var energy_regen = state.get("energy_regen", 0.5)
-		state.energy = min(state.energy + energy_regen * delta, state.max_energy)
+		# 跳过已死亡的角色
+		if state.get("health", 0) <= 0:
+			continue
 		
-		# 血量恢复
-		var health_regen = state.get("health_regen", 0.0)
+		# 使用配置的恢复速度
+		var energy_regen = state.get("energy_regen", 0.5)  # 从 player_config.csv 读取
+		var health_regen = state.get("health_regen", 0.0)  # 从 player_config.csv 读取
+		
+		# 能量恢复
+		var max_energy = state.get("max_energy", 999)
+		state.energy = min(state.energy + energy_regen * delta, max_energy)
+		
+		# 血量恢复（只有配置了 health_regen > 0 的角色才会回血）
 		if health_regen > 0:
-			state.health = min(state.health + health_regen * delta, state.max_health)
+			var max_health = state.get("max_health", 100)
+			state.health = min(state.health + health_regen * delta, max_health)
 		
 		player_states[player_id] = state
 		
@@ -295,3 +314,97 @@ func reset_selection() -> void:
 	player_states.clear()
 	current_player_index = 0
 	is_game_over = false
+
+# ============================================================================
+# 局内数据管理 (Session Data)
+# ============================================================================
+
+# 添加局内经验值
+func add_session_xp(amount: int) -> void:
+	session_xp += amount
+	emit_signal("on_session_xp_changed", session_xp)
+	print("[Global] 获得 XP: %d, 当前: %d" % [amount, session_xp])
+
+# 重置局内数据（新游戏时调用）
+func reset_session_data() -> void:
+	session_xp = 0
+	emit_signal("on_session_xp_changed", session_xp)
+	print("[Global] 局内数据已重置")
+
+# ============================================================================
+# 小队切换系统 (1-2-3 键精准切换)
+# ============================================================================
+
+# 通过索引切换角色（1-2-3 键）
+func switch_to_player_by_index(index: int) -> bool:
+	print("[Global] switch_to_player_by_index 调用, index=%d" % index)
+	
+	# 1. 检查索引有效性
+	if index < 0 or index >= selected_player_ids.size():
+		push_warning("[Global] 无效的角色索引: %d" % index)
+		return false
+	
+	# 2. 自我屏蔽检查 - 如果已经是当前角色，忽略
+	if index == current_player_index:
+		print("[Global] 已经是当前角色，忽略切换")
+		return false
+	
+	# 3. 游戏结束检查
+	if is_game_over:
+		print("[Global] 游戏已结束，无法切换")
+		return false
+	
+	# 4. 死亡检查
+	var target_player_id = selected_player_ids[index]
+	var state = player_states.get(target_player_id, {})
+	var health = state.get("health", 0)
+	
+	if health <= 0:
+		print("[Global] 目标角色已死亡: %s" % target_player_id)
+		emit_signal("on_switch_rejected", index, "dead")
+		return false
+	
+	# 5. 保存当前角色状态
+	save_current_player_state()
+	
+	# 6. 执行切换
+	current_player_index = index
+	
+	print("[Global] 切换到角色: %s (索引 %d)" % [target_player_id, index])
+	
+	# 7. 发出信号
+	emit_signal("on_player_switch_requested", target_player_id)
+	emit_signal("on_active_character_changed", index)
+	
+	return true
+
+# 检查角色是否死亡
+func is_player_dead(index: int) -> bool:
+	if index < 0 or index >= selected_player_ids.size():
+		return true
+	var player_id = selected_player_ids[index]
+	var state = player_states.get(player_id, {})
+	return state.get("health", 0) <= 0
+
+# 获取角色状态（通过索引）
+func get_player_state_by_index(index: int) -> Dictionary:
+	if index < 0 or index >= selected_player_ids.size():
+		return {}
+	var player_id = selected_player_ids[index]
+	if not player_states.has(player_id):
+		push_warning("[Global] 角色状态不存在: %s" % player_id)
+		return {}
+	return player_states[player_id]
+
+# 获取角色ID（通过索引）
+func get_player_id_by_index(index: int) -> String:
+	if index < 0 or index >= selected_player_ids.size():
+		return ""
+	return selected_player_ids[index]
+
+# 通知角色状态变化（供外部调用）
+func notify_squad_state_changed(index: int) -> void:
+	if index < 0 or index >= selected_player_ids.size():
+		return
+	var state = get_player_state_by_index(index)
+	emit_signal("on_squad_state_changed", index, state)

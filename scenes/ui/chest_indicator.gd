@@ -16,12 +16,16 @@ var tier_colors: Dictionary = {
 	4: Color(1.0, 0.0, 1.0)   # 钻石宝箱 - 紫色（彩虹色需要特殊处理）
 }
 
-# 视野范围（屏幕可见范围）
-var view_range: float = 800.0
+# 从 map_config.csv 读取的指示器显示范围
+var indicator_show_range: float = 3000.0
 
 @onready var indicator_container: Control = $IndicatorContainer
 
 func _ready() -> void:
+	# 从 CSV 加载指示器显示范围
+	indicator_show_range = ConfigManager.get_map_setting("indicator_show_range", 3000.0)
+	print("[ChestIndicator] indicator_show_range = %d (from map_config.csv)" % int(indicator_show_range))
+	
 	# 创建3个指示器节点
 	for i in range(3):
 		var indicator = _create_indicator()
@@ -34,24 +38,74 @@ func _process(delta: float) -> void:
 		return
 	
 	var player_pos = Global.player.global_position
-	var nearby_chests = chest_manager.get_nearby_chests(player_pos, 3)
+	var camera = get_viewport().get_camera_2d()
 	
-	# 过滤掉视野范围内的宝箱
-	var out_of_view_chests: Array[Dictionary] = []
-	for chest_data in nearby_chests:
-		if chest_data["distance"] > view_range:
-			out_of_view_chests.append(chest_data)
+	# 获取所有宝箱（不限制数量，后面会过滤）
+	var all_chests = chest_manager.get_nearby_chests(player_pos, 10)
+	
+	# 过滤：只显示 (距离 <= indicator_show_range) AND (不在屏幕内) 的宝箱
+	var chests_to_show: Array[Dictionary] = []
+	for chest_data in all_chests:
+		var dist = chest_data["distance"]
+		var chest_pos = chest_data["position"]
+		
+		# 条件1: 距离必须在显示范围内
+		if dist > indicator_show_range:
+			continue
+		
+		# 条件2: 宝箱必须不在屏幕内（off-screen）
+		if _is_on_screen(chest_pos, camera):
+			continue
+		
+		# 满足两个条件，添加到显示列表
+		chests_to_show.append(chest_data)
+		
+		# 最多显示3个指示器
+		if chests_to_show.size() >= 3:
+			break
 	
 	# 更新指示器
 	for i in range(indicator_nodes.size()):
 		var indicator = indicator_nodes[i]
 		
-		if i < out_of_view_chests.size():
-			var chest_data = out_of_view_chests[i]
+		if i < chests_to_show.size():
+			var chest_data = chests_to_show[i]
 			_update_indicator(indicator, chest_data, player_pos, delta)
 			indicator.visible = true
 		else:
 			indicator.visible = false
+
+# 检查世界坐标是否在屏幕可见范围内
+func _is_on_screen(world_pos: Vector2, camera: Camera2D) -> bool:
+	if not camera:
+		return false
+	
+	# 获取屏幕尺寸
+	var screen_size = get_viewport().get_visible_rect().size
+	
+	# 获取相机位置（世界坐标）
+	var camera_pos = camera.global_position
+	
+	# 计算屏幕边界（世界坐标）
+	# 考虑相机缩放
+	var zoom = camera.zoom
+	var half_screen = screen_size / 2.0 / zoom
+	
+	var screen_left = camera_pos.x - half_screen.x
+	var screen_right = camera_pos.x + half_screen.x
+	var screen_top = camera_pos.y - half_screen.y
+	var screen_bottom = camera_pos.y + half_screen.y
+	
+	# 添加一点边距，避免箭头在边缘闪烁
+	var margin = 50.0
+	screen_left += margin
+	screen_right -= margin
+	screen_top += margin
+	screen_bottom -= margin
+	
+	# 检查宝箱是否在屏幕范围内
+	return world_pos.x >= screen_left and world_pos.x <= screen_right and \
+		   world_pos.y >= screen_top and world_pos.y <= screen_bottom
 
 func _create_indicator() -> Control:
 	var container = Control.new()

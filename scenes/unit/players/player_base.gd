@@ -349,16 +349,18 @@ func gain_energy(amount: float) -> void:
 	update_ui_signals()
 	Global.spawn_floating_text(global_position, "+%d Energy" % amount, Color.CYAN)
 
-# 获得经验值
+# 获得经验值 - 使用 Global.session_xp（局内累积）
 func add_xp(amount: int) -> void:
-	xp += amount
-	xp_changed.emit(xp)
+	Global.add_session_xp(amount)  # 直接更新 Global 的 session_xp
+	xp = Global.session_xp  # 同步本地变量（兼容性）
+	xp_changed.emit(Global.session_xp)
 	Global.spawn_floating_text(global_position + Vector2(20, -10), "+%d XP" % amount, Color.MEDIUM_PURPLE)
 
-# 获得金币
+# 获得金币 - 使用 DataManager（局外持久化）
 func add_gold(amount: int) -> void:
-	gold += amount
-	gold_changed.emit(gold)
+	DataManager.add_gold(amount)  # 直接更新 DataManager
+	gold = DataManager.get_total_gold()  # 同步本地变量（兼容性）
+	gold_changed.emit(DataManager.get_total_gold())
 	Global.spawn_floating_text(global_position + Vector2(-20, -10), "+%d Gold" % amount, Color.GOLD)
 
 func update_ui_signals() -> void:
@@ -371,56 +373,9 @@ func update_ui_signals() -> void:
 		energy_bar_ui.update_bar(value, energy)
 
 func _create_energy_bar_ui() -> void:
-	# 加载能量槽脚本
-	var energy_bar_script = load("res://scenes/ui/energy_bar.gd")
-	if not energy_bar_script:
-		return
-	
-	# 创建能量槽控件
-	energy_bar_ui = Control.new()
-	energy_bar_ui.name = "EnergyBarUI"
-	energy_bar_ui.set_script(energy_bar_script)
-	
-	# 设置为Canvas Layer的子节点，这样UI会显示在屏幕上
-	var canvas_layer = CanvasLayer.new()
-	canvas_layer.name = "EnergyBarLayer"
-	add_child(canvas_layer)
-	
-	# 创建ProgressBar
-	var progress_bar = ProgressBar.new()
-	progress_bar.name = "ProgressBar"
-	progress_bar.custom_minimum_size = Vector2(200, 30)
-	progress_bar.max_value = 1.0
-	progress_bar.value = 1.0
-	progress_bar.show_percentage = false
-	energy_bar_ui.add_child(progress_bar)
-	
-	# 创建Label
-	var label = Label.new()
-	label.name = "EnergyAmount"
-	label.position = Vector2(10, 5)
-	label.text = str(int(energy))
-	label.add_theme_font_size_override("font_size", 16)
-	energy_bar_ui.add_child(label)
-	
-	# 设置位置（屏幕左上角，血条下方）
-	energy_bar_ui.position = Vector2(20, 80)
-	energy_bar_ui.custom_minimum_size = Vector2(200, 30)
-	
-	# 添加到Canvas Layer
-	canvas_layer.add_child(energy_bar_ui)
-	
-	# 设置颜色
-	energy_bar_ui.set("back_color", Color(0.2, 0.2, 0.3))
-	energy_bar_ui.set("fill_color", Color(0.3, 0.8, 1.0))
-	
-	# 调用_ready初始化
-	if energy_bar_ui.has_method("_ready"):
-		energy_bar_ui._ready()
-	
-	# 连接信号
-	if not energy_changed.is_connected(_on_energy_changed_for_ui):
-		energy_changed.connect(_on_energy_changed_for_ui)
+	# 已禁用 - 能量条现在由底部 Squad HUD 显示
+	# 不再在左上角创建单独的能量条
+	pass
 
 func _on_energy_changed_for_ui(current: float, max_val: float) -> void:
 	if energy_bar_ui and energy_bar_ui.has_method("_on_player_energy_changed"):

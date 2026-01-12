@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://bjhraywhhpn3h"]
+[gd_scene load_steps=14 format=3 uid="uid://bjhraywhhpn3h"]
 
 [ext_resource type="Script" uid="uid://fylssyuoxjey" path="res://scenes/arena/arena.gd" id="1_asdgj"]
 [ext_resource type="Texture2D" uid="uid://ov4fmsbglo55" path="res://assets/sprites/Map.png" id="2_5tue2"]
@@ -9,6 +9,8 @@
 [ext_resource type="Script" uid="uid://c1r0p6xkr6l1v" path="res://scenes/arena/spawner.gd" id="8_ii07k"]
 [ext_resource type="PackedScene" path="res://scenes/ui/chest_indicator.tscn" id="8_indicator"]
 [ext_resource type="FontFile" uid="uid://kfh6ooeul77g" path="res://assets/font/Bake Soda.otf" id="9_6w4xk"]
+[ext_resource type="PackedScene" uid="uid://cglobal_hud" path="res://scenes/ui/global_hud/global_hud.tscn" id="10_global_hud"]
+[ext_resource type="PackedScene" uid="uid://csquad_hud" path="res://scenes/ui/squad_hud/squad_hud.tscn" id="11_squad_hud"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_2ml6w"]
 font = ExtResource("9_6w4xk")
@@ -49,49 +51,11 @@ script = ExtResource("8_ii07k")
 
 [node name="GameUI" type="CanvasLayer" parent="."]
 
-[node name="waveIndexLable" type="Label" parent="GameUI"]
+[node name="GlobalHUD" parent="GameUI" instance=ExtResource("10_global_hud")]
 unique_name_in_owner = true
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -110.0
-offset_top = 20.0
-offset_right = 110.0
-offset_bottom = 97.333336
-grow_horizontal = 2
-text = "Wave 1"
-label_settings = SubResource("LabelSettings_2ml6w")
 
-[node name="waveTimeLable" type="Label" parent="GameUI"]
+[node name="SquadHUD" parent="GameUI" instance=ExtResource("11_squad_hud")]
 unique_name_in_owner = true
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -20.0
-offset_top = 100.0
-offset_right = 20.0
-offset_bottom = 120.0
-grow_horizontal = 2
-text = "Wave 1"
-label_settings = SubResource("LabelSettings_xgbxb")
-
-[node name="xpLabel" type="Label" parent="GameUI"]
-unique_name_in_owner = true
-offset_left = 20.0
-offset_top = 20.0
-offset_right = 200.0
-offset_bottom = 60.0
-text = "XP: 0"
-label_settings = SubResource("LabelSettings_xgbxb")
-
-[node name="goldLabel" type="Label" parent="GameUI"]
-unique_name_in_owner = true
-offset_left = 20.0
-offset_top = 70.0
-offset_right = 200.0
-offset_bottom = 110.0
-text = "Gold: 0"
-label_settings = SubResource("LabelSettings_xgbxb")
 
 [node name="UpgradeSelectionUI" parent="." instance=ExtResource("7_upgrade")]
 

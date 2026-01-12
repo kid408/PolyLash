@@ -38,6 +38,9 @@ var damage_tick_interval: float = 0.5
 ## 物理tick间隔
 var physics_tick_interval: float = 0.05
 
+## 已生成的效果节点列表（用于清理）
+var spawned_effects: Array[Node] = []
+
 # ==============================================================================
 # 生命周期
 # ==============================================================================
@@ -101,6 +104,7 @@ func _spawn_storm_eye(center_pos: Vector2) -> void:
 	area.add_child(vis)
 	
 	get_tree().current_scene.add_child(area)
+	spawned_effects.append(area)  # 追踪效果节点
 	Global.spawn_floating_text(center_pos, "VORTEX!", Color.CYAN)
 	
 	# 缩放动画
@@ -177,3 +181,11 @@ func _on_object_expired(area_ref: Area2D, visual_ref: Node) -> void:
 			)
 		else:
 			area_ref.queue_free()
+
+## 清理资源（角色切换时调用）
+func cleanup() -> void:
+	# 清理所有已生成的效果节点（暴风眼）
+	for effect in spawned_effects:
+		if is_instance_valid(effect):
+			effect.queue_free()
+	spawned_effects.clear()

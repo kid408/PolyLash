@@ -1,5 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1768155604
+::res://::1768231400
 icon.png::CompressedTexture2D::4198334022768452939::1768136923::1768137049::1::::<><><>0<>0<>fb6e1e7bfd910f0a20703a7a13bf3a7f<>res://.godot/imported/icon.png-487276ed1e3a0c39cad0279d744ee560.ctex::
 README.md::TextFile::-1::1768155419::0::1::::<><><>0<>0<><>::
 ::res://assets/::1768090587
@@ -98,7 +98,7 @@ WeaponSMG.png::CompressedTexture2D::6719343259487316355::1759559642::1767263352:
 ::res://autoloads/::1768151598
 config_manager.gd::GDScript::6161209431084733178::1768155548::0::1::::<>Node<><>0<>0<><>::
 data_manager.gd::GDScript::1168783571837414416::1768153455::0::1::::<>Node<><>0<>0<><>::
-global.gd::GDScript::143348280982661186::1768135560::0::1::::<>Node<><>0<>0<><>::
+global.gd::GDScript::143348280982661186::1768230995::0::1::::<>Node<><>0<>0<><>::
 polygon_utils.gd::GDScript::5287253962670571876::1768099237::0::1::::PolygonUtils<>Node<><>0<>0<><>::
 upgrade_manager.gd::GDScript::7166158279115057107::1766926472::0::1::::<>Node<><>0<>0<><>::
 ::res://docs/::1768155286
@@ -139,8 +139,8 @@ wave_unit.gd::GDScript::3438751202075541029::1767261827::0::1::::WaveUnit<>Resou
 wave_1_to_5.tres::Resource/WaveData::-1::1767255300::0::1::::<><><>0<>0<><>::res://resouce/waves/wave_data.gd
 ::res://scenes/::1768090588
 ::res://scenes/arena/::1768135692
-arena.gd::GDScript::401190298922256092::1768137943::0::1::::Arena<>Node2D<><>0<>0<><>::
-arena.tscn::PackedScene::3033604404464949307::1768135692::0::1::::<><><>0<>0<><>::uid://fylssyuoxjey::::res://scenes/arena/arena.gd<>uid://ov4fmsbglo55::::res://assets/sprites/Map.png<>uid://xik4iqa2n4lo::::res://scenes/arena/camera_2d.gd<>uid://ba7a7f4xdjhru::::res://scenes/arena/background_manager.gd<>uid://b2bivn8xpy1ko::::res://scenes/arena/chest_manager.gd<>res://scenes/ui/upgrade_selection_ui.tscn<>uid://c1r0p6xkr6l1v::::res://scenes/arena/spawner.gd<>res://scenes/ui/chest_indicator.tscn<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf
+arena.gd::GDScript::401190298922256092::1768231246::0::1::::Arena<>Node2D<><>0<>0<><>::
+arena.tscn::PackedScene::3033604404464949307::1768231183::0::1::::<><><>0<>0<><>::uid://fylssyuoxjey::::res://scenes/arena/arena.gd<>uid://ov4fmsbglo55::::res://assets/sprites/Map.png<>uid://xik4iqa2n4lo::::res://scenes/arena/camera_2d.gd<>uid://ba7a7f4xdjhru::::res://scenes/arena/background_manager.gd<>uid://b2bivn8xpy1ko::::res://scenes/arena/chest_manager.gd<>res://scenes/ui/upgrade_selection_ui.tscn<>uid://c1r0p6xkr6l1v::::res://scenes/arena/spawner.gd<>res://scenes/ui/chest_indicator.tscn<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf<>res://scenes/ui/global_hud/global_hud.tscn<>res://scenes/ui/squad_hud/squad_hud.tscn
 background_manager.gd::GDScript::2452538225693435530::1766922341::0::1::::BackgroundManager<>Node2D<><>0<>0<><>::
 camera_2d.gd::GDScript::1631517828598427408::1766934148::0::1::::Camera<>Camera2D<><>0<>0<><>::
 chest_manager.gd::GDScript::4284107812136300826::1768103874::0::1::::ChestManager<>Node2D<><>0<>0<><>::
@@ -190,7 +190,7 @@ skill_stun_bomb.gd::GDScript::7155543731952239972::1767411099::0::1::::SkillStun
 skill_totem.gd::GDScript::7166026444625067771::1767415810::0::1::::SkillTotem<>SkillBase<><>0<>0<><>::
 skill_web_weave.gd::GDScript::8278107262938836886::1768142147::0::1::::SkillWebWeave<>SkillBase<><>0<>0<><>::
 skill_wind_path.gd::GDScript::4078000996493824724::1768141556::0::1::::SkillWindPath<>SkillBase<><>0<>0<><>::
-::res://scenes/ui/::1768104248
+::res://scenes/ui/::1768231113
 chest_indicator.gd::GDScript::101773751435956797::1766923107::0::1::::ChestIndicator<>CanvasLayer<><>0<>0<><>::
 chest_indicator.tscn::PackedScene::-1::1766912544::0::1::::<><><>0<>0<><>::res://scenes/ui/chest_indicator.gd
 energy_bar.gd::GDScript::2869351533575420727::1766936417::0::1::::EnergyBar<>Control<><>0<>0<><>::
@@ -201,6 +201,9 @@ health_bar.gd::GDScript::6745345476856237189::1768141230::0::1::::HealthBar<>Con
 health_bar.tscn::PackedScene::7679491042787671124::1764422417::0::1::::<><><>0<>0<><>::uid://c3dq4b2epo7g0::::res://scenes/ui/health_bar.gd
 upgrade_selection_ui.gd::GDScript::8049752656406372743::1766922545::0::1::::UpgradeSelectionUI<>CanvasLayer<><>0<>0<><>::
 upgrade_selection_ui.tscn::PackedScene::-1::1766912538::0::1::::<><><>0<>0<><>::res://scenes/ui/upgrade_selection_ui.gd
+::res://scenes/ui/global_hud/::1768231370
+global_hud.gd::GDScript::5884398511240847816::1768231121::0::1::::GlobalHUD<>Control<><>0<>0<><>::
+global_hud.tscn::PackedScene::-1::1768231132::0::1::::<><><>0<>0<><>::res://scenes/ui/global_hud/global_hud.gd
 ::res://scenes/ui/selection_panel/::1768151850
 character_upgrade.gd::GDScript::2994815284368660252::1768153784::0::1::::CharacterUpgradePanel<>Panel<><>0<>0<><>::
 character_upgrade.tscn::PackedScene::-1::1768152485::0::1::::<><><>0<>0<><>::res://scenes/ui/selection_panel/character_upgrade.gd
@@ -208,6 +211,11 @@ player_select_button.gd::GDScript::1724180135034001988::1768133111::0::1::::Play
 selected_slot_button.gd::GDScript::7103104506879643123::1768133118::0::1::::SelectedSlotButton<>Button<><>0<>0<><>::
 selection_panel.gd::GDScript::2686125043203603204::1768152799::0::1::::SelectionPanel<>Panel<><>0<>0<><>::
 selection_panel.tscn::PackedScene::6853719228978906030::1768153792::0::1::::<><><>0<>0<><>::uid://b02x7h4bntic6::::res://icon.png<>uid://bejgc7t8weklg::::res://scenes/ui/selection_panel/selection_panel.gd<>uid://cproxhccob85g::::res://assets/sprites/Players/Player_1.png
+::res://scenes/ui/squad_hud/::1768231370
+character_slot.gd::GDScript::5504922285234337577::1768231031::0::1::::CharacterSlot<>Control<><>0<>0<><>::
+character_slot.tscn::PackedScene::-1::1768231044::0::1::::<><><>0<>0<><>::res://scenes/ui/squad_hud/character_slot.gd
+squad_hud.gd::GDScript::4307102817720193428::1768231078::0::1::::SquadHUD<>Control<><>0<>0<><>::
+squad_hud.tscn::PackedScene::-1::1768231090::0::1::::<><><>0<>0<><>::res://scenes/ui/squad_hud/squad_hud.gd
 ::res://scenes/unit/::1768090588
 unit.gd::GDScript::7544997064344766831::1766936376::0::1::::Unit<>Node2D<><>0<>0<><>::
 unit.tscn::PackedScene::6458692425737336959::1767258334::0::1::::<><><>0<>0<><>::uid://dfq388g7pq4pn::::res://scenes/unit/unit.gd<>uid://devt2xbk78rej::::res://assets/sprites/shadow.png<>uid://cfd55woyni5qt::::res://resouce/unit/unit_stats.gd<>uid://dp3xumk1n2wmf::::res://scenes/components/hurtbox_component.tscn<>uid://cstyo4wiq71vi::::res://scenes/components/health_component.gd<>uid://dhoadina0xqh5::::res://scenes/ui/health_bar.tscn

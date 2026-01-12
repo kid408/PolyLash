@@ -1,0 +1,8 @@
+res://scenes/ui/squad_hud/squad_hud.gd
+res://scenes/ui/global_hud/global_hud.gd
+res://scenes/ui/squad_hud/character_slot.gd
+res://scenes/ui/squad_hud/character_slot.tscn
+res://autoloads/global.gd
+res://scenes/unit/players/player_base.gd
+res://scenes/arena/arena.gd
+res://scenes/ui/chest_indicator.gd

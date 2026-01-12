@@ -35,6 +35,9 @@ var totem_explosion_radius: float = 120.0
 ## 图腾爆炸伤害
 var totem_explosion_damage: int = 150
 
+## 已生成的图腾列表（用于清理）
+var spawned_totems: Array[Node] = []
+
 # ==============================================================================
 # 生命周期
 # ==============================================================================
@@ -60,6 +63,7 @@ func execute() -> void:
 	var totem = _create_totem()
 	totem.global_position = skill_owner.global_position
 	get_tree().current_scene.add_child(totem)
+	spawned_totems.append(totem)  # 追踪图腾
 	
 	# 嘲讽附近敌人
 	var enemies = get_tree().get_nodes_in_group("enemies")
@@ -184,3 +188,11 @@ func _explode_totem(totem: Node2D) -> void:
 	)
 	
 	totem.queue_free()
+
+## 清理资源（角色切换时调用）
+func cleanup() -> void:
+	# 清理所有已生成的图腾
+	for totem in spawned_totems:
+		if is_instance_valid(totem):
+			totem.queue_free()
+	spawned_totems.clear()

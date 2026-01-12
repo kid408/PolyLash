@@ -119,6 +119,9 @@ var is_dashing: bool = false
 ## 是否已显示能量不足提示（防止重复弹出）
 var has_shown_no_energy_hint: bool = false
 
+## 已生成的地雷列表（用于清理）
+var spawned_mines: Array[Node] = []
+
 # ==============================================================================
 # 节点引用
 # ==============================================================================
@@ -677,6 +680,7 @@ func _spawn_mine(pos: Vector2) -> void:
 	mine.add_child(vis)
 	
 	get_tree().current_scene.add_child(mine)
+	spawned_mines.append(mine)  # 追踪地雷
 	print("[SkillMinePath] 地雷已添加到场景: %s" % mine.name)
 	
 	# 连接触发信号
@@ -772,6 +776,12 @@ func cleanup() -> void:
 	if is_instance_valid(line_2d):
 		line_2d.queue_free()
 	
+	# 清理所有已生成的地雷
+	for mine in spawned_mines:
+		if is_instance_valid(mine):
+			mine.queue_free()
+	spawned_mines.clear()
+	
 	is_planning = false
 	is_dashing = false
 	is_drawing = false
@@ -784,3 +794,11 @@ func cleanup() -> void:
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
 	Engine.time_scale = 1.0
+	
+	# 恢复玩家状态（如果在冲刺中切换）
+	if skill_owner:
+		if collision:
+			collision.set_deferred("disabled", false)
+		if dash_hitbox:
+			dash_hitbox.set_deferred("monitorable", false)
+			dash_hitbox.set_deferred("monitoring", false)
