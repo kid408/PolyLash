@@ -1,17 +1,21 @@
-[gd_scene load_steps=11 format=3 uid="uid://b255dm38r7tyb"]
+[gd_scene load_steps=15 format=3 uid="uid://dxvvvvvvvvvvv"]
 
-[ext_resource type="PackedScene" uid="uid://cyavyrbpj6jjb" path="res://scenes/unit/unit.tscn" id="1_c2p8o"]
-[ext_resource type="Script" uid="uid://cslieepfyhg7k" path="res://scenes/unit/enemy/enemy.gd" id="2_mxy6n"]
-[ext_resource type="PackedScene" uid="uid://dvfjoyutjx5jf" path="res://scenes/particles/Explosion.tscn" id="3_ggfpe"]
-[ext_resource type="Resource" uid="uid://0jj3vcuaeqgt" path="res://resouce/unit/enemies/stats_enemy_chaser_slow.tres" id="4_uwms2"]
-[ext_resource type="Texture2D" uid="uid://cffpkqppd1vid" path="res://assets/sprites/Enemies/Enemy_Glutton_01.png" id="5_wclk4"]
-[ext_resource type="PackedScene" uid="uid://3t6iqc1kav5h" path="res://scenes/components/hitbox_component.tscn" id="6_3dd3r"]
+[ext_resource type="PackedScene" uid="uid://cyavyrbpj6jjb" path="res://scenes/unit/unit.tscn" id="1_idtdn"]
+[ext_resource type="Texture2D" uid="uid://cffpkqppd1vid" path="res://assets/sprites/Enemies/Enemy_Glutton_01.png" id="2_k8upj"]
+[ext_resource type="Script" uid="uid://c746yw56els0w" path="res://scenes/unit/enemy/elites/enemy_glutton.gd" id="2_oo7ju"]
+[ext_resource type="PackedScene" uid="uid://dvfjoyutjx5jf" path="res://scenes/particles/Explosion.tscn" id="3_421q1"]
+[ext_resource type="Resource" uid="uid://c8ydvqvvvvvvv" path="res://resouce/unit/enemies/stats_enemy_glutton.tres" id="3_lmqbh"]
+[ext_resource type="Texture2D" uid="uid://fjxcfmweyx6q" path="res://assets/sprites/Enemies/Enemy_Glutton_02.png" id="4_riw7m"]
+[ext_resource type="PackedScene" uid="uid://3t6iqc1kav5h" path="res://scenes/components/hitbox_component.tscn" id="5_e15k4"]
+[ext_resource type="Texture2D" uid="uid://b63fj2rkihrp6" path="res://assets/sprites/Enemies/Enemy_Glutton_03.png" id="5_gglvs"]
+[ext_resource type="Texture2D" uid="uid://cl7cw5pkhqcpa" path="res://assets/sprites/Enemies/Enemy_Glutton_04.png" id="6_lg24g"]
+[ext_resource type="Texture2D" uid="uid://cpb8gy2pbp26u" path="res://assets/sprites/Enemies/Enemy_Glutton_05.png" id="7_t4ohq"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_421q1"]
 radius = 66.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_y0s2k"]
-radius = 150.0
+radius = 200.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_03rrj"]
 radius = 31.016125
@@ -19,11 +23,30 @@ radius = 31.016125
 [sub_resource type="CircleShape2D" id="CircleShape2D_e15k4"]
 radius = 34.0
 
-[node name="EnemyGlutton" instance=ExtResource("1_c2p8o")]
+[node name="EnemyGlutton" instance=ExtResource("1_idtdn")]
 collision_layer = 2
-script = ExtResource("2_mxy6n")
+script = ExtResource("2_oo7ju")
+eat_detection_radius = 200.0
+eat_cooldown = 2.0
+eat_heal_percent = 0.1
+eat_max_hp_increase = 1.05
+eat_damage_increase = 1.03
+base_xp_value = 50
+base_gold_value = 10
+reward_scale_per_stage = 2.0
+stage2_shoot_cooldown = 2.0
+stage2_shoot_range = 300.0
+stage2_projectile_speed = 200.0
+stage3_aoe_radius = 150.0
+stage3_aoe_damage = 10.0
+stage3_aoe_cooldown = 3.0
+stage4_parasite_count = 3
+stage4_parasite_spawn_radius = 100.0
+base_speed = 150.0
+speed_per_stage = 10.0
+eating_pause_duration = 0.1
 enemy_type = 0
-enemy_id = "glutton_enemy"
+enemy_id = "enemy_glutton"
 flock_push = 20.0
 stop_distance = 60.0
 can_charge = false
@@ -31,11 +54,11 @@ charge_prep_time = 0.8
 charge_duration = 0.6
 charge_speed_mult = 3.5
 charge_cooldown = 3.0
-death_vfx_scene = ExtResource("3_ggfpe")
-stats = ExtResource("4_uwms2")
+death_vfx_scene = ExtResource("3_421q1")
+stats = ExtResource("3_lmqbh")
 
 [node name="Sprite" parent="Visuals" index="1"]
-texture = ExtResource("5_wclk4")
+texture = ExtResource("2_k8upj")
 
 [node name="CollisionShape2D" parent="." index="1"]
 z_index = 1
@@ -60,7 +83,7 @@ position = Vector2(0, -32)
 shape = SubResource("CircleShape2D_03rrj")
 debug_color = Color(0.24092275, 0.5110418, 0.9892948, 0.41960785)
 
-[node name="HitboxComponent" parent="." index="5" instance=ExtResource("6_3dd3r")]
+[node name="HitboxComponent" parent="." index="5" instance=ExtResource("5_e15k4")]
 collision_layer = 4
 collision_mask = 32
 

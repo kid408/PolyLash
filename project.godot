@@ -21,6 +21,7 @@ ConfigManager="*res://autoloads/config_manager.gd"
 Global="*res://autoloads/global.gd"
 DataManager="*res://autoloads/data_manager.gd"
 UpgradeManager="*res://autoloads/upgrade_manager.gd"
+EliteConfigManager="*res://autoloads/elite_config_manager.gd"
 DebugSwitcher="*res://scenes/arena/debug_switcher.gd"
 
 [display]

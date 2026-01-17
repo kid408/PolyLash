@@ -19,6 +19,12 @@ var current_chest: ChestSimple = null  # 保存当前打开的宝箱引用
 
 func _ready() -> void:
 	print("[Arena] _ready() 开始")
+	
+	# 只在重新进入时重置游戏状态（不是第一次进入）
+	# 检查是否已经有敌人存在（表示这不是第一次进入）
+	if get_tree().get_nodes_in_group("enemies").size() > 0:
+		_reset_game_state()
+	
 	# 将角色添加到全局变量中
 	#Global.player = player
 	# 闪避飘字信号 Unit类 _on_hurtbox_component_on_damaged 调用
@@ -59,6 +65,44 @@ func _ready() -> void:
 	
 	# 连接玩家的 XP 和 Gold 信号
 	_connect_player_signals()
+
+# ==============================================================================
+# 游戏状态重置
+# ==============================================================================
+
+func _reset_game_state() -> void:
+	"""重置所有游戏状态 - 每次进入 arena 都是新游戏"""
+	print("[Arena] 重置游戏状态...")
+	
+	# 清理所有敌人
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		enemy.queue_free()
+	
+	# 清理所有投射物
+	for projectile in get_tree().get_nodes_in_group("projectiles"):
+		projectile.queue_free()
+	
+	# 清理所有物品
+	for item in get_tree().get_nodes_in_group("items"):
+		item.queue_free()
+	
+	# 清理所有宝箱
+	for chest in get_tree().get_nodes_in_group("chests"):
+		chest.queue_free()
+	
+	# 重置 Spawner
+	if spawner:
+		spawner.reset_spawner()
+	
+	# 重置 ChestManager
+	if chest_manager:
+		chest_manager.reset_chest_manager()
+	
+	print("[Arena] 游戏状态重置完成")
+
+# ==============================================================================
+# 宝箱系统
+# ==============================================================================
 
 func _on_chest_opened(chest: ChestSimple) -> void:
 	print("[Arena] Chest opened signal received, chest tier: %d" % chest.get_tier())

@@ -1,6 +1,0 @@
-res://scenes/ui/exit_confirm_dialog.gd
-res://scenes/arena/arena.gd
-res://scenes/ui/selection_panel/selection_panel.gd
-res://scenes/unit/enemy/enemy_chaser_glutton.tscn
-res://resouce/unit/enemies/stats_enemy_chaser_slow.tres
-res://assets/sprites/Chests/chest_animations.tres

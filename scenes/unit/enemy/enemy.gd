@@ -75,6 +75,10 @@ func _ready() -> void:
 		death_vfx_scene = DEFAULT_EXPLOSION
 	health_component.on_unit_died.connect(destroy_enemy)
 	
+	# 【新增】停止动画播放，避免出生时的"发大再缩小"特效
+	if anim_player:
+		anim_player.stop()
+	
 	# 【视觉优化】预警红线
 	warning_line = Line2D.new()
 	warning_line.width = 30.0 # 【修改】非常宽，像一个长矩形区域
@@ -131,12 +135,14 @@ func _apply_visual_from_config() -> void:
 				visuals.get_node("Sprite2D").texture = texture
 				# print("[Enemy] 应用精灵: ", sprite_path)
 	
-	# 设置缩放
+	# 设置缩放（乘以基础缩放0.5，而不是覆盖）
 	if visual_config.has("scale_x") and visual_config.has("scale_y"):
 		var scale_x = visual_config.get("scale_x", 1.0)
 		var scale_y = visual_config.get("scale_y", 1.0)
 		if scale_x != null and scale_y != null:
-			visuals.scale = Vector2(float(scale_x), float(scale_y))
+			# 保持基础缩放0.5，乘以配置中的缩放值
+			var base_scale = 0.5
+			visuals.scale = Vector2(float(scale_x) * base_scale, float(scale_y) * base_scale)
 			# print("[Enemy] 应用缩放: ", visuals.scale)
 	
 	# 设置偏移
@@ -366,7 +372,10 @@ func update_rotation() -> void:
 	if not is_instance_valid(Global.player): return
 	var player_pos := Global.player.global_position
 	var moving_right := global_position.x < player_pos.x
-	visuals.scale = Vector2(-0.5, 0.5) if moving_right else Vector2(0.5, 0.5)
+	# 只改变 X 轴的缩放（用于翻转精灵），保持 Y 轴的缩放不变
+	# 保持 X 轴缩放的绝对值与 Y 轴相同，只改变符号
+	var scale_magnitude = abs(visuals.scale.y)
+	visuals.scale.x = -scale_magnitude if moving_right else scale_magnitude
 
 func get_move_direction() -> Vector2:
 	# 1. 确定目标：如果有嘲讽目标且存活，就追嘲讽目标；否则追玩家

@@ -85,6 +85,26 @@ var current_wave: int = 1               # 当前波次
 @onready var camera: Camera2D = get_tree().get_first_node_in_group("camera")
 @onready var spawner: Spawner = get_parent().get_node_or_null("Spawner")
 
+func reset_chest_manager() -> void:
+	"""重置宝箱管理器到初始状态"""
+	print("[ChestManager] 重置宝箱管理器...")
+	
+	# 清理所有已实例化的宝箱
+	for chest_id in active_chests.keys():
+		var chest = active_chests[chest_id]
+		if is_instance_valid(chest):
+			chest.queue_free()
+	active_chests.clear()
+	
+	# 重置宝箱位置数据中的打开状态
+	for chest_data in chest_positions:
+		chest_data["is_opened"] = false
+	
+	# 清空已打开的宝箱ID列表
+	opened_chest_ids.clear()
+	
+	print("[ChestManager] 宝箱管理器重置完成")
+
 func _ready() -> void:
 	"""
 	初始化宝箱管理器
