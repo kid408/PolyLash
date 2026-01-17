@@ -1,8 +1,6 @@
-res://scenes/ui/squad_hud/squad_hud.gd
-res://scenes/ui/global_hud/global_hud.gd
-res://scenes/ui/squad_hud/character_slot.gd
-res://scenes/ui/squad_hud/character_slot.tscn
-res://autoloads/global.gd
-res://scenes/unit/players/player_base.gd
+res://scenes/ui/exit_confirm_dialog.gd
 res://scenes/arena/arena.gd
-res://scenes/ui/chest_indicator.gd
+res://scenes/ui/selection_panel/selection_panel.gd
+res://scenes/unit/enemy/enemy_chaser_glutton.tscn
+res://resouce/unit/enemies/stats_enemy_chaser_slow.tres
+res://assets/sprites/Chests/chest_animations.tres

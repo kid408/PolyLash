@@ -1,10 +1,9 @@
-[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3 uid="uid://0jj3vcuaeqgt"]
 
-[ext_resource type="Script" path="res://resouce/unit/unit_stats.gd" id="1"]
+[ext_resource type="Script" uid="uid://n5nbn8384jda" path="res://resouce/unit/unit_stats.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
 health = 50.0
 damage = 5.0
 speed = 100.0
-block_chance = 0.0

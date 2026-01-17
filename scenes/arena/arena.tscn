@@ -11,6 +11,7 @@
 [ext_resource type="FontFile" uid="uid://kfh6ooeul77g" path="res://assets/font/Bake Soda.otf" id="9_6w4xk"]
 [ext_resource type="PackedScene" uid="uid://cglobal_hud" path="res://scenes/ui/global_hud/global_hud.tscn" id="10_global_hud"]
 [ext_resource type="PackedScene" uid="uid://csquad_hud" path="res://scenes/ui/squad_hud/squad_hud.tscn" id="11_squad_hud"]
+[ext_resource type="PackedScene" uid="uid://exit_confirm_dialog" path="res://scenes/ui/exit_confirm_dialog.tscn" id="12_exit_dialog"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_2ml6w"]
 font = ExtResource("9_6w4xk")
@@ -60,6 +61,9 @@ unique_name_in_owner = true
 [node name="UpgradeSelectionUI" parent="." instance=ExtResource("7_upgrade")]
 
 [node name="ChestIndicator" parent="." instance=ExtResource("8_indicator")]
+
+[node name="ExitConfirmDialog" parent="." instance=ExtResource("12_exit_dialog")]
+unique_name_in_owner = true
 
 [connection signal="timeout" from="Spawner/SpawnTimer" to="Spawner" method="_on_spawn_timer_timeout"]
 [connection signal="timeout" from="Spawner/WaveTimer" to="Spawner" method="_on_wave_timer_timeout"]

@@ -13,6 +13,7 @@ class_name Arena
 @onready var chest_manager: ChestManager = $ChestManager
 @onready var upgrade_ui: UpgradeSelectionUI = $UpgradeSelectionUI
 @onready var chest_indicator: ChestIndicator = $ChestIndicator
+@onready var exit_dialog: ExitConfirmDialog = %ExitConfirmDialog
 
 var current_chest: ChestSimple = null  # 保存当前打开的宝箱引用
 
@@ -39,6 +40,11 @@ func _ready() -> void:
 	
 	# 连接角色切换信号
 	Global.on_player_switch_requested.connect(_on_player_switch_requested)
+	
+	# 连接退出对话框信号
+	if exit_dialog:
+		exit_dialog.confirmed.connect(_on_exit_confirmed)
+		exit_dialog.cancelled.connect(_on_exit_cancelled)
 	
 	print("[Arena] 准备初始化玩家...")
 	# 初始化玩家（如果从选择界面进入）- 使用 await 确保完成
@@ -272,8 +278,14 @@ func _on_player_switch_requested(player_id: String) -> void:
 	_spawn_player(player_id, old_pos)
 
 func _input(event: InputEvent) -> void:
+	# ESC 键打开退出确认对话框
+	if event.is_action_pressed("ui_cancel"):
+		# 检查对话框是否已显示
+		if exit_dialog and not exit_dialog.visible:
+			_show_exit_dialog()
+			get_viewport().set_input_as_handled()
 	# 1-2-3 键精准切换角色
-	if event.is_action_pressed("switch_player_1"):
+	elif event.is_action_pressed("switch_player_1"):
 		_try_switch_to_index(0)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("switch_player_2"):
@@ -282,8 +294,6 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("switch_player_3"):
 		_try_switch_to_index(2)
 		get_viewport().set_input_as_handled()
-	
-	# 移除 TAB 键切换逻辑 - 不再响应 switch_player action
 
 # 尝试切换到指定索引的角色
 func _try_switch_to_index(index: int) -> void:
@@ -301,3 +311,23 @@ func _play_invalid_switch_sound() -> void:
 	# 播放拒绝音效 - 使用现有的音效或静默
 	# 如果有 ui_reject.wav 则播放，否则使用 player_shatter 的变体
 	Global.play_sfx(Global.sfx_player_shatter, 1.5, 1.8, -15.0)
+
+# ============================================================================
+# 退出确认对话框
+# ============================================================================
+
+func _show_exit_dialog() -> void:
+	"""显示退出确认对话框"""
+	if exit_dialog:
+		exit_dialog.show_dialog()
+
+func _on_exit_confirmed() -> void:
+	"""玩家确认退出游戏"""
+	print("[Arena] 玩家确认退出游戏")
+	# 返回到选择界面
+	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
+
+func _on_exit_cancelled() -> void:
+	"""玩家取消退出"""
+	print("[Arena] 玩家取消退出")
+	# 对话框已在脚本中恢复游戏状态

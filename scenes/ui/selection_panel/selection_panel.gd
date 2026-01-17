@@ -25,10 +25,7 @@ signal selection_confirmed(selected_data: Array[Dictionary])
 @onready var player_description: RichTextLabel = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent/ScrollContainer/PlayerDescription
 @onready var continue_button: Button = $MarginContainer/HBoxContainer/RightPanel/Continue
 @onready var upgrade_button: Button = $MarginContainer/HBoxContainer/RightPanel/UpgradeButton
-
-# ============================================================================
-# 模板按钮引用
-# ============================================================================
+@onready var exit_dialog: ExitConfirmDialog = $ExitConfirmDialog
 
 var player_button_template: Button = null
 var weapon_button_template: Button = null
@@ -106,6 +103,9 @@ func _ready() -> void:
 	
 	# 更新Continue按钮状态
 	_update_continue_button_state()
+	
+	# 创建退出确认对话框
+	_create_exit_dialog()
 	
 	print("[SelectionPanel] 初始化完成 - 每行%d个角色，最多选择%d个" % [players_per_row, max_selected_players])
 
@@ -860,3 +860,35 @@ func _show_selection_hint(message: String) -> void:
 	tween.tween_property(hint_label, "modulate:a", 0.0, 1.5)
 	tween.set_parallel(false)
 	tween.tween_callback(hint_label.queue_free)
+
+
+# ============================================================================
+# 退出确认对话框
+# ============================================================================
+
+func _create_exit_dialog() -> void:
+	"""初始化退出确认对话框"""
+	if exit_dialog:
+		exit_dialog.confirmed.connect(_on_exit_confirmed)
+		exit_dialog.cancelled.connect(_on_exit_cancelled)
+		print("[SelectionPanel] 退出确认对话框初始化完成")
+
+func _input(event: InputEvent) -> void:
+	"""处理输入事件"""
+	if event.is_action_pressed("ui_cancel"):
+		_show_exit_dialog()
+		get_viewport().set_input_as_handled()
+
+func _show_exit_dialog() -> void:
+	"""显示退出确认对话框"""
+	if exit_dialog and not exit_dialog.visible:
+		exit_dialog.show_dialog()
+
+func _on_exit_confirmed() -> void:
+	"""玩家确认退出"""
+	print("[SelectionPanel] 玩家确认退出")
+	get_tree().quit()
+
+func _on_exit_cancelled() -> void:
+	"""玩家取消退出"""
+	print("[SelectionPanel] 玩家取消退出")
