@@ -1,0 +1,4 @@
+wave_id,elite_id,spawn_interval_min,spawn_interval_max,max_spawn_count,enabled
+-1,波次ID,精英敌人ID,最小生成间隔(秒),最大生成间隔(秒),最大生成数量,是否启用
+wave_1_to_5,enemy_glutton,5,7,1,true
+wave_6_to_10,enemy_glutton,6,10,2,true

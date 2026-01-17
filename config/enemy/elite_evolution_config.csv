@@ -1,0 +1,7 @@
+elite_id,stage,health_multiplier,damage_multiplier,armor_multiplier,speed_multiplier,eat_count_per_stage,sprite_path,scale_multiplier,description
+-1,阶段,血量倍数,伤害倍数,护甲倍数,速度倍数,每阶段吞噬敌人数,精灵图片路径,体型倍数,描述
+enemy_glutton,1,1.0,1.0,1.0,1.0,1,res://assets/sprites/Enemies/Enemy_Glutton_01.png,1.0,初始阶段
+enemy_glutton,2,1.0,1.2,1.0,1.067,5,res://assets/sprites/Enemies/Enemy_Glutton_02.png,1.2,酸液射手
+enemy_glutton,3,1.4,1.44,1.0,1.133,10,res://assets/sprites/Enemies/Enemy_Glutton_03.png,1.4,巨型怪物
+enemy_glutton,4,1.88,1.728,1.0,1.2,15,res://assets/sprites/Enemies/Enemy_Glutton_04.png,1.6,过度进食
+enemy_glutton,5,1.456,2.074,1.0,1.267,999,res://assets/sprites/Enemies/Enemy_Glutton_05.png,1.8,终极形态

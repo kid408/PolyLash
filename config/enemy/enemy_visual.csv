@@ -5,3 +5,4 @@ fast_enemy,res://assets/sprites/Enemies/Enemy_2.png,0.8,0.8,1,1,1,1,0,0,0,16,32,
 tank_enemy,res://assets/sprites/Enemies/Enemy_3.png,1.5,1.5,1,1,1,1,0,0,0,30,60,60,0.8,1,1,1
 boss_enemy,res://assets/sprites/Enemies/Boss_1.png,2,2,1,1,1,1,0,0,0,40,80,80,1,1,1,1
 mine_layer,res://assets/sprites/Enemies/Enemy_1.png,1,1,1,1,1,1,0,0,0,20,40,40,1,0.5,1,0.5
+enemy_glutton,res://assets/sprites/Enemies/Enemy_Glutton_01.png,1,1,1,0.8,0.2,1,0,0,0,20,40,40,1,1,1,1
