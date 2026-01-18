@@ -146,7 +146,18 @@ func _ready() -> void:
 		line_2d = Line2D.new()
 		line_2d.name = "MinePlanningLine"
 		line_2d.width = 4.0
-		skill_owner.add_child(line_2d)
+		
+		# ✅ 修复：确保Line2D添加到玩家节点，而不是skill_owner（可能是Area2D）
+		var player_node = skill_owner
+		if skill_owner is Area2D:
+			player_node = skill_owner.get_parent()
+		if player_node:
+			player_node.add_child(line_2d)
+			print("[SkillMinePath] Line2D已添加到玩家节点: %s" % player_node.name)
+		else:
+			print("[SkillMinePath] ⚠️ 警告：无法找到玩家节点，Line2D添加到skill_owner")
+			skill_owner.add_child(line_2d)
+		
 		line_2d.top_level = true
 		line_2d.clear_points()
 		line_2d.default_color = Color(1.0, 0.8, 0.0, 0.8)  # 金黄色
@@ -191,8 +202,19 @@ func charge(delta: float) -> void:
 		# 检测鼠标左键按下 - 开始或继续划线
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			if not is_drawing:
-				# 开始划线
+				# 开始划线 - 从鼠标位置开始
 				is_drawing = true
+				var mouse_pos = skill_owner.get_global_mouse_position()
+				
+				# 清空之前的路径，重新从鼠标位置开始
+				path_points.clear()
+				path_segments.clear()
+				has_closure = false
+				accumulated_distance = 0.0
+				total_distance_drawn = 0.0
+				
+				path_points.append(mouse_pos)
+				last_point = mouse_pos
 			
 			# 获取鼠标位置
 			var mouse_pos = skill_owner.get_global_mouse_position()
@@ -277,8 +299,8 @@ func _enter_planning_mode() -> void:
 	path_points.clear()
 	path_segments.clear()
 	
-	# 设置起点为玩家位置
-	var start_pos = skill_owner.global_position
+	# 设置起点为鼠标位置（而不是角色位置）
+	var start_pos = skill_owner.get_global_mouse_position()
 	path_points.append(start_pos)
 	last_point = start_pos
 	
@@ -299,19 +321,19 @@ func _exit_planning_mode_and_dash() -> void:
 		pending_polygons.clear()
 		
 		if has_closure:
-			# 闭环：区域布雷
+			# 闭环：区域布雷 - 直接生成，不沿线冲撞
 			Global.spawn_floating_text(skill_owner.global_position, "LOCKING...", Color.RED)
 			# 查找所有闭合多边形（支持8字形等多区域）
 			var polygons = _find_all_closing_polygons()
 			if polygons.size() > 0:
 				pending_polygons = polygons
-			# 闭环时不沿途布雷，只跑路
-			current_lay_mines = false
+				_check_and_trigger_intersection()
+			start_cooldown()
 		else:
-			# 未闭环：沿途布雷
-			current_lay_mines = true
-		
-		_start_dash_sequence()
+			# 未闭环：沿线布雷
+			_spawn_mines_along_path()
+			start_cooldown()
+		_clear_all_points()
 	else:
 		_clear_all_points()
 
@@ -410,9 +432,9 @@ func _clear_all_points() -> void:
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
 	
-	# 重置起点
+	# 重置起点为鼠标位置（而不是角色位置）
 	if skill_owner:
-		var start_pos = skill_owner.global_position
+		var start_pos = skill_owner.get_global_mouse_position()
 		path_points.append(start_pos)
 		last_point = start_pos
 
@@ -596,6 +618,30 @@ func _end_dash_sequence() -> void:
 # 地雷生成
 # ==============================================================================
 
+## 沿路径生成地雷（未闭合状态）
+func _spawn_mines_along_path() -> void:
+	if path_points.size() < 2:
+		return
+	
+	print("[SkillMinePath] >>> 沿路径生成地雷（未闭合）<<<")
+	
+	# 沿路径生成地雷，使用更大的间距（未闭合时应该比闭合时稀疏）
+	for i in range(path_points.size() - 1):
+		var from = path_points[i]
+		var to = path_points[i + 1]
+		var dist = from.distance_to(to)
+		
+		# 未闭合时使用100像素间距（比闭合时的50像素稀疏2倍）
+		var count = max(1, int(dist / 100.0))
+		
+		for j in range(count):
+			var t = float(j) / float(max(1, count))
+			var pos = from.lerp(to, t)
+			_spawn_mine(pos)
+		
+		# 添加终点地雷
+		_spawn_mine(to)
+
 ## 沿线段填充地雷
 func _fill_mines_segment(from: Vector2, to: Vector2) -> void:
 	var dist = from.distance_to(to)
@@ -672,11 +718,11 @@ func _spawn_mine(pos: Vector2) -> void:
 	col.shape = shape
 	mine.add_child(col)
 	
-	# 视觉效果
+	# 视觉效果 - 减小地雷大小
 	var vis = ColorRect.new()
 	vis.color = Color(1, 0.2, 0.2)
-	vis.size = Vector2(8, 8)
-	vis.position = Vector2(-4, -4)
+	vis.size = Vector2(4, 4)  # 从8x8改为4x4
+	vis.position = Vector2(-2, -2)  # 相应调整位置
 	mine.add_child(vis)
 	
 	get_tree().current_scene.add_child(mine)
@@ -760,6 +806,23 @@ func _explode_mine(mine: Node2D) -> void:
 # 闭环检测
 # ==============================================================================
 
+## 检查并触发闭合
+func _check_and_trigger_intersection() -> void:
+	# 直接检测所有闭合区域
+	var polygons = _find_all_closing_polygons()
+	if polygons.size() > 0:
+		print("[SkillMinePath] >>> 检测到 %d 个闭合区域 <<<" % polygons.size())
+		
+		# Camera shake
+		Global.on_camera_shake.emit(10.0, 0.3)
+		
+		# 显示遮罩
+		PolygonUtils.show_closure_masks(polygons, Color(1.0, 0.8, 0.0, 0.7), get_tree(), 0.6)
+		
+		# 为每个闭合区域生成矿区
+		for polygon_points in polygons:
+			_fill_mines_in_polygon_no_mask(polygon_points)
+
 ## 查找所有闭合多边形（支持8字形等多区域）- 使用公共工具类
 func _find_all_closing_polygons() -> Array[PackedVector2Array]:
 	return PolygonUtils.find_all_closing_polygons(path_points, close_threshold)
@@ -773,26 +836,32 @@ func _find_closing_polygon(points: Array[Vector2]) -> PackedVector2Array:
 
 ## 清理资源
 func cleanup() -> void:
+	# 清理规划线
 	if is_instance_valid(line_2d):
 		line_2d.queue_free()
 	
-	# 清理所有已生成的地雷
-	for mine in spawned_mines:
-		if is_instance_valid(mine):
-			mine.queue_free()
-	spawned_mines.clear()
+	# ✅ 不清理已生成的地雷 - 让它们按照自己的生命周期消失
+	# 这样切换角色时，已生成的地雷会继续存在并在触发或自动爆炸时消失
+	# spawned_mines 中的地雷会自动通过 _explode_mine 清理
+	print("[SkillMinePath] 地雷由自己的生命周期管理，无需手动清理")
 	
-	is_planning = false
-	is_dashing = false
-	is_drawing = false
+	# 清空规划数据
 	path_points.clear()
 	path_segments.clear()
 	path_history.clear()
 	pending_polygons.clear()
-	current_target_index = 0
-	has_closure = false
+	
+	# 重置规划状态
+	is_planning = false
+	is_dashing = false
+	is_drawing = false
+	has_shown_no_energy_hint = false
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
+	current_target_index = 0
+	has_closure = false
+	
+	# 恢复时间流速
 	Engine.time_scale = 1.0
 	
 	# 恢复玩家状态（如果在冲刺中切换）

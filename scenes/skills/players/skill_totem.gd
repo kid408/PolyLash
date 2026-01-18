@@ -191,8 +191,7 @@ func _explode_totem(totem: Node2D) -> void:
 
 ## 清理资源（角色切换时调用）
 func cleanup() -> void:
-	# 清理所有已生成的图腾
-	for totem in spawned_totems:
-		if is_instance_valid(totem):
-			totem.queue_free()
-	spawned_totems.clear()
+	# ✅ 不清理已生成的图腾
+	# 让它们按照自己的生命周期消失
+	# spawned_totems 中的图腾会自动通过生命周期计时器清理
+	pass

@@ -47,7 +47,7 @@ var dash_speed: float = 2000.0
 var dynamic_dash_speed: float = 2000.0
 
 ## 冲刺基础伤害
-var dash_base_damage: int = 10
+var dash_base_damage: int = 50
 
 ## 击退力度
 var dash_knockback: float = 2.0
@@ -144,7 +144,18 @@ func _ready() -> void:
 		line_2d = Line2D.new()
 		line_2d.name = "HerderPlanningLine"
 		line_2d.width = 4.0
-		skill_owner.add_child(line_2d)
+		
+		# ✅ 修复：确保Line2D添加到玩家节点，而不是skill_owner（可能是Area2D）
+		var player_node = skill_owner
+		if skill_owner is Area2D:
+			player_node = skill_owner.get_parent()
+		if player_node:
+			player_node.add_child(line_2d)
+			print("[SkillHerderLoop] Line2D已添加到玩家节点: %s" % player_node.name)
+		else:
+			print("[SkillHerderLoop] ⚠️ 警告：无法找到玩家节点，Line2D添加到skill_owner")
+			skill_owner.add_child(line_2d)
+		
 		# 关键：设置为top_level，这样Line2D使用全局坐标，不受父节点变换影响
 		line_2d.top_level = true
 		line_2d.clear_points()
@@ -193,8 +204,19 @@ func charge(delta: float) -> void:
 		# 检测鼠标左键按下 - 开始或继续划线
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			if not is_drawing:
-				# 开始划线
+				# 开始划线 - 从鼠标位置开始
 				is_drawing = true
+				var mouse_pos = skill_owner.get_global_mouse_position()
+				
+				# 清空之前的路径，重新从鼠标位置开始
+				path_points.clear()
+				path_segments.clear()
+				has_closure = false
+				accumulated_distance = 0.0
+				total_distance_drawn = 0.0
+				
+				path_points.append(mouse_pos)
+				last_point = mouse_pos
 				has_shown_no_energy = false  # ✅ 开始新的划线时重置能量不足提示标志
 			
 			# 获取鼠标位置
@@ -279,8 +301,8 @@ func _enter_planning_mode() -> void:
 	path_points.clear()
 	path_segments.clear()
 	
-	# 设置起点为玩家位置
-	var start_pos = skill_owner.global_position
+	# 设置起点为鼠标位置（而不是角色位置）
+	var start_pos = skill_owner.get_global_mouse_position()
 	path_points.append(start_pos)
 	last_point = start_pos
 	
@@ -288,6 +310,8 @@ func _enter_planning_mode() -> void:
 
 ## 退出规划模式并开始冲刺
 func _exit_planning_mode_and_dash() -> void:
+	print("[SkillHerderLoop] 退出规划模式: is_executing_kill=%s, has_closure=%s" % [is_executing_kill, has_closure])
+	
 	is_planning = false
 	is_charging = false
 	is_drawing = false
@@ -296,19 +320,25 @@ func _exit_planning_mode_and_dash() -> void:
 	if path_points.size() > 1:
 		# 在松开Q键时进行最终的闭合检测
 		_perform_final_closure_check()
-		print("[SkillHerderLoop] >>> 退出规划模式 <<<")
-		print("[SkillHerderLoop] has_closure在退出时: %s" % has_closure)
 		
 		# ✅ 如果检测到闭合，立即保存所有多边形
 		if has_closure:
 			saved_polygons = _find_all_closing_polygons(path_points)
-			print("[SkillHerderLoop] >>> 保存 %d 个闭合多边形 <<<" % saved_polygons.size())
-			for i in range(saved_polygons.size()):
-				print("[SkillHerderLoop]   多边形 %d: %d 个点" % [i + 1, saved_polygons[i].size()])
-		
-		_start_dash_sequence()
+			print("[SkillHerderLoop] 闭合！保存 %d 个多边形" % saved_polygons.size())
+			
+			# 闭合时直接生成牧群区域，不沿线冲撞
+			_check_and_trigger_intersection()
+			start_cooldown()
+		else:
+			print("[SkillHerderLoop] 未闭合，生成线段伤害")
+			# 未闭合，线段上出现伤害效果
+			_spawn_herder_line_damage()
+			start_cooldown()
+		_clear_all_points()
 	else:
 		_clear_all_points()
+
+
 
 ## 执行最终的闭合检测（松开Q键时调用）
 func _perform_final_closure_check() -> void:
@@ -411,14 +441,19 @@ func _clear_all_points() -> void:
 	has_closure = false
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
-	saved_polygons.clear()  # ✅ 清空保存的多边形数组
-	saved_intersection_i = -1  # ✅ 清空保存的交叉信息
+	saved_polygons.clear()
+	saved_intersection_i = -1
+	is_executing_kill = false  # ✅ 重置几何击杀标志
 	
-	# 重置起点
+	print("[SkillHerderLoop] 清空路径，重置 is_executing_kill=false")
+	
+	# 重置起点为鼠标位置
 	if skill_owner:
-		var start_pos = skill_owner.global_position
+		var start_pos = skill_owner.get_global_mouse_position()
 		path_points.append(start_pos)
 		last_point = start_pos
+
+
 
 ## 计算当前能量消耗（动态递增）
 func _calculate_current_energy_cost() -> float:
@@ -493,6 +528,73 @@ func _update_visuals() -> void:
 # ==============================================================================
 # 冲刺执行
 # ==============================================================================
+
+## 生成牧群线段伤害效果（未闭合状态）
+func _spawn_herder_line_damage() -> void:
+	if path_points.size() < 2:
+		print("[SkillHerderLoop] ⚠️ 路径点不足")
+		return
+	
+	print("[SkillHerderLoop] 生成 %d 条线段伤害" % (path_points.size() - 1))
+	
+	# 沿路径生成伤害区域
+	for i in range(path_points.size() - 1):
+		# 安全检查：确保索引有效
+		if i >= path_points.size() or i + 1 >= path_points.size():
+			break
+		
+		var start = path_points[i]
+		var end = path_points[i + 1]
+		
+		# ✅ 创建伤害区域 - 使用全局坐标
+		var area = Area2D.new()
+		area.global_position = Vector2.ZERO
+		area.collision_mask = 2
+		area.monitorable = false
+		area.monitoring = true
+		
+		# ✅ 视觉效果 - 使用全局坐标
+		var line = Line2D.new()
+		line.add_point(start)
+		line.add_point(end)
+		line.width = 12.0
+		line.default_color = Color(1.0, 0.8, 0.2, 0.9)
+		line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		line.end_cap_mode = Line2D.LINE_CAP_ROUND
+		area.add_child(line)
+		
+		get_tree().current_scene.add_child(area)
+		
+		# ✅ 立即检测伤害
+		var enemies = get_tree().get_nodes_in_group("enemies")
+		var hit_count = 0
+		
+		for enemy in enemies:
+			if not is_instance_valid(enemy):
+				continue
+			
+			# 计算敌人到线段的距离
+			var enemy_pos = enemy.global_position
+			var closest_point = Geometry2D.get_closest_point_to_segment(enemy_pos, start, end)
+			var distance = enemy_pos.distance_to(closest_point)
+			
+			# 如果敌人在伤害范围内（40像素）
+			if distance < 40.0:
+				if enemy.has_node("HealthComponent"):
+					enemy.health_component.take_damage(dash_base_damage)
+					hit_count += 1
+					Global.spawn_floating_text(enemy.global_position, str(dash_base_damage), Color.YELLOW)
+		
+		if hit_count > 0:
+			Global.on_camera_shake.emit(3.0 * hit_count, 0.15)
+		
+		# 淡出动画后消失
+		var tween = area.create_tween()
+		tween.tween_property(line, "modulate:a", 0.0, 0.3)
+		tween.tween_callback(func():
+			if is_instance_valid(area):
+				area.queue_free()
+		)
 
 ## 开始冲刺序列
 func _start_dash_sequence() -> void:
@@ -1404,6 +1506,7 @@ func _find_closing_polygon(points: Array[Vector2]) -> PackedVector2Array:
 ## 检查并触发闭合
 func _check_and_trigger_intersection() -> void:
 	if is_executing_kill:
+		print("[SkillHerderLoop] ⚠️ 正在执行击杀，跳过")
 		return
 	
 	# ✅ 优先使用保存的多边形数组
@@ -1411,19 +1514,25 @@ func _check_and_trigger_intersection() -> void:
 	
 	if saved_polygons.size() > 0:
 		polygons_to_use = saved_polygons
-		print("[SkillHerderLoop] >>> 使用保存的 %d 个多边形 <<<" % polygons_to_use.size())
+		print("[SkillHerderLoop] 使用保存的 %d 个多边形" % polygons_to_use.size())
 	else:
-		# 如果没有保存的多边形，尝试从path_history查找（兜底）
-		print("[SkillHerderLoop] !!! 使用path_history查找多边形（兜底）!!!")
-		polygons_to_use = _find_all_closing_polygons(path_history)
+		# 如果没有保存的多边形，尝试从path_history或path_points查找（兜底）
+		if path_history.size() > 0:
+			polygons_to_use = _find_all_closing_polygons(path_history)
+		else:
+			polygons_to_use = _find_all_closing_polygons(path_points)
 	
 	if polygons_to_use.size() > 0:
-		print("[SkillHerderLoop] ★★★ 找到 %d 个闭合多边形！★★★" % polygons_to_use.size())
-		is_executing_kill = true  # 立即设置标志，防止重复触发
+		print("[SkillHerderLoop] ★ 触发 %d 个闭合斩杀！" % polygons_to_use.size())
+		is_executing_kill = true
 		_trigger_geometry_kill_multiple(polygons_to_use)
 		# 清空历史和保存的多边形
 		path_history.clear()
 		saved_polygons.clear()
+	else:
+		print("[SkillHerderLoop] ⚠️ 没有找到闭合多边形")
+
+
 
 ## 触发多个几何击杀（支持8字形等多闭合区域）
 func _trigger_geometry_kill_multiple(polygons: Array[PackedVector2Array]) -> void:
@@ -1653,7 +1762,13 @@ func _perform_geometry_damage(polygon_points: PackedVector2Array) -> void:
 
 ## 应用画圈奖励
 func _apply_circle_rewards(kill_count: int, polygon: PackedVector2Array) -> void:
-	if kill_count <= 0 or not skill_owner:
+	if kill_count <= 0:
+		return
+	
+	# ✅ 检查 skill_owner 是否仍然有效
+	# 如果玩家已被删除（切换角色），则不应用奖励
+	if not is_instance_valid(skill_owner):
+		print("[SkillHerderLoop] 技能所有者已被删除，跳过圈奖励")
 		return
 	
 	# 显示击杀数量

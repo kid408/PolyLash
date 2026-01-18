@@ -50,7 +50,7 @@ var saw_damage_open: int = 1
 var chain_radius: float = 250.0
 
 ## 锯条最大飞行距离
-var saw_max_distance: float = 900.0
+var saw_max_distance: float = 400.0
 
 ## 锯条旋转速度（闭合状态）
 var saw_rotation_speed: float = 25.0
@@ -59,7 +59,7 @@ var saw_rotation_speed: float = 25.0
 var saw_push_force: float = 1000.0
 
 ## 闭合判定阈值
-var close_threshold: float = 60.0
+var close_threshold: float = 100.0
 
 # ==============================================================================
 # 视觉配置
@@ -131,14 +131,19 @@ func _ready() -> void:
 	line_2d.global_position = Vector2.ZERO
 	
 	if skill_owner:
-		skill_owner.add_child(line_2d)
+		# ✅ 修复：确保Line2D添加到玩家节点，而不是skill_owner（可能是Area2D）
+		var player_node = skill_owner
+		if skill_owner is Area2D:
+			player_node = skill_owner.get_parent()
+		if player_node:
+			player_node.add_child(line_2d)
+			print("[SkillSawPath] Line2D已添加到玩家节点: %s" % player_node.name)
+		else:
+			print("[SkillSawPath] ⚠️ 警告：无法找到玩家节点，Line2D添加到skill_owner")
+			skill_owner.add_child(line_2d)
 
 func _process(delta: float) -> void:
 	super._process(delta)
-	
-	# 规划模式：起点跟随玩家
-	if is_planning and not path_points.is_empty():
-		path_points[0] = skill_owner.global_position
 	
 	# 更新规划路径的视觉效果
 	_update_planning_visuals()
@@ -166,8 +171,20 @@ func charge(delta: float) -> void:
 		# 检测鼠标左键按下 - 开始或继续划线
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			if not is_drawing:
-				# 开始划线
+				# 开始划线 - 从鼠标位置开始
 				is_drawing = true
+				var mouse_pos = skill_owner.get_global_mouse_position()
+				
+				# 清空之前的路径，重新从鼠标位置开始
+				path_points.clear()
+				path_segments.clear()
+				is_path_closed = false
+				accumulated_distance = 0.0
+				total_distance_drawn = 0.0
+				
+				path_points.append(mouse_pos)
+				last_point = mouse_pos
+				print("[SkillSawPath] 开始划线，起点: %s" % mouse_pos)
 			
 			# 获取鼠标位置
 			var mouse_pos = skill_owner.get_global_mouse_position()
@@ -255,11 +272,8 @@ func _enter_planning_mode() -> void:
 	path_segments.clear()
 	line_2d.clear_points()
 	
-	# 添加起点
-	if skill_owner:
-		var start_pos = skill_owner.global_position
-		path_points.append(start_pos)
-		last_point = start_pos
+	# 不设置初始起点，等待鼠标左键按下时设置
+	print("[SkillSawPath] 进入规划模式，等待鼠标左键按下")
 
 ## 检测线段交叉和封闭空间（实时检测，用于视觉反馈）
 func _check_intersection_and_closure() -> void:
@@ -318,11 +332,8 @@ func _clear_all_points() -> void:
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
 	
-	# 重置起点
-	if skill_owner:
-		var start_pos = skill_owner.global_position
-		path_points.append(start_pos)
-		last_point = start_pos
+	# 不设置初始起点，等待鼠标左键按下时设置
+	print("[SkillSawPath] 清除所有路径点")
 
 ## 计算当前能量消耗（动态递增）
 func _calculate_current_energy_cost() -> float:
@@ -355,6 +366,7 @@ func _calculate_total_consumed_energy() -> float:
 
 ## 发射锯条
 func _launch_saw_construct() -> void:
+	print("[SkillSawPath] ===== _launch_saw_construct() 开始 =====")
 	is_planning = false
 	is_charging = false
 	
@@ -367,72 +379,66 @@ func _launch_saw_construct() -> void:
 	# 至少需要2个点
 	if path_points.size() < 2:
 		path_points.clear()
+		print("[SkillSawPath] 路径点不足，取消发射")
 		return
 	
 	# 在松开Q键时进行最终的闭合检测
 	_perform_final_closure_check()
+	print("[SkillSawPath] 闭合检测结果: %s" % is_path_closed)
 	
-	# 清除旧锯条
-	if is_instance_valid(active_saw):
-		active_saw.queue_free()
-		active_saw = null
+	# ✅ 不清除旧锯条 - 允许多个锯条同时存在
+	# 这样切换角色时，已生成的锯条会继续飞行
+	print("[SkillSawPath] 保留旧锯条（如果存在）")
 	
-	# print("[SkillSawPath] ========== 发射锯条 ==========")
-	# print("[SkillSawPath] is_path_closed: %s" % is_path_closed)
-	# print("[SkillSawPath] path_points: %d" % path_points.size())
-	# print("[SkillSawPath] path_segments: %d" % path_segments.size())
-	
-	# 如果是闭合状态，显示红色遮罩
-	if is_path_closed and path_points.size() >= 3:
-		# print("[SkillSawPath] >>> 触发闭合锯条！多边形点数: %d <<<" % path_points.size())
-		var polygon = PackedVector2Array()
+	# 如果闭合，生成锯条投射物
+	if is_path_closed:
+		# ✅ 计算飞行方向：从玩家位置指向路径中心
+		var player_pos = skill_owner.global_position if skill_owner else path_points[0]
+		
+		# 计算路径的中心点
+		var path_center = Vector2.ZERO
 		for p in path_points:
-			polygon.append(p)
-		_create_butcher_closure_mask(polygon)
-	# else:
-		# print("[SkillSawPath] !!! 未闭合，发射开放锯条 !!!")
+			path_center += p
+		path_center /= path_points.size()
+		
+		# 飞行方向：从玩家指向路径中心
+		var fly_dir = (path_center - player_pos).normalized()
+		
+		# 如果路径中心和玩家位置太近，使用路径的整体方向
+		if player_pos.distance_to(path_center) < 50.0:
+			fly_dir = (path_points[path_points.size() - 1] - path_points[0]).normalized()
+		
+		# 创建锯条投射物
+		var saw = SawProjectile.new()
+		saw.name = "Saw_" + str(Time.get_ticks_msec())
+		
+		print("[SkillSawPath] 创建闭合锯条: %s" % saw.name)
+		
+		# 添加到场景树
+		if skill_owner:
+			skill_owner.get_parent().add_child(saw)
+			# ✅ 修复：锯条应该从路径起点开始，而不是从玩家位置开始
+			saw.global_position = path_points[0]
+			# 闭合状态：飞行距离为450像素
+			saw.setup(path_points, is_path_closed, fly_dir, skill_owner, 450.0)
+			print("[SkillSawPath] 锯条已添加到场景树，起点位置: %s" % saw.global_position)
+		
+		active_saw = saw
+		
+		# 相机震动
+		Global.on_camera_shake.emit(5.0, 0.2)
+	else:
+		# ✅ 未闭合：沿线生成锯线伤害效果
+		print("[SkillSawPath] 未闭合，生成锯线伤害效果")
+		_spawn_saw_line_damage()
 	
-	# ✅ 计算飞行方向：从玩家位置指向路径中心
-	var player_pos = skill_owner.global_position if skill_owner else path_points[0]
+	# 启动冷却
+	start_cooldown()
 	
-	# 计算路径的中心点
-	var path_center = Vector2.ZERO
-	for p in path_points:
-		path_center += p
-	path_center /= path_points.size()
-	
-	# 飞行方向：从玩家指向路径中心
-	var fly_dir = (path_center - player_pos).normalized()
-	
-	# 如果路径中心和玩家位置太近，使用路径的整体方向
-	if player_pos.distance_to(path_center) < 50.0:
-		fly_dir = (path_points[path_points.size() - 1] - path_points[0]).normalized()
-	
-	# print("[SkillSawPath] 玩家位置: %s" % player_pos)
-	# print("[SkillSawPath] 路径中心: %s" % path_center)
-	# print("[SkillSawPath] 飞行方向: %s" % fly_dir)
-	
-	# 创建锯条投射物
-	var saw = SawProjectile.new()
-	saw.name = "Saw_" + str(Time.get_ticks_msec())
-	
-	# 添加到场景树
-	if skill_owner:
-		skill_owner.get_parent().add_child(saw)
-		saw.global_position = skill_owner.global_position
-		saw.setup(path_points, is_path_closed, fly_dir, skill_owner)
-	
-	active_saw = saw
-	
-	# 相机震动
-	Global.on_camera_shake.emit(5.0, 0.2)
-	
-	# 清空路径
 	path_points.clear()
 	is_path_closed = false
-	
-	# 开始冷却
-	start_cooldown()
+	print("[SkillSawPath] ===== _launch_saw_construct() 结束 =====")
+
 
 ## 执行最终的闭合检测（松开Q键时调用）
 func _perform_final_closure_check() -> void:
@@ -509,7 +515,7 @@ func _update_planning_visuals() -> void:
 	elif is_planning and total_distance_drawn > energy_threshold_distance:
 		var excess_ratio = (total_distance_drawn - energy_threshold_distance) / energy_threshold_distance
 		excess_ratio = clamp(excess_ratio, 0.0, 1.0)
-		final_color = Color.WHITE.lerp(Color.ORANGE, excess_ratio * 0.5)
+		final_color = Color(1.0, 1.0, 1.0, 0.5).lerp(Color(1.0, 0.5, 0.5, 0.8), excess_ratio * 0.5)
 		line_2d.width = 6.0
 	# 优先级4：正常白色
 	else:
@@ -526,6 +532,43 @@ func _update_planning_visuals() -> void:
 func can_move() -> bool:
 	return not is_planning
 
+## 生成锯线伤害效果（未闭合状态）
+func _spawn_saw_line_damage() -> void:
+	if path_points.size() < 2:
+		return
+	
+	print("[SkillSawPath] >>> 生成锯线伤害效果（未闭合）<<<")
+	
+	# ✅ 修复：飞行方向应该是从玩家指向路径中心的方向
+	# 计算路径的中心点
+	var path_center = Vector2.ZERO
+	for p in path_points:
+		path_center += p
+	path_center /= path_points.size()
+	
+	# 飞行方向：从玩家指向路径中心
+	var player_pos = skill_owner.global_position if skill_owner else path_points[0]
+	var fly_dir = (path_center - player_pos).normalized()
+	
+	print("[SkillSawPath] 路径中心: %s" % path_center)
+	print("[SkillSawPath] 玩家位置: %s" % player_pos)
+	print("[SkillSawPath] 计算的飞行方向: %s (角度: %.1f°)" % [fly_dir, rad_to_deg(fly_dir.angle())])
+	
+	# 创建锯条投射物
+	var saw = SawProjectile.new()
+	saw.name = "Saw_Line_" + str(Time.get_ticks_msec())
+	
+	# 添加到场景树
+	if skill_owner:
+		skill_owner.get_parent().add_child(saw)
+		# ✅ 修复：锯条应该从路径起点开始，而不是从玩家位置开始
+		saw.global_position = path_points[0]
+		# 未闭合状态：整条路径作为一个投射物，飞行距离为800像素（增加距离）
+		saw.setup(path_points, false, fly_dir, skill_owner, 800.0)
+	
+	# 相机震动（减弱）
+	Global.on_camera_shake.emit(2.0, 0.1)
+
 ## 创建屠夫闭合遮罩视觉效果 - 使用公共工具类
 func _create_butcher_closure_mask(polygon: PackedVector2Array) -> void:
 	var polygons: Array[PackedVector2Array] = [polygon]
@@ -533,17 +576,38 @@ func _create_butcher_closure_mask(polygon: PackedVector2Array) -> void:
 
 ## 清理资源
 func cleanup() -> void:
+	print("[SkillSawPath] ===== cleanup() 被调用 =====")
+	print("[SkillSawPath] active_saw 是否有效: %s" % is_instance_valid(active_saw))
+	if is_instance_valid(active_saw):
+		print("[SkillSawPath] active_saw 名称: %s, 位置: %s" % [active_saw.name, active_saw.global_position])
+	
 	# 清理Line2D
 	if is_instance_valid(line_2d):
 		line_2d.queue_free()
+		print("[SkillSawPath] Line2D 已清理")
 	
-	# 清理激活的锯条
-	if is_instance_valid(active_saw):
-		active_saw.queue_free()
+	# ✅ 不清理激活的锯条 - 让它按照自己的生命周期消失
+	# 这样切换角色时，已生成的锯条会继续飞行并伤害敌人
+	print("[SkillSawPath] 保留 active_saw，不清理")
+	
+	# 重置状态
+	is_planning = false
+	is_charging = false
+	is_drawing = false
+	is_path_closed = false
+	has_shown_no_energy_hint = false
+	path_points.clear()
+	path_segments.clear()
+	accumulated_distance = 0.0
+	total_distance_drawn = 0.0
 	
 	# 恢复时间流速
 	if is_planning:
 		Engine.time_scale = 1.0
+		print("[SkillSawPath] 恢复时间流速")
+	
+	print("[SkillSawPath] ===== cleanup() 结束 =====")
+
 
 ## 打印调试信息
 func print_debug_info() -> void:

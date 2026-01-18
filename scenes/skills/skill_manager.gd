@@ -257,11 +257,26 @@ func get_all_skills() -> Array[SkillBase]:
 
 ## 清理所有技能
 func cleanup() -> void:
+	print("[SkillManager] ===== cleanup() 被调用 =====")
+	print("[SkillManager] 当前技能槽位状态:")
 	for slot in skill_slots.keys():
 		var skill = skill_slots[slot]
 		if skill and is_instance_valid(skill):
+			print("  %s: %s (有效)" % [slot.to_upper(), skill.skill_id])
+		else:
+			print("  %s: (空)" % slot.to_upper())
+	
+	for slot in skill_slots.keys():
+		var skill = skill_slots[slot]
+		if skill and is_instance_valid(skill):
+			print("[SkillManager] 清理技能: %s (%s)" % [slot.to_upper(), skill.skill_id])
+			if skill.has_method("cleanup"):
+				skill.cleanup()
 			skill.queue_free()
 		skill_slots[slot] = null
+	
+	print("[SkillManager] ===== cleanup() 结束 =====")
+
 
 ## 重新加载技能（热加载）
 ## @param player_id: 玩家ID

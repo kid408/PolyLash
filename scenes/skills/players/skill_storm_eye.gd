@@ -184,8 +184,7 @@ func _on_object_expired(area_ref: Area2D, visual_ref: Node) -> void:
 
 ## 清理资源（角色切换时调用）
 func cleanup() -> void:
-	# 清理所有已生成的效果节点（暴风眼）
-	for effect in spawned_effects:
-		if is_instance_valid(effect):
-			effect.queue_free()
-	spawned_effects.clear()
+	# ✅ 不清理已生成的效果节点（暴风眼）
+	# 让它们按照自己的生命周期消失
+	# spawned_effects 中的效果会自动通过生命周期计时器清理
+	pass

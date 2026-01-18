@@ -200,9 +200,14 @@ func _restore_selection_from_cache() -> void:
 	if selected_players_cache.is_empty():
 		return
 	
-	for cached_data in selected_players_cache:
+	# ✅ 修复：按slot_index排序缓存数据，确保恢复顺序一致
+	var sorted_cache = selected_players_cache.duplicate()
+	sorted_cache.sort_custom(func(a, b): return a.get("slot_index", 0) < b.get("slot_index", 0))
+	
+	for cached_data in sorted_cache:
 		var player_id = cached_data.get("player_id", "")
 		var weapon_type = cached_data.get("weapon_type", "")
+		var slot_index = cached_data.get("slot_index", -1)
 		
 		if player_id == "":
 			continue
@@ -220,7 +225,35 @@ func _restore_selection_from_cache() -> void:
 				if weapon_types.size() > 0:
 					weapon_type = weapon_types[0]
 		
-		# 添加到已选列表
+		# ✅ 修复：直接添加到selected_players，保留原始slot_index
+		if slot_index >= 0 and slot_index < max_selected_players:
+			# 检查该槽位是否已被占用
+			var slot_occupied = false
+			for data in selected_players:
+				if data.slot_index == slot_index:
+					slot_occupied = true
+					break
+			
+			if not slot_occupied:
+				# 直接添加，保留原始slot_index
+				var data = {
+					"player_id": player_id,
+					"weapon_type": weapon_type,
+					"slot_index": slot_index
+				}
+				selected_players.append(data)
+				
+				# 更新槽位显示
+				_update_selected_slot_display(slot_index, player_id)
+				
+				# 更新角色按钮状态
+				if player_buttons.has(player_id):
+					player_buttons[player_id].modulate = Color(0.5, 1, 0.5)
+				
+				print("[SelectionPanel] 从缓存恢复角色 %s 到槽位 %d" % [player_id, slot_index])
+				continue
+		
+		# 如果slot_index无效，使用_add_player_to_selected分配新槽位
 		_add_player_to_selected(player_id, weapon_type)
 	
 	print("[SelectionPanel] 从缓存恢复了 %d 个已选角色" % selected_players.size())

@@ -23,6 +23,7 @@ DataManager="*res://autoloads/data_manager.gd"
 UpgradeManager="*res://autoloads/upgrade_manager.gd"
 EliteConfigManager="*res://autoloads/elite_config_manager.gd"
 PlayerFactory="*res://autoloads/player_factory.gd"
+SkillEffectManager="*res://autoloads/skill_effect_manager.gd"
 DebugSwitcher="*res://scenes/arena/debug_switcher.gd"
 
 [display]

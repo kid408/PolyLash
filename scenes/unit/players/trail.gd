@@ -30,7 +30,7 @@ func _process(delta: float) -> void:
 func start_trail() -> void:
 	# 【修改 3】启动前也检查一下
 	if not is_instance_valid(player):
-		print("Trail Error: Player 节点未赋值！")
+		push_error("Trail Error: Player 节点未赋值！")
 		return
 
 	is_active = true

@@ -286,30 +286,39 @@ func _spawn_player(player_id: String, spawn_pos: Vector2) -> void:
 
 func _on_player_switch_requested(player_id: String) -> void:
 	"""处理角色切换请求"""
+	print("[Arena] ===== 角色切换开始 =====")
 	print("[Arena] 收到角色切换请求: %s" % player_id)
 	
 	if not is_instance_valid(player):
 		print("[Arena] 当前玩家无效，尝试直接生成")
 		# 尝试在默认位置生成
 		_spawn_player(player_id, Vector2(500, 300))
+		print("[Arena] ===== 角色切换结束 =====")
 		return
 	
 	var old_pos = player.global_position
+	var old_player_id = player.player_id if "player_id" in player else "unknown"
+	print("[Arena] 当前玩家: %s" % old_player_id)
 	print("[Arena] 当前玩家位置: %s" % old_pos)
 	
-	# 清理旧玩家的技能效果
-	if player.has_method("_cleanup_skill_effects"):
-		player._cleanup_skill_effects()
+	# 注意：不清理旧玩家的技能效果，保留Q键技能残留
+	# if player.has_method("_cleanup_skill_effects"):
+	#	player._cleanup_skill_effects()
+	print("[Arena] 不清理旧玩家的技能效果")
 	
 	# 销毁当前角色
+	print("[Arena] 调用 player.queue_free()")
 	player.queue_free()
 	player = null
 	
 	# 等待一帧确保旧角色被销毁
+	print("[Arena] 等待一帧...")
 	await get_tree().process_frame
+	print("[Arena] 等待完成，开始生成新角色")
 	
 	# 生成新角色
 	_spawn_player(player_id, old_pos)
+	print("[Arena] ===== 角色切换结束 =====")
 
 func _input(event: InputEvent) -> void:
 	# ESC 键打开退出确认对话框

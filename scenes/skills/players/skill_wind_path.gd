@@ -131,8 +131,7 @@ var dash_hitbox: Node
 var trail: Node
 var visuals: Node2D
 
-## 跟踪所有生成的效果节点（风墙、暴风区域等）
-var spawned_effects: Array[Node] = []
+# ✅ 不再需要 spawned_effects 数组，效果由 SkillEffectManager 统一管理
 
 # ==============================================================================
 # 生命周期
@@ -146,7 +145,18 @@ func _ready() -> void:
 		line_2d = Line2D.new()
 		line_2d.name = "WindPlanningLine"
 		line_2d.width = 4.0
-		skill_owner.add_child(line_2d)
+		
+		# ✅ 修复：确保Line2D添加到玩家节点，而不是skill_owner（可能是Area2D）
+		var player_node = skill_owner
+		if skill_owner is Area2D:
+			player_node = skill_owner.get_parent()
+		if player_node:
+			player_node.add_child(line_2d)
+			print("[SkillWindPath] Line2D已添加到玩家节点: %s" % player_node.name)
+		else:
+			print("[SkillWindPath] ⚠️ 警告：无法找到玩家节点，Line2D添加到skill_owner")
+			skill_owner.add_child(line_2d)
+		
 		line_2d.top_level = true
 		line_2d.clear_points()
 		line_2d.default_color = Color(0.2, 1.5, 1.5, 1.0)  # 高亮青色
@@ -191,8 +201,19 @@ func charge(delta: float) -> void:
 		# 检测鼠标左键按下 - 开始或继续划线
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			if not is_drawing:
-				# 开始划线
+				# 开始划线 - 从鼠标位置开始
 				is_drawing = true
+				var mouse_pos = skill_owner.get_global_mouse_position()
+				
+				# 清空之前的路径，重新从鼠标位置开始
+				path_points.clear()
+				path_segments.clear()
+				has_closure = false
+				accumulated_distance = 0.0
+				total_distance_drawn = 0.0
+				
+				path_points.append(mouse_pos)
+				last_point = mouse_pos
 			
 			# 获取鼠标位置
 			var mouse_pos = skill_owner.get_global_mouse_position()
@@ -276,8 +297,8 @@ func _enter_planning_mode() -> void:
 	path_points.clear()
 	path_segments.clear()
 	
-	# 设置起点为玩家位置
-	var start_pos = skill_owner.global_position
+	# 设置起点为鼠标位置（而不是角色位置）
+	var start_pos = skill_owner.get_global_mouse_position()
 	path_points.append(start_pos)
 	last_point = start_pos
 	
@@ -293,7 +314,16 @@ func _exit_planning_mode_and_dash() -> void:
 	if path_points.size() > 1:
 		# 在松开Q键时进行最终的闭合检测
 		_perform_final_closure_check()
-		_start_dash_sequence()
+		
+		# 如果闭合，直接生成风暴区域，不沿线冲撞
+		if has_closure:
+			_check_and_trigger_intersection()
+			start_cooldown()
+		else:
+			# 未闭合，沿线生成风墙伤害效果
+			_spawn_wind_wall_damage()
+			start_cooldown()
+		_clear_all_points()
 	else:
 		_clear_all_points()
 
@@ -392,9 +422,9 @@ func _clear_all_points() -> void:
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
 	
-	# 重置起点
+	# 重置起点为鼠标位置（而不是角色位置）
 	if skill_owner:
-		var start_pos = skill_owner.global_position
+		var start_pos = skill_owner.get_global_mouse_position()
 		path_points.append(start_pos)
 		last_point = start_pos
 
@@ -577,127 +607,32 @@ func _end_dash_sequence() -> void:
 # 风系技能生成
 # ==============================================================================
 
-## 生成风墙
-func _spawn_wind_wall(start: Vector2, end: Vector2) -> void:
-	var area = Area2D.new()
-	area.position = start
-	area.collision_mask = 2
-	area.monitorable = false
-	area.monitoring = true
-	
-	var vec = end - start
-	var length = vec.length()
-	var angle = vec.angle()
-	
-	# 碰撞形状（包含效果半径）
-	var col = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(length, wind_wall_width + wind_wall_effect_radius * 2)
-	col.shape = shape
-	col.position = Vector2(length / 2.0, 0)
-	col.rotation = angle
-	area.add_child(col)
-	
-	# 视觉效果
-	var vis_line = Line2D.new()
-	vis_line.add_point(Vector2.ZERO)
-	vis_line.add_point(end - start)
-	vis_line.width = wind_wall_width
-	vis_line.default_color = Color(0.2, 1.5, 1.5, 0.8)
-	vis_line.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	vis_line.end_cap_mode = Line2D.LINE_CAP_ROUND
-	area.add_child(vis_line)
-	
-	get_tree().current_scene.add_child(area)
-	
-	# 跟踪生成的效果节点
-	spawned_effects.append(area)
-	
-	# 物理Tick（吸附逻辑）
-	var timer = Timer.new()
-	timer.wait_time = 0.05
-	timer.autostart = true
-	area.add_child(timer)
-	timer.timeout.connect(_on_wind_wall_tick.bind(area, start, end))
-	
-	# 伤害Tick
-	var dmg_timer = Timer.new()
-	dmg_timer.wait_time = 0.5
-	dmg_timer.autostart = true
-	area.add_child(dmg_timer)
-	dmg_timer.timeout.connect(_on_damage_tick.bind(area, wind_wall_damage))
-	
-	# 寿命
-	var life = get_tree().create_timer(wind_wall_duration)
-	life.timeout.connect(_on_object_expired.bind(area, vis_line))
-
-## 生成暴风区域
-func _spawn_storm_zone(points: PackedVector2Array) -> void:
-	if points.size() < 3:
+## 生成风墙伤害效果（未闭合状态）
+func _spawn_wind_wall_damage() -> void:
+	if path_points.size() < 2:
 		return
 	
-	print("[SkillWindPath] >>> 触发暴风区域！多边形点数: %d <<<" % points.size())
+	print("[SkillWindPath] >>> 生成风墙伤害效果（未闭合）<<<")
 	
-	Global.on_camera_shake.emit(10.0, 0.3)
-	
-	# 先显示红色遮罩
-	_create_wind_closure_mask(points)
-	
-	var area = Area2D.new()
-	area.collision_mask = 2
-	area.monitorable = false
-	area.monitoring = true
-	
-	# 碰撞形状
-	var col = CollisionPolygon2D.new()
-	col.polygon = points
-	area.add_child(col)
-	
-	# 视觉效果
-	var vis_poly = Polygon2D.new()
-	vis_poly.polygon = points
-	vis_poly.color = Color(1.0, 1.0, 1.0, 0.0)
-	vis_poly.z_index = 10
-	area.add_child(vis_poly)
-	
-	get_tree().current_scene.add_child(area)
-	
-	# 跟踪生成的效果节点
-	spawned_effects.append(area)
-	
-	Global.spawn_floating_text(points[0], "STORM!", Color.CYAN)
-	
-	# 淡入动画
-	var tween = area.create_tween()
-	tween.tween_property(vis_poly, "color", Color(0.2, 1.2, 1.2, 0.5), 0.2).set_trans(Tween.TRANS_QUAD)
-	
-	# 计算中心点
-	var center = Vector2.ZERO
-	for p in points:
-		center += p
-	center /= points.size()
-	
-	# 物理Tick（吸向中心）
-	var timer = Timer.new()
-	timer.wait_time = 0.05
-	timer.autostart = true
-	area.add_child(timer)
-	timer.timeout.connect(_on_storm_zone_tick.bind(area, center))
-	
-	# 伤害Tick
-	var dmg_timer = Timer.new()
-	dmg_timer.wait_time = 0.5
-	dmg_timer.autostart = true
-	area.add_child(dmg_timer)
-	dmg_timer.timeout.connect(_on_damage_tick.bind(area, storm_zone_damage))
-	
-	# 寿命
-	var life = get_tree().create_timer(storm_zone_duration)
-	life.timeout.connect(_on_object_expired.bind(area, vis_poly))
-	
-	# 画圈奖励
-	await get_tree().process_frame
-	_apply_circle_rewards(area, points)
+	# 沿路径生成风墙伤害效果
+	for i in range(path_points.size() - 1):
+		_spawn_wind_wall(path_points[i], path_points[i + 1])
+
+## 生成风墙
+func _spawn_wind_wall(start: Vector2, end: Vector2) -> void:
+	# ✅ 使用统一的效果管理器
+	SkillEffectManager.create_line_effect({
+		"start": start,
+		"end": end,
+		"width": wind_wall_width,
+		"damage": wind_wall_damage,
+		"damage_interval": 0.5,
+		"duration": wind_wall_duration,
+		"color": Color(0.2, 1.5, 1.5, 0.8),
+		"pull_to_line": true,
+		"pull_force": wind_wall_pull_force,
+		"pull_interval": 0.05
+	})
 
 ## 创建风暴闭合遮罩 - 使用公共工具类
 func _create_wind_closure_mask(points: PackedVector2Array) -> void:
@@ -722,7 +657,10 @@ func _find_closing_polygon(points: Array[Vector2]) -> PackedVector2Array:
 ## 检查并触发闭合（支持多区域）
 func _check_and_trigger_intersection() -> void:
 	# 直接检测所有闭合区域，不依赖 has_closure 标志
-	var polygons = _find_all_closing_polygons()
+	# 如果是冲刺结束时调用，使用 path_history；否则使用 path_points
+	var points_to_check = path_history if path_history.size() > 0 else path_points
+	var polygons = PolygonUtils.find_all_closing_polygons(points_to_check, close_threshold)
+	
 	if polygons.size() > 0:
 		print("[SkillWindPath] >>> 检测到 %d 个闭合区域 <<<" % polygons.size())
 		
@@ -752,61 +690,27 @@ func _spawn_storm_zone_no_mask(points: PackedVector2Array) -> void:
 	
 	print("[SkillWindPath] >>> 触发暴风区域！多边形点数: %d <<<" % points.size())
 	
-	var area = Area2D.new()
-	area.collision_mask = 2
-	area.monitorable = false
-	area.monitoring = true
-	
-	# 碰撞形状
-	var col = CollisionPolygon2D.new()
-	col.polygon = points
-	area.add_child(col)
-	
-	# 视觉效果
-	var vis_poly = Polygon2D.new()
-	vis_poly.polygon = points
-	vis_poly.color = Color(1.0, 1.0, 1.0, 0.0)
-	vis_poly.z_index = 10
-	area.add_child(vis_poly)
-	
-	get_tree().current_scene.add_child(area)
-	
-	# 跟踪生成的效果节点
-	spawned_effects.append(area)
-	
 	Global.spawn_floating_text(points[0], "STORM!", Color.CYAN)
 	
-	# 淡入动画
-	var tween = area.create_tween()
-	tween.tween_property(vis_poly, "color", Color(0.2, 1.2, 1.2, 0.5), 0.2).set_trans(Tween.TRANS_QUAD)
+	# ✅ 使用统一的效果管理器
+	SkillEffectManager.create_area_effect({
+		"polygon": points,
+		"damage": storm_zone_damage,
+		"damage_interval": 0.5,
+		"duration": storm_zone_duration,
+		"color": Color(0.2, 1.2, 1.2, 0.5),
+		"pull_to_center": true,
+		"pull_force": storm_zone_pull_force,
+		"pull_interval": 0.05,
+		"z_index": 10,
+		"fade_in_duration": 0.2,
+		"fade_out_duration": 0.3
+	})
 	
-	# 计算中心点
-	var center = Vector2.ZERO
-	for p in points:
-		center += p
-	center /= points.size()
-	
-	# 物理Tick（吸向中心）
-	var timer = Timer.new()
-	timer.wait_time = 0.05
-	timer.autostart = true
-	area.add_child(timer)
-	timer.timeout.connect(_on_storm_zone_tick.bind(area, center))
-	
-	# 伤害Tick
-	var dmg_timer = Timer.new()
-	dmg_timer.wait_time = 0.5
-	dmg_timer.autostart = true
-	area.add_child(dmg_timer)
-	dmg_timer.timeout.connect(_on_damage_tick.bind(area, storm_zone_damage))
-	
-	# 寿命
-	var life = get_tree().create_timer(storm_zone_duration)
-	life.timeout.connect(_on_object_expired.bind(area, vis_poly))
-	
-	# 画圈奖励
-	await get_tree().process_frame
-	_apply_circle_rewards(area, points)
+	# 画圈奖励（暂时禁用，因为需要 area 引用）
+	# TODO: 如果需要奖励系统，可以通过 effect_id 获取 area
+	# await get_tree().process_frame
+	# _apply_circle_rewards(area, points)
 
 # ==============================================================================
 # 回调函数
@@ -873,10 +777,8 @@ func _on_damage_tick(area_ref: Area2D, amount: int) -> void:
 ## 对象过期
 func _on_object_expired(area_ref: Area2D, visual_ref: Node) -> void:
 	if is_instance_valid(area_ref):
-		# 从跟踪列表中移除
-		var idx = spawned_effects.find(area_ref)
-		if idx >= 0:
-			spawned_effects.remove_at(idx)
+		# ✅ 不访问 spawned_effects，因为技能实例可能已被删除
+		# 效果已经添加到场景根目录，会自动清理
 		
 		if is_instance_valid(visual_ref):
 			var tween = area_ref.create_tween()
@@ -888,9 +790,17 @@ func _on_object_expired(area_ref: Area2D, visual_ref: Node) -> void:
 		else:
 			area_ref.queue_free()
 
+# ✅ 不再需要 _manage_wind_wall_lifecycle 函数，效果由 SkillEffectManager 统一管理
+
 ## 画圈奖励
 func _apply_circle_rewards(area_ref: Area2D, polygon: PackedVector2Array) -> void:
-	if not is_instance_valid(area_ref) or not skill_owner:
+	if not is_instance_valid(area_ref):
+		return
+	
+	# ✅ 检查 skill_owner 是否仍然有效
+	# 如果玩家已被删除（切换角色），则不应用奖励
+	if not is_instance_valid(skill_owner):
+		print("[SkillWindPath] 技能所有者已被删除，跳过圈奖励")
 		return
 	
 	# 计算圈内敌人数量
@@ -949,15 +859,19 @@ func _apply_circle_rewards(area_ref: Area2D, polygon: PackedVector2Array) -> voi
 
 ## 清理资源
 func cleanup() -> void:
-	# 清理Line2D
-	if is_instance_valid(line_2d):
-		line_2d.queue_free()
+	print("[SkillWindPath] ===== cleanup() 被调用 =====")
 	
-	# 清理所有生成的效果节点（风墙、暴风区域等）
-	for effect in spawned_effects:
-		if is_instance_valid(effect):
-			effect.queue_free()
-	spawned_effects.clear()
+	# 清理规划线
+	if is_instance_valid(line_2d):
+		print("[SkillWindPath] Line2D有效，准备清理")
+		line_2d.queue_free()
+		print("[SkillWindPath] Line2D已调用queue_free()")
+	else:
+		print("[SkillWindPath] Line2D无效或已被删除")
+	
+	# ✅ 不再需要清理效果节点，效果由 SkillEffectManager 统一管理
+	# 效果会按照自己的生命周期自动消失
+	print("[SkillWindPath] 效果由 SkillEffectManager 管理，无需手动清理")
 	
 	# 重置状态
 	is_planning = false
@@ -972,3 +886,13 @@ func cleanup() -> void:
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
 	Engine.time_scale = 1.0
+	
+	# 恢复玩家状态（如果在冲刺中切换）
+	if skill_owner:
+		if collision:
+			collision.set_deferred("disabled", false)
+		if dash_hitbox:
+			dash_hitbox.set_deferred("monitorable", false)
+			dash_hitbox.set_deferred("monitoring", false)
+	
+	print("[SkillWindPath] ===== cleanup() 结束 =====")

@@ -127,10 +127,10 @@ func _setup_stake_params(stake: MeatStake) -> void:
 
 ## 清理资源
 func cleanup() -> void:
-	# 清理激活的肉桩
-	if is_instance_valid(active_stake):
-		active_stake.queue_free()
-		active_stake = null
+	# ✅ 不清理激活的肉桩 - 让它按照自己的生命周期消失
+	# 这样切换角色时，已投掷的肉桩会继续存在并按时消失
+	# active_stake 会自动通过 stake_duration 计时器清理
+	pass
 
 ## 获取当前激活的肉桩
 func get_active_stake() -> Node2D:

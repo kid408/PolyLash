@@ -136,5 +136,4 @@ func try_break_line(enemy_pos: Vector2, radius: float) -> void:
 			if q_skill.is_planning:
 				q_skill._update_visuals()
 			
-			print("[PlayerButcher] 锯条路径被切断！从点 %d 处截断" % i)
 			return

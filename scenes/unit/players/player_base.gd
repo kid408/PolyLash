@@ -52,8 +52,6 @@ var current_weapons: Array[Weapon] = []
 var energy_bar_ui: Control = null 
 
 func _ready() -> void:
-	print("[PlayerBase] _ready() 开始, player_id=%s" % player_id)
-	
 	# 从CSV加载配置（必须在super._ready()之前，这样才能设置stats）
 	_load_config_from_csv()
 	
@@ -83,6 +81,13 @@ func _ready() -> void:
 	
 	# 创建能量槽UI
 	_create_energy_bar_ui()
+
+func _exit_tree() -> void:
+	# 不清理任何技能效果，让它们按照自己的生命周期自然消失
+	# 技能效果（火海、风墙、地雷等）已经添加到场景根节点，有独立的生命周期管理
+	# 切换角色时不应该强制清理这些效果
+	pass
+
 
 func _load_config_from_csv() -> void:
 	if player_id.is_empty():
@@ -117,11 +122,9 @@ func _load_config_from_csv() -> void:
 	var initial_energy = config.get("initial_energy", max_energy)
 	energy = initial_energy
 	
-	# 【关键修复】从CSV加载生命值和速度，覆盖场景文件中的stats
 	# 如果stats不存在，创建一个新的
 	if stats == null:
 		stats = UnitStats.new()
-		print("[PlayerBase] 创建新的 UnitStats 实例，player_id=%s" % player_id)
 	
 	# 从CSV设置生命值和速度
 	var csv_health = config.get("health", 5000.0)
@@ -141,12 +144,10 @@ func _load_sprite_from_csv() -> void:
 	
 	var visual_config = ConfigManager.get_player_visual(player_id)
 	if visual_config.is_empty():
-		print("[PlayerBase] 警告: 未找到视觉配置 '%s'" % player_id)
 		return
 	
 	var sprite_path = visual_config.get("sprite_path", "")
 	if sprite_path == "":
-		print("[PlayerBase] 警告: 视觉配置 '%s' 缺少 sprite_path" % player_id)
 		return
 	
 	# 获取Sprite节点（在Visuals下）
@@ -157,32 +158,23 @@ func _load_sprite_from_csv() -> void:
 		sprite_node = visuals.get_node("Sprite")
 	
 	if not sprite_node:
-		print("[PlayerBase] 警告: 未找到 Sprite 节点")
 		return
 	
 	# 加载纹理
 	var texture = load(sprite_path) as Texture2D
 	if texture:
 		sprite_node.texture = texture
-		print("[PlayerBase] 从CSV加载精灵: %s -> %s" % [player_id, sprite_path])
 	else:
 		printerr("[PlayerBase] 错误: 无法加载精灵纹理: %s" % sprite_path)
 
 func _load_weapons_from_config() -> void:
 	if player_id.is_empty() or not weapon_container:
-		print("[PlayerBase] _load_weapons_from_config: player_id=%s, weapon_container=%s" % [player_id, weapon_container])
 		return
-	
-	print("[PlayerBase] _load_weapons_from_config 开始: player_id=%s" % player_id)
-	print("[PlayerBase] Global.selected_player_weapons = %s" % str(Global.selected_player_weapons))
 	
 	# 检查是否有从选择界面传入的武器类型
 	var selected_weapon_type = ""
 	if Global.selected_player_weapons.has(player_id):
 		selected_weapon_type = Global.selected_player_weapons[player_id]
-		print("[PlayerBase] 使用选择的武器类型: %s" % selected_weapon_type)
-	else:
-		print("[PlayerBase] 未找到选择的武器，使用默认配置")
 	
 	# 如果有选择的武器类型，只加载1级武器
 	if selected_weapon_type != "":
@@ -190,23 +182,7 @@ func _load_weapons_from_config() -> void:
 		var item_weapon = _create_item_weapon_from_csv(weapon_id)
 		if item_weapon:
 			_add_weapon(item_weapon)
-			print("[PlayerBase] 加载武器: %s" % weapon_id)
 		return
-	
-	# 否则使用默认配置（从CSV表加载，暂时禁用）
-	# var weapon_cfg = ConfigManager.get_player_weapons(player_id)
-	# if weapon_cfg.is_empty():
-	#     return
-	# 
-	# # 加载每个武器槽位
-	# for i in range(1, 7):
-	#     var slot_key = "weapon_slot_%d" % i
-	#     var weapon_id = weapon_cfg.get(slot_key, "")
-	#     if weapon_id != "":
-	#         var item_weapon = _create_item_weapon_from_csv(weapon_id)
-	#         if item_weapon:
-	#             _add_weapon(item_weapon)
-	print("[PlayerBase] 未选择武器，跳过默认配置加载")
 
 func _create_item_weapon_from_csv(weapon_id: String) -> ItemWeapon:
 	"""从CSV配置创建ItemWeapon对象"""
@@ -428,7 +404,6 @@ func _cleanup_skill_effects() -> void:
 			for skill in sm.get_all_skills():
 				if skill and skill.has_method("cleanup"):
 					skill.cleanup()
-			print("[PlayerBase] 已清理所有技能效果")
 
 # ==============================================================================
 # LineBreaker 切线逻辑 - 虚函数，子类可重写
@@ -439,3 +414,16 @@ func try_break_line(enemy_pos: Vector2, radius: float) -> void:
 	# 默认实现：什么都不做
 	# 子类（如 PlayerHerder, PlayerWeaver 等）可以重写此方法
 	pass
+
+## 清理所有技能效果（角色切换时调用）
+func _cleanup_all_skills() -> void:
+	# 获取所有技能并调用cleanup()
+	if has_node("SkillManager"):
+		var skill_manager = get_node("SkillManager")
+		if skill_manager.has_method("cleanup_all_skills"):
+			skill_manager.cleanup_all_skills()
+	
+	# 直接清理各个技能
+	for child in get_children():
+		if child.has_method("cleanup"):
+			child.cleanup()

@@ -68,12 +68,9 @@ func _switch_character(player_id: String) -> void:
 	# 2. 继承旧玩家的位置
 	new_player.global_position = old_player.global_position
 	
-	# 3. 清理旧玩家的技能效果
-	if old_player.has_method("_cleanup_skill_effects"):
-		old_player._cleanup_skill_effects()
-	
-	# 4. 清理场景中所有残留的技能效果区域
-	_cleanup_all_skill_areas()
+	# ✅ 不清理旧玩家的技能效果 - 让它们按照自己的生命周期消失
+	# 这样切换角色时，已生成的技能效果会继续存在并按时消失
+	print("[DebugSwitcher] 切换角色，保留旧角色的技能效果")
 	
 	# 5. 添加到场景树 (加到旧玩家的父节点下)
 	old_player.get_parent().add_child(new_player)
@@ -114,3 +111,26 @@ func _cleanup_all_skill_areas() -> void:
 	
 	if areas_to_remove.size() > 0:
 		print(">>> [DEBUG] 清理了 %d 个残留技能效果" % areas_to_remove.size())
+
+# ✅ 清理孤立的Line2D节点（风墙线段等）
+func _cleanup_orphan_lines() -> void:
+	var scene_root = get_tree().current_scene
+	if not scene_root:
+		return
+	
+	var lines_to_remove: Array[Node] = []
+	
+	for child in scene_root.get_children():
+		# 查找所有孤立的Line2D节点（不属于任何Area2D）
+		if child is Line2D:
+			# 检查是否是孤立的（没有Area2D父节点）
+			if not (child.get_parent() is Area2D):
+				lines_to_remove.append(child)
+	
+	# 移除所有孤立的Line2D
+	for line in lines_to_remove:
+		if is_instance_valid(line):
+			line.queue_free()
+	
+	if lines_to_remove.size() > 0:
+		print(">>> [DEBUG] 清理了 %d 个孤立Line2D节点" % lines_to_remove.size())

@@ -91,11 +91,7 @@ func _ready() -> void:
 		death_vfx_scene = DEFAULT_EXPLOSION
 	health_component.on_unit_died.connect(destroy_enemy)
 	
-	#print("[Enemy] ===== 敌人初始化开始 =====")
-	#print("[Enemy] enemy_id = ", enemy_id)
-	#print("[Enemy] enemy_type = ", enemy_type)
-	
-	# 【新增】停止动画播放，避免出生时的"发大再缩小"特效
+	# 停止动画播放，避免出生时的"发大再缩小"特效
 	if anim_player:
 		anim_player.stop()
 	
@@ -110,7 +106,6 @@ func _ready() -> void:
 	
 	# 根据 enemy_id 设置敌人类型
 	_set_enemy_type_from_id()
-	#print("[Enemy] 设置敌人类型后，enemy_type = ", enemy_type)
 	
 	# 应用CSV配置
 	_apply_visual_from_config()  # 应用视觉配置（精灵、缩放、碰撞体等）
@@ -122,31 +117,23 @@ func _ready() -> void:
 	# 动态生成特殊节点
 	_setup_special_nodes()
 	
-	#print("[Enemy] ===== 敌人初始化完成 =====")
-	
 	# 如果是刺猬，默认开启冲锋
 	if enemy_type == EnemyType.SPIKED:
 		can_charge = true
 
 # 根据 enemy_id 设置敌人类型
 func _set_enemy_type_from_id() -> void:
-	#print("[Enemy] 设置敌人类型，enemy_id = ", enemy_id)
 	match enemy_id:
 		"breaker_enemy":
 			enemy_type = EnemyType.LINE_BREAKER
-			print("[Enemy] ★★★ 设置为 LINE_BREAKER ★★★")
 		"shielded_enemy":
 			enemy_type = EnemyType.SHIELDED
-			#print("[Enemy] 设置为 SHIELDED")
 		"spiked_enemy":
 			enemy_type = EnemyType.SPIKED
-			#print("[Enemy] 设置为 SPIKED")
 		"mine_layer_enemy":
 			enemy_type = EnemyType.MINE_LAYER
-			print("[Enemy] 设置为 MINE_LAYER - 毒池敌人已识别!")
 		_:
 			enemy_type = EnemyType.NORMAL
-			#print("[Enemy] 设置为 NORMAL")
 
 # 从CSV配置应用颜色
 func _apply_color_from_config() -> void:
@@ -303,50 +290,39 @@ func _apply_behavior_from_config() -> void:
 
 # 动态生成特殊节点（根据敌人类型）
 func _setup_special_nodes() -> void:
-	#print("[Enemy] 准备生成特殊节点，enemy_type = ", enemy_type, " enemy_id = ", enemy_id)
 	match enemy_type:
 		EnemyType.SHIELDED:
-			#print("[Enemy] 检测到 SHIELDED 类型，生成 ShootingBehavior")
 			_setup_shooting_behavior()
 		EnemyType.SPIKED:
-			#print("[Enemy] 检测到 SPIKED 类型，生成 AnimationEffects")
 			_setup_charge_animation()
 		EnemyType.MINE_LAYER:
-			print("[Enemy] 检测到 MINE_LAYER 类型，毒池将在死亡时生成")
+			pass  # 毒池将在死亡时生成
 		_:
 			pass
-			#print("[Enemy] 敌人类型 ", enemy_type, " 无特殊节点")
 
 # 为硬壳龟生成射击行为节点
 func _setup_shooting_behavior() -> void:
 	# 检查是否已存在
 	if has_node("ShootingBehavior"):
-		#print("[Enemy] ShootingBehavior 已存在，跳过创建")
 		return
-	
-	#print("[Enemy] ========== 开始创建 ShootingBehavior ==========")
 	
 	# 创建 FirePos 标记
 	var fire_pos = Marker2D.new()
 	fire_pos.name = "FirePos"
-	fire_pos.position = Vector2(0, -50)  # 在敌人上方生成投射物
+	fire_pos.position = Vector2(0, -50)
 	visuals.add_child(fire_pos)
-	#print("[Enemy] FirePos 已创建，位置: ", fire_pos.global_position)
 	
 	# 创建 ShootingBehavior 节点
 	var shooting_behavior = Node2D.new()
 	shooting_behavior.name = "ShootingBehavior"
-	#print("[Enemy] ShootingBehavior 节点已创建，准备添加到场景树")
 	
 	# 加载脚本
 	var script = load("res://scenes/unit/enemy/shooting_behavior.gd")
 	if script == null:
-		print("[Enemy] 错误: 无法加载 shooting_behavior.gd 脚本")
+		push_error("[Enemy] 错误: 无法加载 shooting_behavior.gd 脚本")
 		return
 	
-	#print("[Enemy] 脚本已加载，准备绑定")
 	shooting_behavior.set_script(script)
-	#print("[Enemy] 脚本已绑定")
 	
 	# 设置属性（必须在脚本绑定后）
 	shooting_behavior.enemy = self
@@ -359,29 +335,17 @@ func _setup_shooting_behavior() -> void:
 	shooting_behavior.arc_angle = projectile_arc_angle
 	shooting_behavior.projectile_speed = projectile_speed
 	
-	#print("[Enemy] 属性已设置: cooldown=", shoot_cooldown, " count=", projectile_count)
-	#print("[Enemy] projectile_scene = ", shooting_behavior.projectile_scene)
-	
 	# 添加到场景树
 	add_child(shooting_behavior)
-	#print("[Enemy] ShootingBehavior 节点已添加到场景树")
-	#print("[Enemy] 节点在场景树中: ", shooting_behavior.is_inside_tree())
-	#print("[Enemy] 节点父节点: ", shooting_behavior.get_parent().name if shooting_behavior.get_parent() else "无")
 	
 	# 手动调用 _ready()，因为脚本是动态绑定的
 	if shooting_behavior.has_method("_ready"):
-		#print("[Enemy] 准备手动调用 _ready()")
 		shooting_behavior._ready()
-		#print("[Enemy] _ready() 已手动调用")
 	else:
-		print("[Enemy] 错误: ShootingBehavior 没有 _ready() 方法")
+		push_error("[Enemy] 错误: ShootingBehavior 没有 _ready() 方法")
 	
 	# 确保 _process 会被调用
 	shooting_behavior.set_process(true)
-	#print("[Enemy] set_process(true) 已调用")
-	
-	#print("[Enemy] ========== ShootingBehavior 创建完成 ==========")
-	#print("[Enemy] ShootingBehavior 已动态生成，参数: cooldown=", shoot_cooldown, " count=", projectile_count)
 
 # 为刺猬生成冲锋动画
 func _setup_charge_animation() -> void:
@@ -428,7 +392,6 @@ func _setup_charge_animation() -> void:
 	
 	# 设置动画库
 	anim_player.add_animation_library("", anim_lib)
-	print("[Enemy] AnimationEffects 已动态生成")
 
 # ==============================================================================
 # 5. 物理处理 (带状态机)
@@ -455,20 +418,14 @@ func _process(delta: float) -> void:
 func _state_chase(delta: float) -> void:
 	# 1. 检查能不能动
 	if not can_move: 
-		# print("敌人定身中...") # 太多log可以注释掉
 		return
 	
 	# 2. 检查玩家是否存在
 	if not is_instance_valid(Global.player):
-		print("敌人待机: 找不到 Global.player")
 		return
 
 	# 3. 检查距离
 	var dist = global_position.distance_to(Global.player.global_position)
-	
-	# [DEBUG] 每 60 帧打印一次状态，防止刷屏
-	#if Engine.get_frames_drawn() % 60 == 0:
-	#	print("[%s] 追逐中 | 距离玩家: %.1f | 停止阈值: %.1f" % [name, dist, stop_distance])
 
 	# 如果距离小于停止距离 (例如贴脸了)，就不移动了
 	if dist <= stop_distance:
@@ -476,10 +433,6 @@ func _state_chase(delta: float) -> void:
 	
 	# 4. 执行移动
 	var move_vec = get_move_direction() + (knockback_dir * knockback_power)
-	
-	# [DEBUG] 检查移动向量
-	# if move_vec == Vector2.ZERO and Engine.get_frames_drawn() % 60 == 0:
-	# 	print("[%s] 移动向量为零! 可能由于 flock_push 抵消?" % name)
 		
 	position += move_vec * stats.speed * delta
 	update_rotation()
@@ -587,16 +540,11 @@ func _state_cooldown(delta: float) -> void:
 # ==============================================================================
 func _check_line_break() -> void:
 	if not is_instance_valid(Global.player):
-		print("[LineBreaker] 玩家不存在")
 		return
 	
-	# 【修复】先检查玩家是否有这个功能，再调用
-	# 这样以后做其他没有线的角色，也不会报错
+	# 检查玩家是否有这个功能，再调用
 	if Global.player.has_method("try_break_line"):
-		#print("[LineBreaker] 尝试切线，敌人位置: ", global_position, " 玩家位置: ", Global.player.global_position, " 半径: ", break_radius)
 		Global.player.try_break_line(global_position, break_radius)
-	else:
-		print("[LineBreaker] 玩家没有 try_break_line 方法")
 
 func update_rotation() -> void:
 	if not is_instance_valid(Global.player): return
@@ -702,10 +650,6 @@ func destroy_enemy() -> void:
 	is_dead = true
 	can_move = false
 	
-	#print("[Enemy] ========== 敌人死亡 ==========")
-	#print("[Enemy] 敌人名称: ", name, " 类型: ", enemy_type, " ID: ", enemy_id)
-	#print("[Enemy] 敌人位置: ", global_position)
-	
 	# 死亡时清理红线
 	if warning_line:
 		warning_line.queue_free()
@@ -715,7 +659,6 @@ func destroy_enemy() -> void:
 	
 	# 地雷怪特殊效果：死后留毒池
 	if enemy_type == EnemyType.MINE_LAYER:
-		print("[MineLayer] 敌人死亡，生成毒池")
 		call_deferred("_spawn_poison_pool", global_position)
 	
 	# 给玩家奖励（能量、经验、金币）
@@ -766,14 +709,10 @@ func spawn_explosion_safe() -> void:
 
 # 地雷怪死后生成毒池
 func _spawn_poison_pool(pos: Vector2) -> void:
-	print("[MineLayer] ========== 开始生成毒池 ==========")
-	print("[MineLayer] 生成毒池于位置: ", pos)
-	print("[MineLayer] 参数: radius=", pool_radius, " damage=", pool_damage, " interval=", pool_damage_interval, " lifetime=", pool_lifetime)
-	
 	# 安全检查：确保场景树可用
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree == null or tree.current_scene == null:
-		print("[MineLayer] 错误: 无法获取场景树!")
+		push_error("[MineLayer] 错误: 无法获取场景树!")
 		return
 	
 	var poison = Area2D.new()
@@ -789,15 +728,12 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 	shape.radius = pool_radius
 	col.shape = shape
 	poison.add_child(col)
-	print("[MineLayer] 碰撞体已添加，半径: ", pool_radius)
 	
 	# 视觉效果：完整的圆形毒池
 	var vis = Polygon2D.new()
 	vis.name = "PoisonVisual"
 	var points = PackedVector2Array()
 	var segments = 32
-	
-	print("[MineLayer] 开始生成多边形点，segments=", segments, " radius=", pool_radius)
 	
 	# 生成圆形多边形点
 	for i in range(segments):
@@ -817,8 +753,6 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 	# 设置位置（在添加到场景后设置）
 	poison.global_position = pos
 	
-	print("[MineLayer] 毒池已添加到场景，位置: ", poison.global_position)
-	
 	# 伤害计时器：按配置间隔伤害一次
 	var dmg_timer = Timer.new()
 	dmg_timer.name = "DamageTimer"
@@ -829,18 +763,13 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 	# 使用lambda函数，避免依赖Enemy实例
 	dmg_timer.timeout.connect(func():
 		if not is_instance_valid(poison) or poison.is_queued_for_deletion():
-			print("[MineLayer] 毒池已被销毁，停止伤害计时器")
 			dmg_timer.stop()
 			return
-		
-		print("[MineLayer] 毒池伤害触发，检查范围内的目标")
 		
 		# 检测所有在毒池范围内的玩家
 		var bodies = poison.get_overlapping_bodies()
 		var areas = poison.get_overlapping_areas()
 		var all_targets = bodies + areas
-		
-		print("[MineLayer] 检测到 ", all_targets.size(), " 个对象")
 		
 		for target in all_targets:
 			var player_node = null
@@ -851,13 +780,11 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 				player_node = target.owner
 			
 			if is_instance_valid(player_node) and player_node.has_method("take_damage"):
-				print("[MineLayer] 对玩家造成伤害: ", int(pool_damage))
 				player_node.take_damage(int(pool_damage))
 				Global.spawn_floating_text(player_node.global_position, "-" + str(int(pool_damage)), Color(0.5, 1.0, 0.5))
 	)
 	
 	dmg_timer.start()
-	print("[MineLayer] 伤害计时器已启动，间隔: ", pool_damage_interval)
 	
 	# 生命计时器：按配置时间后消失
 	var life_timer = Timer.new()
@@ -867,14 +794,12 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 	poison.add_child(life_timer)
 	
 	life_timer.timeout.connect(func():
-		print("[MineLayer] 毒池生命周期结束，准备消失")
 		if is_instance_valid(poison):
 			if is_instance_valid(vis):
 				var fade_tween = poison.create_tween()
 				fade_tween.tween_property(vis, "color:a", 0.0, 0.5)
 				fade_tween.finished.connect(func():
 					if is_instance_valid(poison):
-						print("[MineLayer] 毒池已消失")
 						poison.queue_free()
 				)
 			else:
@@ -882,7 +807,5 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 	)
 	
 	life_timer.start()
-	print("[MineLayer] 生命计时器已启动，", pool_lifetime, "秒后毒池将消失")
 	
 	Global.spawn_floating_text(pos, "TOXIC!", Color(0.5, 1.0, 0.5))
-	print("[MineLayer] ========== 毒池生成完成 ==========")

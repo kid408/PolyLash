@@ -21,36 +21,84 @@ var lifetime_timer: Timer
 var visual_poly: Polygon2D
 var visual_line: Line2D
 
-func setup(_points: Array[Vector2], _closed: bool, _dir: Vector2, _player: Node2D):
+# ✅ 捕获的参数（不依赖 player_ref）
+var saw_rotation_speed: float = 25.0
+var saw_push_radius: float = 80.0
+var saw_damage_tick: int = 3
+var saw_damage_open: int = 1
+var stake_impact_damage: int = 20
+var chain_color: Color = Color(0.8, 0.2, 0.2, 0.8)
+var saw_hit_radius: float = 80.0
+var dismember_damage: int = 200
+var saw_max_distance: float = 900.0
+var saw_fly_speed: float = 1100.0
+var captured_chain_radius: float = 250.0
+
+func setup(_points: Array[Vector2], _closed: bool, _dir: Vector2, _player: Node2D, _max_distance: float = 900.0):
 	shape_points = _points.duplicate()
 	is_closed = _closed
 	fly_dir = _dir
 	player_ref = _player
 	
+	print("[SawProjectile] ★★★ setup() 被调用 ★★★")
+	print("[SawProjectile] 是否闭合: %s" % is_closed)
+	print("[SawProjectile] 飞行方向: %s (角度: %.1f°)" % [fly_dir, rad_to_deg(fly_dir.angle())])
+	print("[SawProjectile] 路径点数: %d" % shape_points.size())
+	if shape_points.size() > 0:
+		print("[SawProjectile] 路径起点: %s, 终点: %s" % [shape_points[0], shape_points[shape_points.size() - 1]])
+	
+	# ✅ 捕获所有参数，避免运行时依赖 player_ref
+	saw_rotation_speed = _player.saw_rotation_speed if "saw_rotation_speed" in _player else 25.0
+	saw_push_radius = _player.saw_push_radius if "saw_push_radius" in _player else 80.0
+	saw_damage_tick = _player.saw_damage_tick if "saw_damage_tick" in _player else 3
+	saw_damage_open = _player.saw_damage_open if "saw_damage_open" in _player else 1
+	stake_impact_damage = _player.stake_impact_damage if "stake_impact_damage" in _player else 20
+	chain_color = _player.chain_color if "chain_color" in _player else Color(0.8, 0.2, 0.2, 0.8)
+	saw_hit_radius = _player.saw_hit_radius if "saw_hit_radius" in _player else 80.0
+	dismember_damage = _player.dismember_damage if "dismember_damage" in _player else 200
+	saw_fly_speed = _player.saw_fly_speed if "saw_fly_speed" in _player else 1100.0
+	captured_chain_radius = _player.chain_radius if "chain_radius" in _player else 250.0
+	
 	# 计算目标位置（飞行终点）
-	var max_distance = 900.0
-	if "saw_max_distance" in player_ref:
-		max_distance = player_ref.saw_max_distance
+	var max_distance = _max_distance
+	if "saw_max_distance" in _player and _max_distance == 900.0:
+		# 只有在使用默认值时才从player读取
+		max_distance = _player.saw_max_distance
+	
+	print("[SawProjectile] ★★★ 飞行距离参数: %.0f ★★★" % _max_distance)
+	print("[SawProjectile] ★★★ 最终使用距离: %.0f ★★★" % max_distance)
+	
 	target_pos = shape_points[0] + fly_dir * max_distance
 	
-	# 设置速度
-	speed = player_ref.saw_fly_speed if "saw_fly_speed" in player_ref else 1100.0
+	print("[SawProjectile] 起点: %s" % shape_points[0])
+	print("[SawProjectile] 目标位置: %s (距离: %.0f)" % [target_pos, max_distance])
+	print("[SawProjectile] 计算距离验证: %.0f" % shape_points[0].distance_to(target_pos))
 	
-	# 设置链条半径（闭合时使用）
-	chain_radius = player_ref.chain_radius if "chain_radius" in player_ref else 250.0
+	# 使用捕获的参数
+	speed = saw_fly_speed
+	chain_radius = captured_chain_radius
 	
 	z_index = 60
 	
-	# 计算中心点用于本地坐标
-	var center = Vector2.ZERO
-	if not shape_points.is_empty():
-		for p in shape_points: 
-			center += p
-		center /= shape_points.size()
-	
+	# ✅ 修复：对于未闭合状态，直接使用全局坐标作为本地坐标
+	# 这样Line2D保持原始形状，不会因为Node2D旋转而变形
 	var local_points = PackedVector2Array()
-	for p in shape_points:
-		local_points.append(p - center)
+	
+	if is_closed:
+		# 闭合状态：计算中心点用于本地坐标（需要旋转）
+		var center = Vector2.ZERO
+		if not shape_points.is_empty():
+			for p in shape_points: 
+				center += p
+			center /= shape_points.size()
+		
+		for p in shape_points:
+			local_points.append(p - center)
+	else:
+		# 未闭合状态：使用相对于起点的坐标（不旋转）
+		var start_point = shape_points[0]
+		for p in shape_points:
+			local_points.append(p - start_point)
 	
 	# 创建填充多边形
 	visual_poly = Polygon2D.new()
@@ -70,29 +118,32 @@ func setup(_points: Array[Vector2], _closed: bool, _dir: Vector2, _player: Node2
 		visual_line.closed = true
 		visual_line.default_color = Color(1.0, 0.6, 0.6, 1.0)
 		visual_line.width = 6.0
+		# 闭合状态：旋转锯条
+		# rotation 会在 _process_flying 中更新
 	else:
 		visual_poly.visible = false
 		visual_line.closed = false
 		visual_line.default_color = Color(1.0, 1.0, 1.0, 0.9)
 		visual_line.width = 8.0
-		look_at(global_position + fly_dir)
+		# ✅ 修复：未闭合状态下，不旋转Node2D
+		# 这样Line2D保持原始形状，只改变飞行方向
 	
-	# 创建生命周期计时器（只有闭合状态才需要8秒）
+	# 创建生命周期计时器
+	lifetime_timer = Timer.new()
+	lifetime_timer.one_shot = true
+	lifetime_timer.timeout.connect(_on_lifetime_end)
+	add_child(lifetime_timer)
+	
+	# 根据闭合状态设置计时器时长
 	if is_closed:
-		lifetime_timer = Timer.new()
-		lifetime_timer.wait_time = 8.0
-		lifetime_timer.one_shot = true
-		lifetime_timer.timeout.connect(_on_lifetime_end)
-		add_child(lifetime_timer)
+		lifetime_timer.wait_time = 8.0  # 闭合状态：8秒
 	else:
-		# 非闭合状态不需要计时器，飞到终点就消失
-		lifetime_timer = null
+		lifetime_timer.wait_time = 5.0  # 未闭合状态：5秒（持续伤害时间）
+	
+	print("[SawProjectile] ★★★ setup() 完成 ★★★")
 
 func _process(delta: float) -> void:
-	if not is_instance_valid(player_ref):
-		queue_free()
-		return
-	
+	# ✅ 不再依赖 player_ref 的有效性
 	if not is_landed:
 		_process_flying(delta)
 	else:
@@ -102,7 +153,12 @@ func _process(delta: float) -> void:
 func _process_flying(delta: float) -> void:
 	# 飞行到目标位置
 	var dist = global_position.distance_to(target_pos)
+	
+	# 调试日志
+	print("[SawProjectile] 飞行中: 当前位置=%s, 目标=%s, 距离=%.1f" % [global_position, target_pos, dist])
+	
 	if dist < 10.0:
+		print("[SawProjectile] ★★★ 到达目标，调用 _land() ★★★")
 		_land()
 		return
 	
@@ -114,9 +170,10 @@ func _process_flying(delta: float) -> void:
 	var old_pos = global_position
 	global_position += fly_dir * move_step
 	
-	# 飞行时旋转（如果闭合）
+	# 飞行时旋转（只有闭合状态才旋转）
 	if is_closed:
-		rotation += (player_ref.saw_rotation_speed if "saw_rotation_speed" in player_ref else 25.0) * delta
+		rotation += saw_rotation_speed * delta
+	# ✅ 未闭合状态：不旋转，保持原始形状
 	
 	# 处理敌人
 	var enemies = get_tree().get_nodes_in_group("enemies")
@@ -150,13 +207,15 @@ func _process_flying(delta: float) -> void:
 func _push_enemies_like_blade(old_pos: Vector2, new_pos: Vector2, delta: float) -> void:
 	"""非闭合状态：像刮板一样推着敌人走"""
 	var enemies = get_tree().get_nodes_in_group("enemies")
-	# ✅ 减小检测半径，从200改为80
-	var push_radius = player_ref.saw_push_radius if "saw_push_radius" in player_ref else 80.0
+	# ✅ 使用捕获的参数
+	var push_radius = saw_push_radius
 	
 	# 获取锯条的所有线段（全局坐标）
 	var poly_global = []
+	
+	# 使用相对于起点的本地坐标，加上Node2D的全局位置
 	for p in visual_line.points:
-		poly_global.append(to_global(p))
+		poly_global.append(global_position + p)
 	
 	if poly_global.size() < 2:
 		print("[SawProjectile] 警告：线段数量不足")
@@ -217,11 +276,7 @@ func _damage_enemies_in_path(delta: float) -> void:
 		
 		if e.has_node("HealthComponent"):
 			# 根据闭合状态使用不同伤害
-			var damage = 3  # 默认闭合伤害
-			if is_closed:
-				damage = player_ref.saw_damage_tick if "saw_damage_tick" in player_ref else 3
-			else:
-				damage = player_ref.saw_damage_open if "saw_damage_open" in player_ref else 1
+			var damage = saw_damage_tick if is_closed else saw_damage_open
 			
 			var health_before = e.health_component.current_health
 			e.health_component.take_damage(damage)
@@ -237,58 +292,104 @@ func _damage_enemies_in_path(delta: float) -> void:
 
 func _land() -> void:
 	is_landed = true
-	rotation = 0
+	
+	# 只有闭合状态才重置旋转
+	if is_closed:
+		rotation = 0
 	
 	Global.on_camera_shake.emit(10.0, 0.2)
 	
-	# 【修复】非闭合状态：飞到终点就消失
+	print("[SawProjectile] ★★★ 锯条着陆 ★★★")
+	print("[SawProjectile] 着陆位置: %s" % global_position)
+	print("[SawProjectile] 是否闭合: %s" % is_closed)
+	print("[SawProjectile] 链条半径: %.0f" % chain_radius)
+	print("[SawProjectile] 路径点数: %d" % shape_points.size())
+	
+	# 【修复】非闭合状态：飞到终点后持续伤害5秒再消失
 	if not is_closed:
 		Global.spawn_floating_text(global_position, "IMPACT!", Color.WHITE)
-		queue_free()
+		print("[SawProjectile] 未闭合锯条着陆，位置: %s，启动生命周期计时器（5秒）" % global_position)
+		
+		# 未闭合状态：扫描并链接范围内的所有敌人（像"拴小狗"一样）
+		var enemies = get_tree().get_nodes_in_group("enemies")
+		print("[SawProjectile] 扫描敌人数量: %d" % enemies.size())
+		for e in enemies:
+			if not is_instance_valid(e): 
+				continue
+			
+			var dist = global_position.distance_to(e.global_position)
+			print("[SawProjectile] 敌人 %s 距离: %.0f (链条半径: %.0f)" % [e.name, dist, chain_radius])
+			
+			# 使用更大的范围检测（chain_radius）
+			if dist < chain_radius:
+				print("[SawProjectile] ✅ 敌人 %s 在范围内，链接" % e.name)
+				_chain_enemy(e)
+			# 或者检查是否在线段范围内
+			elif _is_enemy_inside(e):
+				print("[SawProjectile] ✅ 敌人 %s 在线段范围内，链接" % e.name)
+				_chain_enemy(e)
+		
+		print("[SawProjectile] 已链接敌人数量: %d" % chained_enemies.size())
+		
+		# 启动生命周期计时器（5秒后消失）
+		if lifetime_timer:
+			lifetime_timer.start()
+			print("[SawProjectile] 生命周期计时器已启动（5秒）")
 		return
 	
 	# 闭合状态：钉在那里
 	Global.spawn_floating_text(global_position, "LOCKED!", Color.RED)
+	print("[SawProjectile] 闭合锯条着陆，位置: %s，启动生命周期计时器（8秒）" % global_position)
 	
 	# 创建闭合遮罩视觉效果
 	_create_butcher_closure_mask()
 	
 	# 闭合状态：扫描并链接范围内的所有敌人
 	var enemies = get_tree().get_nodes_in_group("enemies")
+	print("[SawProjectile] 扫描敌人数量: %d" % enemies.size())
 	for e in enemies:
 		if not is_instance_valid(e): 
 			continue
 		
+		var dist = global_position.distance_to(e.global_position)
+		print("[SawProjectile] 敌人 %s 距离: %.0f (链条半径: %.0f)" % [e.name, dist, chain_radius])
+		
 		# 使用更大的范围检测（chain_radius）
-		if global_position.distance_to(e.global_position) < chain_radius:
+		if dist < chain_radius:
+			print("[SawProjectile] ✅ 敌人 %s 在范围内，链接" % e.name)
 			_chain_enemy(e)
 		# 或者检查是否在闭合区域内
 		elif _is_enemy_inside(e):
+			print("[SawProjectile] ✅ 敌人 %s 在闭合区域内，链接" % e.name)
 			_chain_enemy(e)
+	
+	print("[SawProjectile] 已链接敌人数量: %d" % chained_enemies.size())
 	
 	# 启动生命周期计时器（只有闭合状态才有）
 	if lifetime_timer:
 		lifetime_timer.start()
+		print("[SawProjectile] 生命周期计时器已启动（8秒）")
+
 
 func _chain_enemy(enemy: Node2D) -> void:
 	# 检查是否已经链接
 	for ref in chained_enemies:
 		if ref.get_ref() == enemy: 
+			print("[SawProjectile] 敌人 %s 已经链接，跳过" % enemy.name)
 			return
 	
 	chained_enemies.append(weakref(enemy))
 	Global.spawn_floating_text(enemy.global_position, "TRAPPED!", Color.RED)
+	print("[SawProjectile] ✅✅✅ 成功链接敌人: %s" % enemy.name)
 	
 	# 初始伤害
 	if enemy.has_node("HealthComponent"):
-		var damage = player_ref.stake_impact_damage if "stake_impact_damage" in player_ref else 20
-		enemy.health_component.take_damage(damage)
+		enemy.health_component.take_damage(stake_impact_damage)
+		print("[SawProjectile] 对敌人 %s 造成初始伤害: %d" % [enemy.name, stake_impact_damage])
+
 
 func _process_chaining(delta: float) -> void:
-	if not is_closed:
-		return
-	
-	# 持续伤害
+	# 持续伤害（闭合和未闭合都支持）
 	tick_timer -= delta
 	var can_damage = tick_timer <= 0
 	if can_damage: 
@@ -296,54 +397,102 @@ func _process_chaining(delta: float) -> void:
 	
 	# 【关键修复】持续扫描新敌人进入范围
 	var enemies = get_tree().get_nodes_in_group("enemies")
-	for e in enemies:
-		if not is_instance_valid(e): 
-			continue
+	
+	if is_closed:
+		# 闭合状态：链接敌人
+		for e in enemies:
+			if not is_instance_valid(e): 
+				continue
+			
+			# 检查是否已经链接
+			var already_chained = false
+			for ref in chained_enemies:
+				if ref.get_ref() == e:
+					already_chained = true
+					break
+			
+			# 如果未链接且在范围内，添加链接
+			if not already_chained:
+				if global_position.distance_to(e.global_position) < chain_radius or _is_enemy_inside(e):
+					print("[SawProjectile] 新敌人进入范围: %s" % e.name)
+					_chain_enemy(e)
 		
-		# 检查是否已经链接
-		var already_chained = false
+		# 更新已链接的敌人
+		var valid_chains = []
 		for ref in chained_enemies:
-			if ref.get_ref() == e:
-				already_chained = true
-				break
-		
-		# 如果未链接且在范围内，添加链接
-		if not already_chained:
-			if global_position.distance_to(e.global_position) < chain_radius or _is_enemy_inside(e):
-				_chain_enemy(e)
-	
-	# 更新已链接的敌人
-	var valid_chains = []
-	for ref in chained_enemies:
-		var e = ref.get_ref()
-		if is_instance_valid(e):
-			valid_chains.append(ref)
-			
-			# 强制拉扯到范围内（参考E技能）
-			if global_position.distance_to(e.global_position) > chain_radius:
-				var dir = (e.global_position - global_position).normalized()
-				e.global_position = global_position + dir * chain_radius
-			
-			# 持续伤害
-			if can_damage and e.has_node("HealthComponent"):
-				var damage = player_ref.saw_damage_tick if "saw_damage_tick" in player_ref else 3
-				var health_before = e.health_component.current_health
-				e.health_component.take_damage(damage)
+			var e = ref.get_ref()
+			if is_instance_valid(e):
+				valid_chains.append(ref)
 				
-				# 调试：检查是否杀死敌人
-				if health_before > 0 and e.health_component.current_health <= 0:
-					print("[SawProjectile] ===== 持续伤害杀死敌人 =====")
-					print("  敌人名称: ", e.name)
-					print("  敌人位置: ", e.global_position)
-	
-	chained_enemies = valid_chains
+				# 强制拉扯到范围内（参考E技能）
+				if global_position.distance_to(e.global_position) > chain_radius:
+					var dir = (e.global_position - global_position).normalized()
+					e.global_position = global_position + dir * chain_radius
+					print("[SawProjectile] 拉扯敌人 %s 到范围内" % e.name)
+				
+				# 持续伤害
+				if can_damage and e.has_node("HealthComponent"):
+					var health_before = e.health_component.current_health
+					e.health_component.take_damage(saw_damage_tick)
+					
+					# 调试：检查是否杀死敌人
+					if health_before > 0 and e.health_component.current_health <= 0:
+						print("[SawProjectile] ===== 持续伤害杀死敌人 =====")
+						print("  敌人名称: ", e.name)
+						print("  敌人位置: ", e.global_position)
+		
+		chained_enemies = valid_chains
+		
+		if can_damage:
+			print("[SawProjectile] 闭合状态持续伤害，当前链接敌人数: %d" % chained_enemies.size())
+	else:
+		# 未闭合状态：像"拴小狗"一样固定敌人在范围内
+		# 扫描新敌人进入范围
+		for e in enemies:
+			if not is_instance_valid(e): 
+				continue
+			
+			# 检查是否已经链接
+			var already_chained = false
+			for ref in chained_enemies:
+				if ref.get_ref() == e:
+					already_chained = true
+					break
+			
+			# 如果未链接且在范围内，添加链接
+			if not already_chained:
+				if global_position.distance_to(e.global_position) < chain_radius or _is_enemy_inside(e):
+					print("[SawProjectile] 新敌人进入范围: %s" % e.name)
+					_chain_enemy(e)
+		
+		# 更新已链接的敌人 - 固定在范围内
+		var valid_chains = []
+		for ref in chained_enemies:
+			var e = ref.get_ref()
+			if is_instance_valid(e):
+				valid_chains.append(ref)
+				
+				# 强制固定到范围内（参考E技能）
+				if global_position.distance_to(e.global_position) > chain_radius:
+					var dir = (e.global_position - global_position).normalized()
+					e.global_position = global_position + dir * chain_radius
+					print("[SawProjectile] 固定敌人 %s 到范围内" % e.name)
+				
+				# 持续伤害
+				if can_damage and e.has_node("HealthComponent"):
+					e.health_component.take_damage(saw_damage_open)
+		
+		chained_enemies = valid_chains
+		
+		if can_damage:
+			print("[SawProjectile] 未闭合状态持续伤害，当前链接敌人数: %d" % chained_enemies.size())
+
 
 func _draw() -> void:
 	if not is_landed or not is_closed: 
 		return
 	
 	# 绘制链条线（参考E技能）
-	var chain_color = player_ref.chain_color if "chain_color" in player_ref else Color(0.8, 0.2, 0.2, 0.8)
 	for ref in chained_enemies:
 		var e = ref.get_ref()
 		if is_instance_valid(e):
@@ -351,8 +500,11 @@ func _draw() -> void:
 
 func _is_enemy_inside(enemy: Node2D) -> bool:
 	var poly_global = []
+	
+	# 对于未闭合状态，使用相对于起点的本地坐标
+	# 需要加上Node2D的全局位置来转换为全局坐标
 	for p in visual_line.points:
-		poly_global.append(to_global(p))
+		poly_global.append(global_position + p)
 	
 	if is_closed:
 		if poly_global.size() < 3: 
@@ -360,18 +512,18 @@ func _is_enemy_inside(enemy: Node2D) -> bool:
 		return Geometry2D.is_point_in_polygon(enemy.global_position, PackedVector2Array(poly_global))
 	else:
 		# 开放状态：线段检测
-		# ✅ 减小检测半径，从200改为80，与push_radius保持一致
-		var hit_radius = player_ref.saw_hit_radius if "saw_hit_radius" in player_ref else 80.0
+		# ✅ 使用捕获的参数
 		for i in range(poly_global.size() - 1):
 			var p1 = poly_global[i]
 			var p2 = poly_global[i+1]
 			var closest = Geometry2D.get_closest_point_to_segment(enemy.global_position, p1, p2)
-			if enemy.global_position.distance_to(closest) < hit_radius:
+			if enemy.global_position.distance_to(closest) < saw_hit_radius:
 				return true
 		return false
 
 func _on_lifetime_end() -> void:
 	# 8秒后自动消失
+	print("[SawProjectile] 生命周期结束，锯条消失，位置: %s" % global_position)
 	queue_free()
 
 func manual_dismiss() -> void:
@@ -379,22 +531,9 @@ func manual_dismiss() -> void:
 	queue_free()
 
 func _check_dismember(enemy: Node2D) -> void:
-	if not "active_stake" in player_ref or not is_instance_valid(player_ref.active_stake):
-		return
-	var stake = player_ref.active_stake
-	var chain_index = -1
-	for i in range(stake.chained_enemies.size()):
-		if stake.chained_enemies[i].get_ref() == enemy:
-			chain_index = i
-			break
-	if chain_index != -1:
-		Global.play_loop_kill_impact() 
-		Global.spawn_floating_text(enemy.global_position, "DISMEMBER!", Color.RED)
-		Global.on_camera_shake.emit(15.0, 0.2)
-		if enemy.has_node("HealthComponent"):
-			var damage = player_ref.dismember_damage if "dismember_damage" in player_ref else 200
-			enemy.health_component.take_damage(damage)
-		stake.chained_enemies.remove_at(chain_index)
+	# ✅ 不再依赖 player_ref，这个功能可能需要重新设计或移除
+	# 暂时保留空函数，避免调用时出错
+	pass
 
 ## 创建屠夫闭合遮罩视觉效果
 func _create_butcher_closure_mask() -> void:

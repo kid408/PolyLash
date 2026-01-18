@@ -354,58 +354,104 @@ static func show_closure_masks(
 
 ## 同步动画多个遮罩
 static func _animate_masks_sync(mask_nodes: Array[Dictionary], scene_tree: SceneTree, display_duration: float) -> void:
-	var tween = scene_tree.create_tween()
-	tween.set_parallel(true)
+	# ✅ 使用独立的 Timer 节点管理生命周期，而不是依赖 SceneTree 的 Tween
+	# 这样即使角色被删除，遮罩也能正常消失
 	
-	# 淡入
-	for mask_data in mask_nodes:
-		var mask_node = mask_data["node"]
-		if is_instance_valid(mask_node):
-			tween.tween_property(mask_node, "color:a", 0.8, 0.15).from(0.0)
+	if mask_nodes.is_empty():
+		return
 	
-	tween.set_parallel(false)
+	# 创建一个管理节点来持有 Timer
+	var manager = Node.new()
+	manager.name = "MaskLifecycleManager"
+	scene_tree.current_scene.add_child(manager)
 	
-	# 闪光
-	tween.tween_callback(func():
-		for mask_data in mask_nodes:
-			var mask_node = mask_data["node"]
-			if is_instance_valid(mask_node):
-				mask_node.color = Color(2, 2, 2, 1)
+	# 创建状态字典
+	var state = {
+		"elapsed": 0.0,
+		"phase": "fade_in",  # fade_in -> flash -> hold -> fade_out -> cleanup
+		"fade_in_duration": 0.15,
+		"flash_duration": 0.08,
+		"hold_duration": display_duration,
+		"fade_out_duration": 0.2
+	}
+	
+	# 创建 Timer
+	var timer = Timer.new()
+	timer.wait_time = 0.016  # ~60fps
+	manager.add_child(timer)
+	
+	timer.timeout.connect(func():
+		if not is_instance_valid(manager):
+			timer.stop()
+			return
+		
+		var delta = timer.wait_time
+		state["elapsed"] += delta
+		
+		match state["phase"]:
+			"fade_in":
+				# 淡入阶段
+				var progress = min(state["elapsed"] / state["fade_in_duration"], 1.0)
+				for mask_data in mask_nodes:
+					var mask_node = mask_data["node"]
+					if is_instance_valid(mask_node):
+						mask_node.color.a = lerp(0.0, 0.8, progress)
+				
+				if progress >= 1.0:
+					state["phase"] = "flash"
+					state["elapsed"] = 0.0
+			
+			"flash":
+				# 闪光阶段
+				if state["elapsed"] == 0.0:
+					for mask_data in mask_nodes:
+						var mask_node = mask_data["node"]
+						if is_instance_valid(mask_node):
+							mask_node.color = Color(2, 2, 2, 1)
+				
+				if state["elapsed"] >= state["flash_duration"]:
+					# 恢复颜色
+					for mask_data in mask_nodes:
+						var mask_node = mask_data["node"]
+						var design_color = mask_data["design_color"]
+						if is_instance_valid(mask_node):
+							var original_color = design_color
+							original_color.a = 0.8
+							mask_node.color = original_color
+					
+					state["phase"] = "hold"
+					state["elapsed"] = 0.0
+			
+			"hold":
+				# 保持显示阶段
+				if state["elapsed"] >= state["hold_duration"]:
+					state["phase"] = "fade_out"
+					state["elapsed"] = 0.0
+			
+			"fade_out":
+				# 淡出阶段
+				var progress = min(state["elapsed"] / state["fade_out_duration"], 1.0)
+				for mask_data in mask_nodes:
+					var mask_node = mask_data["node"]
+					if is_instance_valid(mask_node):
+						mask_node.color.a = lerp(0.8, 0.0, progress)
+				
+				if progress >= 1.0:
+					state["phase"] = "cleanup"
+					state["elapsed"] = 0.0
+			
+			"cleanup":
+				# 清理阶段
+				timer.stop()
+				for mask_data in mask_nodes:
+					var mask_node = mask_data["node"]
+					if is_instance_valid(mask_node):
+						mask_node.queue_free()
+				if is_instance_valid(manager):
+					manager.queue_free()
 	)
 	
-	tween.tween_interval(0.08)
-	
-	# 恢复颜色
-	tween.set_parallel(true)
-	for mask_data in mask_nodes:
-		var mask_node = mask_data["node"]
-		var design_color = mask_data["design_color"]
-		if is_instance_valid(mask_node):
-			var original_color = design_color
-			original_color.a = 0.8
-			tween.tween_property(mask_node, "color", original_color, 0.05)
-	
-	tween.set_parallel(false)
-	
-	# 保持显示
-	tween.tween_interval(display_duration)
-	
-	# 淡出
-	tween.set_parallel(true)
-	for mask_data in mask_nodes:
-		var mask_node = mask_data["node"]
-		if is_instance_valid(mask_node):
-			tween.tween_property(mask_node, "color:a", 0.0, 0.2)
-	
-	tween.set_parallel(false)
-	
-	# 清理
-	tween.tween_callback(func():
-		for mask_data in mask_nodes:
-			var mask_node = mask_data["node"]
-			if is_instance_valid(mask_node):
-				mask_node.queue_free()
-	)
+	timer.start()
 
 ## 显示单个闭合遮罩（简化版本）
 static func show_single_closure_mask(

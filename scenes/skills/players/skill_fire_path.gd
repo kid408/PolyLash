@@ -110,8 +110,7 @@ var is_dashing: bool = false
 ## 是否已显示能量不足提示（防止重复弹出）
 var has_shown_no_energy_hint: bool = false
 
-## 已生成的效果节点列表（用于清理）
-var spawned_effects: Array[Node] = []
+# ✅ 不再需要 spawned_effects 数组，效果由 SkillEffectManager 统一管理
 
 # ==============================================================================
 # 节点引用
@@ -137,7 +136,18 @@ func _ready() -> void:
 		line_2d = Line2D.new()
 		line_2d.name = "FirePlanningLine"
 		line_2d.width = 4.0
-		skill_owner.add_child(line_2d)
+		
+		# ✅ 修复：确保Line2D添加到玩家节点，而不是skill_owner（可能是Area2D）
+		var player_node = skill_owner
+		if skill_owner is Area2D:
+			player_node = skill_owner.get_parent()
+		if player_node:
+			player_node.add_child(line_2d)
+			print("[SkillFirePath] Line2D已添加到玩家节点: %s" % player_node.name)
+		else:
+			print("[SkillFirePath] ⚠️ 警告：无法找到玩家节点，Line2D添加到skill_owner")
+			skill_owner.add_child(line_2d)
+		
 		line_2d.top_level = true
 		line_2d.clear_points()
 		line_2d.default_color = Color(2.0, 1.0, 0.3, 1.0)  # 高亮金橙色
@@ -182,8 +192,19 @@ func charge(delta: float) -> void:
 		# 检测鼠标左键按下 - 开始或继续划线
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			if not is_drawing:
-				# 开始划线
+				# 开始划线 - 从鼠标位置开始
 				is_drawing = true
+				var mouse_pos = skill_owner.get_global_mouse_position()
+				
+				# 清空之前的路径，重新从鼠标位置开始
+				path_points.clear()
+				path_segments.clear()
+				has_closure = false
+				accumulated_distance = 0.0
+				total_distance_drawn = 0.0
+				
+				path_points.append(mouse_pos)
+				last_point = mouse_pos
 			
 			# 获取鼠标位置
 			var mouse_pos = skill_owner.get_global_mouse_position()
@@ -267,8 +288,8 @@ func _enter_planning_mode() -> void:
 	path_points.clear()
 	path_segments.clear()
 	
-	# 设置起点为玩家位置
-	var start_pos = skill_owner.global_position
+	# 设置起点为鼠标位置（而不是角色位置）
+	var start_pos = skill_owner.get_global_mouse_position()
 	path_points.append(start_pos)
 	last_point = start_pos
 	
@@ -284,7 +305,16 @@ func _exit_planning_mode_and_dash() -> void:
 	if path_points.size() > 1:
 		# 在松开Q键时进行最终的闭合检测
 		_perform_final_closure_check()
-		_start_dash_sequence()
+		
+		# 如果闭合，直接生成火海区域，不沿线冲撞
+		if has_closure:
+			_check_and_trigger_intersection()
+			start_cooldown()
+		else:
+			# 未闭合，沿线生成火线伤害效果
+			_spawn_fire_line_damage()
+			start_cooldown()
+		_clear_all_points()
 	else:
 		_clear_all_points()
 
@@ -383,9 +413,9 @@ func _clear_all_points() -> void:
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
 	
-	# 重置起点
+	# 重置起点为鼠标位置（而不是角色位置）
 	if skill_owner:
-		var start_pos = skill_owner.global_position
+		var start_pos = skill_owner.get_global_mouse_position()
 		path_points.append(start_pos)
 		last_point = start_pos
 
@@ -568,102 +598,29 @@ func _end_dash_sequence() -> void:
 # 火焰技能生成
 # ==============================================================================
 
-## 生成火线
-func _spawn_fire_line(start: Vector2, end: Vector2) -> void:
-	var area = Area2D.new()
-	area.position = start
-	area.collision_mask = 2
-	area.monitorable = false
-	area.monitoring = true
-	
-	var vec = end - start
-	var length = vec.length()
-	var angle = vec.angle()
-	
-	# 碰撞形状
-	var col = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(length, fire_line_width)
-	col.shape = shape
-	col.position = Vector2(length / 2.0, 0)
-	col.rotation = angle
-	area.add_child(col)
-	
-	# 视觉效果
-	var vis_line = Line2D.new()
-	vis_line.add_point(Vector2.ZERO)
-	vis_line.add_point(end - start)
-	vis_line.width = fire_line_width
-	vis_line.default_color = Color(2.0, 1.2, 0.4, 0.9)
-	vis_line.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	vis_line.end_cap_mode = Line2D.LINE_CAP_ROUND
-	area.add_child(vis_line)
-	
-	get_tree().current_scene.add_child(area)
-	spawned_effects.append(area)  # 追踪效果节点
-	
-	# 伤害逻辑
-	var timer = Timer.new()
-	timer.wait_time = 0.5
-	timer.autostart = true
-	area.add_child(timer)
-	timer.timeout.connect(_on_damage_tick.bind(area, fire_line_damage))
-	
-	# 寿命
-	var life = get_tree().create_timer(fire_line_duration)
-	life.timeout.connect(_on_object_expired.bind(area, vis_line))
-
-## 生成火海
-func _spawn_fire_sea(points: PackedVector2Array) -> void:
-	if points.size() < 3:
+## 生成火线伤害效果（未闭合状态）
+func _spawn_fire_line_damage() -> void:
+	if path_points.size() < 2:
 		return
 	
-	print("[SkillFirePath] >>> 触发火海！多边形点数: %d <<<" % points.size())
+	print("[SkillFirePath] >>> 生成火线伤害效果（未闭合）<<<")
 	
-	Global.on_camera_shake.emit(15.0, 0.4)
-	
-	# 先显示红色遮罩
-	_create_fire_closure_mask(points)
-	
-	var area = Area2D.new()
-	area.collision_mask = 2
-	area.monitorable = false
-	area.monitoring = true
-	
-	# 碰撞形状
-	var col = CollisionPolygon2D.new()
-	col.polygon = points
-	area.add_child(col)
-	
-	# 视觉效果
-	var vis_poly = Polygon2D.new()
-	vis_poly.polygon = points
-	vis_poly.color = Color(1.0, 1.0, 1.0, 0.0)
-	vis_poly.z_index = 10
-	area.add_child(vis_poly)
-	
-	get_tree().current_scene.add_child(area)
-	spawned_effects.append(area)  # 追踪效果节点
-	Global.spawn_floating_text(points[0], "INFERNO!", Color(2.0, 1.0, 0.0))
-	
-	# 淡入动画
-	var tween = area.create_tween()
-	tween.tween_property(vis_poly, "color", Color(1.5, 0.7, 0.2, 0.6), 0.2).set_trans(Tween.TRANS_QUAD)
-	
-	# 伤害逻辑
-	var timer = Timer.new()
-	timer.wait_time = 0.3
-	timer.autostart = true
-	area.add_child(timer)
-	timer.timeout.connect(_on_damage_tick.bind(area, fire_sea_damage))
-	
-	# 寿命
-	var life = get_tree().create_timer(fire_sea_duration)
-	life.timeout.connect(_on_object_expired.bind(area, vis_poly))
-	
-	# 画圈奖励
-	await get_tree().process_frame
-	_apply_circle_rewards(area, points)
+	# 沿路径生成火线伤害效果
+	for i in range(path_points.size() - 1):
+		_spawn_fire_line(path_points[i], path_points[i + 1])
+
+## 生成火线
+func _spawn_fire_line(start: Vector2, end: Vector2) -> void:
+	# ✅ 使用统一的效果管理器
+	SkillEffectManager.create_line_effect({
+		"start": start,
+		"end": end,
+		"width": fire_line_width,
+		"damage": fire_line_damage,
+		"damage_interval": 0.5,
+		"duration": fire_line_duration,
+		"color": Color(2.0, 1.2, 0.4, 0.9)
+	})
 
 ## 创建火焰闭合遮罩（红色闪光效果）- 使用公共工具类
 func _create_fire_closure_mask(points: PackedVector2Array) -> void:
@@ -688,7 +645,10 @@ func _find_closing_polygon(points: Array[Vector2]) -> PackedVector2Array:
 ## 检查并触发闭合（支持多区域）
 func _check_and_trigger_intersection() -> void:
 	# 直接检测所有闭合区域，不依赖 has_closure 标志
-	var polygons = _find_all_closing_polygons()
+	# 如果是冲刺结束时调用，使用 path_history；否则使用 path_points
+	var points_to_check = path_history if path_history.size() > 0 else path_points
+	var polygons = PolygonUtils.find_all_closing_polygons(points_to_check, close_threshold)
+	
 	if polygons.size() > 0:
 		print("[SkillFirePath] >>> 检测到 %d 个闭合区域 <<<" % polygons.size())
 		
@@ -718,45 +678,24 @@ func _spawn_fire_sea_no_mask(points: PackedVector2Array) -> void:
 	
 	print("[SkillFirePath] >>> 触发火海！多边形点数: %d <<<" % points.size())
 	
-	var area = Area2D.new()
-	area.collision_mask = 2
-	area.monitorable = false
-	area.monitoring = true
-	
-	# 碰撞形状
-	var col = CollisionPolygon2D.new()
-	col.polygon = points
-	area.add_child(col)
-	
-	# 视觉效果
-	var vis_poly = Polygon2D.new()
-	vis_poly.polygon = points
-	vis_poly.color = Color(1.0, 1.0, 1.0, 0.0)
-	vis_poly.z_index = 10
-	area.add_child(vis_poly)
-	
-	get_tree().current_scene.add_child(area)
-	spawned_effects.append(area)  # 追踪效果节点
 	Global.spawn_floating_text(points[0], "INFERNO!", Color(2.0, 1.0, 0.0))
 	
-	# 淡入动画
-	var tween = area.create_tween()
-	tween.tween_property(vis_poly, "color", Color(1.5, 0.7, 0.2, 0.6), 0.2).set_trans(Tween.TRANS_QUAD)
+	# ✅ 使用统一的效果管理器
+	SkillEffectManager.create_area_effect({
+		"polygon": points,
+		"damage": fire_sea_damage,
+		"damage_interval": 0.3,
+		"duration": fire_sea_duration,
+		"color": Color(1.5, 0.7, 0.2, 0.6),
+		"z_index": 10,
+		"fade_in_duration": 0.2,
+		"fade_out_duration": 0.3
+	})
 	
-	# 伤害逻辑
-	var timer = Timer.new()
-	timer.wait_time = 0.3
-	timer.autostart = true
-	area.add_child(timer)
-	timer.timeout.connect(_on_damage_tick.bind(area, fire_sea_damage))
-	
-	# 寿命
-	var life = get_tree().create_timer(fire_sea_duration)
-	life.timeout.connect(_on_object_expired.bind(area, vis_poly))
-	
-	# 画圈奖励
-	await get_tree().process_frame
-	_apply_circle_rewards(area, points)
+	# 画圈奖励（暂时禁用，因为需要 area 引用）
+	# TODO: 如果需要奖励系统，可以通过 effect_id 获取 area
+	# await get_tree().process_frame
+	# _apply_circle_rewards(area, points)
 
 # ==============================================================================
 # 回调函数
@@ -793,7 +732,13 @@ func _on_object_expired(area_ref: Area2D, visual_ref: Node) -> void:
 
 ## 画圈奖励
 func _apply_circle_rewards(area_ref: Area2D, polygon: PackedVector2Array) -> void:
-	if not is_instance_valid(area_ref) or not skill_owner:
+	if not is_instance_valid(area_ref):
+		return
+	
+	# ✅ 检查 skill_owner 是否仍然有效
+	# 如果玩家已被删除（切换角色），则不应用奖励
+	if not is_instance_valid(skill_owner):
+		print("[SkillFirePath] 技能所有者已被删除，跳过圈奖励")
 		return
 	
 	# 计算圈内敌人数量
@@ -852,15 +797,19 @@ func _apply_circle_rewards(area_ref: Area2D, polygon: PackedVector2Array) -> voi
 
 ## 清理资源
 func cleanup() -> void:
+	print("[SkillFirePath] ===== cleanup() 被调用 =====")
+	
 	# 清理规划线
 	if is_instance_valid(line_2d):
+		print("[SkillFirePath] Line2D有效，准备清理")
 		line_2d.queue_free()
+		print("[SkillFirePath] Line2D已调用queue_free()")
+	else:
+		print("[SkillFirePath] Line2D无效或已被删除")
 	
-	# 清理所有已生成的效果节点（火线、火海等）
-	for effect in spawned_effects:
-		if is_instance_valid(effect):
-			effect.queue_free()
-	spawned_effects.clear()
+	# ✅ 不再需要清理效果节点，效果由 SkillEffectManager 统一管理
+	# 效果会按照自己的生命周期自动消失
+	print("[SkillFirePath] 效果由 SkillEffectManager 管理，无需手动清理")
 	
 	# 重置状态
 	is_planning = false
@@ -884,3 +833,5 @@ func cleanup() -> void:
 		if dash_hitbox:
 			dash_hitbox.set_deferred("monitorable", false)
 			dash_hitbox.set_deferred("monitoring", false)
+	
+	print("[SkillFirePath] ===== cleanup() 结束 =====")
