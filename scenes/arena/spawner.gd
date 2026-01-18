@@ -386,6 +386,8 @@ func get_random_spawn_position() -> Vector2:
 	说明:
 	- 在玩家周围一定范围内随机生成
 	- 如果玩家不存在，使用原点作为中心
+	- 只在玩家前方生成（避免屏幕外）
+	- 生成位置被限制在合理的屏幕范围内
 	"""
 	var center_pos = Vector2.ZERO
 	
@@ -393,11 +395,29 @@ func get_random_spawn_position() -> Vector2:
 	if is_instance_valid(Global.player):
 		center_pos = Global.player.global_position
 	
-	# 在玩家周围随机生成
-	var random_x := randf_range(-spawn_area_size.x, spawn_area_size.x)
-	var random_y := randf_range(-spawn_area_size.y, spawn_area_size.y)
+	# 在玩家周围随机生成，但只在正面范围内（避免屏幕外）
+	# spawn_area_size = (1000, 500)
+	# X范围: -500 到 +500 (相对玩家)
+	# Y范围: 0 到 +500 (只在玩家前方)
+	var random_x := randf_range(-spawn_area_size.x / 2.0, spawn_area_size.x / 2.0)
+	var random_y := randf_range(0, spawn_area_size.y)
 	
-	return center_pos + Vector2(random_x, random_y)
+	var spawn_pos = center_pos + Vector2(random_x, random_y)
+	
+	# 【修复】不使用camera_view_range进行clamping，因为那会导致敌人生成在屏幕外
+	# 相反，我们直接限制在spawn_area_size定义的范围内
+	# 这确保敌人总是在玩家周围的合理范围内
+	
+	# 额外的安全检查：确保Y坐标不会太极端
+	# 如果玩家在屏幕顶部附近，确保敌人不会生成在屏幕上方太远的地方
+	var min_y = center_pos.y - 200.0  # 允许在玩家上方200像素
+	var max_y = center_pos.y + spawn_area_size.y + 200.0  # 允许在玩家下方超过spawn_area_size 200像素
+	
+	spawn_pos.y = clamp(spawn_pos.y, min_y, max_y)
+	
+	print("[Spawner] 生成位置计算: 玩家=", center_pos, " 随机偏移=(", random_x, ",", random_y, ") 最终位置=", spawn_pos)
+	
+	return spawn_pos
 
 func spawn_enemy() -> void:
 	"""
@@ -416,10 +436,13 @@ func spawn_enemy() -> void:
 		return
 	
 	# 根据权重随机选择敌人
-	var enemy_scene_path = get_random_enemy_scene()
-	if enemy_scene_path == "":
-		print("[Spawner] 错误: 无法获取敌人场景")
+	var enemy_data = get_random_enemy_data()
+	if enemy_data.is_empty():
+		print("[Spawner] 错误: 无法获取敌人数据")
 		return
+	
+	var enemy_scene_path = enemy_data.get("enemy_scene", "")
+	var enemy_id = enemy_data.get("enemy_id", "basic_enemy")
 	
 	var enemy_scene = load(enemy_scene_path) as PackedScene
 	if not enemy_scene:
@@ -429,6 +452,8 @@ func spawn_enemy() -> void:
 	var spawn_pos = get_random_spawn_position()
 	var enemy_instance = enemy_scene.instantiate() as Enemy
 	enemy_instance.global_position = spawn_pos
+	enemy_instance.enemy_id = enemy_id
+	print("[Spawner] 生成敌人，enemy_id = ", enemy_id, " 位置: ", spawn_pos)
 	
 	# 应用波次增强（如果敌人有stats）
 	if enemy_instance.stats:
@@ -440,30 +465,31 @@ func spawn_enemy() -> void:
 	
 	set_spawn_timer()
 
-func get_random_enemy_scene() -> String:
+func get_random_enemy_data() -> Dictionary:
 	"""
-	根据权重随机选择敌人场景
+	根据权重随机选择敌人数据
 	
 	返回:
-	- String: 敌人场景路径
+	- Dictionary: {enemy_scene: "...", enemy_id: "...", weight: 1.0}
 	"""
 	if current_wave_units.is_empty():
-		return ""
+		return {}
 	
 	# 收集所有敌人和权重
-	var enemies: Array[String] = []
+	var enemies: Array[Dictionary] = []
 	var weights: Array[float] = []
 	
 	for unit in current_wave_units:
 		var scene_path = unit.get("enemy_scene", "")
+		var enemy_id = unit.get("enemy_id", "basic_enemy")
 		var weight = unit.get("weight", 1.0)
 		
 		if scene_path != "":
-			enemies.append(scene_path)
+			enemies.append(unit)
 			weights.append(weight)
 	
 	if enemies.is_empty():
-		return ""
+		return {}
 	
 	# 根据权重随机选择
 	var rng = RandomNumberGenerator.new()

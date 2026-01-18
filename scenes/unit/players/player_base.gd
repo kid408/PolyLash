@@ -423,3 +423,13 @@ func _cleanup_skill_effects() -> void:
 				if skill and skill.has_method("cleanup"):
 					skill.cleanup()
 			print("[PlayerBase] 已清理所有技能效果")
+
+# ==============================================================================
+# LineBreaker 切线逻辑 - 虚函数，子类可重写
+# ==============================================================================
+## 尝试切断玩家的线（由 LineBreaker 敌人调用）
+## 子类如果有线技能，应该重写此方法来处理切线逻辑
+func try_break_line(enemy_pos: Vector2, radius: float) -> void:
+	# 默认实现：什么都不做
+	# 子类（如 PlayerHerder, PlayerWeaver 等）可以重写此方法
+	pass

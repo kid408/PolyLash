@@ -143,7 +143,7 @@ func save_game() -> void:
 	var json_text = JSON.stringify(save_data, "\t")
 	file.store_string(json_text)
 	file.close()
-	print("[DataManager] 存档保存成功")
+	#print("[DataManager] 存档保存成功")
 
 # ============================================================================
 # 金币管理
@@ -157,7 +157,7 @@ func add_gold(amount: int) -> void:
 	"""增加金币"""
 	save_data.total_gold += amount
 	save_game()
-	print("[DataManager] 增加金币 %d，当前: %d" % [amount, save_data.total_gold])
+	#print("[DataManager] 增加金币 %d，当前: %d" % [amount, save_data.total_gold])
 
 func spend_gold(amount: int) -> bool:
 	"""消费金币，返回是否成功"""

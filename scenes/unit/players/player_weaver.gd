@@ -88,3 +88,47 @@ func _handle_input(delta: float) -> void:
 	# 左键冲刺
 	if Input.is_action_just_pressed("click_left"):
 		skill_manager.execute_skill("lmb")
+
+# ==============================================================================
+# LineBreaker 切线逻辑
+# ==============================================================================
+## 尝试切断织网者的蛛网（由 LineBreaker 敌人调用）
+func try_break_line(enemy_pos: Vector2, radius: float) -> void:
+	# 获取 Q 技能（SkillWebWeave）
+	if not skill_manager:
+		return
+	
+	var q_skill = skill_manager.get_skill("q")
+	if not q_skill or q_skill.get_class() != "SkillWebWeave":
+		return
+	
+	# 如果没有在规划也没在冲刺，无需切断
+	if not q_skill.is_planning and not q_skill.is_dashing:
+		return
+	
+	# 检查路径点是否在敌人范围内
+	var path_points = q_skill.path_points
+	if path_points.is_empty():
+		return
+	
+	# 倒序遍历，找到被切断的最早那个点
+	for i in range(path_points.size()):
+		var p = path_points[i]
+		if p.distance_to(enemy_pos) < radius:
+			# 视觉反馈
+			Global.on_camera_shake.emit(5.0, 0.1)
+			Global.spawn_floating_text(p, "SNAP!", Color.RED)
+			
+			# 截断数组，只保留被切断点之前的路径
+			q_skill.path_points = q_skill.path_points.slice(0, i)
+			
+			# 同时截断路径段
+			if i > 0:
+				q_skill.path_segments = q_skill.path_segments.slice(0, i - 1)
+			
+			# 如果正在规划模式，更新视觉
+			if q_skill.is_planning:
+				q_skill._update_visuals()
+			
+			print("[PlayerWeaver] 蛛网被切断！从点 %d 处截断" % i)
+			return

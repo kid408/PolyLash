@@ -16,6 +16,13 @@ func _get_drag_data(_at_position: Vector2):
 	if player_id == "":
 		return null
 	
+	# 检查该角色是否已被选择过
+	var selection_panel = get_tree().root.get_child(0).find_child("SelectionPanel", true, false)
+	if selection_panel and selection_panel.has_method("is_player_selected"):
+		if selection_panel.is_player_selected(player_id):
+			print("[SelectionPanel] 角色 %s 已被选择，不能再拖拽" % player_id)
+			return null
+	
 	# 创建拖拽预览
 	var preview = TextureRect.new()
 	preview.custom_minimum_size = Vector2(64, 64)

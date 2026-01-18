@@ -231,7 +231,7 @@ func _save_templates() -> void:
 		if child is Button:
 			player_button_template = child.duplicate()
 			child.queue_free()
-			print("[SelectionPanel] 保存角色按钮模板成功")
+			#print("[SelectionPanel] 保存角色按钮模板成功")
 			break
 	
 	if player_button_template == null:
@@ -243,7 +243,7 @@ func _save_templates() -> void:
 			weapon_button_template = child.duplicate()
 			weapon_button_template.modulate = Color.WHITE
 			child.queue_free()
-			print("[SelectionPanel] 保存武器按钮模板成功")
+			#print("[SelectionPanel] 保存武器按钮模板成功")
 			break
 	
 	if weapon_button_template == null:
@@ -259,7 +259,7 @@ func _save_templates() -> void:
 		if child is Button:
 			selected_slot_template = child.duplicate()
 			child.queue_free()
-			print("[SelectionPanel] 保存已选槽位模板成功")
+			#print("[SelectionPanel] 保存已选槽位模板成功")
 			break
 	
 	if selected_slot_template == null:
@@ -627,6 +627,13 @@ func _on_selected_slot_pressed(slot_index: int) -> void:
 # ============================================================================
 # 角色选择管理
 # ============================================================================
+
+func is_player_selected(player_id: String) -> bool:
+	"""检查角色是否已被选择过"""
+	for data in selected_players:
+		if data.player_id == player_id:
+			return true
+	return false
 
 func _add_player_to_selected(player_id: String, weapon_type: String) -> bool:
 	# 检查是否已选满

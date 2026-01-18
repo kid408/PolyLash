@@ -323,7 +323,7 @@ func reset_selection() -> void:
 func add_session_xp(amount: int) -> void:
 	session_xp += amount
 	emit_signal("on_session_xp_changed", session_xp)
-	print("[Global] 获得 XP: %d, 当前: %d" % [amount, session_xp])
+	#print("[Global] 获得 XP: %d, 当前: %d" % [amount, session_xp])
 
 # 重置局内数据（新游戏时调用）
 func reset_session_data() -> void:
