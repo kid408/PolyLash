@@ -1,13 +1,13 @@
 extends Node
 
-# 所有角色场景路径列表
-var character_paths = [
-	"res://scenes/unit/players/player_herder.tscn",   # 0 - 牧羊人
-	"res://scenes/unit/players/player_pyro.tscn",     # 1 - 纵火者
-	"res://scenes/unit/players/player_wind.tscn",     # 2 - 御风者
-	"res://scenes/unit/players/player_sapper.tscn",   # 3 - 工兵
-	"res://scenes/unit/players/player_butcher.tscn",  # 4 - 屠夫
-	"res://scenes/unit/players/player_weaver.tscn",   # 5 - 织网者
+# 所有角色 ID 列表
+var character_ids = [
+	"herder",    # 0 - 牧羊人
+	"pyro",      # 1 - 纵火者
+	"wind",      # 2 - 御风者
+	"sapper",    # 3 - 工兵
+	"butcher",   # 4 - 屠夫
+	"weaver",    # 5 - 织网者
 ]
 
 var current_character_index: int = 0
@@ -33,9 +33,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _switch_to_next_character() -> void:
 	# 循环切换到下一个角色
-	current_character_index = (current_character_index + 1) % character_paths.size()
-	var path = character_paths[current_character_index]
-	_switch_character(path)
+	current_character_index = (current_character_index + 1) % character_ids.size()
+	var player_id = character_ids[current_character_index]
+	_switch_character(player_id)
 
 func _switch_weapon(slot_index: int) -> void:
 	var player = Global.player
@@ -53,21 +53,20 @@ func _switch_weapon(slot_index: int) -> void:
 		print(">>> [DEBUG] 切换到武器槽位: ", slot_index + 1)
 		Global.spawn_floating_text(player.global_position, "Weapon %d" % (slot_index + 1), Color.CYAN)
 
-func _switch_character(path: String) -> void:
-	if not ResourceLoader.exists(path):
-		printerr("DebugError: 找不到场景文件 -> ", path)
-		return
-		
+func _switch_character(player_id: String) -> void:
 	var old_player = Global.player
 	if not is_instance_valid(old_player):
 		printerr("DebugError: 当前没有存活的玩家，无法切换位置。")
 		return
 
-	# 1. 加载新场景
-	var new_scene = load(path).instantiate()
+	# 1. 使用 PlayerFactory 创建新玩家
+	var new_player = PlayerFactory.create_player(player_id)
+	if not new_player:
+		printerr("DebugError: 无法创建玩家 -> ", player_id)
+		return
 	
 	# 2. 继承旧玩家的位置
-	new_scene.global_position = old_player.global_position
+	new_player.global_position = old_player.global_position
 	
 	# 3. 清理旧玩家的技能效果
 	if old_player.has_method("_cleanup_skill_effects"):
@@ -77,16 +76,16 @@ func _switch_character(path: String) -> void:
 	_cleanup_all_skill_areas()
 	
 	# 5. 添加到场景树 (加到旧玩家的父节点下)
-	old_player.get_parent().add_child(new_scene)
+	old_player.get_parent().add_child(new_player)
 	
 	# 6. 销毁旧玩家
 	old_player.queue_free()
 	
 	# 7. Global.player 会在 PlayerBase._ready() 里自动更新，这里不用管
-	print(">>> [DEBUG] 切换角色为: ", new_scene.name)
+	print(">>> [DEBUG] 切换角色为: ", player_id)
 	
 	# 视觉提示
-	Global.spawn_floating_text(new_scene.global_position, "MORPH!", Color.GOLD)
+	Global.spawn_floating_text(new_player.global_position, "MORPH!", Color.GOLD)
 
 # 清理场景中所有技能效果区域（火线、风墙、火海、陷阱等）
 func _cleanup_all_skill_areas() -> void:

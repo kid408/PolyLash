@@ -41,6 +41,12 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 	if health_component.current_health <=0:
 		return
 	
+	# 安全检查：确保 stats 存在
+	if stats == null:
+		printerr("[Unit] 警告: stats 为 nil，无法处理伤害。节点: %s" % name)
+		health_component.take_damage(hitbox.damage)
+		return
+	
 	var blocked := Global.get_chance_sucess(stats.block_chance / 100)
 	if blocked:
 		# 发送闪避的信号

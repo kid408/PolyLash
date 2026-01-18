@@ -53,6 +53,7 @@ var energy_bar_ui: Control = null
 
 func _ready() -> void:
 	print("[PlayerBase] _ready() 开始, player_id=%s" % player_id)
+	
 	# 从CSV加载配置（必须在super._ready()之前，这样才能设置stats）
 	_load_config_from_csv()
 	
@@ -120,6 +121,7 @@ func _load_config_from_csv() -> void:
 	# 如果stats不存在，创建一个新的
 	if stats == null:
 		stats = UnitStats.new()
+		print("[PlayerBase] 创建新的 UnitStats 实例，player_id=%s" % player_id)
 	
 	# 从CSV设置生命值和速度
 	var csv_health = config.get("health", 5000.0)
@@ -127,6 +129,10 @@ func _load_config_from_csv() -> void:
 	
 	stats.health = csv_health
 	stats.speed = csv_speed
+	
+	# 确保 block_chance 被初始化（防止 nil 错误）
+	if not stats.has_meta("block_chance"):
+		stats.block_chance = 0.0
 
 func _load_sprite_from_csv() -> void:
 	"""从CSV加载角色精灵图片，覆盖场景文件中的硬编码纹理"""

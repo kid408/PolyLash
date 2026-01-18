@@ -258,26 +258,16 @@ func _spawn_player(player_id: String, spawn_pos: Vector2) -> void:
 	var visual_config = ConfigManager.get_player_visual(player_id)
 	print("[Arena] visual_config: %s" % str(visual_config))
 	
-	var scene_path = visual_config.get("scene_path", "")
-	
-	if scene_path == "":
-		printerr("[Arena] 未找到角色场景路径: %s" % player_id)
-		return
-	
-	print("[Arena] 加载场景: %s" % scene_path)
-	var player_scene = load(scene_path) as PackedScene
-	if not player_scene:
-		printerr("[Arena] 无法加载角色场景: %s" % scene_path)
-		return
-	
-	var new_player = player_scene.instantiate() as PlayerBase
+	print("[Arena] 创建角色: %s" % player_id)
+	var new_player = PlayerFactory.create_player(player_id)
 	if not new_player:
-		printerr("[Arena] 实例化角色失败: %s" % player_id)
+		printerr("[Arena] 无法创建角色: %s" % player_id)
 		return
 	
-	# 重要：在 add_child 之前设置 player_id（这样 _ready 中会使用正确的 ID）
-	new_player.player_id = player_id
-	print("[Arena] 设置 player_id: %s" % player_id)
+	# 确保 player_id 被正确设置（防止脚本加载时丢失）
+	if new_player.player_id != player_id:
+		print("[Arena] 警告: player_id 不匹配，重新设置: %s -> %s" % [new_player.player_id, player_id])
+		new_player.player_id = player_id
 	
 	new_player.global_position = spawn_pos
 	add_child(new_player)

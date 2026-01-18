@@ -281,7 +281,14 @@ func get_player_state(player_id: String) -> Dictionary:
 # 恢复角色状态到实例
 func restore_player_state(player_instance: PlayerBase) -> void:
 	var player_id = player_instance.player_id
+	
+	# 安全检查：确保 player_id 不为空
+	if player_id.is_empty():
+		print("[Global] 警告: restore_player_state 中 player_id 为空，跳过恢复")
+		return
+	
 	if not player_states.has(player_id):
+		print("[Global] 警告: 未找到角色状态: %s" % player_id)
 		return
 	
 	var state = player_states[player_id]
@@ -290,6 +297,7 @@ func restore_player_state(player_instance: PlayerBase) -> void:
 	player_instance.energy = state.get("energy", 500)
 	player_instance.max_energy = state.get("max_energy", 999)
 	player_instance.armor = state.get("armor", 3)
+	print("[Global] 恢复角色状态: %s (血量: %d/%d)" % [player_id, player_instance.health_component.current_health, player_instance.health_component.max_health])
 
 # 游戏结束
 func game_over() -> void:

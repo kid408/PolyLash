@@ -22,6 +22,7 @@ Global="*res://autoloads/global.gd"
 DataManager="*res://autoloads/data_manager.gd"
 UpgradeManager="*res://autoloads/upgrade_manager.gd"
 EliteConfigManager="*res://autoloads/elite_config_manager.gd"
+PlayerFactory="*res://autoloads/player_factory.gd"
 DebugSwitcher="*res://scenes/arena/debug_switcher.gd"
 
 [display]
