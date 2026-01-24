@@ -5,6 +5,9 @@ class_name SelectionPanel
 # 角色选择面板 - 游戏开始前选择角色和武器
 # ============================================================================
 
+# 预加载场景
+const BOND_SUMMARY_ITEM = preload("res://scenes/ui/components/bond_summary_item.tscn")
+
 # ============================================================================
 # 信号
 # ============================================================================
@@ -18,10 +21,12 @@ signal selection_confirmed(selected_data: Array[Dictionary])
 @onready var player_container: Container = $MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper/PlayerContainer
 @onready var weapon_container: Container = $MarginContainer/HBoxContainer/MainContent/BottomSection/WeaponContainerWrapper/WeaponContainer
 @onready var selected_list: VBoxContainer = $MarginContainer/HBoxContainer/LeftPanel/SelectedList
+@onready var synergy_list: VBoxContainer = $MarginContainer/HBoxContainer/LeftPanel/SynergyScrollContainer/SynergyList
 @onready var player_info: HBoxContainer = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo
 @onready var player_ico: TextureRect = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/PlayerIco
 @onready var player_name_label: Label = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent/PlayerName
 @onready var player_ties_label: Label = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent/PlayerTies
+@onready var bond_icons_container: HBoxContainer = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent/BondIconsContainer
 @onready var player_description: RichTextLabel = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent/ScrollContainer/PlayerDescription
 @onready var continue_button: Button = $MarginContainer/HBoxContainer/RightPanel/Continue
 @onready var upgrade_button: Button = $MarginContainer/HBoxContainer/RightPanel/UpgradeButton
@@ -260,6 +265,9 @@ func _restore_selection_from_cache() -> void:
 		# 如果slot_index无效，使用_add_player_to_selected分配新槽位
 		_add_player_to_selected(player_id, weapon_type)
 	
+	# 更新队伍羁绊统计
+	_update_team_synergy()
+	
 	print("[SelectionPanel] 从缓存恢复了 %d 个已选角色" % selected_players.size())
 
 func _save_templates() -> void:
@@ -407,32 +415,22 @@ func _generate_selected_slots() -> void:
 		if child is Button:
 			child.queue_free()
 	
-	# 始终生成5个槽位（max_selected_players个可用 + 占位符补齐到5个）
-	var total_slots = 5
-	var slot_size = 110  # 左侧已选列表槽位尺寸 (最大)
+	# 固定生成 3 个槽位（队伍上限）
+	var slot_size = 110  # 左侧已选列表槽位尺寸
 	
-	for i in range(total_slots):
+	for i in range(max_selected_players):
 		var btn = SelectedSlotButton.new()
 		btn.name = "SelectedSlot_%d" % i
 		btn.custom_minimum_size = Vector2(slot_size, slot_size)
 		btn.text = ""
-		
-		if i < max_selected_players:
-			# 可用槽位
-			btn.tooltip_text = "槽位 %d (空)" % (i + 1)
-			btn.setup(i)
-			btn.pressed.connect(_on_selected_slot_pressed.bind(i))
-			btn.player_dropped.connect(_on_player_dropped)
-			selected_slot_buttons.append(btn)
-		else:
-			# 占位符槽位（禁用状态）
-			btn.tooltip_text = "槽位 %d (锁定)" % (i + 1)
-			btn.disabled = true
-			btn.modulate = Color(0.5, 0.5, 0.5, 0.5)
-		
+		btn.tooltip_text = "槽位 %d (空)" % (i + 1)
+		btn.setup(i)
+		btn.pressed.connect(_on_selected_slot_pressed.bind(i))
+		btn.player_dropped.connect(_on_player_dropped)
+		selected_slot_buttons.append(btn)
 		selected_list.add_child(btn)
 	
-	print("[SelectionPanel] 生成了 %d 个已选槽位 (总共 %d 个显示)" % [max_selected_players, total_slots])
+	print("[SelectionPanel] 生成了 %d 个已选槽位" % max_selected_players)
 
 # ============================================================================
 # 角色按钮事件
@@ -471,10 +469,16 @@ func _on_player_button_pressed(player_id: String) -> void:
 	print("[SelectionPanel] === 完成处理角色点击: %s, 武器: %s ===" % [player_id, preview_weapon_type])
 
 # ============================================================================
-# 角色信息显示
+# 角色信息显示（事件驱动：当角色被点击时触发）
 # ============================================================================
 
 func _update_player_info(player_id: String) -> void:
+	"""更新角色详细信息面板
+	
+	触发时机：
+	- 点击角色按钮时 (_on_player_button_pressed)
+	- 选择不同角色时
+	"""
 	var config = ConfigManager.get_player_config(player_id)
 	var visual_config = ConfigManager.get_player_visual(player_id)
 	
@@ -495,6 +499,9 @@ func _update_player_info(player_id: String) -> void:
 	# 设置羁绊
 	player_ties_label.text = "[%s]" % config.get("ties", "无")
 	
+	# 更新羁绊图标
+	_update_bond_icons(player_id, config)
+	
 	# 设置属性描述
 	var desc_text = ""
 	desc_text += "生命值: %d\n" % int(config.get("health", 0))
@@ -508,11 +515,90 @@ func _update_player_info(player_id: String) -> void:
 	
 	player_description.text = desc_text
 
+func _update_bond_icons(player_id: String, config: Dictionary) -> void:
+	"""更新羁绊图标显示"""
+	# 获取羁绊标签
+	var origin_tag = config.get("origin_tag", "")
+	var mastery_tag = config.get("mastery_tag", "")
+	var tactic_tag = config.get("tactic_tag", "")
+	
+	if origin_tag == "" or mastery_tag == "" or tactic_tag == "":
+		print("[SelectionPanel] 角色 %s 缺少羁绊标签" % player_id)
+		# 清除现有图标
+		for child in bond_icons_container.get_children():
+			child.queue_free()
+		return
+	
+	# 使用 BondUILoader 更新图标
+	BondUILoader.update_bond_icons(bond_icons_container, origin_tag, mastery_tag, tactic_tag)
+
 func _clear_player_info() -> void:
 	player_ico.texture = null
 	player_name_label.text = "选择角色"
 	player_ties_label.text = ""
+	
+	# 清除羁绊图标
+	for child in bond_icons_container.get_children():
+		child.queue_free()
+	
 	player_description.text = "点击下方角色查看详情"
+
+# ============================================================================
+# 队伍羁绊统计（事件驱动：当队伍成员变化时触发）
+# ============================================================================
+
+func _update_team_synergy() -> void:
+	"""更新队伍羁绊统计面板 - 已激活的羁绊排在最上面
+	
+	触发时机：
+	- 添加角色到队伍时 (_add_player_to_selected)
+	- 从队伍移除角色时 (_remove_player_from_selected)
+	- 从缓存恢复队伍时 (_restore_selection_from_cache)
+	"""
+	if not synergy_list:
+		return
+	
+	# 清除现有条目
+	for child in synergy_list.get_children():
+		child.queue_free()
+	
+	# 如果没有选择角色，显示空状态
+	if selected_players.is_empty():
+		return
+	
+	# 提取已选角色ID
+	var player_ids: Array = []
+	for data in selected_players:
+		player_ids.append(data.player_id)
+	
+	# 计算羁绊统计
+	var bond_stats = BondUILoader.calculate_team_bonds(player_ids)
+	
+	# 获取排序后的羁绊列表
+	var sorted_bonds = BondUILoader.get_sorted_bonds(bond_stats)
+	
+	# 二次排序：先按激活状态排序，再按数量排序
+	sorted_bonds.sort_custom(func(a, b):
+		var a_active = a.count >= a.max
+		var b_active = b.count >= b.max
+		if a_active != b_active:
+			return a_active  # 已激活的排在前面
+		return a.count > b.count  # 数量多的排在前面
+	)
+	
+	# 为每个羁绊创建条目
+	for bond_data in sorted_bonds:
+		var item = BOND_SUMMARY_ITEM.instantiate() as BondSummaryItem
+		if item:
+			synergy_list.add_child(item)
+			item.update_info(
+				bond_data.bond_id,
+				bond_data.type,
+				bond_data.count,
+				bond_data.max
+			)
+	
+	print("[SelectionPanel] 更新队伍羁绊统计: %d 个羁绊" % sorted_bonds.size())
 
 # ============================================================================
 # 武器选择
@@ -717,6 +803,9 @@ func _add_player_to_selected(player_id: String, weapon_type: String) -> bool:
 	# 更新Continue按钮状态
 	_update_continue_button_state()
 	
+	# 更新队伍羁绊统计
+	_update_team_synergy()
+	
 	print("[SelectionPanel] 添加角色 %s 到槽位 %d，武器: %s" % [player_id, slot_index, weapon_type])
 	return true
 
@@ -740,6 +829,9 @@ func _remove_player_from_selected(index: int) -> void:
 	
 	# 更新Continue按钮状态
 	_update_continue_button_state()
+	
+	# 更新队伍羁绊统计
+	_update_team_synergy()
 	
 	# 保存已选角色缓存（删除后也要保存）
 	_save_selection_cache()

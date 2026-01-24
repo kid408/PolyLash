@@ -143,6 +143,15 @@ func _create_character_card(player_id: String) -> Control:
 	ties_label.add_theme_color_override("font_color", Color(0.9, 0.75, 0.2))
 	name_vbox.add_child(ties_label)
 	
+	# 羁绊图标
+	var bond_icons = BondUILoader.create_bond_icon_container(
+		config.get("origin_tag", ""),
+		config.get("mastery_tag", ""),
+		config.get("tactic_tag", ""),
+		20  # 图标大小
+	)
+	name_vbox.add_child(bond_icons)
+	
 	# === 分隔线 ===
 	var sep = HSeparator.new()
 	sep.add_theme_constant_override("separation", 8)

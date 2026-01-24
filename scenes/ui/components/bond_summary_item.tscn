@@ -1,0 +1,27 @@
+[gd_scene load_steps=2 format=3 uid="uid://bond_summary_item"]
+
+[ext_resource type="Script" path="res://scenes/ui/components/bond_summary_item.gd" id="1_bond_item"]
+
+[node name="BondSummaryItem" type="HBoxContainer"]
+custom_minimum_size = Vector2(0, 28)
+theme_override_constants/separation = 8
+script = ExtResource("1_bond_item")
+
+[node name="Icon" type="TextureRect" parent="."]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+text = "武道世家"
+vertical_alignment = 1
+
+[node name="CountLabel" type="Label" parent="."]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "0/2"
+vertical_alignment = 1

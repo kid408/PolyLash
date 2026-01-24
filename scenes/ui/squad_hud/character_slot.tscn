@@ -62,6 +62,11 @@ max_value = 999.0
 value = 500.0
 show_percentage = false
 
+[node name="BondIconsContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 2
+alignment = 1
+
 [node name="Portrait" type="TextureRect" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3

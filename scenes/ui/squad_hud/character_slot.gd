@@ -7,6 +7,7 @@ signal clicked()
 @onready var portrait: TextureRect = $VBoxContainer/Portrait
 @onready var health_bar: ProgressBar = $VBoxContainer/HealthBar
 @onready var energy_bar: ProgressBar = $VBoxContainer/EnergyBar
+@onready var bond_icons_container: HBoxContainer = $VBoxContainer/BondIconsContainer
 @onready var key_label: Label = $VBoxContainer/KeyLabel
 @onready var dead_overlay: ColorRect = $DeadOverlay
 @onready var dead_label: Label = $DeadLabel
@@ -54,10 +55,59 @@ func setup(p_player_id: String, key_number: int) -> void:
 	# 加载角色头像
 	_load_portrait(p_player_id)
 	
+	# 加载羁绊图标
+	_load_bond_icons(p_player_id)
+	
 	# 重置状态
 	is_dead = false
 	is_active = false
 	_update_visual_state()
+
+# 加载羁绊图标
+func _load_bond_icons(p_player_id: String) -> void:
+	if not bond_icons_container:
+		return
+	
+	# 清除现有图标
+	for child in bond_icons_container.get_children():
+		child.queue_free()
+	
+	# 获取角色配置
+	var config = ConfigManager.get_player_config(p_player_id)
+	if config.is_empty():
+		return
+	
+	# 获取羁绊标签
+	var origin_tag = config.get("origin_tag", "")
+	var mastery_tag = config.get("mastery_tag", "")
+	var tactic_tag = config.get("tactic_tag", "")
+	
+	if origin_tag == "" or mastery_tag == "" or tactic_tag == "":
+		print("[CharacterSlot] 角色 %s 缺少羁绊标签" % p_player_id)
+		return
+	
+	# 创建羁绊图标（小尺寸，适合HUD）
+	var bonds = [
+		{"tag": origin_tag, "type": "origin"},
+		{"tag": mastery_tag, "type": "mastery"},
+		{"tag": tactic_tag, "type": "tactic"}
+	]
+	
+	for bond in bonds:
+		var icon_rect = TextureRect.new()
+		icon_rect.custom_minimum_size = Vector2(18, 18)  # HUD中使用小图标
+		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		var texture = BondUILoader.get_bond_icon(bond.tag, bond.type)
+		if texture:
+			icon_rect.texture = texture
+			icon_rect.tooltip_text = BondUILoader.get_bond_display_name(bond.tag)
+		else:
+			# 占位符
+			icon_rect.modulate = Color(0.3, 0.3, 0.3, 0.5)
+		
+		bond_icons_container.add_child(icon_rect)
 
 # 加载角色头像
 func _load_portrait(p_player_id: String) -> void:
