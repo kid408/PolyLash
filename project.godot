@@ -24,6 +24,8 @@ UpgradeManager="*res://autoloads/upgrade_manager.gd"
 EliteConfigManager="*res://autoloads/elite_config_manager.gd"
 PlayerFactory="*res://autoloads/player_factory.gd"
 SkillEffectManager="*res://autoloads/skill_effect_manager.gd"
+WarehouseManager="*res://autoloads/warehouse_manager.gd"
+EquipmentManager="*res://autoloads/equipment_manager.gd"
 DebugSwitcher="*res://scenes/arena/debug_switcher.gd"
 
 [display]

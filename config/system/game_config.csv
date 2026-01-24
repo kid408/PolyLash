@@ -18,3 +18,5 @@ default_gold,1000,初始金币数量
 reset_attributes_on_new_game,0,新游戏时是否重置属性升级(1=重置 0=保留)
 enable_starting_weapon_shop,1,是否显示随机武器商店(1=显示 0=隐藏)
 starting_weapon_price,100,随机初始武器价格
+WarehouseCapacity,48,仓库容量（格子数量）
+WarehouseColumns,8,仓库列数

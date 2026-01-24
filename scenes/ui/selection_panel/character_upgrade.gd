@@ -161,6 +161,10 @@ func _create_character_card(player_id: String) -> Control:
 		var attr_row = _create_attribute_row(player_id, upgrade_config)
 		attrs_container.add_child(attr_row)
 	
+	# === 战术装备槽 ===
+	var equipment_section = _create_equipment_slot_section(player_id)
+	vbox.add_child(equipment_section)
+	
 	# === 随机武器商店区域 (如果启用) ===
 	if weapon_shop_enabled:
 		var weapon_shop = _create_weapon_shop_section(player_id)
@@ -293,6 +297,184 @@ func _create_attribute_row(player_id: String, upgrade_config: Dictionary) -> Con
 		row.add_child(buy_btn)
 	
 	return row
+
+# ============================================================================
+# 随机武器商店
+# ============================================================================
+
+func _create_equipment_slot_section(player_id: String) -> Control:
+	"""创建战术装备槽区域"""
+	var section = VBoxContainer.new()
+	section.name = "EquipmentSection"
+	section.add_theme_constant_override("separation", 12)
+	
+	# 分隔线
+	var sep = HSeparator.new()
+	sep.add_theme_constant_override("separation", 16)
+	section.add_child(sep)
+	
+	# 装备槽背景
+	var equip_panel = PanelContainer.new()
+	equip_panel.custom_minimum_size = Vector2(0, 80)
+	
+	var panel_style = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.08, 0.08, 0.08, 1)
+	panel_style.set_corner_radius_all(8)
+	panel_style.content_margin_left = 12
+	panel_style.content_margin_right = 12
+	panel_style.content_margin_top = 10
+	panel_style.content_margin_bottom = 10
+	equip_panel.add_theme_stylebox_override("panel", panel_style)
+	section.add_child(equip_panel)
+	
+	# 内容HBox
+	var content_hbox = HBoxContainer.new()
+	content_hbox.add_theme_constant_override("separation", 16)
+	equip_panel.add_child(content_hbox)
+	
+	# 左侧：标签
+	var label_vbox = VBoxContainer.new()
+	label_vbox.add_theme_constant_override("separation", 4)
+	label_vbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	content_hbox.add_child(label_vbox)
+	
+	var title_label = Label.new()
+	title_label.text = "战术装备"
+	title_label.add_theme_font_size_override("font_size", 18)
+	title_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	label_vbox.add_child(title_label)
+	
+	var hint_label = Label.new()
+	hint_label.text = "Tactical Gear"
+	hint_label.add_theme_font_size_override("font_size", 12)
+	hint_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	label_vbox.add_child(hint_label)
+	
+	# 弹性空间
+	var spacer = Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_hbox.add_child(spacer)
+	
+	# 右侧：装备槽
+	var slot_container = VBoxContainer.new()
+	slot_container.add_theme_constant_override("separation", 4)
+	slot_container.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	content_hbox.add_child(slot_container)
+	
+	# 装备槽按钮
+	var slot_button = Button.new()
+	slot_button.name = "EquipSlot_" + player_id
+	slot_button.custom_minimum_size = Vector2(64, 64)
+	
+	# 检查是否已装备
+	var equipped_item = EquipmentManager.get_equipped_item(player_id)
+	
+	if equipped_item > 0:
+		# 已装备：显示道具图标
+		var config = WarehouseManager.get_item_config(equipped_item)
+		var icon_path = config.get("resourcePath", "")
+		if icon_path != "":
+			var texture = load(icon_path)
+			if texture:
+				slot_button.icon = texture
+				slot_button.expand_icon = true
+				slot_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	else:
+		# 未装备：显示加号
+		slot_button.text = "+"
+		slot_button.add_theme_font_size_override("font_size", 32)
+		slot_button.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	
+	# 槽位样式
+	var slot_style = StyleBoxFlat.new()
+	slot_style.bg_color = Color(0.15, 0.15, 0.15, 1)
+	slot_style.set_corner_radius_all(8)
+	slot_style.set_border_width_all(2)
+	slot_style.border_color = Color(0.3, 0.3, 0.3)
+	
+	var slot_hover_style = StyleBoxFlat.new()
+	slot_hover_style.bg_color = Color(0.15, 0.15, 0.15, 1)
+	slot_hover_style.set_corner_radius_all(8)
+	slot_hover_style.set_border_width_all(2)
+	slot_hover_style.border_color = Color(0.8, 0.7, 0.3)
+	
+	slot_button.add_theme_stylebox_override("normal", slot_style)
+	slot_button.add_theme_stylebox_override("hover", slot_hover_style)
+	slot_button.add_theme_stylebox_override("pressed", slot_hover_style)
+	
+	slot_button.pressed.connect(_on_equipment_slot_pressed.bind(player_id))
+	slot_container.add_child(slot_button)
+	
+	# 卸下按钮（仅在已装备时显示）
+	if equipped_item > 0:
+		var unequip_btn = Button.new()
+		unequip_btn.text = "卸下"
+		unequip_btn.custom_minimum_size = Vector2(64, 24)
+		unequip_btn.add_theme_font_size_override("font_size", 12)
+		
+		var unequip_style = StyleBoxFlat.new()
+		unequip_style.bg_color = Color(0.6, 0.3, 0.3, 1)
+		unequip_style.set_corner_radius_all(4)
+		
+		unequip_btn.add_theme_stylebox_override("normal", unequip_style)
+		unequip_btn.add_theme_stylebox_override("hover", unequip_style)
+		unequip_btn.add_theme_stylebox_override("pressed", unequip_style)
+		
+		unequip_btn.pressed.connect(_on_unequip_pressed.bind(player_id))
+		slot_container.add_child(unequip_btn)
+	
+	return section
+
+# ============================================================================
+# 装备槽事件
+# ============================================================================
+
+func _on_equipment_slot_pressed(player_id: String) -> void:
+	"""点击装备槽 - 打开仓库选择模式"""
+	print("[CharacterUpgrade] 打开仓库选择装备: %s" % player_id)
+	
+	# 加载仓库UI场景
+	var warehouse_scene = load("res://scenes/ui/warehouse_ui.tscn")
+	if not warehouse_scene:
+		printerr("[CharacterUpgrade] 无法加载仓库UI场景")
+		return
+	
+	var warehouse_ui = warehouse_scene.instantiate() as WarehouseUI
+	if not warehouse_ui:
+		printerr("[CharacterUpgrade] 无法实例化仓库UI")
+		return
+	
+	# 设置为选择模式
+	warehouse_ui.selection_mode = true
+	
+	# 连接选择信号
+	warehouse_ui.item_selected.connect(_on_item_selected_from_warehouse.bind(player_id))
+	
+	# 添加到场景
+	add_child(warehouse_ui)
+
+func _on_item_selected_from_warehouse(item_type: int, slot_index: int, player_id: String) -> void:
+	"""从仓库选择了道具"""
+	print("[CharacterUpgrade] 选择了道具 %d (槽位 %d) 给角色 %s" % [item_type, slot_index, player_id])
+	
+	# 装备道具
+	if EquipmentManager.equip_item(player_id, item_type, slot_index):
+		print("[CharacterUpgrade] 装备成功")
+		# 刷新卡片显示
+		_generate_character_cards()
+	else:
+		printerr("[CharacterUpgrade] 装备失败")
+
+func _on_unequip_pressed(player_id: String) -> void:
+	"""卸下装备"""
+	print("[CharacterUpgrade] 卸下装备: %s" % player_id)
+	
+	if EquipmentManager.unequip_item(player_id):
+		print("[CharacterUpgrade] 卸下成功")
+		# 刷新卡片显示
+		_generate_character_cards()
+	else:
+		printerr("[CharacterUpgrade] 卸下失败 - 仓库已满")
 
 # ============================================================================
 # 随机武器商店

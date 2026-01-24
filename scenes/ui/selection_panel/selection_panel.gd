@@ -25,6 +25,7 @@ signal selection_confirmed(selected_data: Array[Dictionary])
 @onready var player_description: RichTextLabel = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent/ScrollContainer/PlayerDescription
 @onready var continue_button: Button = $MarginContainer/HBoxContainer/RightPanel/Continue
 @onready var upgrade_button: Button = $MarginContainer/HBoxContainer/RightPanel/UpgradeButton
+@onready var warehouse_button: Button = $MarginContainer/HBoxContainer/RightPanel/WarehouseButton
 @onready var exit_dialog: ExitConfirmDialog = $ExitConfirmDialog
 
 var player_button_template: Button = null
@@ -96,6 +97,9 @@ func _ready() -> void:
 	
 	# 连接强化按钮
 	upgrade_button.pressed.connect(_on_upgrade_pressed)
+	
+	# 连接仓库按钮
+	warehouse_button.pressed.connect(_on_warehouse_pressed)
 	
 	# 清空初始显示
 	_clear_player_info()
@@ -817,6 +821,18 @@ func _on_upgrade_pressed() -> void:
 	
 	print("[SelectionPanel] 打开强化界面，已选角色: %s" % str(player_ids))
 	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/character_upgrade.tscn")
+
+func _on_warehouse_pressed() -> void:
+	"""打开仓库界面"""
+	print("[SelectionPanel] 打开仓库")
+	
+	# 加载仓库UI场景
+	var warehouse_scene = load("res://scenes/ui/warehouse_ui.tscn")
+	if warehouse_scene:
+		var warehouse_ui = warehouse_scene.instantiate()
+		add_child(warehouse_ui)
+	else:
+		printerr("[SelectionPanel] 无法加载仓库UI场景")
 
 func _on_continue_pressed() -> void:
 	if selected_players.size() == 0:

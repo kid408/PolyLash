@@ -1,0 +1,11 @@
+itemType,description,resourcePath
+-1,道具描述,资源路径
+1,神秘的红色药水 - 恢复生命值,res://assets/sprites/Item/Icon1.png
+2,蓝色魔法水晶 - 增加能量上限,res://assets/sprites/Item/Icon2.png
+3,古老的卷轴 - 提升技能威力,res://assets/sprites/Item/Icon3.png
+4,锋利的匕首 - 增加攻击力,res://assets/sprites/Item/Icon4.png
+5,坚固的盾牌 - 提升防御力,res://assets/sprites/Item/Icon5.png
+6,神圣的护符 - 增加生命恢复速度,res://assets/sprites/Item/Icon6.png
+7,闪电宝石 - 提升移动速度,res://assets/sprites/Item/Icon7.png
+8,火焰之心 - 增加火焰伤害,res://assets/sprites/Item/Icon8.png
+9,冰霜之眼 - 增加冰冻效果,res://assets/sprites/Item/Icon9.png
