@@ -1,2 +1,2 @@
-res://scenes/arena/arena.gd
-res://scenes/ui/bond_hud/bond_icon.gd
+res://autoloads/shop_manager.gd
+res://autoloads/data_manager.gd

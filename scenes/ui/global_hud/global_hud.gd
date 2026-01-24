@@ -17,6 +17,11 @@ func _ready() -> void:
 	# 连接 Global 信号
 	Global.on_session_xp_changed.connect(_on_session_xp_changed)
 	
+	# 连接 DataManager 信号
+	if DataManager.has_signal("gold_changed"):
+		DataManager.gold_changed.connect(_on_gold_changed)
+		print("[GlobalHUD] 已连接 DataManager.gold_changed 信号")
+	
 	# 设置资源标签颜色
 	if xp_label:
 		xp_label.add_theme_color_override("font_color", XP_COLOR)
@@ -64,3 +69,8 @@ func update_gold(total_gold: int) -> void:
 # 信号处理
 func _on_session_xp_changed(current: int) -> void:
 	update_xp(current)
+
+func _on_gold_changed(new_gold: int) -> void:
+	"""金币变化时更新显示"""
+	print("[GlobalHUD] 收到金币变化信号: new_gold=%d" % new_gold)
+	update_gold(new_gold)

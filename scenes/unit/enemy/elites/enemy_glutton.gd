@@ -114,6 +114,7 @@ func _shoot_acid_projectile() -> void:
 	var projectile = Node2D.new()
 	projectile.name = "AcidProjectile"
 	projectile.global_position = global_position
+	projectile.set_meta("owner", self)  # 标记所有者
 	
 	# 添加精灵
 	var sprite = Sprite2D.new()
@@ -425,6 +426,7 @@ func _shoot_projectile_in_direction(direction: Vector2) -> void:
 	var projectile = Node2D.new()
 	projectile.name = "OmniProjectile"
 	projectile.global_position = global_position
+	projectile.set_meta("owner", self)  # 标记所有者
 	
 	# 添加精灵
 	var sprite = Sprite2D.new()
@@ -476,3 +478,29 @@ func _shoot_projectile_in_direction(direction: Vector2) -> void:
 	await tween.finished
 	if is_instance_valid(projectile):
 		projectile.queue_free()
+
+# ==============================================================================
+# 死亡处理 - 清理所有投射物和特效
+# ==============================================================================
+
+func destroy_enemy() -> void:
+	"""重写死亡处理，清理所有 Glutton 创建的投射物和特效"""
+	print("[EnemyGlutton] 死亡，清理所有投射物和特效...")
+	
+	# 清理冲撞预警线
+	if is_instance_valid(glutton_charge_line):
+		glutton_charge_line.queue_free()
+		glutton_charge_line = null
+	
+	# 清理所有这个 Glutton 创建的投射物
+	# 通过检查投射物的 meta 数据中的 owner
+	var projectiles = get_tree().get_nodes_in_group("projectiles")
+	for projectile in projectiles:
+		if is_instance_valid(projectile):
+			# 检查是否是这个 Glutton 创建的
+			if projectile.has_meta("owner") and projectile.get_meta("owner") == self:
+				print("[EnemyGlutton] 清理投射物: %s" % projectile.name)
+				projectile.queue_free()
+	
+	# 调用父类的死亡处理
+	super.destroy_enemy()

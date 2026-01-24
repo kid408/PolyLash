@@ -74,6 +74,12 @@ class EliteSpawner:
 # ============================================================================
 
 # ============================================================================
+# 信号
+# ============================================================================
+
+signal wave_completed(wave_number: int)  # 波次完成信号（用于触发商店）
+
+# ============================================================================
 # 导出变量（在编辑器中配置）
 # ============================================================================
 
@@ -594,19 +600,19 @@ func _on_elite_spawn_timer_timeout() -> void:
 
 func go_to_next_wave() -> void:
 	"""
-	进入下一波（用于测试）
+	进入下一波（用于测试）- 按 L 键触发
 	
 	流程:
 	1. 停止所有计时器
 	2. 清除所有敌人
 	3. 增强敌人属性
 	4. 检查是否达到最大波次
-	5. 如果是，结束游戏；否则立即进入下一波
+	5. 发出 wave_completed 信号（触发商店）
 	"""
 	if Global.game_paused:
 		return
 	
-	print("[Spawner] 进入下一波 (当前波次: %d)" % wave_index)
+	print("[Spawner] 跳过当前波次 (当前波次: %d)" % wave_index)
 	
 	# 停止计时器
 	spawn_timer.stop()
@@ -622,10 +628,11 @@ func go_to_next_wave() -> void:
 		_end_game()
 		return
 	
-	# 立即进入下一波
-	wave_index += 1
-	Global.spawn_floating_text(Vector2(960, 540), "进入第 %d 波！" % wave_index, Color.CYAN)
-	start_wave()
+	# 发出波次完成信号（触发商店显示）
+	print("[Spawner] 波次 %d 完成（L键跳过），发出 wave_completed 信号" % wave_index)
+	wave_completed.emit(wave_index)
+	
+	# 注意：不要立即开始下一波，等待商店关闭后调用 start_next_wave()
 
 func _on_wave_timer_timeout() -> void:
 	"""
@@ -636,7 +643,8 @@ func _on_wave_timer_timeout() -> void:
 	2. 清除所有敌人
 	3. 增强敌人属性
 	4. 检查是否达到最大波次
-	5. 如果是，结束游戏；否则进入下一波
+	5. 发出波次完成信号（触发商店）
+	6. 等待商店关闭后再开始下一波
 	"""
 	spawn_timer.stop()
 	clear_enemies()
@@ -648,12 +656,11 @@ func _on_wave_timer_timeout() -> void:
 		_end_game()
 		return
 	
-	# 进入下一波
-	wave_index += 1
+	# 发出波次完成信号（触发商店显示）
+	print("[Spawner] 波次 %d 完成，发出 wave_completed 信号" % wave_index)
+	wave_completed.emit(wave_index)
 	
-	# 短暂延迟后开始下一波
-	await get_tree().create_timer(1.0).timeout
-	start_wave()
+	# 注意：不要立即开始下一波，等待商店关闭后调用 start_next_wave()
 
 # ============================================================================
 # 游戏结束
@@ -684,3 +691,45 @@ func _end_game() -> void:
 	# 等待3秒后重新加载场景
 	await get_tree().create_timer(3.0).timeout
 	get_tree().reload_current_scene()
+
+# ============================================================================
+# 商店系统集成
+# ============================================================================
+
+func pause_spawning() -> void:
+	"""暂停生成（商店打开时）"""
+	print("[Spawner] 暂停生成")
+	
+	if spawn_timer:
+		spawn_timer.paused = true
+	if wave_timer:
+		wave_timer.paused = true
+	if elite_spawn_timer:
+		elite_spawn_timer.paused = true
+
+func resume_spawning() -> void:
+	"""恢复生成（商店关闭时）"""
+	print("[Spawner] 恢复生成")
+	
+	if spawn_timer:
+		spawn_timer.paused = false
+	if wave_timer:
+		wave_timer.paused = false
+	if elite_spawn_timer:
+		elite_spawn_timer.paused = false
+	
+	# 开始下一波
+	start_next_wave()
+
+func start_next_wave() -> void:
+	"""开始下一波（从商店系统调用）"""
+	wave_index += 1
+	
+	if wave_index > max_waves:
+		print("[Spawner] 所有波次完成！")
+		_end_game()
+		return
+	
+	print("[Spawner] 开始第 %d 波" % wave_index)
+	Global.spawn_floating_text(Vector2(960, 540), "第 %d 波开始！" % wave_index, Color.CYAN)
+	start_wave()

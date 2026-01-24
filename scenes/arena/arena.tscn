@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" uid="uid://cglobal_hud" path="res://scenes/ui/global_hud/global_hud.tscn" id="10_global_hud"]
 [ext_resource type="PackedScene" uid="uid://csquad_hud" path="res://scenes/ui/squad_hud/squad_hud.tscn" id="11_squad_hud"]
 [ext_resource type="PackedScene" uid="uid://exit_confirm_dialog" path="res://scenes/ui/exit_confirm_dialog.tscn" id="12_exit_dialog"]
+[ext_resource type="PackedScene" path="res://scenes/ui/shop_panel/shop_panel.tscn" id="13_shop_panel"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_2ml6w"]
 font = ExtResource("9_6w4xk")
@@ -57,6 +58,8 @@ unique_name_in_owner = true
 
 [node name="SquadHUD" parent="GameUI" instance=ExtResource("11_squad_hud")]
 unique_name_in_owner = true
+
+[node name="ShopPanel" parent="GameUI" instance=ExtResource("13_shop_panel")]
 
 [node name="UpgradeSelectionUI" parent="." instance=ExtResource("7_upgrade")]
 

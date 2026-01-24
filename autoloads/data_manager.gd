@@ -4,6 +4,9 @@ extends Node
 # 数据管理器 - 负责金币和升级数据的持久化
 # ============================================================================
 
+# 信号
+signal gold_changed(new_gold: int)  # 金币变化信号
+
 const SAVE_PATH = "user://player_save.json"
 
 # 保存数据结构
@@ -154,10 +157,11 @@ func get_total_gold() -> int:
 	return save_data.total_gold
 
 func add_gold(amount: int) -> void:
-	"""增加金币"""
+	"""增加金币（可以传负数来扣除）"""
 	save_data.total_gold += amount
 	save_game()
-	#print("[DataManager] 增加金币 %d，当前: %d" % [amount, save_data.total_gold])
+	gold_changed.emit(save_data.total_gold)
+	print("[DataManager] 金币变化 %+d，当前: %d" % [amount, save_data.total_gold])
 
 func spend_gold(amount: int) -> bool:
 	"""消费金币，返回是否成功"""
@@ -165,6 +169,7 @@ func spend_gold(amount: int) -> bool:
 		return false
 	save_data.total_gold -= amount
 	save_game()
+	gold_changed.emit(save_data.total_gold)
 	print("[DataManager] 消费金币 %d，剩余: %d" % [amount, save_data.total_gold])
 	return true
 

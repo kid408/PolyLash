@@ -14,6 +14,7 @@ class_name Arena
 @onready var upgrade_ui: UpgradeSelectionUI = $UpgradeSelectionUI
 @onready var chest_indicator: ChestIndicator = $ChestIndicator
 @onready var exit_dialog: ExitConfirmDialog = %ExitConfirmDialog
+@onready var shop_panel = $GameUI/ShopPanel  # 商店面板
 
 var current_chest: ChestSimple = null  # 保存当前打开的宝箱引用
 
@@ -51,6 +52,16 @@ func _ready() -> void:
 	if exit_dialog:
 		exit_dialog.confirmed.connect(_on_exit_confirmed)
 		exit_dialog.cancelled.connect(_on_exit_cancelled)
+	
+	# 连接商店信号
+	if shop_panel:
+		shop_panel.next_wave_requested.connect(_on_shop_next_wave_requested)
+		print("[Arena] 商店面板已连接")
+	
+	# 连接 Spawner 的波次完成信号
+	if spawner:
+		spawner.wave_completed.connect(_on_wave_completed)
+		print("[Arena] Spawner 波次完成信号已连接")
 	
 	print("[Arena] 准备初始化玩家...")
 	# 初始化玩家（如果从选择界面进入）- 使用 await 确保完成
@@ -460,3 +471,32 @@ func _on_exit_cancelled() -> void:
 	"""玩家取消退出"""
 	print("[Arena] 玩家取消退出")
 	# 对话框已在脚本中恢复游戏状态
+
+# ============================================================================
+# 商店系统
+# ============================================================================
+
+func _on_wave_completed(wave_number: int) -> void:
+	"""波次完成，显示商店"""
+	print("[Arena] 波次 %d 完成，显示商店" % wave_number)
+	
+	# 暂停敌人生成
+	if spawner:
+		spawner.pause_spawning()
+	
+	# 显示商店
+	if shop_panel:
+		shop_panel.show_shop(wave_number + 1)
+	else:
+		printerr("[Arena] 错误: 找不到 ShopPanel 节点")
+		# 如果没有商店，直接开始下一波
+		if spawner:
+			spawner.resume_spawning()
+
+func _on_shop_next_wave_requested() -> void:
+	"""商店关闭，开始下一波"""
+	print("[Arena] 商店关闭，开始下一波")
+	
+	# 恢复敌人生成
+	if spawner:
+		spawner.resume_spawning()
