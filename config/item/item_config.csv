@@ -1,11 +1,17 @@
 itemType,description,resourcePath
 -1,道具描述,资源路径
-1,神秘的红色药水 - 恢复生命值,res://assets/sprites/Item/Attribute/Icon1.png
-2,蓝色魔法水晶 - 增加能量上限,res://assets/sprites/Item/Attribute/Icon2.png
-3,古老的卷轴 - 提升技能威力,res://assets/sprites/Item/Attribute/Icon3.png
-4,锋利的匕首 - 增加攻击力,res://assets/sprites/Item/Attribute/Icon4.png
-5,坚固的盾牌 - 提升防御力,res://assets/sprites/Item/Attribute/Icon5.png
-6,神圣的护符 - 增加生命恢复速度,res://assets/sprites/Item/Attribute/Icon6.png
-7,闪电宝石 - 提升移动速度,res://assets/sprites/Item/Attribute/Icon7.png
-8,火焰之心 - 增加火焰伤害,res://assets/sprites/Item/Attribute/Icon8.png
-9,冰霜之眼 - 增加冰冻效果,res://assets/sprites/Item/Attribute/Icon9.png
+1,生命药水 - 增加50点生命值,res://assets/sprites/Icons/origins/origin1.png
+2,疾风靴 - 增加50点移动速度,res://assets/sprites/Icons/origins/origin2.png
+3,锋利匕首 - 增加10点攻击力,res://assets/sprites/Icons/origins/origin3.png
+4,火焰之心 - 所有火焰伤害+20%,res://assets/sprites/Icons/masterys/mastery1.png
+5,冰霜水晶 - 所有冰霜伤害+25%,res://assets/sprites/Icons/masterys/mastery2.png
+6,范围扩增器 - 所有范围技能效果+30%,res://assets/sprites/Icons/masterys/mastery3.png
+7,通用伤害增幅 - 所有伤害+15%,res://assets/sprites/Icons/masterys/mastery4.png
+8,持续时间延长 - 所有持续效果+40%,res://assets/sprites/Icons/masterys/mastery5.png
+9,速度强化 - 所有速度相关+25%,res://assets/sprites/Icons/masterys/mastery6.png
+10,武道圣物 - 提供1个武道羁绊标签,res://assets/sprites/Icons/tactics/tactic1.png
+11,秘术圣物 - 提供1个秘术羁绊标签,res://assets/sprites/Icons/tactics/tactic2.png
+12,幸存者圣物 - 提供1个幸存者羁绊标签,res://assets/sprites/Icons/tactics/tactic3.png
+13,毁灭圣物 - 提供1个毁灭羁绊标签,res://assets/sprites/Icons/tactics/tactic4.png
+14,速度圣物 - 提供1个速度羁绊标签,res://assets/sprites/Icons/tactics/tactic5.png
+15,控制圣物 - 提供1个控制羁绊标签,res://assets/sprites/Icons/tactics/tactic6.png

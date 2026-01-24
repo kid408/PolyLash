@@ -115,12 +115,32 @@ func save_warehouse_data() -> void:
 	print("[WarehouseManager] 保存仓库数据: %d 个道具" % warehouse_items.size())
 
 func _init_default_items() -> void:
-	"""初始化默认道具（1-9号道具）"""
+	"""初始化默认测试道具（包含所有三个层级）"""
 	warehouse_items.clear()
-	for i in range(1, 10):
-		warehouse_items[i - 1] = i  # 槽位0-8放置道具1-9
+	
+	# Tier 1: 属性道具（3个）
+	warehouse_items[0] = 1   # 生命药水
+	warehouse_items[1] = 2   # 疾风靴
+	warehouse_items[2] = 3   # 锋利匕首
+	
+	# Tier 2: 魔法道具（6个）
+	warehouse_items[3] = 4   # 火焰之心
+	warehouse_items[4] = 5   # 冰霜水晶
+	warehouse_items[5] = 6   # 范围扩增器
+	warehouse_items[6] = 7   # 通用伤害增幅
+	warehouse_items[7] = 8   # 持续时间延长
+	warehouse_items[8] = 9   # 速度强化
+	
+	# Tier 3: 圣物道具（6个）
+	warehouse_items[9] = 10   # 武道圣物
+	warehouse_items[10] = 11  # 秘术圣物
+	warehouse_items[11] = 12  # 幸存者圣物
+	warehouse_items[12] = 13  # 毁灭圣物
+	warehouse_items[13] = 14  # 速度圣物
+	warehouse_items[14] = 15  # 控制圣物
+	
 	save_warehouse_data()
-	print("[WarehouseManager] 初始化默认道具 1-9")
+	print("[WarehouseManager] 初始化默认测试道具: 15个（Tier1:3, Tier2:6, Tier3:6）")
 
 # ============================================================================
 # 仓库操作接口

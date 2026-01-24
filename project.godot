@@ -28,6 +28,7 @@ WarehouseManager="*res://autoloads/warehouse_manager.gd"
 EquipmentManager="*res://autoloads/equipment_manager.gd"
 BondUILoader="*res://autoloads/bond_ui_loader.gd"
 BondManager="*res://autoloads/bond_manager.gd"
+ModifierManager="*res://autoloads/modifier_manager.gd"
 DebugSwitcher="*res://scenes/arena/debug_switcher.gd"
 
 [display]

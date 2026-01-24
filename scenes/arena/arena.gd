@@ -60,6 +60,9 @@ func _ready() -> void:
 	# 初始化小队 HUD
 	_init_squad_hud()
 	
+	# 初始化羁绊 HUD
+	_init_bond_hud()
+	
 	# 重置局内数据
 	Global.reset_session_data()
 	
@@ -212,6 +215,62 @@ func _init_squad_hud() -> void:
 		squad_hud.init_squad(player_ids)
 		print("[Arena] 小队 HUD 初始化完成")
 
+# 初始化羁绊 HUD
+func _init_bond_hud() -> void:
+	"""动态创建并添加羁绊 HUD（添加到 GameUI 节点下）"""
+	print("[Arena] ===== _init_bond_hud() 开始 =====")
+	
+	# 获取 GameUI 节点
+	var game_ui = get_node_or_null("GameUI")
+	if not game_ui:
+		printerr("[Arena] ❌ 错误: 找不到 GameUI 节点")
+		return
+	
+	print("[Arena] ✅ 找到 GameUI 节点: %s" % game_ui.get_path())
+	
+	# 检查是否已经存在 BondHUD
+	var existing_bond_hud = game_ui.get_node_or_null("BondHUD")
+	if existing_bond_hud:
+		print("[Arena] BondHUD 已存在，跳过创建")
+		return
+	
+	# 加载 BondHUD 场景
+	var bond_hud_scene = load("res://scenes/ui/bond_hud/bond_hud.tscn")
+	if not bond_hud_scene:
+		printerr("[Arena] ❌ 错误: 无法加载 BondHUD 场景")
+		return
+	
+	print("[Arena] ✅ BondHUD 场景加载成功")
+	
+	# 实例化 BondHUD
+	var bond_hud = bond_hud_scene.instantiate()
+	if not bond_hud:
+		printerr("[Arena] ❌ 错误: 无法实例化 BondHUD")
+		return
+	
+	print("[Arena] ✅ BondHUD 实例化成功")
+	
+	# 添加到 GameUI 节点下（Screen Space）
+	game_ui.add_child(bond_hud)
+	
+	print("[Arena] ✅ BondHUD 已添加到 GameUI")
+	print("[Arena] BondHUD 路径: %s" % bond_hud.get_path())
+	print("[Arena] BondHUD 可见性: %s" % bond_hud.visible)
+	
+	# 等待一帧确保节点准备完毕
+	await get_tree().process_frame
+	
+	# 触发 BondManager 重新计算羁绊（使用当前队伍）
+	if Global.selected_player_ids.size() > 0:
+		print("[Arena] 触发 BondManager 重新计算羁绊...")
+		print("[Arena] 当前队伍: %s" % str(Global.selected_player_ids))
+		BondManager.recalculate_active_bonds(Global.selected_player_ids)
+		print("[Arena] ✅ 羁绊计算完成")
+	else:
+		print("[Arena] ⚠️ 警告: 没有选择角色，无法计算羁绊")
+	
+	print("[Arena] ===== _init_bond_hud() 完成 =====")
+
 
 # ============================================================================
 # 角色选择系统
@@ -327,6 +386,10 @@ func _input(event: InputEvent) -> void:
 		if exit_dialog and not exit_dialog.visible:
 			_show_exit_dialog()
 			get_viewport().set_input_as_handled()
+	# Tab 键循环切换角色
+	elif event.is_action_pressed("switch_player"):
+		_try_switch_to_next()
+		get_viewport().set_input_as_handled()
 	# 1-2-3 键精准切换角色
 	elif event.is_action_pressed("switch_player_1"):
 		_try_switch_to_index(0)
@@ -349,6 +412,29 @@ func _try_switch_to_index(index: int) -> void:
 			# 播放无效音效
 			_play_invalid_switch_sound()
 			# UI 抖动由 SquadHUD 通过信号处理
+
+# 循环切换到下一个存活的角色（Tab 键）
+func _try_switch_to_next() -> void:
+	var squad_size = Global.selected_player_ids.size()
+	if squad_size == 0:
+		return
+	
+	var current_index = Global.current_player_index
+	var attempts = 0
+	
+	# 尝试找到下一个存活的角色（最多尝试 squad_size 次）
+	while attempts < squad_size:
+		var next_index = (current_index + 1 + attempts) % squad_size
+		
+		# 尝试切换到下一个角色
+		if Global.switch_to_player_by_index(next_index):
+			# 切换成功
+			return
+		
+		attempts += 1
+	
+	# 所有角色都无法切换（可能都死亡了）
+	_play_invalid_switch_sound()
 
 func _play_invalid_switch_sound() -> void:
 	# 播放拒绝音效 - 使用现有的音效或静默

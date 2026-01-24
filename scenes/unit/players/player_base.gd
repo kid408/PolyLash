@@ -49,7 +49,17 @@ var reduction_per_armor: float = 0.2  # 从game_config加载
 var current_weapons: Array[Weapon] = []
 
 # UI元素
-var energy_bar_ui: Control = null 
+var energy_bar_ui: Control = null
+
+# ==============================================================================
+# 2. 道具系统 (Item System)
+# ==============================================================================
+
+# 修改器管理器（Tier 2 道具使用）
+var modifier_manager: Node = null
+
+# 当前装备的道具 ID（用于 Tier 3 圣物）
+var equipped_item_id: String = "" 
 
 func _ready() -> void:
 	# 从CSV加载配置（必须在super._ready()之前，这样才能设置stats）
@@ -59,6 +69,15 @@ func _ready() -> void:
 	_load_sprite_from_csv()
 	
 	super._ready() # 初始化 Stats
+	
+	# 初始化修改器管理器
+	modifier_manager = ModifierManager
+	if not modifier_manager:
+		printerr("[PlayerBase] 错误: ModifierManager 未加载")
+		return
+	
+	# 装备道具（从 EquipmentManager 读取）
+	_load_and_equip_item()
 	
 	# 加载武器
 	_load_weapons_from_config()
@@ -250,6 +269,233 @@ func _add_weapon(data: ItemWeapon) -> void:
 	
 	if weapon_container:
 		weapon_container.update_weapons_position(current_weapons)
+
+# ==============================================================================
+# 道具装备系统 (Item Equipment System)
+# ==============================================================================
+
+## 从 EquipmentManager 加载并装备道具
+func _load_and_equip_item() -> void:
+	if not EquipmentManager:
+		return
+	
+	# 获取装备的道具类型（整数）
+	var item_type = EquipmentManager.get_equipped_item(player_id)
+	if item_type <= 0:
+		if OS.is_debug_build():
+			print("[PlayerBase] 角色 %s 未装备任何道具" % player_id)
+		return
+	
+	# 将 item_type 转换为 item_id
+	# 注意：这里需要根据实际的道具系统映射关系来转换
+	# 暂时使用占位逻辑，后续需要完善
+	var item_id = _get_item_id_from_type(item_type)
+	if item_id != "":
+		equip_item(item_id)
+
+## 装备道具（核心函数）
+## @param item_id: 道具 ID（如 "attr_hp_potion", "magic_fire_heart"）
+func equip_item(item_id: String) -> void:
+	if item_id.is_empty():
+		return
+	
+	# 从 ConfigManager 读取道具配置
+	var item_data = _load_item_config(item_id)
+	if item_data.is_empty():
+		printerr("[PlayerBase] 错误: 未找到道具配置 '%s'" % item_id)
+		return
+	
+	var tier = int(item_data.get("item_tier", 1))
+	
+	if OS.is_debug_build():
+		print("[PlayerBase] 装备道具: %s (Tier %d)" % [item_data.get("item_name", item_id), tier])
+	
+	# Step 1: 重置基础属性（确保数值一致性）
+	_load_config_from_csv()
+	
+	# Step 2: 根据 Tier 分流处理
+	match tier:
+		1:  # Tier 1: 直接修改属性
+			_apply_tier1_item(item_data)
+		2:  # Tier 2: 添加修改器
+			_apply_tier2_item(item_data)
+		3:  # Tier 3: 注册圣物（供 BondManager 读取）
+			_apply_tier3_item(item_data)
+		_:
+			printerr("[PlayerBase] 错误: 未知的道具层级 %d" % tier)
+	
+	# 保存装备的道具 ID
+	equipped_item_id = item_id
+
+## Tier 1: 直接修改属性
+func _apply_tier1_item(item_data: Dictionary) -> void:
+	var effect_target = item_data.get("effect_target", "")
+	var target_tags = item_data.get("target_tags", "")
+	var value = float(item_data.get("effect_value", 0.0))
+	
+	if effect_target != "stat":
+		printerr("[PlayerBase] 错误: Tier 1 道具的 effect_target 必须是 'stat'")
+		return
+	
+	# 解析目标属性（如 "health", "speed", "damage"）
+	var stat_name = target_tags.strip_edges()
+	
+	match stat_name:
+		"health":
+			stats.health += value
+			if OS.is_debug_build():
+				print("[PlayerBase] 生命值 +%.0f -> %.0f" % [value, stats.health])
+		"speed":
+			stats.speed += value
+			if OS.is_debug_build():
+				print("[PlayerBase] 速度 +%.0f -> %.0f" % [value, stats.speed])
+		"damage":
+			stats.damage += value
+			if OS.is_debug_build():
+				print("[PlayerBase] 攻击力 +%.0f -> %.0f" % [value, stats.damage])
+		_:
+			printerr("[PlayerBase] 警告: 未知的属性名称 '%s'" % stat_name)
+
+## Tier 2: 添加修改器
+func _apply_tier2_item(item_data: Dictionary) -> void:
+	var effect_type = item_data.get("effect_type", "")
+	var target_tags_str = item_data.get("target_tags", "")
+	var value = float(item_data.get("effect_value", 0.0))
+	
+	if not modifier_manager:
+		printerr("[PlayerBase] 错误: ModifierManager 未初始化")
+		return
+	
+	# 解析标签（如 "fire" 或 "fire;aoe"）
+	var target_tags = []
+	if target_tags_str != "":
+		target_tags = target_tags_str.split(";")
+	
+	# 添加修改器
+	modifier_manager.add_modifier(target_tags, effect_type, value)
+	
+	if OS.is_debug_build():
+		print("[PlayerBase] 添加修改器: tags=%s, type=%s, value=%.2f" % [target_tags, effect_type, value])
+
+## Tier 3: 注册圣物（供 BondManager 读取）
+func _apply_tier3_item(item_data: Dictionary) -> void:
+	var target_tags = item_data.get("target_tags", "")
+	var value = int(item_data.get("effect_value", 1))
+	
+	# 注意：这里只是存储 item_id，实际的羁绊标签应用由 BondManager 处理
+	# BondManager 会调用 get_equipped_relic_tags() 获取圣物提供的标签
+	
+	if OS.is_debug_build():
+		print("[PlayerBase] 注册圣物: 提供羁绊标签 '%s' x%d" % [target_tags, value])
+
+## 获取装备的圣物提供的羁绊标签（供 BondManager 调用）
+func get_equipped_relic_tags() -> Dictionary:
+	if equipped_item_id.is_empty():
+		return {}
+	
+	var item_data = _load_item_config(equipped_item_id)
+	if item_data.is_empty():
+		return {}
+	
+	var tier = int(item_data.get("item_tier", 1))
+	if tier != 3:
+		return {}
+	
+	var tag = item_data.get("target_tags", "")
+	var count = int(item_data.get("effect_value", 1))
+	
+	return {tag: count}
+
+## 从 CSV 加载道具配置
+func _load_item_config(item_id: String) -> Dictionary:
+	var file = FileAccess.open("res://config/item/item_effect_config.csv", FileAccess.READ)
+	if not file:
+		printerr("[PlayerBase] 错误: 无法打开 item_effect_config.csv")
+		return {}
+	
+	file.get_line()  # 跳过表头
+	
+	while not file.eof_reached():
+		var line = file.get_csv_line()
+		if line.size() < 10:
+			continue
+		
+		if line[0] == item_id:
+			return {
+				"item_id": line[0],
+				"item_name": line[1],
+				"item_type": line[2],
+				"item_tier": line[3],
+				"effect_type": line[4],
+				"effect_target": line[5],
+				"target_tags": line[6],
+				"effect_value": line[7],
+				"icon_path": line[8],
+				"description": line[9]
+			}
+	
+	return {}
+
+## 将 item_type（整数）转换为 item_id（字符串）
+## 注意：这是临时映射，后续需要根据实际道具系统完善
+func _get_item_id_from_type(item_type: int) -> String:
+	# 从 item_config.csv 读取映射关系
+	var file = FileAccess.open("res://config/item/item_config.csv", FileAccess.READ)
+	if not file:
+		printerr("[PlayerBase] 错误: 无法打开 item_config.csv")
+		return ""
+	
+	file.get_line()  # 跳过表头
+	
+	while not file.eof_reached():
+		var line = file.get_csv_line()
+		if line.size() < 3:
+			continue
+		
+		var type_id = int(line[0])
+		if type_id == item_type:
+			# 从 item_effect_config.csv 中查找对应的 item_id
+			# 这里使用简单的命名规则：根据 item_type 推断 item_id
+			# 例如：item_type=1 -> "attr_hp_potion"
+			return _infer_item_id_from_type(item_type)
+	
+	return ""
+
+## 根据 item_type 推断 item_id（临时方案）
+func _infer_item_id_from_type(item_type: int) -> String:
+	# 这是一个临时映射表，后续需要根据实际道具系统完善
+	var type_to_id_map = {
+		# Tier 1: 属性道具
+		1: "attr_hp_potion",
+		2: "attr_speed_boots",
+		3: "attr_damage_dagger",
+		# Tier 2: 魔法道具
+		4: "magic_fire_heart",
+		5: "magic_ice_crystal",
+		6: "magic_aoe_amplifier",
+		7: "magic_damage_boost",
+		8: "magic_duration_extend",
+		9: "magic_speed_boost",
+		# Tier 3: 圣物道具
+		10: "relic_martial",
+		11: "relic_arcane",
+		12: "relic_survivor",
+		13: "relic_destruction",
+		14: "relic_velocity",
+		15: "relic_control"
+	}
+	
+	return type_to_id_map.get(item_type, "")
+
+## 获取技能参数（经过道具加成）
+## @param base_value: 基础数值
+## @param tags: 技能标签数组（如 ["damage", "fire", "aoe"]）
+## @return: 修改后的最终数值
+func get_skill_param(base_value: float, tags: Array) -> float:
+	if not modifier_manager:
+		return base_value
+	
+	return modifier_manager.get_modified_value(base_value, tags)
 
 func _process(delta: float) -> void:
 	if Global.game_paused: return

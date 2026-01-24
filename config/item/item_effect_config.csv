@@ -1,0 +1,17 @@
+item_id,item_name,item_type,item_tier,effect_type,effect_target,target_tags,effect_value,icon_path,description
+-1,道具名称,类型ID,层级,效果类型,目标类型,目标标签,效果数值,图标路径,描述
+attr_hp_potion,生命药水,1,1,flat_add,stat,health,50,res://assets/sprites/Icons/origins/origin1.png,增加50点生命值
+attr_speed_boots,疾风靴,2,1,flat_add,stat,speed,50,res://assets/sprites/Icons/origins/origin2.png,增加50点移动速度
+attr_damage_dagger,锋利匕首,3,1,flat_add,stat,damage,10,res://assets/sprites/Icons/origins/origin3.png,增加10点攻击力
+magic_fire_heart,火焰之心,4,2,percent_add,modifier,fire,0.20,res://assets/sprites/Icons/masterys/mastery1.png,所有火焰伤害+20%
+magic_ice_crystal,冰霜水晶,5,2,percent_add,modifier,ice,0.25,res://assets/sprites/Icons/masterys/mastery2.png,所有冰霜伤害+25%
+magic_aoe_amplifier,范围扩增器,6,2,percent_add,modifier,aoe,0.30,res://assets/sprites/Icons/masterys/mastery3.png,所有范围技能效果+30%
+magic_damage_boost,通用伤害增幅,7,2,percent_add,modifier,damage,0.15,res://assets/sprites/Icons/masterys/mastery4.png,所有伤害+15%
+magic_duration_extend,持续时间延长,8,2,percent_add,modifier,duration,0.40,res://assets/sprites/Icons/masterys/mastery5.png,所有持续效果+40%
+magic_speed_boost,速度强化,9,2,percent_add,modifier,speed,0.25,res://assets/sprites/Icons/masterys/mastery6.png,所有速度相关+25%
+relic_martial,武道圣物,10,3,bond_tag,bond,martial,1,res://assets/sprites/Icons/tactics/tactic1.png,提供1个武道羁绊标签
+relic_arcane,秘术圣物,11,3,bond_tag,bond,arcane,1,res://assets/sprites/Icons/tactics/tactic2.png,提供1个秘术羁绊标签
+relic_survivor,幸存者圣物,12,3,bond_tag,bond,survivor,1,res://assets/sprites/Icons/tactics/tactic3.png,提供1个幸存者羁绊标签
+relic_destruction,毁灭圣物,13,3,bond_tag,bond,destruction,1,res://assets/sprites/Icons/tactics/tactic4.png,提供1个毁灭羁绊标签
+relic_velocity,速度圣物,14,3,bond_tag,bond,velocity,1,res://assets/sprites/Icons/tactics/tactic5.png,提供1个速度羁绊标签
+relic_control,控制圣物,15,3,bond_tag,bond,control,1,res://assets/sprites/Icons/tactics/tactic6.png,提供1个控制羁绊标签
