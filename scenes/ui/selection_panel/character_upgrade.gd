@@ -143,12 +143,13 @@ func _create_character_card(player_id: String) -> Control:
 	ties_label.add_theme_color_override("font_color", Color(0.9, 0.75, 0.2))
 	name_vbox.add_child(ties_label)
 	
-	# 羁绊图标
+	# 羁绊图标（传入队伍信息以生成详细 Tooltip）
 	var bond_icons = BondUILoader.create_bond_icon_container(
 		config.get("origin_tag", ""),
 		config.get("mastery_tag", ""),
 		config.get("tactic_tag", ""),
-		20  # 图标大小
+		20,  # 图标大小
+		Global.selected_player_ids  # 当前队伍
 	)
 	name_vbox.add_child(bond_icons)
 	

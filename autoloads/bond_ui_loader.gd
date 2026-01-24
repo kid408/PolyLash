@@ -45,24 +45,27 @@ func _load_bond_configs() -> void:
 	
 	while not file.eof_reached():
 		var line = file.get_csv_line()
-		if line.size() < 5:
+		if line.size() < 10:  # 现在需要至少10列
 			continue
 		
+		# CSV 列顺序: bond_id, type, level, required_count, effect_type, effect_param, effect_value, icon_path_index, display_name, description
 		var bond_id = line[0]
 		var bond_type = line[1]
-		var icon_path_index = int(line[2])
-		var display_name = line[3]
-		var description = line[4]
+		var icon_path_index = int(line[7])  # 修复：使用正确的列索引
+		var display_name = line[8]          # 修复：使用正确的列索引
+		var description = line[9]           # 修复：使用正确的列索引
 		
 		if bond_id == "" or bond_id == "-1":
 			continue
 		
-		bond_configs[bond_id] = {
-			"bond_type": bond_type,
-			"icon_path_index": icon_path_index,
-			"display_name": display_name,
-			"description": description
-		}
+		# 只在第一次遇到该 bond_id 时创建配置（避免重复）
+		if not bond_configs.has(bond_id):
+			bond_configs[bond_id] = {
+				"bond_type": bond_type,
+				"icon_path_index": icon_path_index,
+				"display_name": display_name,
+				"description": description
+			}
 	
 	file.close()
 	print("[BondUILoader] 加载了 %d 个羁绊配置" % bond_configs.size())
@@ -132,7 +135,7 @@ func get_bond_config(bond_tag: String) -> Dictionary:
 # 辅助函数
 # ============================================================================
 
-func create_bond_icon_container(origin_tag: String, mastery_tag: String, tactic_tag: String, icon_size: int = 24) -> HBoxContainer:
+func create_bond_icon_container(origin_tag: String, mastery_tag: String, tactic_tag: String, icon_size: int = 24, team_player_ids: Array = []) -> HBoxContainer:
 	"""创建羁绊图标容器
 	
 	Args:
@@ -140,6 +143,7 @@ func create_bond_icon_container(origin_tag: String, mastery_tag: String, tactic_
 		mastery_tag: 职能标签
 		tactic_tag: 战术标签
 		icon_size: 图标大小（默认24）
+		team_player_ids: 当前队伍角色ID列表（用于计算羁绊数量）
 	
 	Returns:
 		HBoxContainer: 包含3个图标的容器
@@ -147,6 +151,13 @@ func create_bond_icon_container(origin_tag: String, mastery_tag: String, tactic_
 	var container = HBoxContainer.new()
 	container.name = "BondIconsContainer"
 	container.add_theme_constant_override("separation", 4)
+	
+	# 如果提供了队伍信息，计算当前羁绊数量
+	var bond_counts = {}
+	if not team_player_ids.is_empty():
+		var bond_stats = calculate_team_bonds(team_player_ids)
+		for bond_id in bond_stats.bonds.keys():
+			bond_counts[bond_id] = bond_stats.bonds[bond_id].count
 	
 	# 创建3个图标
 	var bonds = [
@@ -156,15 +167,26 @@ func create_bond_icon_container(origin_tag: String, mastery_tag: String, tactic_
 	]
 	
 	for bond in bonds:
+		var bond_tag = bond.tag
+		var bond_type = bond.type
+		
 		var icon_rect = TextureRect.new()
 		icon_rect.custom_minimum_size = Vector2(icon_size, icon_size)
 		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
-		var texture = get_bond_icon(bond.tag, bond.type)
+		var texture = get_bond_icon(bond_tag, bond_type)
 		if texture:
 			icon_rect.texture = texture
-			icon_rect.tooltip_text = get_bond_display_name(bond.tag)
+			
+			# 生成详细的 Tooltip
+			var current_count = bond_counts.get(bond_tag, 0)
+			if current_count > 0:
+				# 如果有队伍信息，显示详细 Tooltip
+				icon_rect.tooltip_text = BondManager.get_bond_tooltip_text(bond_tag, current_count)
+			else:
+				# 否则只显示名称
+				icon_rect.tooltip_text = BondManager.get_bond_display_name(bond_tag)
 		else:
 			# 如果找不到图标，显示占位符
 			icon_rect.modulate = Color(0.3, 0.3, 0.3, 0.5)
@@ -173,7 +195,7 @@ func create_bond_icon_container(origin_tag: String, mastery_tag: String, tactic_
 	
 	return container
 
-func update_bond_icons(container: HBoxContainer, origin_tag: String, mastery_tag: String, tactic_tag: String) -> void:
+func update_bond_icons(container: HBoxContainer, origin_tag: String, mastery_tag: String, tactic_tag: String, team_player_ids: Array = []) -> void:
 	"""更新现有容器中的羁绊图标
 	
 	Args:
@@ -181,6 +203,7 @@ func update_bond_icons(container: HBoxContainer, origin_tag: String, mastery_tag
 		origin_tag: 身世标签
 		mastery_tag: 职能标签
 		tactic_tag: 战术标签
+		team_player_ids: 当前队伍角色ID列表（用于计算羁绊数量）
 	"""
 	if not container:
 		printerr("[BondUILoader] 无效的羁绊图标容器")
@@ -196,17 +219,36 @@ func update_bond_icons(container: HBoxContainer, origin_tag: String, mastery_tag
 		{"tag": tactic_tag, "type": "tactic"}
 	]
 	
+	# 如果提供了队伍信息，计算当前羁绊数量
+	var bond_counts = {}
+	if not team_player_ids.is_empty():
+		var bond_stats = calculate_team_bonds(team_player_ids)
+		for bond_id in bond_stats.bonds.keys():
+			bond_counts[bond_id] = bond_stats.bonds[bond_id].count
+	
 	# 创建新图标
 	for bond in bonds:
+		var bond_tag = bond.tag
+		var bond_type = bond.type
+		
 		var icon_rect = TextureRect.new()
 		icon_rect.custom_minimum_size = Vector2(24, 24)
 		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
-		var texture = get_bond_icon(bond.tag, bond.type)
+		var texture = get_bond_icon(bond_tag, bond_type)
 		if texture:
 			icon_rect.texture = texture
-			icon_rect.tooltip_text = get_bond_display_name(bond.tag)
+			
+			# 生成详细的 Tooltip
+			var current_count = bond_counts.get(bond_tag, 0)
+			if current_count > 0:
+				# 如果有队伍信息，显示详细 Tooltip
+				icon_rect.tooltip_text = BondManager.get_bond_tooltip_text(bond_tag, current_count)
+			else:
+				# 否则只显示名称
+				icon_rect.tooltip_text = BondManager.get_bond_display_name(bond_tag)
+			
 			icon_rect.modulate = Color.WHITE
 		else:
 			icon_rect.texture = null
@@ -217,13 +259,6 @@ func update_bond_icons(container: HBoxContainer, origin_tag: String, mastery_tag
 # ============================================================================
 # 队伍羁绊统计
 # ============================================================================
-
-# 羁绊阈值配置（硬编码用于原型）
-const BOND_THRESHOLDS = {
-	"origin": 2,   # 身世羁绊需要2个
-	"mastery": 3,  # 职能羁绊需要3个
-	"tactic": 2    # 战术羁绊需要2个
-}
 
 func calculate_team_bonds(selected_player_ids: Array) -> Dictionary:
 	"""计算队伍羁绊统计
@@ -238,13 +273,11 @@ func calculate_team_bonds(selected_player_ids: Array) -> Dictionary:
 				"martial": {"count": 2, "type": "origin"},
 				"destruction": {"count": 1, "type": "mastery"},
 				...
-			},
-			"thresholds": {"origin": 2, "mastery": 3, "tactic": 2}
+			}
 		}
 	"""
 	var result = {
-		"bonds": {},
-		"thresholds": BOND_THRESHOLDS.duplicate()
+		"bonds": {}
 	}
 	
 	# 统计每个羁绊标签的出现次数
@@ -289,19 +322,26 @@ func get_sorted_bonds(bond_stats: Dictionary) -> Array:
 		按 count 降序排列
 	"""
 	var bonds_array = []
-	var thresholds = bond_stats.get("thresholds", BOND_THRESHOLDS)
 	
 	for bond_id in bond_stats.bonds.keys():
 		var bond_data = bond_stats.bonds[bond_id]
 		var bond_type = bond_data.type
 		var count = bond_data.count
-		var max_count = thresholds.get(bond_type, 2)
+		
+		# 从 BondManager 获取最大等级（动态）
+		var max_level = BondManager.get_bond_max_level(bond_id)
+		
+		# 获取最高等级的需求数量
+		var max_count = 0
+		if max_level > 0:
+			max_count = BondManager.get_bond_required_count(bond_id, max_level)
 		
 		bonds_array.append({
 			"bond_id": bond_id,
 			"count": count,
 			"type": bond_type,
-			"max": max_count
+			"max": max_count,
+			"max_level": max_level
 		})
 	
 	# 按 count 降序排序

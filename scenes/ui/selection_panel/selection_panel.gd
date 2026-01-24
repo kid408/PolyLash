@@ -529,8 +529,13 @@ func _update_bond_icons(player_id: String, config: Dictionary) -> void:
 			child.queue_free()
 		return
 	
-	# 使用 BondUILoader 更新图标
-	BondUILoader.update_bond_icons(bond_icons_container, origin_tag, mastery_tag, tactic_tag)
+	# 提取当前队伍的角色ID列表
+	var team_player_ids: Array = []
+	for data in selected_players:
+		team_player_ids.append(data.player_id)
+	
+	# 使用 BondUILoader 更新图标，传入队伍信息以生成详细 Tooltip
+	BondUILoader.update_bond_icons(bond_icons_container, origin_tag, mastery_tag, tactic_tag, team_player_ids)
 
 func _clear_player_info() -> void:
 	player_ico.texture = null

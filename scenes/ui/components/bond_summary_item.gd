@@ -49,7 +49,7 @@ func update_info(p_bond_id: String, p_bond_type: String, p_current_count: int, p
 	# 更新图标
 	_update_icon()
 	
-	# 更新名称
+	# 更新名称（使用显示名称而非ID）
 	_update_name()
 	
 	# 更新计数
@@ -57,6 +57,9 @@ func update_info(p_bond_id: String, p_bond_type: String, p_current_count: int, p
 	
 	# 更新颜色
 	_update_colors()
+	
+	# 更新悬浮提示
+	_update_tooltip()
 
 # ============================================================================
 # 内部更新函数
@@ -76,11 +79,12 @@ func _update_icon() -> void:
 		icon.modulate = Color(0.3, 0.3, 0.3, 0.5)
 
 func _update_name() -> void:
-	"""更新羁绊名称"""
+	"""更新羁绊名称（使用显示名称）"""
 	if not name_label:
 		return
 	
-	var display_name = BondUILoader.get_bond_display_name(bond_id)
+	# 从 BondManager 获取显示名称
+	var display_name = BondManager.get_bond_display_name(bond_id)
 	name_label.text = display_name
 
 func _update_count() -> void:
@@ -118,3 +122,14 @@ func _update_colors() -> void:
 			icon.modulate = Color(1.0, 1.0, 0.8)
 		else:
 			icon.modulate = Color(0.6, 0.6, 0.6)
+
+func _update_tooltip() -> void:
+	"""更新悬浮提示"""
+	# 从 BondManager 获取格式化的提示文本
+	var tooltip = BondManager.get_bond_tooltip_text(bond_id, current_count)
+	
+	# 设置到根节点
+	tooltip_text = tooltip
+	
+	# 确保鼠标过滤器允许悬浮事件
+	mouse_filter = Control.MOUSE_FILTER_STOP
