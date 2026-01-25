@@ -6,3 +6,4 @@ sapper,res://assets/sprites/Players/Player_3.png,res://scenes/unit/players/playe
 weaver,res://assets/sprites/Players/Player_8.png,res://scenes/unit/players/player_generic.tscn,1,1,1,1,1,1,1
 wind,res://assets/sprites/Players/Player_2.png,res://scenes/unit/players/player_generic.tscn,1,1,1,1,1,1,1
 herder,res://assets/sprites/Players/Player_7.png,res://scenes/unit/players/player_generic.tscn,1,1,1,1,1,1,1
+lovely,res://assets/sprites/Players/Player_13.png,res://scenes/unit/players/player_generic.tscn,1.0,1.0,1,1,1,1,1

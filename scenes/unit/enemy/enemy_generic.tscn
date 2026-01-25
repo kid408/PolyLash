@@ -1,7 +1,7 @@
 [gd_scene load_steps=10 format=3 uid="uid://d2gykr8m3idaq"]
 
 [ext_resource type="PackedScene" uid="uid://cyavyrbpj6jjb" path="res://scenes/unit/unit.tscn" id="1_idtdn"]
-[ext_resource type="Texture2D" uid="uid://d1ou504pylric" path="res://assets/sprites/Enemies/Enemy_1.png" id="2_k8upj"]
+[ext_resource type="Texture2D" uid="uid://o81bhu6gkr3n" path="res://assets/sprites/Enemies/Enemy_1.png" id="2_k8upj"]
 [ext_resource type="Script" uid="uid://cslieepfyhg7k" path="res://scenes/unit/enemy/enemy.gd" id="2_oo7ju"]
 [ext_resource type="PackedScene" uid="uid://dvfjoyutjx5jf" path="res://scenes/particles/Explosion.tscn" id="3_421q1"]
 [ext_resource type="PackedScene" uid="uid://3t6iqc1kav5h" path="res://scenes/components/hitbox_component.tscn" id="5_e15k4"]
@@ -31,6 +31,14 @@ charge_duration = 0.6
 charge_speed_mult = 3.5
 charge_cooldown = 3.0
 death_vfx_scene = ExtResource("3_421q1")
+shoot_cooldown = 3.0
+projectile_count = 3
+projectile_arc_angle = 45.0
+projectile_speed = 1800.0
+pool_radius = 60.0
+pool_damage = 5.0
+pool_damage_interval = 0.5
+pool_lifetime = 8.0
 
 [node name="Sprite" parent="Visuals" index="1"]
 texture = ExtResource("2_k8upj")

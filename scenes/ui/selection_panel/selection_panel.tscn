@@ -1,9 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://c4v80wbm6lca5"]
+[gd_scene load_steps=9 format=3 uid="uid://c4v80wbm6lca5"]
 
 [ext_resource type="Texture2D" uid="uid://b02x7h4bntic6" path="res://icon.png" id="1_3miu1"]
 [ext_resource type="Script" uid="uid://bejgc7t8weklg" path="res://scenes/ui/selection_panel/selection_panel.gd" id="1_u3ono"]
-[ext_resource type="Texture2D" uid="uid://cproxhccob85g" path="res://assets/sprites/Players/Player_1.png" id="3_7k3kw"]
-[ext_resource type="PackedScene" uid="uid://exit_confirm_dialog" path="res://scenes/ui/exit_confirm_dialog.tscn" id="4_exit_dialog"]
+[ext_resource type="Texture2D" uid="uid://byggcc877ibn7" path="res://assets/sprites/Players/Player_1.png" id="3_7k3kw"]
+[ext_resource type="PackedScene" path="res://scenes/ui/exit_confirm_dialog.tscn" id="4_exit_dialog"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_u3ono"]
 bg_color = Color(0.12, 0.12, 0.12, 1)
@@ -62,8 +62,8 @@ alignment = 1
 
 [node name="Label" type="Label" parent="MarginContainer/HBoxContainer/LeftPanel"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
 theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 28
 text = "已选"
 horizontal_alignment = 1
 
@@ -78,8 +78,8 @@ layout_mode = 2
 
 [node name="SynergyLabel" type="Label" parent="MarginContainer/HBoxContainer/LeftPanel"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 20
 text = "队伍羁绊"
 horizontal_alignment = 1
 
@@ -103,7 +103,6 @@ theme_override_constants/separation = 8
 custom_minimum_size = Vector2(0, 220)
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 1.0
 theme_override_constants/separation = 0
 
 [node name="InfoPanel" type="Panel" parent="MarginContainer/HBoxContainer/MainContent/TopSection"]
@@ -171,20 +170,18 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_font_sizes/normal_font_size = 18
 bbcode_enabled = true
-fit_content = true
 text = "点击角色查看详情"
+fit_content = true
 
 [node name="MiddleSection" type="VBoxContainer" parent="MarginContainer/HBoxContainer/MainContent"]
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 1.0
 theme_override_constants/separation = 4
-alignment = 0
 
 [node name="Label" type="Label" parent="MarginContainer/HBoxContainer/MainContent/MiddleSection"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
 theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 28
 text = "选择角色"
 
 [node name="PlayerContainerWrapper" type="Control" parent="MarginContainer/HBoxContainer/MainContent/MiddleSection"]
@@ -194,7 +191,6 @@ size_flags_vertical = 3
 
 [node name="PlayerContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper"]
 layout_mode = 1
-anchors_preset = 0
 theme_override_constants/separation = 10
 
 [node name="SecetionCard1" type="Button" parent="MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper/PlayerContainer"]
@@ -208,12 +204,11 @@ layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.8
 theme_override_constants/separation = 4
-alignment = 0
 
 [node name="Label2" type="Label" parent="MarginContainer/HBoxContainer/MainContent/BottomSection"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
 theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 28
 text = "选择武器"
 
 [node name="WeaponContainerWrapper" type="Control" parent="MarginContainer/HBoxContainer/MainContent/BottomSection"]
@@ -222,7 +217,6 @@ size_flags_vertical = 3
 
 [node name="WeaponContainer" type="GridContainer" parent="MarginContainer/HBoxContainer/MainContent/BottomSection/WeaponContainerWrapper"]
 layout_mode = 1
-anchors_preset = 0
 theme_override_constants/h_separation = 10
 theme_override_constants/v_separation = 10
 columns = 16
@@ -234,8 +228,8 @@ layout_mode = 2
 [node name="RightPanel" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-alignment = 1
 theme_override_constants/separation = 16
+alignment = 1
 
 [node name="Continue" type="Button" parent="MarginContainer/HBoxContainer/RightPanel"]
 custom_minimum_size = Vector2(200, 60)
@@ -243,8 +237,8 @@ layout_mode = 2
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
 text = "开始游戏"
 
 [node name="UpgradeButton" type="Button" parent="MarginContainer/HBoxContainer/RightPanel"]
@@ -253,8 +247,8 @@ layout_mode = 2
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 20
 theme_override_styles/normal = SubResource("StyleBoxFlat_upgrade_btn")
-theme_override_styles/hover = SubResource("StyleBoxFlat_upgrade_btn")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_upgrade_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_upgrade_btn")
 text = "强化角色"
 
 [node name="WarehouseButton" type="Button" parent="MarginContainer/HBoxContainer/RightPanel"]
@@ -263,8 +257,8 @@ layout_mode = 2
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 20
 theme_override_styles/normal = SubResource("StyleBoxFlat_upgrade_btn")
-theme_override_styles/hover = SubResource("StyleBoxFlat_upgrade_btn")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_upgrade_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_upgrade_btn")
 text = "仓库"
 
 [node name="ExitConfirmDialog" parent="." instance=ExtResource("4_exit_dialog")]

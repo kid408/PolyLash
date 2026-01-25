@@ -5,8 +5,10 @@ wave_1_to_5,res://scenes/unit/enemy/enemy_generic.tscn,fast_enemy,5
 wave_1_to_5,res://scenes/unit/enemy/enemy_generic.tscn,breaker_enemy,3
 wave_1_to_5,res://scenes/unit/enemy/enemy_generic.tscn,shielded_enemy,1
 wave_1_to_5,res://scenes/unit/enemy/enemy_generic.tscn,mine_layer_enemy,5
-wave_6_to_10,res://scenes/unit/enemy/enemy_generic.tscn,fast_enemy,3
-wave_6_to_10,res://scenes/unit/enemy/enemy_generic.tscn,breaker_enemy,2.5
-wave_6_to_10,res://scenes/unit/enemy/enemy_generic.tscn,shielded_enemy,2
-wave_6_to_10,res://scenes/unit/enemy/enemy_generic.tscn,spiked_enemy,1.5
-wave_6_to_10,res://scenes/unit/enemy/enemy_generic.tscn,mine_layer_enemy,0.8
+wave_1_to_5,res://scenes/unit/enemy/enemy_generic.tscn,saw_enemy,5
+wave_1_to_5,res://scenes/unit/enemy/enemy_generic.tscn,steel_enemy,2
+wave_6_to_20,res://scenes/unit/enemy/enemy_generic.tscn,fast_enemy,3
+wave_6_to_20,res://scenes/unit/enemy/enemy_generic.tscn,breaker_enemy,2.5
+wave_6_to_20,res://scenes/unit/enemy/enemy_generic.tscn,shielded_enemy,2
+wave_6_to_20,res://scenes/unit/enemy/enemy_generic.tscn,spiked_enemy,1.5
+wave_6_to_20,res://scenes/unit/enemy/enemy_generic.tscn,mine_layer_enemy,0.8

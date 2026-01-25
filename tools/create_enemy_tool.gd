@@ -2,33 +2,28 @@
 extends EditorScript
 
 ## 敌人创建工具
-## 使用方法: 在Godot编辑器中 File -> Run 选择此脚本
-## 或者在代码中调用 create_enemy() 函数
+## 使用方法: 修改下面的配置，然后 File -> Run
 
 # ==============================================================================
-# 配置模板
+# 默认配置（内部使用）
 # ==============================================================================
-const ENEMY_CONFIG_TEMPLATE = {
+const DEFAULT_CONFIG = {
+	# 基础属性
 	"enemy_id": "",
-	"display_name": "新敌人",
+	"display_name": "",
 	"health": 100,
-	"speed": 150,
-	"damage": 10,
+	"speed": 160,
+	"damage": 15,
 	"attack_range": 50,
 	"attack_cooldown": 1.0,
 	"xp_value": 10,
 	"gold_value": 5,
 	"knockback_resistance": 0.5,
 	"energy_drop": 2,
-	"color_r": 1.0,
-	"color_g": 1.0,
-	"color_b": 1.0,
 	"flock_push": 20.0,
-	"stop_distance": 60.0
-}
-
-const VISUAL_CONFIG_TEMPLATE = {
-	"enemy_id": "",
+	"stop_distance": 60.0,
+	
+	# 视觉配置
 	"sprite_path": "res://assets/sprites/Enemies/Enemy_1.png",
 	"scale_x": 1.0,
 	"scale_y": 1.0,
@@ -45,34 +40,82 @@ const VISUAL_CONFIG_TEMPLATE = {
 	"animation_speed": 1.0,
 	"flash_color_r": 1.0,
 	"flash_color_g": 1.0,
-	"flash_color_b": 1.0
+	"flash_color_b": 1.0,
+	
+	# 能力配置
+	"charge_prep_time": 0.8,
+	"charge_duration": 0.6,
+	"charge_speed_mult": 3.5,
+	"charge_cooldown": 3,
+	"break_radius": 40,
+	"can_charge": 0,
+	"shoot_cooldown": 3,
+	"projectile_count": 3,
+	"projectile_arc_angle": 45,
+	"projectile_speed": 1800,
+	"pool_radius": 60,
+	"pool_damage": 5,
+	"pool_damage_interval": 0.5,
+	"pool_lifetime": 8
 }
 
 # ==============================================================================
-# 主函数
+# 主函数 - 在这里修改配置并运行
 # ==============================================================================
 func _run() -> void:
-	print("================================================================================")
+	print("\n================================================================================")
 	print("敌人创建工具")
-	print("================================================================================")
+	print("================================================================================\n")
 	
-	# 示例：创建一个新敌人
+	# ============================================================================
+	# 在这里修改配置
+	# ============================================================================
 	var config = {
-		"enemy_id": "example_enemy",
-		"display_name": "示例敌人",
-		"health": 150,
-		"speed": 180,
-		"damage": 15,
-		"sprite_path": "res://assets/sprites/Enemies/Enemy_1.png",
-		"abilities": ["poison_pool"]  # 可选：添加能力
+		"enemy_id": "steel_enemy",           # 敌人ID（必填，英文）
+		"display_name": "钢头怪",          # 显示名称（必填，中文）
+		"health": 350,                      # 生命值
+		"speed": 180,                       # 移动速度
+		"damage": 15,                       # 攻击力
+		"attack_range": 50,                 # 攻击范围
+		"attack_cooldown": 1.0,             # 攻击冷却
+		"xp_value": 15,                     # 经验值
+		"gold_value": 8,                    # 金币
+		"sprite_path": "res://assets/sprites/Enemies/Enemy_7.png",  # 精灵路径
+		"abilities": []                     # 能力列表: ["poison_pool", "shooting", "charge"]
 	}
+	# ============================================================================
 	
-	print("\n示例：创建敌人配置")
-	print("配置: %s" % str(config))
-	print("\n请修改上面的配置，然后调用 create_enemy(config)")
-	print("\n或者使用交互式创建:")
-	print("  var tool = load('res://tools/create_enemy_tool.gd').new()")
-	print("  tool.create_enemy_interactive()")
+	print("配置信息:")
+	print("  ID: %s" % config.enemy_id)
+	print("  名称: %s" % config.display_name)
+	print("  生命: %d" % config.health)
+	print("  速度: %d" % config.speed)
+	print("  伤害: %d" % config.damage)
+	if config.abilities.size() > 0:
+		print("  能力: %s" % str(config.abilities))
+	print("")
+	
+	# 创建敌人
+	print("开始创建敌人...")
+	var success = create_enemy(config)
+	
+	if success:
+		print("\n================================================================================")
+		print("✅ 创建成功!")
+		print("================================================================================")
+		print("\n下一步:")
+		print("1. 打开测试场景")
+		print("2. 添加 scenes/unit/enemy/enemy_generic.tscn")
+		print("3. 设置 Enemy Id 为 '%s'" % config.enemy_id)
+		print("4. 按 F5 运行测试")
+	else:
+		print("\n================================================================================")
+		print("❌ 创建失败!")
+		print("================================================================================")
+		print("\n请检查:")
+		print("1. enemy_id 是否已存在")
+		print("2. 配置是否正确")
+		print("3. 查看上面的错误信息")
 
 # ==============================================================================
 # 创建敌人（完整流程）
@@ -120,40 +163,6 @@ func create_enemy(config: Dictionary) -> bool:
 	_print_usage_guide(enemy_id)
 	
 	return true
-
-# ==============================================================================
-# 交互式创建
-# ==============================================================================
-func create_enemy_interactive() -> void:
-	"""交互式创建敌人（在编辑器中使用）"""
-	print("\n================================================================================")
-	print("交互式敌人创建向导")
-	print("================================================================================")
-	
-	# 注意：Godot的EditorScript不支持真正的交互式输入
-	# 这里提供一个配置示例，用户需要修改代码后运行
-	
-	var config = {
-		"enemy_id": "new_enemy",  # 修改这里
-		"display_name": "新敌人",  # 修改这里
-		"health": 100,
-		"speed": 150,
-		"damage": 10,
-		"sprite_path": "res://assets/sprites/Enemies/Enemy_1.png",
-		"abilities": []  # 可选: ["poison_pool", "shooting", "charge"]
-	}
-	
-	print("\n请在代码中修改上面的 config 字典，然后重新运行此脚本")
-	print("\n当前配置:")
-	for key in config.keys():
-		print("  %s: %s" % [key, config[key]])
-	
-	# 如果配置看起来已经修改过了（不是默认值），则创建
-	if config.enemy_id != "new_enemy":
-		print("\n检测到自定义配置，开始创建...")
-		create_enemy(config)
-	else:
-		print("\n提示: 修改 enemy_id 后重新运行以创建敌人")
 
 # ==============================================================================
 # 配置验证
@@ -206,7 +215,7 @@ func _add_to_enemy_config(config: Dictionary) -> bool:
 	var file_path = "res://config/enemy/enemy_config.csv"
 	
 	# 合并默认值
-	var full_config = ENEMY_CONFIG_TEMPLATE.duplicate()
+	var full_config = DEFAULT_CONFIG.duplicate()
 	full_config.merge(config, true)
 	
 	# 构建CSV行
@@ -252,7 +261,7 @@ func _add_to_visual_config(config: Dictionary) -> bool:
 	var file_path = "res://config/enemy/enemy_visual.csv"
 	
 	# 合并默认值
-	var full_config = VISUAL_CONFIG_TEMPLATE.duplicate()
+	var full_config = DEFAULT_CONFIG.duplicate()
 	full_config.merge(config, true)
 	full_config.enemy_id = config.enemy_id
 	
