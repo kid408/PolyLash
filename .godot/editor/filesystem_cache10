@@ -1,5 +1,6 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1769338436
+::res://::1769341551
+CHARACTER_CREATION_IMPROVEMENT_SUMMARY.md::TextFile::-1::1769341099::0::1::::<><><>0<>0<><>::
 icon.png::CompressedTexture2D::4198334022768452939::1768136923::1768747875::1::::<><><>0<>0<>fb6e1e7bfd910f0a20703a7a13bf3a7f<>res://.godot/imported/icon.png-487276ed1e3a0c39cad0279d744ee560.ctex::
 IMPLEMENTATION_CHECKLIST.md::TextFile::-1::1769338091::0::1::::<><><>0<>0<><>::
 REFACTORING_SUMMARY.md::TextFile::-1::1769337966::0::1::::<><><>0<>0<><>::
@@ -290,13 +291,19 @@ shop_manager.gd::GDScript::758916905523300399::1769299422::0::1::::<>Node<><>0<>
 skill_effect_manager.gd::GDScript::7362046239172419739::1768741170::0::1::::<>Node<><>0<>0<><>::
 upgrade_manager.gd::GDScript::7166158279115057107::1769300151::0::1::::<>Node<><>0<>0<><>::
 warehouse_manager.gd::GDScript::-1::1769248621::0::1::::<>Node<><>0<>0<><>::
-::res://docs/::1769337971
+::res://docs/::1769341023
+ARCHITECTURE_ANALYSIS_REPORT.md::TextFile::-1::1769339082::0::1::::<><><>0<>0<><>::
 ARCHITECTURE_DIAGRAM.md::TextFile::-1::1769338031::0::1::::<><><>0<>0<><>::
+CHARACTER_CREATION_ANALYSIS.md::TextFile::-1::1769340416::0::1::::<><><>0<>0<><>::
+CHARACTER_CREATION_GUIDE.md::TextFile::-1::1769340823::0::1::::<><><>0<>0<><>::
 DRAWING_SKILL_COMPARISON.md::TextFile::-1::1769337821::0::1::::<><><>0<>0<><>::
 DRAWING_SKILL_MIGRATION_GUIDE.md::TextFile::-1::1769337879::0::1::::<><><>0<>0<><>::
 DRAWING_SKILL_QUICK_REFERENCE.md::TextFile::-1::1769337921::0::1::::<><><>0<>0<><>::
 DRAWING_SKILL_REFACTORING.md::TextFile::-1::1769337758::0::1::::<><><>0<>0<><>::
 GAME_DESIGN_BIBLE.md::TextFile::-1::1769333035::0::1::::<><><>0<>0<><>::
+TABLE_NORMALIZATION_ANALYSIS.md::TextFile::-1::1769340073::0::1::::<><><>0<>0<><>::
+角色创建完整指南_中文.md::TextFile::-1::1769341005::0::1::::<><><>0<>0<><>::
+角色创建快速参考.md::TextFile::-1::1769341038::0::1::::<><><>0<>0<><>::
 ::res://effects/::1768090588
 flash.gdshader::Shader::1257744766663505236::1767256173::0::1::::<><><>0<>0<><>::
 flash_material.tres::ShaderMaterial::5773785310553720342::1759655675::0::1::::<><><>0<>0<><>::uid://r6i4wwvquocy::::res://effects/flash.gdshader
@@ -439,7 +446,7 @@ enemy_elites.gd::GDScript::766478093582052559::1769300219::0::1::::EnemyElites<>
 enemy_glutton.gd::GDScript::7080677607772582952::1769308488::0::1::::EnemyGlutton<>EnemyElites<><>0<>0<><>::
 enemy_glutton.tscn::PackedScene::8818271082523704971::1769300569::0::1::::<><><>0<>0<><>::uid://cyavyrbpj6jjb::::res://scenes/unit/unit.tscn<>uid://cffpkqppd1vid::::res://assets/sprites/Enemies/Enemy_Glutton_01.png<>uid://c746yw56els0w::::res://scenes/unit/enemy/elites/enemy_glutton.gd<>uid://dvfjoyutjx5jf::::res://scenes/particles/Explosion.tscn<>uid://fjxcfmweyx6q::::res://assets/sprites/Enemies/Enemy_Glutton_02.png<>uid://3t6iqc1kav5h::::res://scenes/components/hitbox_component.tscn<>uid://b63fj2rkihrp6::::res://assets/sprites/Enemies/Enemy_Glutton_03.png<>uid://cl7cw5pkhqcpa::::res://assets/sprites/Enemies/Enemy_Glutton_04.png<>uid://cpb8gy2pbp26u::::res://assets/sprites/Enemies/Enemy_Glutton_05.png
 ::res://scenes/unit/players/::1769331151
-player_base.gd::GDScript::2512524217351251223::1769331151::0::1::::PlayerBase<>Unit<><>0<>0<><>::
+player_base.gd::GDScript::2512524217351251223::1769340910::0::1::::PlayerBase<>Unit<><>0<>0<><>::
 player_butcher.gd::GDScript::8156668503323171576::1769304258::0::1::::PlayerButcher<>PlayerBase<><>0<>0<><>::
 player_generic.tscn::PackedScene::2879972210333402701::1768702943::0::1::::<><><>0<>0<><>::uid://cyavyrbpj6jjb::::res://scenes/unit/unit.tscn<>uid://bixfa3sidiiko::::res://scenes/unit/players/player_base.gd<>uid://cproxhccob85g::::res://assets/sprites/Players/Player_1.png<>uid://c0mirjaxbhe0q::::res://scenes/unit/players/trail.gd<>uid://3xhc8o3yr61w::::res://scenes/unit/players/weapon_container.gd<>uid://cyj3i1371tt7i::::res://scenes/components/hitbox_component.gd
 player_herder.gd::GDScript::2995717204932667250::1769304301::0::1::::PlayerHerder<>PlayerBase<><>0<>0<><>::
@@ -466,3 +473,5 @@ weapon_pistol.tscn::PackedScene::3787814276095916881::1759718844::0::1::::<><><>
 ::res://tests/::1769251086
 test_item_data.gd::GDScript::1859119810913775869::1769248683::0::1::::<>Node<><>0<>0<><>::
 test_modifier_system.gd::GDScript::4611085007227032754::1769248128::0::1::::<>Node<><>0<>0<><>::
+::res://tools/::1769341365
+create_character_tool.gd::GDScript::4478237535142961221::1769341507::0::1::::<>EditorScript<><>0<>1<><>::

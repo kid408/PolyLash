@@ -106,6 +106,9 @@ func _ready() -> void:
 	
 	# 加载大招技能
 	_load_ultimate_skill()
+	
+	# 自动创建技能管理器（如果子类没有创建）
+	_auto_create_skill_manager()
 
 func _exit_tree() -> void:
 	# 不清理任何技能效果，让它们按照自己的生命周期自然消失
@@ -527,7 +530,27 @@ func _handle_input(delta: float) -> void:
 		# position.x = clamp(position.x, -2000, 2000)
 		# position.y = clamp(position.y, -2000, 2000)
 
-	# 技能按键分发由各个子类的SkillManager处理
+	# 技能按键分发 - 如果有SkillManager则自动处理
+	if has_node("SkillManager"):
+		var skill_manager = get_node("SkillManager")
+		
+		# E技能（瞬发）
+		if Input.is_action_just_pressed("skill_e"):
+			skill_manager.execute_skill("e")
+			return
+		
+		# Q技能（蓄力）
+		if Input.is_action_pressed("skill_q"):
+			skill_manager.charge_skill("q", delta)
+			return
+		elif Input.is_action_just_released("skill_q"):
+			skill_manager.release_skill("q")
+			return
+		
+		# 左键技能
+		if Input.is_action_just_pressed("click_left"):
+			skill_manager.execute_skill("lmb")
+			return
 	
 	# F键 - 大招
 	if Input.is_action_just_pressed("skill_f"):
@@ -794,6 +817,49 @@ func _get_ultimate_script_for_player(pid: String) -> Script:
 		return null
 	
 	return load(script_path) as Script
+
+## 自动创建技能管理器（如果子类没有创建）
+## 这使得纯CSV配置的角色也能拥有Q/E/LMB技能
+func _auto_create_skill_manager() -> void:
+	# 检查是否已经有SkillManager（子类可能已经创建）
+	if has_node("SkillManager"):
+		print("[PlayerBase] 技能管理器已存在（由子类创建），跳过自动创建")
+		return
+	
+	# 检查是否有技能绑定配置
+	var bindings = ConfigManager.get_player_skill_bindings(player_id)
+	if bindings.is_empty():
+		print("[PlayerBase] 角色 %s 没有技能绑定配置，跳过技能管理器创建" % player_id)
+		return
+	
+	# 检查是否至少有一个技能槽位配置
+	var has_any_skill = false
+	for slot in ["q", "e", "lmb", "rmb"]:
+		var skill_id = bindings.get("slot_%s" % slot, "")
+		if not skill_id.is_empty():
+			has_any_skill = true
+			break
+	
+	if not has_any_skill:
+		print("[PlayerBase] 角色 %s 没有配置任何技能，跳过技能管理器创建" % player_id)
+		return
+	
+	# 创建技能管理器
+	var skill_manager = SkillManager.new(self)
+	skill_manager.name = "SkillManager"
+	skill_manager.debug_mode = false
+	add_child(skill_manager)
+	
+	# 加载技能配置
+	var success = skill_manager.load_skills_from_config(player_id)
+	
+	if success:
+		print("[PlayerBase] ✅ 自动创建技能管理器成功: %s (已加载 %d 个技能)" % [
+			player_id, 
+			skill_manager.get_loaded_skill_count()
+		])
+	else:
+		print("[PlayerBase] ⚠️ 技能管理器创建成功，但技能加载失败: %s" % player_id)
 
 func get_energy_percent() -> float:
 	"""获取能量百分比（0-100）
