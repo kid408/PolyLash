@@ -19,7 +19,7 @@ signal gold_changed(current)
 var config: Dictionary = {}
 
 # 通用数值（从CSV加载）
-var max_energy: float = 999.0
+var max_energy: float = 100.0
 var energy_regen: float = 0.5
 var max_armor: int = 3
 var base_speed: float = 300.0
@@ -126,7 +126,7 @@ func _load_config_from_csv() -> void:
 		return
 	
 	# 加载基础属性
-	max_energy = config.get("max_energy", 999.0)
+	max_energy = config.get("max_energy", 100.0)
 	energy_regen = config.get("energy_regen", 0.5)
 	max_armor = config.get("max_armor", 3)
 	base_speed = config.get("base_speed", 300.0)
@@ -148,7 +148,7 @@ func _load_config_from_csv() -> void:
 	energy = initial_energy
 	
 	# 从CSV设置生命值和速度（直接设置到 Unit 基类的属性）
-	var csv_health = config.get("health", 5000.0)
+	var csv_health = config.get("health", 100.0)
 	var csv_speed = config.get("base_speed", 300.0)
 	
 	health = csv_health

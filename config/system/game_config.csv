@@ -2,14 +2,14 @@ setting,value,description
 -1,值,说明
 difficulty,1,游戏难度系数（影响敌人强度）
 starting_wave,1,起始波次
-max_waves,10,最大波次数
+max_waves,20,最大波次数
 enemy_spawn_rate,1,敌人生成速率倍率
 player_damage_multiplier,1,玩家伤害倍率
 enemy_damage_multiplier,1,敌人伤害倍率
 xp_gain_multiplier,1,经验获取倍率
 gold_gain_multiplier,1,金币获取倍率
-enemy_health_per_wave,10.0,每波增加的敌人生命值
-enemy_damage_per_wave,2.0,每波增加的敌人伤害
+enemy_health_per_wave,20,每波增加的敌人生命值
+enemy_damage_per_wave,4,每波增加的敌人伤害
 armor_reduction_per_level,0.2,每点护甲减伤比例
 selection_players_per_row,5,角色选择界面每行显示的角色数量
 max_selected_players,3,最多可选择的角色数量

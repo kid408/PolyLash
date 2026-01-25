@@ -1,8 +1,0 @@
-res://scenes/components/hitbox_component.gd
-res://scenes/skills/skill_ultimate_base.gd
-res://scenes/weapons/melee/melee_behavior.gd
-res://scenes/unit/players/player_base.gd
-res://scenes/projectiles/projectile.gd
-res://scenes/unit/enemy/elites/enemy_glutton.gd
-res://scenes/vfx/explosion_area.gd
-res://scenes/components/hurtbox_component.gd

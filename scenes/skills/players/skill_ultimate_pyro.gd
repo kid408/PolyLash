@@ -90,7 +90,7 @@ func _find_q_skill() -> Node:
 		if child.name.contains("SkillQ") or (child.has_method("get_skill_key") and child.get_skill_key() == "q"):
 			return child
 	
-	printerr("[SkillUltimatePyro] 未找到Q技能节点")
+	#printerr("[SkillUltimatePyro] 未找到Q技能节点")
 	return null
 
 # ============================================================================
