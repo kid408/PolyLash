@@ -1,9 +1,17 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1769341551
+::res://::1769344504
+BUGFIX_REPORT.md::TextFile::-1::1769344267::0::1::::<><><>0<>0<><>::
 CHARACTER_CREATION_IMPROVEMENT_SUMMARY.md::TextFile::-1::1769341099::0::1::::<><><>0<>0<><>::
+ENEMY_QUICK_START.md::TextFile::-1::1769343599::0::1::::<><><>0<>0<><>::
+ENEMY_SYSTEM_FINAL_REPORT.md::TextFile::-1::1769343676::0::1::::<><><>0<>0<><>::
+ENEMY_SYSTEM_IMPLEMENTATION_CHECKLIST.md::TextFile::-1::1769343573::0::1::::<><><>0<>0<><>::
+ENEMY_SYSTEM_OVERVIEW.md::TextFile::-1::1769343871::0::1::::<><><>0<>0<><>::
+ENEMY_SYSTEM_README.md::TextFile::-1::1769343721::0::1::::<><><>0<>0<><>::
+ENEMY_SYSTEM_REFACTORING_SUMMARY.md::TextFile::-1::1769343507::0::1::::<><><>0<>0<><>::
 icon.png::CompressedTexture2D::4198334022768452939::1768136923::1768747875::1::::<><><>0<>0<>fb6e1e7bfd910f0a20703a7a13bf3a7f<>res://.godot/imported/icon.png-487276ed1e3a0c39cad0279d744ee560.ctex::
 IMPLEMENTATION_CHECKLIST.md::TextFile::-1::1769338091::0::1::::<><><>0<>0<><>::
 REFACTORING_SUMMARY.md::TextFile::-1::1769337966::0::1::::<><><>0<>0<><>::
+SYSTEM_STATUS.md::TextFile::-1::1769344326::0::1::::<><><>0<>0<><>::
 ::res://assets/::1768090587
 ::res://assets/audio/::1768747875
 Bg Music.mp3::AudioStreamMP3::1088107525073116890::1759559642::1768747875::1::::<><><>0<>0<>e0e2e5704402699458858fa95335c1c4<>res://.godot/imported/Bg Music.mp3-893b440c6f160bedcdf17bfafe6469ab.mp3str::
@@ -276,7 +284,8 @@ WeaponPistol.png::CompressedTexture2D::2493995899236666045::1759559642::17687478
 WeaponRevolver.png::CompressedTexture2D::8596554517593031486::1759559642::1768747875::1::::<><><>0<>0<>e9b4093ff6c2526af3487408e1bd17d2<>res://.godot/imported/WeaponRevolver.png-e21332dae388cad98f75b50eff68be3d.ctex::
 WeaponShotgun.png::CompressedTexture2D::7024380308258801515::1759559642::1768747875::1::::<><><>0<>0<>3295560049088c3150e3cf26b60373b3<>res://.godot/imported/WeaponShotgun.png-92a9cf14b44284b399904a0f48d0089b.ctex::
 WeaponSMG.png::CompressedTexture2D::6719343259487316355::1759559642::1768747875::1::::<><><>0<>0<>021afdb7393221911845b536ae3c020f<>res://.godot/imported/WeaponSMG.png-0bb94804a8aac39ff943aade4cb82412.ctex::
-::res://autoloads/::1769254179
+::res://autoloads/::1769344001
+ability_manager.gd::GDScript::5268116812975746129::1769343208::0::1::::<>Node<><>0<>0<><>::
 bond_manager.gd::GDScript::2114479458212321404::1769297402::0::1::::<>Node<><>0<>0<><>::
 bond_ui_loader.gd::GDScript::-1::1769239309::0::1::::<>Node<><>0<>0<><>::
 config_manager.gd::GDScript::6161209431084733178::1768155548::0::1::::<>Node<><>0<>0<><>::
@@ -291,7 +300,7 @@ shop_manager.gd::GDScript::758916905523300399::1769299422::0::1::::<>Node<><>0<>
 skill_effect_manager.gd::GDScript::7362046239172419739::1768741170::0::1::::<>Node<><>0<>0<><>::
 upgrade_manager.gd::GDScript::7166158279115057107::1769300151::0::1::::<>Node<><>0<>0<><>::
 warehouse_manager.gd::GDScript::-1::1769248621::0::1::::<>Node<><>0<>0<><>::
-::res://docs/::1769341023
+::res://docs/::1769343363
 ARCHITECTURE_ANALYSIS_REPORT.md::TextFile::-1::1769339082::0::1::::<><><>0<>0<><>::
 ARCHITECTURE_DIAGRAM.md::TextFile::-1::1769338031::0::1::::<><><>0<>0<><>::
 CHARACTER_CREATION_ANALYSIS.md::TextFile::-1::1769340416::0::1::::<><><>0<>0<><>::
@@ -300,8 +309,12 @@ DRAWING_SKILL_COMPARISON.md::TextFile::-1::1769337821::0::1::::<><><>0<>0<><>::
 DRAWING_SKILL_MIGRATION_GUIDE.md::TextFile::-1::1769337879::0::1::::<><><>0<>0<><>::
 DRAWING_SKILL_QUICK_REFERENCE.md::TextFile::-1::1769337921::0::1::::<><><>0<>0<><>::
 DRAWING_SKILL_REFACTORING.md::TextFile::-1::1769337758::0::1::::<><><>0<>0<><>::
+ENEMY_CREATION_ANALYSIS.md::TextFile::-1::1769342706::0::1::::<><><>0<>0<><>::
+ENEMY_CREATION_GUIDE.md::TextFile::-1::1769343334::0::1::::<><><>0<>0<><>::
+ENEMY_CREATION_QUICK_REFERENCE.md::TextFile::-1::1769343357::0::1::::<><><>0<>0<><>::
 GAME_DESIGN_BIBLE.md::TextFile::-1::1769333035::0::1::::<><><>0<>0<><>::
 TABLE_NORMALIZATION_ANALYSIS.md::TextFile::-1::1769340073::0::1::::<><><>0<>0<><>::
+敌人创建完整指南_中文.md::TextFile::-1::1769343440::0::1::::<><><>0<>0<><>::
 角色创建完整指南_中文.md::TextFile::-1::1769341005::0::1::::<><><>0<>0<><>::
 角色创建快速参考.md::TextFile::-1::1769341038::0::1::::<><><>0<>0<><>::
 ::res://effects/::1768090588
@@ -338,7 +351,7 @@ camera_2d.gd::GDScript::1631517828598427408::1766934148::0::1::::Camera<>Camera2
 chest_manager.gd::GDScript::4284107812136300826::1768660819::0::1::::ChestManager<>Node2D<><>0<>0<><>::
 debug_switcher.gd::GDScript::8568843934293789649::1768724259::0::1::::<>Node<><>0<>0<><>::
 spawner.gd::GDScript::6634392099754455357::1769299435::0::1::::Spawner<>Node2D<><>0<>0<><>::
-::res://scenes/components/::1768090588
+::res://scenes/components/::1769342995
 health_component.gd::GDScript::6076947496687989050::1769299011::0::1::::HealthComponent<>Node<><>0<>0<><>::
 health_component.tscn::PackedScene::3444597139070502771::1759635305::0::1::::<><><>0<>0<><>::uid://cstyo4wiq71vi::::res://scenes/components/health_component.gd
 hitbox_component.gd::GDScript::6477668786985293004::1769309699::0::1::::HitboxComponent<>Area2D<><>0<>0<><>::
@@ -346,6 +359,11 @@ hitbox_component.tscn::PackedScene::2006408156976962871::1759880978::0::1::::<><
 hurtbox_component.gd::GDScript::1081693259728517352::1769309340::0::1::::HurtboxComponent<>Area2D<><>0<>0<><>::
 hurtbox_component.tscn::PackedScene::8271330136403215581::1759881133::0::1::::<><><>0<>0<><>::uid://pn8lhoms03l1::::res://scenes/components/hurtbox_component.gd
 mine.tscn::PackedScene::268951919346680078::1766419036::0::1::::<><><>0<>0<><>::uid://dxl550mv1d5l6::::res://assets/sprites/Upgrades/3.png<>uid://cyj3i1371tt7i::::res://scenes/components/hitbox_component.gd
+::res://scenes/components/abilities/::1769344001
+ability_base.gd::GDScript::7278119774230990999::1769343008::0::1::::AbilityBase<>Node<><>0<>0<><>::
+charge_ability.gd::GDScript::7753657528353313200::1769343074::0::1::::ChargeAbility<>AbilityBase<><>0<>0<><>::
+poison_pool_ability.gd::GDScript::6242935678063602055::1769343032::0::1::::PoisonPoolAbility<>AbilityBase<><>0<>0<><>::
+shooting_ability.gd::GDScript::8922824775010503635::1769343050::0::1::::ShootingAbility<>AbilityBase<><>0<>0<><>::
 ::res://scenes/items/::1768090588
 chest.gd::GDScript::2636734244960201034::1766914614::0::1::::Chest<>Area2D<><>0<>0<><>::
 chest.tscn::PackedScene::4961907336144387070::1766916112::0::1::::<><><>0<>0<><>::uid://bdtivlym0x7pe::::res://scenes/items/chest.gd<>uid://ny2wg26s8pai::::res://assets/sprites/Chests/Chests.png
@@ -445,13 +463,14 @@ shooting_behavior.gd::GDScript::8247039190910686396::1769299453::0::1::::Shootin
 enemy_elites.gd::GDScript::766478093582052559::1769300219::0::1::::EnemyElites<>Enemy<><>0<>0<><>::
 enemy_glutton.gd::GDScript::7080677607772582952::1769308488::0::1::::EnemyGlutton<>EnemyElites<><>0<>0<><>::
 enemy_glutton.tscn::PackedScene::8818271082523704971::1769300569::0::1::::<><><>0<>0<><>::uid://cyavyrbpj6jjb::::res://scenes/unit/unit.tscn<>uid://cffpkqppd1vid::::res://assets/sprites/Enemies/Enemy_Glutton_01.png<>uid://c746yw56els0w::::res://scenes/unit/enemy/elites/enemy_glutton.gd<>uid://dvfjoyutjx5jf::::res://scenes/particles/Explosion.tscn<>uid://fjxcfmweyx6q::::res://assets/sprites/Enemies/Enemy_Glutton_02.png<>uid://3t6iqc1kav5h::::res://scenes/components/hitbox_component.tscn<>uid://b63fj2rkihrp6::::res://assets/sprites/Enemies/Enemy_Glutton_03.png<>uid://cl7cw5pkhqcpa::::res://assets/sprites/Enemies/Enemy_Glutton_04.png<>uid://cpb8gy2pbp26u::::res://assets/sprites/Enemies/Enemy_Glutton_05.png
-::res://scenes/unit/players/::1769331151
+::res://scenes/unit/players/::1769341827
 player_base.gd::GDScript::2512524217351251223::1769340910::0::1::::PlayerBase<>Unit<><>0<>0<><>::
 player_butcher.gd::GDScript::8156668503323171576::1769304258::0::1::::PlayerButcher<>PlayerBase<><>0<>0<><>::
 player_generic.tscn::PackedScene::2879972210333402701::1768702943::0::1::::<><><>0<>0<><>::uid://cyavyrbpj6jjb::::res://scenes/unit/unit.tscn<>uid://bixfa3sidiiko::::res://scenes/unit/players/player_base.gd<>uid://cproxhccob85g::::res://assets/sprites/Players/Player_1.png<>uid://c0mirjaxbhe0q::::res://scenes/unit/players/trail.gd<>uid://3xhc8o3yr61w::::res://scenes/unit/players/weapon_container.gd<>uid://cyj3i1371tt7i::::res://scenes/components/hitbox_component.gd
 player_herder.gd::GDScript::2995717204932667250::1769304301::0::1::::PlayerHerder<>PlayerBase<><>0<>0<><>::
 player_pyro.gd::GDScript::5424358368989502286::1769304280::0::1::::PlayerPyro<>PlayerBase<><>0<>0<><>::
 player_sapper.gd::GDScript::6789573016277066395::1769304273::0::1::::PlayerSapper<>PlayerBase<><>0<>0<><>::
+player_tempest.gd::GDScript::8399488155488631793::1769341718::0::1::::PlayerTempest<>PlayerBase<><>0<>0<><>::
 player_weaver.gd::GDScript::2348330194485358138::1769304294::0::1::::PlayerWeaver<>PlayerBase<><>0<>0<><>::
 player_wind.gd::GDScript::9028002327966843026::1769304244::0::1::::PlayerWind<>PlayerBase<><>0<>0<><>::
 trail.gd::GDScript::6552851559581026970::1768747728::0::1::::Trail<>Line2D<><>0<>0<><>::
@@ -473,5 +492,7 @@ weapon_pistol.tscn::PackedScene::3787814276095916881::1759718844::0::1::::<><><>
 ::res://tests/::1769251086
 test_item_data.gd::GDScript::1859119810913775869::1769248683::0::1::::<>Node<><>0<>0<><>::
 test_modifier_system.gd::GDScript::4611085007227032754::1769248128::0::1::::<>Node<><>0<>0<><>::
-::res://tools/::1769341365
+::res://tools/::1769344493
 create_character_tool.gd::GDScript::4478237535142961221::1769341507::0::1::::<>EditorScript<><>0<>1<><>::
+create_enemy_tool.gd::GDScript::4711515772803911334::1769344186::0::1::::<>EditorScript<><>0<>1<><>::
+test_enemy_creation.gd::GDScript::6565119671999679654::1769344234::0::1::::<>EditorScript<><>0<>1<><>::

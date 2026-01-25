@@ -1,0 +1,9 @@
+enemy_id,ability_id,cooldown,min_distance,max_distance,health_threshold,auto_activate,param1,param2,param3,param4,param5,param6
+-1,敌人ID,能力ID,冷却时间,最小距离,最大距离,生命阈值,自动激活,参数1,参数2,参数3,参数4,参数5,参数6
+# 毒池能力参数: pool_radius, pool_damage, pool_damage_interval, pool_lifetime
+mine_layer_enemy,poison_pool,0,0,999999,0,1,60,5,0.5,8,,
+# 射击能力参数: projectile_count, arc_angle, projectile_speed, projectile_damage_mult
+shielded_enemy,shooting,3.0,0,300,0,1,3,45,1800,0.5,,
+# 冲锋能力参数: prep_time, charge_duration, speed_multiplier, warning_line_width
+spiked_enemy,charge,3.0,100,300,0,1,0.8,0.6,3.5,30,,
+breaker_enemy,charge,3.0,100,300,0,1,0.8,0.6,3.5,30,,
