@@ -48,6 +48,9 @@ var reduction_per_armor: float = 0.2  # 从game_config加载
 # 武器管理
 var current_weapons: Array[Weapon] = []
 
+# 大招系统 (F键)
+var ultimate_skill: SkillUltimate = null
+
 # UI元素
 var energy_bar_ui: Control = null
 
@@ -62,13 +65,13 @@ var modifier_manager: Node = null
 var equipped_item_id: String = "" 
 
 func _ready() -> void:
-	# 从CSV加载配置（必须在super._ready()之前，这样才能设置stats）
+	# 从CSV加载配置（必须在super._ready()之前，这样才能设置属性）
 	_load_config_from_csv()
 	
 	# 从CSV加载精灵图片
 	_load_sprite_from_csv()
 	
-	super._ready() # 初始化 Stats
+	super._ready() # 初始化基类（会调用 health_component.setup_with_health）
 	
 	# 初始化修改器管理器
 	modifier_manager = ModifierManager
@@ -100,6 +103,9 @@ func _ready() -> void:
 	
 	# 创建能量槽UI
 	_create_energy_bar_ui()
+	
+	# 加载大招技能
+	_load_ultimate_skill()
 
 func _exit_tree() -> void:
 	# 不清理任何技能效果，让它们按照自己的生命周期自然消失
@@ -141,20 +147,15 @@ func _load_config_from_csv() -> void:
 	var initial_energy = config.get("initial_energy", max_energy)
 	energy = initial_energy
 	
-	# 如果stats不存在，创建一个新的
-	if stats == null:
-		stats = UnitStats.new()
-	
-	# 从CSV设置生命值和速度
+	# 从CSV设置生命值和速度（直接设置到 Unit 基类的属性）
 	var csv_health = config.get("health", 5000.0)
 	var csv_speed = config.get("base_speed", 300.0)
 	
-	stats.health = csv_health
-	stats.speed = csv_speed
+	health = csv_health
+	speed = csv_speed
 	
-	# 确保 block_chance 被初始化（防止 nil 错误）
-	if not stats.has_meta("block_chance"):
-		stats.block_chance = 0.0
+	# 确保 block_chance 被初始化
+	block_chance = 0.0
 
 func _load_sprite_from_csv() -> void:
 	"""从CSV加载角色精灵图片，覆盖场景文件中的硬编码纹理"""
@@ -342,17 +343,17 @@ func _apply_tier1_item(item_data: Dictionary) -> void:
 	
 	match stat_name:
 		"health":
-			stats.health += value
+			health += value
 			if OS.is_debug_build():
-				print("[PlayerBase] 生命值 +%.0f -> %.0f" % [value, stats.health])
+				print("[PlayerBase] 生命值 +%.0f -> %.0f" % [value, health])
 		"speed":
-			stats.speed += value
+			speed += value
 			if OS.is_debug_build():
-				print("[PlayerBase] 速度 +%.0f -> %.0f" % [value, stats.speed])
+				print("[PlayerBase] 速度 +%.0f -> %.0f" % [value, speed])
 		"damage":
-			stats.damage += value
+			damage += value
 			if OS.is_debug_build():
-				print("[PlayerBase] 攻击力 +%.0f -> %.0f" % [value, stats.damage])
+				print("[PlayerBase] 攻击力 +%.0f -> %.0f" % [value, damage])
 		_:
 			printerr("[PlayerBase] 警告: 未知的属性名称 '%s'" % stat_name)
 
@@ -520,15 +521,22 @@ func _handle_input(delta: float) -> void:
 	# 移动逻辑
 	move_dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if can_move():
-		var current_speed = base_speed 
-		if stats != null:
-			current_speed = stats.speed
+		var current_speed = speed  # 直接使用 Unit 基类的 speed 属性
 		position += move_dir * current_speed * delta
 		# 移除移动限制，允许无限移动
 		# position.x = clamp(position.x, -2000, 2000)
 		# position.y = clamp(position.y, -2000, 2000)
 
 	# 技能按键分发由各个子类的SkillManager处理
+	
+	# F键 - 大招
+	if Input.is_action_just_pressed("skill_f"):
+		print("[PlayerBase] F键按下，ultimate_skill = %s" % str(ultimate_skill))
+		if ultimate_skill:
+			print("[PlayerBase] 尝试激活大招，能量: %.1f%%" % get_energy_percent())
+			ultimate_skill.try_activate()
+		else:
+			print("[PlayerBase] 大招未加载！")
 
 # --- 虚函数 (子类重写) ---
 func can_move() -> bool: 
@@ -650,6 +658,156 @@ func _cleanup_skill_effects() -> void:
 			for skill in sm.get_all_skills():
 				if skill and skill.has_method("cleanup"):
 					skill.cleanup()
+
+# ==============================================================================
+# 大招系统 (Ultimate Skill - F Key)
+# ==============================================================================
+
+func _load_ultimate_skill() -> void:
+	"""从配置加载大招技能"""
+	print("[PlayerBase] 开始加载大招，player_id = %s" % player_id)
+	
+	if player_id.is_empty():
+		print("[PlayerBase] player_id 为空，跳过大招加载")
+		return
+	
+	# 从CSV加载大招配置
+	var ult_config = _load_ult_config_from_csv(player_id)
+	if ult_config.is_empty():
+		print("[PlayerBase] 角色 %s 没有配置大招" % player_id)
+		return
+	
+	print("[PlayerBase] 大招配置加载成功: %s" % str(ult_config))
+	
+	# 根据角色ID创建对应的大招实例
+	var ult_script = _get_ultimate_script_for_player(player_id)
+	if not ult_script:
+		print("[PlayerBase] 角色 %s 没有大招脚本" % player_id)
+		return
+	
+	print("[PlayerBase] 大招脚本加载成功: %s" % str(ult_script))
+	
+	# 创建大招节点
+	ultimate_skill = ult_script.new()
+	ultimate_skill.name = "UltimateSkill"
+	add_child(ultimate_skill)
+	
+	print("[PlayerBase] 大招节点创建成功")
+	
+	# 初始化大招
+	ultimate_skill.initialize(ult_config, self)
+	
+	print("[PlayerBase] 加载大招完成: %s" % ult_config.get("name", "Unknown"))
+
+func _load_ult_config_from_csv(pid: String) -> Dictionary:
+	"""从CSV加载大招配置
+	
+	Args:
+		pid: 玩家ID
+	
+	Returns:
+		大招配置字典
+	"""
+	var csv_path = "res://config/player/ult_config.csv"  # 修正路径
+	if not FileAccess.file_exists(csv_path):
+		printerr("[PlayerBase] 大招配置文件不存在: %s" % csv_path)
+		return {}
+	
+	var file = FileAccess.open(csv_path, FileAccess.READ)
+	if not file:
+		printerr("[PlayerBase] 无法打开大招配置文件")
+		return {}
+	
+	# 跳过表头
+	var header = file.get_csv_line()
+	
+	# 跳过注释行（以 # 开头的行）
+	while not file.eof_reached():
+		var pos = file.get_position()
+		var line = file.get_csv_line()
+		if line.size() == 0 or line[0].begins_with("#"):
+			continue  # 跳过空行和注释行
+		else:
+			# 回退到这一行的开始
+			file.seek(pos)
+			break
+	
+	# 查找匹配的大招ID（格式: player_id + "_ult"）
+	var target_ult_id = pid + "_ult"
+	
+	while not file.eof_reached():
+		var line = file.get_csv_line()
+		if line.size() < 8:  # 现在有8个字段
+			continue
+		
+		# 跳过注释行
+		if line[0].begins_with("#"):
+			continue
+		
+		var ult_id = line[0]
+		if ult_id == target_ult_id:
+			file.close()
+			return {
+				"ult_id": ult_id,
+				"name": line[1],
+				"duration": float(line[2]),
+				"energy_cost": float(line[3]),  # 新增：读取能量消耗
+				"bonus_bond_tag": line[4],
+				"visual_color_hex": line[5],
+				"scale_multiplier": float(line[6]),
+				"description": line[7]
+			}
+	
+	file.close()
+	return {}
+
+func _get_ultimate_script_for_player(pid: String) -> Script:
+	"""获取角色对应的大招脚本
+	
+	Args:
+		pid: 玩家ID
+	
+	Returns:
+		大招脚本资源
+	"""
+	# 映射表：player_id -> 大招脚本路径
+	var ult_script_map = {
+		"butcher": "res://scenes/skills/players/skill_ultimate_butcher.gd",
+		"pyro": "res://scenes/skills/players/skill_ultimate_pyro.gd",
+		# 其他角色可以在这里添加
+	}
+	
+	var script_path = ult_script_map.get(pid, "")
+	if script_path == "":
+		return null
+	
+	if not FileAccess.file_exists(script_path):
+		printerr("[PlayerBase] 大招脚本不存在: %s" % script_path)
+		return null
+	
+	return load(script_path) as Script
+
+func get_energy_percent() -> float:
+	"""获取能量百分比（0-100）
+	
+	Returns:
+		能量百分比
+	"""
+	if max_energy <= 0:
+		return 0.0
+	return (energy / max_energy) * 100.0
+
+func consume_energy_percent(percent: float) -> bool:
+	"""消耗百分比能量
+	
+	Args:
+		percent: 百分比（0-100）
+	
+	Returns:
+		是否成功消耗
+	"""
+	var amount = (percent / 100.0) * max_energy
+	return consume_energy(amount)
 
 # ==============================================================================
 # LineBreaker 切线逻辑 - 虚函数，子类可重写

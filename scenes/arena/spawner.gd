@@ -461,10 +461,11 @@ func spawn_enemy() -> void:
 	enemy_instance.enemy_id = enemy_id
 	print("[Spawner] 生成敌人，enemy_id = ", enemy_id, " 位置: ", spawn_pos)
 	
-	# 应用波次增强（如果敌人有stats）
-	if enemy_instance.stats:
-		enemy_instance.stats.health += (wave_index - 1) * enemy_health_per_wave
-		enemy_instance.stats.damage += (wave_index - 1) * enemy_damage_per_wave
+	# 应用波次增强（敌人现在使用直接属性）
+	if "health" in enemy_instance:
+		enemy_instance.health += (wave_index - 1) * enemy_health_per_wave
+	if "damage" in enemy_instance:
+		enemy_instance.damage += (wave_index - 1) * enemy_damage_per_wave
 	
 	get_parent().add_child(enemy_instance)
 	spawned_enemies.append(enemy_instance)

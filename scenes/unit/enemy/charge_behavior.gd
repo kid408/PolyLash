@@ -19,7 +19,7 @@ func _physics_process(delta: float) -> void:
 		return
 	
 	if is_charging:
-		enemy.global_position = enemy.global_position.move_toward(charge_attack_position,(enemy.stats.speed*5))
+		enemy.global_position = enemy.global_position.move_toward(charge_attack_position, (enemy.speed * 5))
 		
 		if enemy.global_position.distance_to(charge_attack_position) < 50:
 			end_charge()

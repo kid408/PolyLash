@@ -23,9 +23,16 @@ var current_health := 1.0:
 		on_health_changed.emit(current_health, max_health)
 
 # 设置生命值数据
-func setup(stats:UnitStats) -> void:
-	max_health = stats.health
+func setup_with_health(health_value: float) -> void:
+	max_health = health_value
 	current_health = max_health
+
+# 兼容旧的 setup 方法（已废弃）
+func setup(stats) -> void:
+	if stats and "health" in stats:
+		setup_with_health(stats.health)
+	else:
+		setup_with_health(100.0)
 	on_health_changed.emit(current_health,max_health)
 
 # 受到伤害 从unit脚本调用过来

@@ -44,13 +44,17 @@ func _handle_input(delta: float) -> void:
 	# 1. 移动逻辑
 	move_dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if can_move():
-		var current_speed = base_speed 
-		if stats != null:
-			current_speed = stats.speed
+		var current_speed = speed  # 直接使用 Unit 基类的 speed 属性
 		position += move_dir * current_speed * delta
 	
 	# 2. 技能按键分发
 	if not skill_manager:
+		return
+	
+	# F键 - 大招（优先处理）
+	if Input.is_action_just_pressed("skill_f") and ultimate_skill:
+		print("[PlayerPyro] F键按下，尝试激活大招")
+		ultimate_skill.try_activate()
 		return
 	
 	# E技能（瞬发）

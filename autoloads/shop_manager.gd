@@ -294,20 +294,20 @@ func _apply_stat_effect(player: PlayerBase, stat_tags: Array, value: float) -> v
 				printerr("[ShopManager] 玩家没有 HealthComponent")
 		
 		"speed":
-			# 速度存储在 stats 中
-			if player.stats:
-				player.stats.speed += value
-				print("[ShopManager] 修改移动速度: %+.0f, 新值: %.0f" % [value, player.stats.speed])
+			# 速度现在直接存储在 player 中
+			if "speed" in player:
+				player.speed += value
+				print("[ShopManager] 修改移动速度: %+.0f, 新值: %.0f" % [value, player.speed])
 			else:
-				printerr("[ShopManager] 玩家没有 stats")
+				printerr("[ShopManager] 玩家没有 speed 属性")
 		
 		"damage":
-			# 伤害存储在 stats 中
-			if player.stats:
-				player.stats.damage += value
-				print("[ShopManager] 修改基础伤害: %+.0f, 新值: %.0f" % [value, player.stats.damage])
+			# 伤害现在直接存储在 player 中
+			if "damage" in player:
+				player.damage += value
+				print("[ShopManager] 修改基础伤害: %+.0f, 新值: %.0f" % [value, player.damage])
 			else:
-				printerr("[ShopManager] 玩家没有 stats")
+				printerr("[ShopManager] 玩家没有 damage 属性")
 		
 		"armor":
 			# 护甲存储在 PlayerBase 中
@@ -319,12 +319,9 @@ func _apply_stat_effect(player: PlayerBase, stat_tags: Array, value: float) -> v
 				printerr("[ShopManager] 玩家没有 armor 属性")
 		
 		"crit_chance":
-			# 暴击率可能存储在 stats 或其他地方
-			if player.stats and "crit_chance" in player.stats:
-				player.stats.crit_chance += value
-				print("[ShopManager] 修改暴击率: %+.0f%%" % value)
-			else:
-				print("[ShopManager] 警告: 玩家没有 crit_chance 属性，跳过")
+			# 暴击率通过 UpgradeManager 管理
+			UpgradeManager.add_attribute_bonus("crit_chance", value)
+			print("[ShopManager] 修改暴击率: %+.0f%%" % value)
 		
 		_:
 			print("[ShopManager] 警告: 未知的属性类型: %s" % stat_name)

@@ -434,7 +434,7 @@ func _state_chase(delta: float) -> void:
 	# 4. 执行移动
 	var move_vec = get_move_direction() + (knockback_dir * knockback_power)
 		
-	position += move_vec * stats.speed * delta
+	position += move_vec * speed * delta
 	update_rotation()
 	
 	# 5. 冲锋判定
@@ -515,7 +515,7 @@ func _state_charging(delta: float) -> void:
 	# 不使用 move_and_slide，直接修改 position，避免物理碰撞导致的奇怪滑步（如果是Area2D类型的单位）
 	# 如果是 CharacterBody2D，请用 velocity = ... move_and_slide()
 	
-	position += charge_vector * stats.speed * charge_speed_mult * delta
+	position += charge_vector * speed * charge_speed_mult * delta
 	
 	# 这里不更新朝向，保持冲锋时的霸体感
 	
@@ -529,7 +529,7 @@ func _state_cooldown(delta: float) -> void:
 	
 	# 缓慢移动
 	var move_vec = get_move_direction() * 0.2
-	position += move_vec * stats.speed * delta
+	position += move_vec * speed * delta
 	update_rotation()
 	
 	if ai_timer <= 0:

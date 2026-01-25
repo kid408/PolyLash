@@ -1,10 +1,9 @@
-[gd_scene load_steps=15 format=3 uid="uid://dxvvvvvvvvvvv"]
+[gd_scene load_steps=14 format=3 uid="uid://dxvvvvvvvvvvv"]
 
 [ext_resource type="PackedScene" uid="uid://cyavyrbpj6jjb" path="res://scenes/unit/unit.tscn" id="1_idtdn"]
 [ext_resource type="Texture2D" uid="uid://cffpkqppd1vid" path="res://assets/sprites/Enemies/Enemy_Glutton_01.png" id="2_k8upj"]
 [ext_resource type="Script" uid="uid://c746yw56els0w" path="res://scenes/unit/enemy/elites/enemy_glutton.gd" id="2_oo7ju"]
 [ext_resource type="PackedScene" uid="uid://dvfjoyutjx5jf" path="res://scenes/particles/Explosion.tscn" id="3_421q1"]
-[ext_resource type="Resource" uid="uid://c8ydvqvvvvvvv" path="res://resouce/unit/enemies/stats_enemy_glutton.tres" id="3_lmqbh"]
 [ext_resource type="Texture2D" uid="uid://fjxcfmweyx6q" path="res://assets/sprites/Enemies/Enemy_Glutton_02.png" id="4_riw7m"]
 [ext_resource type="PackedScene" uid="uid://3t6iqc1kav5h" path="res://scenes/components/hitbox_component.tscn" id="5_e15k4"]
 [ext_resource type="Texture2D" uid="uid://b63fj2rkihrp6" path="res://assets/sprites/Enemies/Enemy_Glutton_03.png" id="5_gglvs"]
@@ -55,7 +54,6 @@ charge_duration = 0.6
 charge_speed_mult = 3.5
 charge_cooldown = 3.0
 death_vfx_scene = ExtResource("3_421q1")
-stats = ExtResource("3_lmqbh")
 
 [node name="Sprite" parent="Visuals" index="1"]
 texture = ExtResource("2_k8upj")

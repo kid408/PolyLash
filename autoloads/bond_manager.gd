@@ -21,6 +21,9 @@ var active_bonds: Dictionary = {}
 # 当前队伍的羁绊标签统计：{bond_id: count}
 var current_bond_counts: Dictionary = {}
 
+# 临时羁绊标签（来自技能/大招）：{bond_id: count}
+var temp_bonus_tags: Dictionary = {}
+
 # 变身过载模式（F键变身）
 var is_overdrive_mode: bool = false
 
@@ -137,6 +140,10 @@ func recalculate_active_bonds(team_player_ids: Array, equipped_relics: Array = [
 			if not current_bond_counts.has(tag):
 				current_bond_counts[tag] = 0
 			current_bond_counts[tag] += 1
+	
+	# 添加临时标签
+	for tag in temp_bonus_tags.keys():
+		current_bond_counts[tag] = current_bond_counts.get(tag, 0) + temp_bonus_tags[tag]
 	
 	# TODO: 处理圣物提供的额外羁绊标签
 	# for relic in equipped_relics:
@@ -503,6 +510,71 @@ func get_mechanic_value(mechanic_name: String) -> float:
 				return effect.effect_value
 	
 	return 0.0
+
+# ============================================================================
+# 临时标签管理（用于大招/技能）
+# ============================================================================
+
+func add_temp_tag(tag: String) -> void:
+	"""添加临时羁绊标签（例如大招激活时）
+	
+	Args:
+		tag: 羁绊标签ID
+	"""
+	if tag.is_empty():
+		return
+	
+	temp_bonus_tags[tag] = temp_bonus_tags.get(tag, 0) + 1
+	print("[BondManager] 添加临时标签: %s (数量: %d)" % [tag, temp_bonus_tags[tag]])
+	
+	# 立即重新计算羁绊（保持当前队伍）
+	_recalculate_with_current_team()
+
+func remove_temp_tag(tag: String) -> void:
+	"""移除临时羁绊标签
+	
+	Args:
+		tag: 羁绊标签ID
+	"""
+	if tag.is_empty() or not temp_bonus_tags.has(tag):
+		return
+	
+	temp_bonus_tags[tag] -= 1
+	if temp_bonus_tags[tag] <= 0:
+		temp_bonus_tags.erase(tag)
+	
+	print("[BondManager] 移除临时标签: %s (剩余: %d)" % [tag, temp_bonus_tags.get(tag, 0)])
+	
+	# 立即重新计算羁绊（保持当前队伍）
+	_recalculate_with_current_team()
+
+func get_temp_tags() -> Dictionary:
+	"""获取当前所有临时标签
+	
+	Returns:
+		临时标签字典
+	"""
+	return temp_bonus_tags.duplicate()
+
+func clear_temp_tags() -> void:
+	"""清空所有临时标签"""
+	temp_bonus_tags.clear()
+	_recalculate_with_current_team()
+
+func _recalculate_with_current_team() -> void:
+	"""使用当前队伍数据重新计算羁绊"""
+	# 从 current_bond_counts 中提取原始队伍标签（排除临时标签）
+	var team_tags = {}
+	for tag in current_bond_counts.keys():
+		var base_count = current_bond_counts[tag] - temp_bonus_tags.get(tag, 0)
+		if base_count > 0:
+			team_tags[tag] = base_count
+	
+	# 重建队伍ID列表（简化处理，直接使用标签重算）
+	# 注意：这里假设每个标签对应一个角色，实际可能需要更复杂的逻辑
+	var team_ids = []
+	# 由于无法从标签反推角色ID，我们直接触发信号让外部重新计算
+	stat_modifiers_changed.emit()
 
 # ============================================================================
 # 变身过载模式

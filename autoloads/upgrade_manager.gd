@@ -210,10 +210,10 @@ func _apply_to_player(attribute_id: String, value: float, value_type: String) ->
 				var old_speed = player.base_speed
 				player.base_speed += value
 				print("✓ 基础速度: %.1f -> %.1f (+%.1f)" % [old_speed, player.base_speed, value])
-			if "stats" in player and player.stats:
-				var old_stats_speed = player.stats.speed
-				player.stats.speed += value
-				print("✓ Stats速度: %.1f -> %.1f (+%.1f)" % [old_stats_speed, player.stats.speed, value])
+			# 同时更新 speed 属性
+			if "speed" in player:
+				player.speed += value
+				print("✓ 速度属性: %.1f (+%.1f)" % [player.speed, value])
 		
 		"dash_distance":
 			if "dash_distance" in player:
@@ -355,6 +355,29 @@ func get_attribute_bonus(attribute_id: String) -> float:
 	- float: 累计加成值
 	"""
 	return attribute_bonuses.get(attribute_id, 0.0)
+
+# 添加属性加成（用于临时效果，如大招）
+func add_attribute_bonus(attribute_id: String, value: float) -> void:
+	"""
+	直接添加属性加成值（不增加等级）
+	用于临时效果，如大招、buff等
+	
+	参数:
+	- attribute_id: 属性ID
+	- value: 加成值
+	
+	示例:
+	- UpgradeManager.add_attribute_bonus("lifesteal", 30.0)  # 添加30%吸血
+	"""
+	if not attribute_bonuses.has(attribute_id):
+		attribute_bonuses[attribute_id] = 0.0
+	
+	attribute_bonuses[attribute_id] += value
+	print("[UpgradeManager] 添加属性加成: %s +%.1f (总计: %.1f)" % [attribute_id, value, attribute_bonuses[attribute_id]])
+	
+	# 立即应用到玩家（如果玩家存在）
+	if is_instance_valid(Global.player):
+		_apply_to_player(attribute_id, value, "flat")
 
 # 获取属性等级
 func get_attribute_level(attribute_id: String) -> int:

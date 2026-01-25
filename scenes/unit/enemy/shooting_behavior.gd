@@ -37,7 +37,7 @@ func shoot() -> void:
 	if not is_instance_valid(Global.player) or not is_instance_valid(enemy):
 		return
 	
-	if projectile_scene == null or fire_pos == null or enemy.stats == null:
+	if projectile_scene == null or fire_pos == null:
 		return
 	
 	enemy.can_move = false
@@ -55,7 +55,7 @@ func shoot() -> void:
 		
 		var rotated_direction:= direction.rotated(deg_to_rad(start_angle + angle_step*i))
 		var velocity:= rotated_direction*projectile_speed
-		projectile.set_projectile(velocity, enemy.stats.damage, false, 0, enemy)
+		projectile.set_projectile(velocity, enemy.damage, false, 0, enemy)
 	
 	await  get_tree().create_timer(1).timeout
 	enemy.can_move = true

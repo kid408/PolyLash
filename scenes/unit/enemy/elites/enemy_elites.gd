@@ -161,12 +161,12 @@ func _eat_enemy(victim: Enemy) -> void:
 	mobs_eaten_count += 1
 	
 	# 治疗这个敌人
-	var heal_amount = int(stats.health * eat_heal_percent)
+	var heal_amount = int(health * eat_heal_percent)
 	health_component.heal(heal_amount)
 	
 	# 增加最大生命值和伤害
-	stats.health = int(stats.health * eat_max_hp_increase)
-	stats.damage = int(stats.damage * eat_damage_increase)
+	health = int(health * eat_max_hp_increase)
+	damage = int(damage * eat_damage_increase)
 	
 	# 移除受害者
 	victim.queue_free()
@@ -211,28 +211,28 @@ func _evolve_to_stage(new_stage: int) -> void:
 	var evolution_config = EliteConfigManager.get_evolution_stage(enemy_id, new_stage)
 	if evolution_config:
 		# 应用配置中的属性倍数
-		var old_health = stats.health
-		var old_damage = stats.damage
-		var old_speed = stats.speed
+		var old_health = health
+		var old_damage = damage
+		var old_speed = speed
 		
-		stats.health = int(stats.health * evolution_config.health_multiplier)
-		stats.damage = int(stats.damage * evolution_config.damage_multiplier)
-		stats.speed = stats.speed * evolution_config.speed_multiplier
+		health = int(health * evolution_config.health_multiplier)
+		damage = int(damage * evolution_config.damage_multiplier)
+		speed = speed * evolution_config.speed_multiplier
 		
 		# 用新的最大生命值更新 health_component
 		if health_component:
-			health_component.max_health = stats.health
+			health_component.max_health = health
 			# 进化时治疗到满血
-			health_component.current_health = stats.health
+			health_component.current_health = health
 	else:
 		# 如果找不到配置，回退到旧逻辑
 		var stage_multiplier = pow(1.2, new_stage - 1)
-		stats.health = int(stats.health * stage_multiplier)
-		stats.damage = int(stats.damage * stage_multiplier)
+		health = int(health * stage_multiplier)
+		damage = int(damage * stage_multiplier)
 		
 		if health_component:
-			health_component.max_health = stats.health
-			health_component.current_health = stats.health
+			health_component.max_health = health
+			health_component.current_health = health
 	
 	# 应用阶段特定的效果（由子类实现）
 	_apply_stage_effects(new_stage)
@@ -334,8 +334,8 @@ func get_stage_info() -> Dictionary:
 	return {
 		"stage": current_stage,
 		"mobs_eaten": mobs_eaten_count,
-		"health": stats.health,
-		"damage": stats.damage,
+		"health": health,
+		"damage": damage,
 		"xp_value": xp_value,
 		"gold_value": gold_value
 	}

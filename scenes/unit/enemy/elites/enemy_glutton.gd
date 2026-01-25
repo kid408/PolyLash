@@ -108,7 +108,7 @@ func _shoot_acid_projectile() -> void:
 	
 	# 计算指向玩家的方向
 	var direction = global_position.direction_to(Global.player.global_position)
-	var damage = int(stats.damage * 0.5)
+	var projectile_damage = int(damage * 0.5)
 	
 	# 创建投射物节点
 	var projectile = Node2D.new()
@@ -134,7 +134,7 @@ func _shoot_acid_projectile() -> void:
 	projectile.add_child(area)
 	
 	# 设置投射物属性
-	projectile.set_meta("damage", damage)
+	projectile.set_meta("damage", projectile_damage)
 	projectile.set_meta("direction", direction)
 	projectile.set_meta("speed", stage2_projectile_speed)
 	
@@ -151,7 +151,7 @@ func _shoot_acid_projectile() -> void:
 		if hit_area.is_in_group("hurtbox") and hit_area.get_parent() == Global.player:
 			hit_once = true
 			if Global.player.has_method("take_damage"):
-				Global.player.take_damage(damage)
+				Global.player.take_damage(projectile_damage)
 			projectile.queue_free()
 			return
 		
@@ -160,7 +160,7 @@ func _shoot_acid_projectile() -> void:
 			var parent = hit_area.get_parent()
 			if parent and parent != self and parent.has_method("take_damage"):
 				hit_once = true
-				parent.take_damage(damage)
+				parent.take_damage(projectile_damage)
 				projectile.queue_free()
 	)
 	
@@ -420,7 +420,7 @@ func _shoot_eight_directions() -> void:
 
 func _shoot_projectile_in_direction(direction: Vector2) -> void:
 	"""向指定方向发射投射物"""
-	var damage = int(stats.damage * 0.6)
+	var projectile_damage = int(damage * 0.6)
 	
 	# 创建投射物
 	var projectile = Node2D.new()
@@ -459,8 +459,8 @@ func _shoot_projectile_in_direction(direction: Vector2) -> void:
 			if parent and parent.is_in_group("player"):
 				hit_once = true
 				if parent.has_method("take_damage"):
-					parent.take_damage(damage)
-					print("[EnemyGlutton] 八方向子弹击中，造成 %d 伤害！" % damage)
+					parent.take_damage(projectile_damage)
+					print("[EnemyGlutton] 八方向子弹击中，造成 %d 伤害！" % projectile_damage)
 				projectile.queue_free()
 	)
 	

@@ -9,8 +9,13 @@ func execute_attack() -> void:
 	pass
 	
 func get_damage() -> float:
-	var damage:= weapon.data.stats.damage + Global.player.stats.damage
-	var crit_chance:= weapon.data.stats.crit_chance
+	# 获取武器基础伤害和玩家伤害加成
+	var weapon_damage: float = weapon.data.stats.damage
+	var player_damage: float = Global.player.damage if is_instance_valid(Global.player) else 0.0
+	var damage: float = weapon_damage + player_damage
+	
+	# 暴击判定
+	var crit_chance: float = weapon.data.stats.crit_chance
 	if Global.get_chance_sucess(crit_chance):
 		critical = true
 		damage = ceil(damage * weapon.data.stats.crit_damage)

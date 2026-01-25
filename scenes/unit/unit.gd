@@ -1,7 +1,11 @@
 extends Node2D
 class_name Unit
 
-@export var stats:UnitStats
+# 基础属性（从 CSV 加载）
+var health: float = 100.0
+var damage: float = 10.0
+var speed: float = 200.0
+var block_chance: float = 0.0
 
 @onready var visuals: Node2D = $Visuals
 @onready var sprite: Sprite2D = $Visuals/Sprite
@@ -17,14 +21,8 @@ var damage_hit_count: int = 0  # 记录连击次数
 
 
 func _ready() -> void:	
-	 # --- 新增安全检查 ---
-	if stats == null:
-		printerr("[Unit Error] 致命错误！节点 '%s' 没有分配 Stats 资源！请在 Inspector 中赋值。" % name)
-		return # 直接返回，不执行 setup，防止红字报错
-	# ------------------
-
 	# 设置生命条数据
-	health_component.setup(stats)
+	health_component.setup_with_health(health)
 	
 	# 初始化伤害累积计时器
 	damage_pop_timer = Timer.new()
@@ -41,13 +39,7 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 	if health_component.current_health <=0:
 		return
 	
-	# 安全检查：确保 stats 存在
-	if stats == null:
-		printerr("[Unit] 警告: stats 为 nil，无法处理伤害。节点: %s" % name)
-		health_component.take_damage(hitbox.damage)
-		return
-	
-	var blocked := Global.get_chance_sucess(stats.block_chance / 100)
+	var blocked := Global.get_chance_sucess(block_chance / 100)
 	if blocked:
 		# 发送闪避的信号
 		Global.on_create_block_text.emit(self)
@@ -111,4 +103,3 @@ func _on_damage_pop_timeout() -> void:
 
 func _on_flash_timer_timeout() -> void:
 	sprite.material = null
-	
