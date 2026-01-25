@@ -29,3 +29,11 @@ class_name WeaponStats
 @export var projectile_scene:PackedScene
 # 子弹速度
 @export var projectile_speed := 1600.0
+
+# ============================================================================
+# 爆炸属性（大招系统）
+# ============================================================================
+# 爆炸半径（0表示无爆炸效果）
+@export var explosion_radius := 0.0
+# 爆炸伤害倍率（基于武器伤害）
+@export var explosion_damage_scale := 1.0

@@ -56,8 +56,12 @@ func _handle_input(delta: float) -> void:
 		return
 	
 	# F键 - 大招（优先处理）
-	if Input.is_action_just_pressed("skill_f") and ultimate_skill:
-		ultimate_skill.try_activate()
+	if Input.is_action_just_pressed("skill_f"):
+		if ultimate_skill:
+			ultimate_skill.try_activate()
+		else:
+			print("[PlayerWind] 大招未实现")
+			Global.spawn_floating_text(global_position, "大招未实现", Color.GRAY)
 		return
 	
 	# E技能（瞬发）

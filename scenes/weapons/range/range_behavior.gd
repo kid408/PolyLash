@@ -47,4 +47,4 @@ func create_projectile() -> void:
 	# print("[RangeBehavior] 子弹速度向量: ", velocity)
 	# print("[RangeBehavior] 子弹速度大小: ", velocity.length())
 	
-	instance.set_projectile(velocity,get_damage(),critical,weapon.data.stats.knockback,weapon.get_parent())
+	instance.set_projectile(velocity,get_damage(),critical,weapon.data.stats.knockback,weapon.get_parent(),weapon.data.stats)

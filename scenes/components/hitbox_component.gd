@@ -11,6 +11,11 @@ var critical := false
 var knockback_power :=0.0
 var source :Node2D
 
+func _ready() -> void:
+	# 确保 area_entered 信号已连接
+	if not area_entered.is_connected(_on_area_entered):
+		area_entered.connect(_on_area_entered)
+
 # 启用检测
 func enable() -> void:
 	set_deferred("monitoring",true)

@@ -493,14 +493,37 @@ func destroy_enemy() -> void:
 		glutton_charge_line = null
 	
 	# 清理所有这个 Glutton 创建的投射物
-	# 通过检查投射物的 meta 数据中的 owner
+	# 方法1: 通过 meta 数据清理
 	var projectiles = get_tree().get_nodes_in_group("projectiles")
+	var cleaned_count = 0
+	
 	for projectile in projectiles:
-		if is_instance_valid(projectile):
-			# 检查是否是这个 Glutton 创建的
-			if projectile.has_meta("owner") and projectile.get_meta("owner") == self:
+		if not is_instance_valid(projectile):
+			continue
+		
+		# 检查是否是这个 Glutton 创建的
+		if projectile.has_meta("owner"):
+			var owner = projectile.get_meta("owner")
+			if owner == self or not is_instance_valid(owner):
 				print("[EnemyGlutton] 清理投射物: %s" % projectile.name)
 				projectile.queue_free()
+				cleaned_count += 1
+	
+	# 方法2: 清理所有名称匹配的投射物（备用）
+	var all_nodes = get_tree().root.get_children()
+	for node in all_nodes:
+		if not is_instance_valid(node):
+			continue
+		
+		# 检查是否是 Glutton 的投射物
+		if node.name in ["AcidProjectile", "OmniProjectile"]:
+			if node.has_meta("owner") and node.get_meta("owner") == self:
+				if is_instance_valid(node):
+					print("[EnemyGlutton] 清理遗留投射物: %s" % node.name)
+					node.queue_free()
+					cleaned_count += 1
+	
+	print("[EnemyGlutton] 共清理 %d 个投射物" % cleaned_count)
 	
 	# 调用父类的死亡处理
 	super.destroy_enemy()

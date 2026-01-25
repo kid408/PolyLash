@@ -4,6 +4,13 @@ class_name SkillUltimate
 # ============================================================================
 # 大招技能基类 - F键变身系统
 # ============================================================================
+# 
+# 【设计理念】
+# F 键大招是所有角色的通用功能，包含两个核心效果：
+# 1. 基础效果：武器获得爆炸效果（AOE伤害）- 所有角色共享
+# 2. 角色特色：每个角色可以添加额外的独特效果
+# 
+# ============================================================================
 
 signal ultimate_activated
 signal ultimate_deactivated
@@ -21,6 +28,11 @@ var description: String = ""
 # 能量需求
 var energy_cost: float = 80.0  # 需要80%以上能量才能激活
 
+# 爆炸效果参数（所有角色共享）
+# 可以在子类中覆盖这些值以实现不同角色的特色爆炸效果
+var explosion_radius: float = 250.0        # 爆炸半径（像素）- 推荐: 200-300
+var explosion_damage_scale: float = 1.0   # 爆炸伤害倍率 - 推荐: 0.8-1.2
+
 # 运行时状态
 var is_active: bool = false
 var remaining_time: float = 0.0
@@ -29,6 +41,9 @@ var player_ref: Node = null
 # 视觉效果缓存
 var original_scale: Vector2 = Vector2.ONE
 var original_modulate: Color = Color.WHITE
+
+# 武器爆炸效果缓存
+var original_weapon_stats: Dictionary = {}
 
 # 计时器
 var duration_timer: Timer = null
@@ -58,9 +73,15 @@ func initialize(config: Dictionary, player: Node) -> void:
 	scale_multiplier = config.get("scale_multiplier", 1.2)
 	description = config.get("description", "")
 	
-	# 从配置读取能量消耗（如果CSV中有配置）
+	# 从配置读取能量消耗
 	if config.has("energy_cost"):
 		energy_cost = config.get("energy_cost", 80.0)
+	
+	# 从配置读取爆炸参数
+	if config.has("explosion_radius"):
+		explosion_radius = config.get("explosion_radius", 250.0)
+	if config.has("explosion_damage_scale"):
+		explosion_damage_scale = config.get("explosion_damage_scale", 1.0)
 	
 	# 解析颜色
 	var color_hex = config.get("visual_color_hex", "#FFFFFF")
@@ -73,7 +94,7 @@ func initialize(config: Dictionary, player: Node) -> void:
 		original_scale = player_ref.scale
 		original_modulate = player_ref.modulate
 	
-	print("[SkillUltimate] 初始化大招: %s (持续%.1fs, 能量消耗:%.0f%%, 标签:%s)" % [ult_name, duration, energy_cost, bonus_bond_tag])
+	print("[SkillUltimate] 初始化大招: %s (持续%.1fs, 能量消耗:%.0f%%, 爆炸半径:%.0f, 爆炸倍率:%.1f, 标签:%s)" % [ult_name, duration, energy_cost, explosion_radius, explosion_damage_scale, bonus_bond_tag])
 
 # ============================================================================
 # 激活/停用
@@ -134,10 +155,13 @@ func _activate() -> void:
 	# 应用视觉效果
 	_apply_visuals()
 	
+	# 【核心功能】为所有武器添加爆炸效果
+	_apply_explosion_to_weapons()
+	
 	# 启动计时器
 	duration_timer.start(duration)
 	
-	# 调用子类钩子
+	# 调用子类钩子（角色特色效果）
 	_on_ultimate_activated()
 	
 	# 发出信号
@@ -153,22 +177,192 @@ func deactivate() -> void:
 	
 	print("[SkillUltimate] 停用大招: %s" % ult_name)
 	
-	# 移除临时羁绊标签
-	if bonus_bond_tag != "":
-		BondManager.remove_temp_tag(bonus_bond_tag)
+	# 移除临时羁绊标签（安全检查）
+	if bonus_bond_tag != "" and BondManager:
+		# 检查标签是否在临时标签列表中
+		var temp_tags = BondManager.get_temp_tags()
+		if temp_tags.has(bonus_bond_tag):
+			BondManager.remove_temp_tag(bonus_bond_tag)
+		else:
+			print("[SkillUltimate] 警告: 临时标签 %s 不存在，跳过移除" % bonus_bond_tag)
 	
 	# 恢复视觉效果
 	_restore_visuals()
+	
+	# 【核心功能】移除所有武器的爆炸效果
+	_remove_explosion_from_weapons()
 	
 	# 停止计时器
 	if duration_timer:
 		duration_timer.stop()
 	
-	# 调用子类钩子
+	# 调用子类钩子（角色特色效果）
 	_on_ultimate_deactivated()
 	
 	# 发出信号
 	ultimate_deactivated.emit()
+
+# ============================================================================
+# 爆炸效果管理（所有角色共享）
+# ============================================================================
+
+func _apply_explosion_to_weapons() -> void:
+	"""为所有武器添加爆炸效果"""
+	print("[SkillUltimate] ========== 开始为武器添加爆炸效果 ==========")
+	
+	if not player_ref:
+		print("[SkillUltimate] ❌ 错误: player_ref 为空")
+		return
+	
+	print("[SkillUltimate] 玩家: %s (类型: %s)" % [player_ref.name, player_ref.get_class()])
+	print("[SkillUltimate] 目标爆炸半径: %.1f" % explosion_radius)
+	print("[SkillUltimate] 目标爆炸倍率: %.1f" % explosion_damage_scale)
+	
+	var weapons = _get_player_weapons()
+	
+	print("[SkillUltimate] 找到 %d 个武器" % weapons.size())
+	
+	if weapons.size() == 0:
+		print("[SkillUltimate] ⚠️ 警告: 玩家没有武器")
+		print("[SkillUltimate] 玩家子节点列表:")
+		for child in player_ref.get_children():
+			var script_path = str(child.get_script()) if child.get_script() else "无脚本"
+			print("  - %s (类型: %s, 脚本: %s)" % [child.name, child.get_class(), script_path])
+		return
+	
+	var success_count = 0
+	
+	for i in range(weapons.size()):
+		var weapon = weapons[i]
+		print("[SkillUltimate] --- 处理武器 %d/%d ---" % [i + 1, weapons.size()])
+		
+		if not weapon or not is_instance_valid(weapon):
+			print("[SkillUltimate] ❌ 武器无效或已被删除")
+			continue
+		
+		print("[SkillUltimate] 武器名称: %s" % weapon.name)
+		print("[SkillUltimate] 武器类型: %s" % weapon.get_class())
+		
+		if not weapon.data:
+			print("[SkillUltimate] ❌ 武器 %s 没有 data 属性" % weapon.name)
+			continue
+		
+		print("[SkillUltimate] 武器 data.item_name: %s" % weapon.data.item_name)
+		
+		if not weapon.data.stats:
+			print("[SkillUltimate] ❌ 武器 %s 没有 stats 属性" % weapon.name)
+			continue
+		
+		var stats = weapon.data.stats as WeaponStats
+		
+		print("[SkillUltimate] 武器 %s 当前爆炸半径: %.1f" % [weapon.data.item_name, stats.explosion_radius])
+		print("[SkillUltimate] 武器 %s 当前爆炸倍率: %.1f" % [weapon.data.item_name, stats.explosion_damage_scale])
+		
+		# 保存原始属性
+		original_weapon_stats[weapon] = {
+			"explosion_radius": stats.explosion_radius,
+			"explosion_damage_scale": stats.explosion_damage_scale
+		}
+		
+		# 设置爆炸属性
+		stats.explosion_radius = explosion_radius
+		stats.explosion_damage_scale = explosion_damage_scale
+		
+		print("[SkillUltimate] ✅ 武器 %s 设置爆炸效果成功" % weapon.data.item_name)
+		print("[SkillUltimate]    新爆炸半径: %.1f" % stats.explosion_radius)
+		print("[SkillUltimate]    新爆炸倍率: %.1f" % stats.explosion_damage_scale)
+		
+		success_count += 1
+	
+	print("[SkillUltimate] ========== 爆炸效果添加完成 ==========")
+	print("[SkillUltimate] 成功: %d/%d 个武器" % [success_count, weapons.size()])
+	print("[SkillUltimate] 缓存的武器数量: %d" % original_weapon_stats.size())
+
+func _remove_explosion_from_weapons() -> void:
+	"""移除所有武器的爆炸效果"""
+	for weapon in original_weapon_stats.keys():
+		if not weapon or not is_instance_valid(weapon):
+			continue
+		
+		if not weapon.data or not weapon.data.stats:
+			continue
+		
+		var stats = weapon.data.stats as WeaponStats
+		var original = original_weapon_stats[weapon]
+		
+		# 恢复原始值
+		stats.explosion_radius = original["explosion_radius"]
+		stats.explosion_damage_scale = original["explosion_damage_scale"]
+		
+		print("[SkillUltimate] 武器 %s 恢复正常" % weapon.data.item_name)
+	
+	# 清空缓存
+	original_weapon_stats.clear()
+
+func _get_player_weapons() -> Array:
+	"""获取玩家的所有武器"""
+	var weapons: Array = []
+	
+	if not player_ref:
+		print("[SkillUltimate] ❌ player_ref 为空，无法查找武器")
+		return weapons
+	
+	print("[SkillUltimate] ========== 查找武器 ==========")
+	
+	# 方法1: 通过 current_weapons 数组
+	if "current_weapons" in player_ref:
+		print("[SkillUltimate] 玩家有 current_weapons 属性")
+		var current_weapons = player_ref.current_weapons
+		print("[SkillUltimate] current_weapons 类型: %s" % str(typeof(current_weapons)))
+		print("[SkillUltimate] current_weapons 大小: %d" % current_weapons.size())
+		
+		if current_weapons.size() > 0:
+			weapons = current_weapons.duplicate()
+			print("[SkillUltimate] ✅ 通过 current_weapons 找到 %d 个武器" % weapons.size())
+			for i in range(weapons.size()):
+				var w = weapons[i]
+				if w:
+					print("[SkillUltimate]   武器 %d: %s" % [i + 1, w.name])
+		else:
+			print("[SkillUltimate] ⚠️ current_weapons 为空")
+	else:
+		print("[SkillUltimate] ⚠️ 玩家没有 current_weapons 属性")
+	
+	# 方法2: 递归搜索（如果方法1失败）
+	if weapons.size() == 0:
+		print("[SkillUltimate] current_weapons 为空，尝试递归搜索...")
+		weapons = _find_weapons_recursive(player_ref)
+		print("[SkillUltimate] 递归搜索找到 %d 个武器" % weapons.size())
+	
+	print("[SkillUltimate] ========== 查找完成 ==========")
+	return weapons
+
+func _find_weapons_recursive(node: Node, depth: int = 0) -> Array:
+	"""递归查找所有武器节点"""
+	var weapons: Array = []
+	var indent = "  ".repeat(depth)
+	
+	for child in node.get_children():
+		var node_class = child.get_class()
+		var script_path = str(child.get_script()) if child.get_script() else "无脚本"
+		
+		print("%s[SkillUltimate] 检查节点: %s (类型: %s)" % [indent, child.name, node_class])
+		
+		# 检查是否是 Weapon 类
+		if node_class == "Weapon":
+			print("%s[SkillUltimate] ✅ 找到武器: %s" % [indent, child.name])
+			weapons.append(child)
+		elif "weapon" in child.name.to_lower() or "Weapon" in script_path:
+			print("%s[SkillUltimate] ✅ 找到疑似武器: %s (脚本: %s)" % [indent, child.name, script_path])
+			weapons.append(child)
+		else:
+			# 递归搜索子节点
+			var child_weapons = _find_weapons_recursive(child, depth + 1)
+			if child_weapons.size() > 0:
+				print("%s[SkillUltimate] 在 %s 的子节点中找到 %d 个武器" % [indent, child.name, child_weapons.size()])
+				weapons.append_array(child_weapons)
+	
+	return weapons
 
 # ============================================================================
 # 能量检查
@@ -259,11 +453,11 @@ func _on_duration_timeout() -> void:
 # ============================================================================
 
 func _on_ultimate_activated() -> void:
-	"""大招激活时调用（子类重写）"""
+	"""大招激活时调用（子类重写以添加角色特色效果）"""
 	pass
 
 func _on_ultimate_deactivated() -> void:
-	"""大招停用时调用（子类重写）"""
+	"""大招停用时调用（子类重写以移除角色特色效果）"""
 	pass
 
 func _on_ultimate_update(delta: float) -> void:
@@ -284,7 +478,7 @@ func _parse_color(hex: String) -> Color:
 		Color对象
 	"""
 	if hex.begins_with("#"):
-		hex = hex.substr(1)
+		hex = hex.substr(1, hex.length() - 1)
 	
 	if hex.length() == 6:
 		var r = ("0x" + hex.substr(0, 2)).hex_to_int() / 255.0

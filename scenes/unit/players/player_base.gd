@@ -537,6 +537,8 @@ func _handle_input(delta: float) -> void:
 			ultimate_skill.try_activate()
 		else:
 			print("[PlayerBase] 大招未加载！")
+			# 显示飘字提示
+			Global.spawn_floating_text(global_position, "大招未实现", Color.GRAY)
 
 # --- 虚函数 (子类重写) ---
 func can_move() -> bool: 
@@ -721,11 +723,11 @@ func _load_ult_config_from_csv(pid: String) -> Dictionary:
 	# 跳过表头
 	var header = file.get_csv_line()
 	
-	# 跳过注释行（以 # 开头的行）
+	# 跳过注释行（-1 开头的行）
 	while not file.eof_reached():
 		var pos = file.get_position()
 		var line = file.get_csv_line()
-		if line.size() == 0 or line[0].begins_with("#"):
+		if line.size() == 0 or line[0] == "-1":
 			continue  # 跳过空行和注释行
 		else:
 			# 回退到这一行的开始
@@ -737,11 +739,11 @@ func _load_ult_config_from_csv(pid: String) -> Dictionary:
 	
 	while not file.eof_reached():
 		var line = file.get_csv_line()
-		if line.size() < 8:  # 现在有8个字段
+		if line.size() < 10:  # 现在有10个字段（增加了 explosion_radius 和 explosion_damage_scale）
 			continue
 		
 		# 跳过注释行
-		if line[0].begins_with("#"):
+		if line[0] == "-1":
 			continue
 		
 		var ult_id = line[0]
@@ -751,11 +753,13 @@ func _load_ult_config_from_csv(pid: String) -> Dictionary:
 				"ult_id": ult_id,
 				"name": line[1],
 				"duration": float(line[2]),
-				"energy_cost": float(line[3]),  # 新增：读取能量消耗
+				"energy_cost": float(line[3]),
 				"bonus_bond_tag": line[4],
 				"visual_color_hex": line[5],
 				"scale_multiplier": float(line[6]),
-				"description": line[7]
+				"explosion_radius": float(line[7]),        # 新增：爆炸半径
+				"explosion_damage_scale": float(line[8]),  # 新增：爆炸伤害倍率
+				"description": line[9]
 			}
 	
 	file.close()
@@ -774,12 +778,16 @@ func _get_ultimate_script_for_player(pid: String) -> Script:
 	var ult_script_map = {
 		"butcher": "res://scenes/skills/players/skill_ultimate_butcher.gd",
 		"pyro": "res://scenes/skills/players/skill_ultimate_pyro.gd",
-		# 其他角色可以在这里添加
+		"sapper": "res://scenes/skills/players/skill_ultimate_sapper.gd",
+		# 其他角色使用基础大招（包含爆炸效果）
 	}
 	
 	var script_path = ult_script_map.get(pid, "")
+	
+	# 如果没有特殊脚本，使用基础大招脚本
 	if script_path == "":
-		return null
+		script_path = "res://scenes/skills/skill_ultimate_base.gd"
+		print("[PlayerBase] 角色 %s 使用基础大招脚本（包含爆炸效果）" % pid)
 	
 	if not FileAccess.file_exists(script_path):
 		printerr("[PlayerBase] 大招脚本不存在: %s" % script_path)
