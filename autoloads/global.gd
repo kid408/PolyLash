@@ -49,6 +49,15 @@ var game_paused:= false
 # 已选角色ID列表（从选择界面传入）
 var selected_player_ids: Array[String] = []
 
+# ============================================================================
+# P4-1: 角色切换冷却系统 (Vanguard Lv.1)
+# ============================================================================
+
+# 切换冷却相关
+var switch_cooldown_timer: float = 0.0  # 当前冷却计时器
+var base_switch_cooldown: float = 10.0  # 基础切换冷却时间（秒）
+var is_switch_on_cooldown: bool = false  # 是否处于冷却中
+
 # 已选角色武器配置 {player_id: weapon_type}
 var selected_player_weapons: Dictionary = {}
 
@@ -77,6 +86,13 @@ func _ready() -> void:
 		pool.append(player)
 
 func _process(delta: float) -> void:
+	# P4-1: 处理切换冷却计时器
+	if is_switch_on_cooldown:
+		switch_cooldown_timer -= delta
+		if switch_cooldown_timer <= 0:
+			is_switch_on_cooldown = false
+			switch_cooldown_timer = 0.0
+			print("[Global] [P4-1] 切换冷却结束")
 	# 更新未激活角色的恢复
 	_update_inactive_players_regen(delta)
 
@@ -389,6 +405,13 @@ func spawn_coin(pos: Vector2, amount: int = 1) -> void:
 func switch_to_player_by_index(index: int) -> bool:
 	print("[Global] switch_to_player_by_index 调用, index=%d" % index)
 	
+	# P4-1: 检查切换冷却
+	if is_switch_on_cooldown:
+		print("[Global] [P4-1] 切换冷却中，剩余 %.1f 秒" % switch_cooldown_timer)
+		if is_instance_valid(player):
+			spawn_floating_text(player.global_position, "Cooldown: %.1fs" % switch_cooldown_timer, Color.ORANGE)
+		return false
+	
 	# 1. 检查索引有效性
 	if index < 0 or index >= selected_player_ids.size():
 		push_warning("[Global] 无效的角色索引: %d" % index)
@@ -422,11 +445,53 @@ func switch_to_player_by_index(index: int) -> bool:
 	
 	print("[Global] 切换到角色: %s (索引 %d)" % [target_player_id, index])
 	
+	# P4-1: 启动切换冷却
+	_start_switch_cooldown()
+	
 	# 7. 发出信号
 	emit_signal("on_player_switch_requested", target_player_id)
 	emit_signal("on_active_character_changed", index)
 	
 	return true
+
+# P4-1: 启动切换冷却（应用突击型羁绊加成）
+func _start_switch_cooldown() -> void:
+	"""启动切换冷却，应用突击型羁绊减少"""
+	var cooldown = base_switch_cooldown
+	
+	# 检查突击型羁绊 - 切换冷却减少
+	if BondManager.has_mechanic("switch_cd_reduce"):
+		var reduction = BondManager.get_mechanic_value("switch_cd_reduce")
+		cooldown = base_switch_cooldown * (1.0 - reduction)
+		print("[Global] [P4-1] 切换冷却减少: %.1f秒 -> %.1f秒 (减少%.0f%%)" % [
+			base_switch_cooldown,
+			cooldown,
+			reduction * 100
+		])
+	
+	switch_cooldown_timer = cooldown
+	is_switch_on_cooldown = true
+	print("[Global] [P4-1] 切换冷却开始: %.1f秒" % cooldown)
+
+# P4-1: 获取当前切换冷却剩余时间
+func get_switch_cooldown_remaining() -> float:
+	"""获取切换冷却剩余时间
+	
+	Returns:
+		剩余时间（秒），0表示无冷却
+	"""
+	if is_switch_on_cooldown:
+		return switch_cooldown_timer
+	return 0.0
+
+# P4-1: 检查是否可以切换
+func can_switch_character() -> bool:
+	"""检查是否可以切换角色
+	
+	Returns:
+		是否可以切换
+	"""
+	return not is_switch_on_cooldown
 
 # 检查角色是否死亡
 func is_player_dead(index: int) -> bool:

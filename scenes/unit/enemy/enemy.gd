@@ -626,6 +626,8 @@ func apply_status(type: String, duration: float, value: float = 0, stacks: int =
 			original_duration,
 			duration
 		])
+		# 视觉反馈
+		Global.spawn_floating_text(global_position, "EXTENDED!", Color(0.8, 0.0, 0.8))
 	
 	# 如果状态已存在，刷新持续时间并叠加层数
 	if active_statuses.has(type):
@@ -857,6 +859,8 @@ func destroy_enemy() -> void:
 					bonus_energy,
 					energy_drop
 				])
+				# 视觉反馈（在玩家位置显示）
+				Global.spawn_floating_text(Global.player.global_position, "+%d ENERGY" % bonus_energy, Color(0.5, 1.5, 2.0))
 			
 			Global.player.gain_energy(energy_drop)
 		

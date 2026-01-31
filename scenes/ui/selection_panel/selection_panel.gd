@@ -18,7 +18,8 @@ signal selection_confirmed(selected_data: Array[Dictionary])
 # 节点引用
 # ============================================================================
 
-@onready var player_container: Container = $MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper/PlayerContainer
+@onready var player_container: Container = $MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper/PlayerScrollContainer/PlayerContainer
+@onready var player_scroll_container: ScrollContainer = $MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper/PlayerScrollContainer
 @onready var weapon_container: Container = $MarginContainer/HBoxContainer/MainContent/BottomSection/WeaponContainerWrapper/WeaponContainer
 @onready var selected_list: VBoxContainer = $MarginContainer/HBoxContainer/LeftPanel/SelectedList
 @onready var synergy_list: VBoxContainer = $MarginContainer/HBoxContainer/LeftPanel/SynergyScrollContainer/SynergyList
@@ -325,8 +326,8 @@ func _generate_player_buttons() -> void:
 	var spacing = 10  # 间距
 	var grid_columns = 8  # 列数
 	
-	# 获取 PlayerContainerWrapper
-	var wrapper = player_container.get_parent()
+	# 获取 PlayerScrollContainer（而不是 PlayerContainerWrapper）
+	var scroll_container = player_scroll_container
 	
 	# 清理并重新设置PlayerContainer
 	player_container.queue_free()
@@ -337,11 +338,10 @@ func _generate_player_buttons() -> void:
 	grid.columns = grid_columns
 	grid.add_theme_constant_override("h_separation", spacing)
 	grid.add_theme_constant_override("v_separation", spacing)
-	# 左对齐：不使用 FULL_RECT，改用左上角锚点
-	grid.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	grid.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	# 设置为填充父容器宽度
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	wrapper.add_child(grid)
+	scroll_container.add_child(grid)
 	
 	# 更新引用
 	player_container = grid

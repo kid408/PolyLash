@@ -400,7 +400,92 @@ func apply_stat_modifiers(player_stats: Dictionary) -> Dictionary:
 			if effect.effect_type == "stat_mod":
 				_apply_stat_modifier(modified_stats, effect.effect_param, effect.effect_value)
 	
+	# P4-3: 应用属性共享（指挥型 Lv.1）
+	if has_mechanic("stat_share"):
+		_apply_stat_share(modified_stats)
+	
 	return modified_stats
+
+# P4-3: 应用属性共享（指挥型 Lv.1）
+func _apply_stat_share(stats: Dictionary) -> void:
+	"""应用后台角色的属性共享
+	
+	Args:
+		stats: 当前角色的属性字典
+	"""
+	var share_ratio = get_mechanic_value("stat_share")
+	if share_ratio <= 0:
+		return
+	
+	# 获取后台角色列表（未激活的角色）
+	var bench_characters = _get_bench_characters()
+	if bench_characters.is_empty():
+		return
+	
+	print("[BondManager] [P4-3] 属性共享激活，共享比例: %.0f%%" % (share_ratio * 100))
+	
+	# 累加后台角色的基础属性
+	var total_bonus_damage = 0.0
+	var total_bonus_health = 0.0
+	var total_bonus_speed = 0.0
+	
+	for char_id in bench_characters:
+		var char_config = ConfigManager.get_player_config(char_id)
+		if char_config.is_empty():
+			continue
+		
+		# 获取基础属性（不包括羁绊加成）
+		var base_damage = float(char_config.get("damage", 0))
+		var base_health = float(char_config.get("health", 0))
+		var base_speed = float(char_config.get("base_speed", 0))
+		
+		# 计算共享加成
+		total_bonus_damage += base_damage * share_ratio
+		total_bonus_health += base_health * share_ratio
+		total_bonus_speed += base_speed * share_ratio
+		
+		print("[BondManager] [P4-3] 后台角色 %s: 攻击力+%.0f, 生命+%.0f, 速度+%.0f" % [
+			char_id,
+			base_damage * share_ratio,
+			base_health * share_ratio,
+			base_speed * share_ratio
+		])
+	
+	# 应用加成到当前角色
+	if total_bonus_damage > 0:
+		stats["damage"] = stats.get("damage", 0) + total_bonus_damage
+		print("[BondManager] [P4-3] 获得后台攻击力加成: +%.0f" % total_bonus_damage)
+	
+	if total_bonus_health > 0:
+		stats["max_health"] = stats.get("max_health", 100) + total_bonus_health
+		print("[BondManager] [P4-3] 获得后台生命加成: +%.0f" % total_bonus_health)
+	
+	if total_bonus_speed > 0:
+		stats["speed"] = stats.get("speed", 100) + total_bonus_speed
+		print("[BondManager] [P4-3] 获得后台速度加成: +%.0f" % total_bonus_speed)
+
+# P4-3: 获取后台角色列表
+func _get_bench_characters() -> Array[String]:
+	"""获取后台角色ID列表（未激活的角色）
+	
+	Returns:
+		后台角色ID数组
+	"""
+	var bench: Array[String] = []
+	
+	# 获取当前激活角色
+	var current_player_id = Global.get_current_player_id()
+	
+	# 遍历所有选择的角色
+	for player_id in Global.selected_player_ids:
+		if player_id != current_player_id:
+			# 检查角色是否存活
+			var state = Global.get_player_state(player_id)
+			var health = state.get("health", 0)
+			if health > 0:
+				bench.append(player_id)
+	
+	return bench
 
 func _apply_stat_modifier(stats: Dictionary, param: String, value: float) -> void:
 	"""应用单个属性修改

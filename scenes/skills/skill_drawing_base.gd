@@ -136,6 +136,43 @@ func _apply_thorns_damage(enemy: Node2D, thorns_damage: float) -> void:
 func _spawn_area_effect(polygon: PackedVector2Array) -> void:
 	push_warning("[SkillDrawingBase] _spawn_area_effect() 未实现: %s" % skill_id)
 
+## P4-2: 检查并应用图形继承加成（突击型 Lv.2）
+## @param base_damage: 基础伤害
+## @return: 应用加成后的伤害
+func _apply_ink_inherit_bonus(base_damage: float) -> float:
+	"""检查是否有图形继承羁绊，应用额外伤害
+	
+	Args:
+		base_damage: 基础伤害
+	
+	Returns:
+		应用加成后的伤害
+	"""
+	if not BondManager.has_mechanic("ink_inherit"):
+		return base_damage
+	
+	# 获取加成倍率
+	var bonus_multiplier = BondManager.get_mechanic_value("ink_inherit")
+	if bonus_multiplier <= 0:
+		return base_damage
+	
+	# 检查当前技能所有者是否是切换后的新角色
+	# 简化实现：只要有图形继承羁绊，就应用加成
+	var final_damage = base_damage * (1.0 + bonus_multiplier)
+	
+	print("[%s] [P4-2] 图形继承加成: %.0f -> %.0f (+%.0f%%)" % [
+		skill_id,
+		base_damage,
+		final_damage,
+		bonus_multiplier * 100
+	])
+	
+	# 视觉反馈
+	if is_instance_valid(skill_owner):
+		Global.spawn_floating_text(skill_owner.global_position, "INK INHERIT!", Color(0.5, 1.5, 2.0))
+	
+	return final_damage
+
 ## P2-4: 为闭合区域添加诅咒叠加效果（咒术师 Lv.2）
 ## @param area: 区域效果的 Area2D 节点
 ## @param polygon: 闭合多边形的点集
@@ -305,9 +342,272 @@ func _check_and_spawn_gold_trail(current_pos: Vector2) -> void:
 		current_pos.x,
 		current_pos.y
 	])
+	# 视觉反馈
+	Global.spawn_floating_text(current_pos, "GOLD!", Color.GOLD)
 	
 	# 更新上次生成位置
 	last_gold_spawn_pos = current_pos
+
+# ==============================================================================
+# P3 高级机制 - 终极天赋
+# ==============================================================================
+
+## P3-1: 连锁反应（爆破师 Lv.3）
+## @param polygon: 闭合多边形
+## @param main_damage: 主爆炸伤害
+func _trigger_chain_reaction(polygon: PackedVector2Array, main_damage: int) -> void:
+	"""对区域外的所有敌人造成连锁爆炸伤害"""
+	if not BondManager.has_mechanic("chain_reaction"):
+		return
+	
+	# 获取所有敌人
+	var all_enemies = get_tree().get_nodes_in_group("enemies")
+	if all_enemies.is_empty():
+		return
+	
+	# 筛选区域外的敌人
+	var outside_enemies = []
+	for enemy in all_enemies:
+		if not is_instance_valid(enemy):
+			continue
+		
+		# 检查敌人是否在多边形内
+		if not Geometry2D.is_point_in_polygon(enemy.global_position, polygon):
+			outside_enemies.append(enemy)
+	
+	# 性能保护：限制最大数量
+	const MAX_CHAIN_TARGETS = 50
+	if outside_enemies.size() > MAX_CHAIN_TARGETS:
+		outside_enemies.shuffle()
+		outside_enemies = outside_enemies.slice(0, MAX_CHAIN_TARGETS)
+	
+	if outside_enemies.is_empty():
+		return
+	
+	# 计算连锁伤害（主爆炸的30%）
+	var chain_damage = int(main_damage * 0.3)
+	
+	print("[%s] [P3-1] 连锁反应触发，波及 %d 个敌人，伤害=%d" % [
+		skill_id,
+		outside_enemies.size(),
+		chain_damage
+	])
+	
+	# 对每个敌人造成伤害并播放特效
+	for enemy in outside_enemies:
+		if not is_instance_valid(enemy):
+			continue
+		
+		# 造成伤害
+		if enemy.has_node("HealthComponent"):
+			enemy.get_node("HealthComponent").take_damage(chain_damage)
+		
+		# 视觉反馈：小爆炸特效
+		Global.spawn_floating_text(enemy.global_position, "CHAIN!", Color(2.0, 0.8, 0.0))
+		
+		# 生成小爆炸特效（使用默认爆炸）
+		_spawn_mini_explosion(enemy.global_position)
+
+## P3-1: 生成小爆炸特效
+func _spawn_mini_explosion(pos: Vector2) -> void:
+	"""在指定位置生成小爆炸特效"""
+	const DEFAULT_EXPLOSION = preload("uid://dvfjoyutjx5jf")
+	
+	if not DEFAULT_EXPLOSION:
+		return
+	
+	var vfx = DEFAULT_EXPLOSION.instantiate()
+	vfx.global_position = pos
+	vfx.scale = Vector2(0.5, 0.5)  # 缩小到50%
+	vfx.z_index = 100
+	
+	get_tree().current_scene.call_deferred("add_child", vfx)
+	
+	# 自动清理
+	var cleanup_timer = get_tree().create_timer(1.0)
+	cleanup_timer.timeout.connect(func():
+		if is_instance_valid(vfx):
+			vfx.queue_free()
+	)
+
+## P3-2: 永久牢笼（筑墙者 Lv.3）
+## @param area: 区域效果节点
+## @param polygon: 闭合多边形
+func _apply_permanent_cage(area: Area2D, polygon: PackedVector2Array) -> void:
+	"""将闭合区域转换为永久牢笼（阻挡敌人移动）"""
+	if not BondManager.has_mechanic("permanent_cage"):
+		return
+	
+	if not is_instance_valid(area):
+		return
+	
+	print("[%s] [P3-2] 永久牢笼激活" % skill_id)
+	
+	# 视觉反馈
+	var center = _calculate_polygon_center(polygon)
+	Global.spawn_floating_text(center, "CAGE!", Color(0.5, 0.5, 1.0))
+	
+	# 创建物理墙体（StaticBody2D）
+	var cage = StaticBody2D.new()
+	cage.name = "PermanentCage"
+	cage.collision_layer = 4  # 独立碰撞层
+	cage.collision_mask = 2   # 只与敌人碰撞
+	
+	# 添加碰撞形状
+	var col = CollisionPolygon2D.new()
+	col.polygon = polygon
+	col.build_mode = CollisionPolygon2D.BUILD_SEGMENTS  # 只有边界，不是实心
+	cage.add_child(col)
+	
+	# 视觉效果：半透明墙体
+	var vis = Line2D.new()
+	for p in polygon:
+		vis.add_point(p)
+	vis.add_point(polygon[0])  # 闭合线条
+	vis.width = 8.0
+	vis.default_color = Color(0.5, 0.5, 1.0, 0.6)
+	vis.z_index = 5
+	cage.add_child(vis)
+	
+	# 添加到场景
+	get_tree().current_scene.add_child(cage)
+	
+	# 牢笼管理：限制数量或时间
+	_manage_cage_lifecycle(cage)
+	
+	print("[%s] [P3-2] 牢笼已生成，位置: (%.0f, %.0f)" % [
+		skill_id,
+		polygon[0].x,
+		polygon[0].y
+	])
+
+## P3-2: 管理牢笼生命周期
+func _manage_cage_lifecycle(cage: StaticBody2D) -> void:
+	"""管理牢笼的生命周期（时间限制或数量限制）"""
+	const MAX_CAGES = 5
+	const CAGE_LIFETIME = 15.0  # 15秒后自动消失
+	
+	# 获取或创建牢笼列表
+	if not get_tree().current_scene.has_meta("active_cages"):
+		get_tree().current_scene.set_meta("active_cages", [])
+	
+	var active_cages: Array = get_tree().current_scene.get_meta("active_cages")
+	
+	# 清理无效牢笼
+	var valid_cages = []
+	for c in active_cages:
+		if is_instance_valid(c):
+			valid_cages.append(c)
+	active_cages = valid_cages
+	
+	# 如果超过数量限制，移除最早的牢笼
+	if active_cages.size() >= MAX_CAGES:
+		var oldest_cage = active_cages[0]
+		if is_instance_valid(oldest_cage):
+			_remove_cage(oldest_cage)
+		active_cages.remove_at(0)
+	
+	# 添加新牢笼
+	active_cages.append(cage)
+	get_tree().current_scene.set_meta("active_cages", active_cages)
+	
+	# 设置生命周期定时器
+	var lifetime_timer = Timer.new()
+	lifetime_timer.wait_time = CAGE_LIFETIME
+	lifetime_timer.one_shot = true
+	cage.add_child(lifetime_timer)
+	
+	lifetime_timer.timeout.connect(func():
+		_remove_cage(cage)
+	)
+	
+	lifetime_timer.start()
+
+## P3-2: 移除牢笼
+func _remove_cage(cage: StaticBody2D) -> void:
+	"""移除牢笼（带淡出动画）"""
+	if not is_instance_valid(cage):
+		return
+	
+	# 淡出动画
+	var vis = cage.get_node_or_null("Line2D")
+	if is_instance_valid(vis):
+		var tween = cage.create_tween()
+		tween.tween_property(vis, "modulate:a", 0.0, 0.5)
+		tween.tween_callback(func():
+			if is_instance_valid(cage):
+				cage.queue_free()
+		)
+	else:
+		cage.queue_free()
+
+## P3-3: 小图形暴击（几何学家 Lv.2）
+## @param polygon: 闭合多边形
+## @param base_damage: 基础伤害
+## @return: 应用暴击后的伤害
+func _apply_small_shape_crit(polygon: PackedVector2Array, base_damage: float) -> float:
+	"""检查图形面积，小图形触发暴击"""
+	if not BondManager.has_mechanic("small_shape_crit"):
+		return base_damage
+	
+	# 计算多边形面积（鞋带公式 Shoelace Formula）
+	var area = _calculate_polygon_area(polygon)
+	
+	# 面积阈值（像素平方）
+	const AREA_THRESHOLD = 15000.0
+	
+	# 检查是否触发暴击
+	if area < AREA_THRESHOLD:
+		var crit_damage = base_damage * 2.0
+		
+		print("[%s] [P3-3] 图形面积: %.2f (阈值: %.2f) -> 暴击触发! 伤害: %.0f -> %.0f" % [
+			skill_id,
+			area,
+			AREA_THRESHOLD,
+			base_damage,
+			crit_damage
+		])
+		
+		# 视觉反馈
+		var center = _calculate_polygon_center(polygon)
+		Global.spawn_floating_text(center, "CRITICAL!", Color(2.0, 2.0, 0.0))
+		Global.on_camera_shake.emit(10.0, 0.2)
+		
+		return crit_damage
+	else:
+		print("[%s] [P3-3] 图形面积: %.2f (阈值: %.2f) -> 未触发暴击" % [
+			skill_id,
+			area,
+			AREA_THRESHOLD
+		])
+		return base_damage
+
+## P3-3: 计算多边形面积（鞋带公式）
+func _calculate_polygon_area(polygon: PackedVector2Array) -> float:
+	"""使用鞋带公式计算多边形面积"""
+	if polygon.size() < 3:
+		return 0.0
+	
+	var area = 0.0
+	var n = polygon.size()
+	
+	for i in range(n):
+		var j = (i + 1) % n
+		area += polygon[i].x * polygon[j].y
+		area -= polygon[j].x * polygon[i].y
+	
+	return abs(area) / 2.0
+
+## P3-3: 计算多边形中心点
+func _calculate_polygon_center(polygon: PackedVector2Array) -> Vector2:
+	"""计算多边形的几何中心"""
+	if polygon.is_empty():
+		return Vector2.ZERO
+	
+	var center = Vector2.ZERO
+	for p in polygon:
+		center += p
+	return center / polygon.size()
 
 # ==============================================================================
 # 生命周期
@@ -438,6 +738,7 @@ func _execute_closed_path() -> void:
 		
 		# 为每个闭合区域生成效果
 		for polygon in polygons:
+			# 子类实现具体效果
 			_spawn_area_effect(polygon)
 
 ## 执行开放路径

@@ -599,7 +599,51 @@ func take_damage(raw_amount: float) -> void:
 	
 	health_component.take_damage(final_damage)
 	
+	# P4-4: 灵魂附着 - 受击时触发反击
+	if BondManager.has_mechanic("soul_attach"):
+		_trigger_soul_attach_on_hit()
+	
 	print("[PlayerBase] 伤害后血量=%d" % health_component.current_health)
+
+# P4-4: 灵魂附着 - 受击时触发反击（指挥型 Lv.2）
+func _trigger_soul_attach_on_hit() -> void:
+	"""受击时触发灵魂附着反击效果"""
+	var attach_damage_scale = BondManager.get_mechanic_value("soul_attach")
+	if attach_damage_scale <= 0:
+		return
+	
+	# 计算反击伤害（基于玩家攻击力）
+	var attach_damage = int(damage * attach_damage_scale)
+	
+	print("[PlayerBase] [P4-4] 灵魂附着触发: 反击伤害=%d (攻击力的%.0f%%)" % [
+		attach_damage,
+		attach_damage_scale * 100
+	])
+	
+	# 对周围敌人造成小范围AoE伤害
+	var attach_radius = 150.0  # 反击范围
+	var enemies = get_tree().get_nodes_in_group("enemies")
+	var hit_count = 0
+	
+	for enemy in enemies:
+		if not is_instance_valid(enemy):
+			continue
+		
+		var distance = global_position.distance_to(enemy.global_position)
+		if distance <= attach_radius:
+			# 造成伤害
+			if enemy.has_node("HealthComponent"):
+				enemy.get_node("HealthComponent").take_damage(attach_damage)
+				hit_count += 1
+			
+			# 视觉反馈
+			Global.spawn_floating_text(enemy.global_position, "SOUL!", Color(1.5, 0.5, 1.5))
+	
+	if hit_count > 0:
+		# 播放反击特效
+		Global.on_camera_shake.emit(5.0, 0.15)
+		Global.spawn_floating_text(global_position, "SOUL ATTACH!", Color(2.0, 0.5, 2.0))
+		print("[PlayerBase] [P4-4] 灵魂附着命中 %d 个敌人" % hit_count)
 
 func apply_knockback_self(force: Vector2) -> void:
 	# P1-2: 霸体机制 - 画图时免疫击退

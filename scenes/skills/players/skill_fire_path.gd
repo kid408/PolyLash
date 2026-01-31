@@ -702,6 +702,9 @@ func _spawn_fire_sea_no_mask(points: PackedVector2Array) -> void:
 			bonus * 100
 		])
 	
+	# P3-3: 小图形暴击（几何学家 Lv.2）
+	final_damage = int(_apply_small_shape_crit(points, float(final_damage)))
+	
 	# 计算中心点（用于二次爆炸）
 	var center = Vector2.ZERO
 	for p in points:
@@ -724,9 +727,17 @@ func _spawn_fire_sea_no_mask(points: PackedVector2Array) -> void:
 	if BondManager.has_mechanic("curse_stack") and is_instance_valid(area):
 		_add_curse_stacking_to_area(area, points)
 	
+	# P3-2: 永久牢笼（筑墙者 Lv.3）
+	if BondManager.has_mechanic("permanent_cage") and is_instance_valid(area):
+		_apply_permanent_cage(area, points)
+	
 	# P2-1: 二次爆炸（爆破师 Lv.2）
 	if BondManager.has_mechanic("secondary_explode"):
 		_trigger_secondary_explosion(center, points)
+	
+	# P3-1: 连锁反应（爆破师 Lv.3）
+	if BondManager.has_mechanic("chain_reaction"):
+		_trigger_chain_reaction(points, final_damage)
 	
 	# 画圈奖励（暂时禁用，因为需要 area 引用）
 	# TODO: 如果需要奖励系统，可以通过 effect_id 获取 area
@@ -804,50 +815,258 @@ func _add_curse_stacking_to_area(area: Area2D, polygon: PackedVector2Array) -> v
 			elif target.owner and target.owner.is_in_group("enemies"):
 				enemy = target.owner
 			
-			if is_instance_valid(enemy):
-				# 检查敌人是否有 StatusComponent
-				var status_comp = enemy.get_node_or_null("StatusComponent")
-				if status_comp and status_comp.has_method("apply_status"):
-					# 应用诅咒状态（持续5秒，每秒叠加1层）
-					status_comp.apply_status("curse", 5.0, curse_damage_per_stack, 1, 1.0)
-					print("[SkillFirePath] [P2-4] 对 %s 叠加诅咒" % enemy.name)
+			if is_instance_valid(enemy) and enemy.has_method("apply_status"):
+				# 应用诅咒状态（持续5秒，每秒叠加1层）
+				enemy.apply_status("curse", 5.0, curse_damage_per_stack, 1, 1.0)
+				print("[SkillFirePath] [P2-4] 对 %s 叠加诅咒" % enemy.name)
 	)
 	
 	curse_timer.start()
 	print("[SkillFirePath] [P2-4] 诅咒计时器已启动")
 
 # ==============================================================================
-# 回调函数
+# P3 高级机制 - 继承自 SkillDrawingBase
 # ==============================================================================
 
-## 伤害tick
-func _on_damage_tick(area_ref: Area2D, amount: int) -> void:
-	if not is_instance_valid(area_ref) or area_ref.is_queued_for_deletion():
+## P3-1: 连锁反应（爆破师 Lv.3）
+func _trigger_chain_reaction(polygon: PackedVector2Array, main_damage: int) -> void:
+	"""对区域外的所有敌人造成连锁爆炸伤害"""
+	if not BondManager.has_mechanic("chain_reaction"):
 		return
 	
-	var targets = area_ref.get_overlapping_bodies() + area_ref.get_overlapping_areas()
-	for t in targets:
-		var enemy = null
-		if t.is_in_group("enemies"):
-			enemy = t
-		elif t.owner and t.owner.is_in_group("enemies"):
-			enemy = t.owner
+	# 获取所有敌人
+	var all_enemies = get_tree().get_nodes_in_group("enemies")
+	if all_enemies.is_empty():
+		return
+	
+	# 筛选区域外的敌人
+	var outside_enemies = []
+	for enemy in all_enemies:
+		if not is_instance_valid(enemy):
+			continue
 		
-		if enemy and enemy.has_node("HealthComponent"):
-			enemy.health_component.take_damage(amount)
+		# 检查敌人是否在多边形内
+		if not Geometry2D.is_point_in_polygon(enemy.global_position, polygon):
+			outside_enemies.append(enemy)
+	
+	# 性能保护：限制最大数量
+	const MAX_CHAIN_TARGETS = 50
+	if outside_enemies.size() > MAX_CHAIN_TARGETS:
+		outside_enemies.shuffle()
+		outside_enemies = outside_enemies.slice(0, MAX_CHAIN_TARGETS)
+	
+	if outside_enemies.is_empty():
+		return
+	
+	# 计算连锁伤害（主爆炸的30%）
+	var chain_damage = int(main_damage * 0.3)
+	
+	print("[SkillFirePath] [P3-1] 连锁反应触发，波及 %d 个敌人，伤害=%d" % [
+		outside_enemies.size(),
+		chain_damage
+	])
+	
+	# 对每个敌人造成伤害并播放特效
+	for enemy in outside_enemies:
+		if not is_instance_valid(enemy):
+			continue
+		
+		# 造成伤害
+		if enemy.has_node("HealthComponent"):
+			enemy.get_node("HealthComponent").take_damage(chain_damage)
+		
+		# 视觉反馈：小爆炸特效
+		Global.spawn_floating_text(enemy.global_position, "CHAIN!", Color(2.0, 0.8, 0.0))
+		
+		# 生成小爆炸特效
+		_spawn_mini_explosion(enemy.global_position)
 
-## 对象过期
-func _on_object_expired(area_ref: Area2D, visual_ref: Node) -> void:
-	if is_instance_valid(area_ref):
-		if is_instance_valid(visual_ref):
-			var tween = area_ref.create_tween()
-			tween.tween_property(visual_ref, "modulate:a", 0.0, 0.3)
-			tween.tween_callback(func():
-				if is_instance_valid(area_ref):
-					area_ref.queue_free()
-			)
-		else:
-			area_ref.queue_free()
+## P3-1: 生成小爆炸特效
+func _spawn_mini_explosion(pos: Vector2) -> void:
+	"""在指定位置生成小爆炸特效"""
+	const DEFAULT_EXPLOSION = preload("uid://dvfjoyutjx5jf")
+	
+	if not DEFAULT_EXPLOSION:
+		return
+	
+	var vfx = DEFAULT_EXPLOSION.instantiate()
+	vfx.global_position = pos
+	vfx.scale = Vector2(0.5, 0.5)  # 缩小到50%
+	vfx.z_index = 100
+	
+	get_tree().current_scene.call_deferred("add_child", vfx)
+	
+	# 自动清理
+	var cleanup_timer = get_tree().create_timer(1.0)
+	cleanup_timer.timeout.connect(func():
+		if is_instance_valid(vfx):
+			vfx.queue_free()
+	)
+
+## P3-2: 永久牢笼（筑墙者 Lv.3）
+func _apply_permanent_cage(area: Area2D, polygon: PackedVector2Array) -> void:
+	"""将闭合区域转换为永久牢笼（阻挡敌人移动）"""
+	if not is_instance_valid(area):
+		return
+	
+	print("[SkillFirePath] [P3-2] 永久牢笼激活")
+	
+	# 创建物理墙体（StaticBody2D）
+	var cage = StaticBody2D.new()
+	cage.name = "PermanentCage"
+	cage.collision_layer = 4  # 独立碰撞层
+	cage.collision_mask = 2   # 只与敌人碰撞
+	
+	# 添加碰撞形状
+	var col = CollisionPolygon2D.new()
+	col.polygon = polygon
+	col.build_mode = CollisionPolygon2D.BUILD_SEGMENTS  # 只有边界，不是实心
+	cage.add_child(col)
+	
+	# 视觉效果：半透明墙体
+	var vis = Line2D.new()
+	for p in polygon:
+		vis.add_point(p)
+	vis.add_point(polygon[0])  # 闭合线条
+	vis.width = 8.0
+	vis.default_color = Color(0.5, 0.5, 1.0, 0.6)
+	vis.z_index = 5
+	cage.add_child(vis)
+	
+	# 添加到场景
+	get_tree().current_scene.add_child(cage)
+	
+	# 牢笼管理：限制数量或时间
+	_manage_cage_lifecycle(cage)
+	
+	print("[SkillFirePath] [P3-2] 牢笼已生成")
+
+## P3-2: 管理牢笼生命周期
+func _manage_cage_lifecycle(cage: StaticBody2D) -> void:
+	"""管理牢笼的生命周期（时间限制或数量限制）"""
+	const MAX_CAGES = 5
+	const CAGE_LIFETIME = 15.0  # 15秒后自动消失
+	
+	# 获取或创建牢笼列表
+	if not get_tree().current_scene.has_meta("active_cages"):
+		get_tree().current_scene.set_meta("active_cages", [])
+	
+	var active_cages: Array = get_tree().current_scene.get_meta("active_cages")
+	
+	# 清理无效牢笼
+	var valid_cages = []
+	for c in active_cages:
+		if is_instance_valid(c):
+			valid_cages.append(c)
+	active_cages = valid_cages
+	
+	# 如果超过数量限制，移除最早的牢笼
+	if active_cages.size() >= MAX_CAGES:
+		var oldest_cage = active_cages[0]
+		if is_instance_valid(oldest_cage):
+			_remove_cage(oldest_cage)
+		active_cages.remove_at(0)
+	
+	# 添加新牢笼
+	active_cages.append(cage)
+	get_tree().current_scene.set_meta("active_cages", active_cages)
+	
+	# 设置生命周期定时器
+	var lifetime_timer = Timer.new()
+	lifetime_timer.wait_time = CAGE_LIFETIME
+	lifetime_timer.one_shot = true
+	cage.add_child(lifetime_timer)
+	
+	lifetime_timer.timeout.connect(func():
+		_remove_cage(cage)
+	)
+	
+	lifetime_timer.start()
+
+## P3-2: 移除牢笼
+func _remove_cage(cage: StaticBody2D) -> void:
+	"""移除牢笼（带淡出动画）"""
+	if not is_instance_valid(cage):
+		return
+	
+	# 淡出动画
+	var vis = cage.get_node_or_null("Line2D")
+	if is_instance_valid(vis):
+		var tween = cage.create_tween()
+		tween.tween_property(vis, "modulate:a", 0.0, 0.5)
+		tween.tween_callback(func():
+			if is_instance_valid(cage):
+				cage.queue_free()
+		)
+	else:
+		cage.queue_free()
+
+## P3-3: 小图形暴击（几何学家 Lv.2）
+func _apply_small_shape_crit(polygon: PackedVector2Array, base_damage: float) -> float:
+	"""检查图形面积，小图形触发暴击"""
+	if not BondManager.has_mechanic("small_shape_crit"):
+		return base_damage
+	
+	# 计算多边形面积（鞋带公式 Shoelace Formula）
+	var area = _calculate_polygon_area(polygon)
+	
+	# 面积阈值（像素平方）
+	const AREA_THRESHOLD = 15000.0
+	
+	# 检查是否触发暴击
+	if area < AREA_THRESHOLD:
+		var crit_damage = base_damage * 2.0
+		
+		print("[SkillFirePath] [P3-3] 图形面积: %.2f (阈值: %.2f) -> 暴击触发! 伤害: %.0f -> %.0f" % [
+			area,
+			AREA_THRESHOLD,
+			base_damage,
+			crit_damage
+		])
+		
+		# 视觉反馈
+		var center = _calculate_polygon_center(polygon)
+		Global.spawn_floating_text(center, "CRITICAL!", Color(2.0, 2.0, 0.0))
+		Global.on_camera_shake.emit(10.0, 0.2)
+		
+		return crit_damage
+	else:
+		print("[SkillFirePath] [P3-3] 图形面积: %.2f (阈值: %.2f) -> 未触发暴击" % [
+			area,
+			AREA_THRESHOLD
+		])
+		return base_damage
+
+## P3-3: 计算多边形面积（鞋带公式）
+func _calculate_polygon_area(polygon: PackedVector2Array) -> float:
+	"""使用鞋带公式计算多边形面积"""
+	if polygon.size() < 3:
+		return 0.0
+	
+	var area = 0.0
+	var n = polygon.size()
+	
+	for i in range(n):
+		var j = (i + 1) % n
+		area += polygon[i].x * polygon[j].y
+		area -= polygon[j].x * polygon[i].y
+	
+	return abs(area) / 2.0
+
+## P3-3: 计算多边形中心点
+func _calculate_polygon_center(polygon: PackedVector2Array) -> Vector2:
+	"""计算多边形的几何中心"""
+	if polygon.is_empty():
+		return Vector2.ZERO
+	
+	var center = Vector2.ZERO
+	for p in polygon:
+		center += p
+	return center / polygon.size()
+
+# ==============================================================================
+# 画圈奖励
+# ==============================================================================
 
 ## 画圈奖励
 func _apply_circle_rewards(area_ref: Area2D, polygon: PackedVector2Array) -> void:

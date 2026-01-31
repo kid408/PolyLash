@@ -391,10 +391,21 @@ func _on_player_switch_requested(player_id: String) -> void:
 	print("[Arena] 当前玩家: %s" % old_player_id)
 	print("[Arena] 当前玩家位置: %s" % old_pos)
 	
-	# 注意：不清理旧玩家的技能效果，保留Q键技能残留
-	# if player.has_method("_cleanup_skill_effects"):
-	#	player._cleanup_skill_effects()
-	print("[Arena] 不清理旧玩家的技能效果")
+	# P4-2: 图形继承（突击型 Lv.2）
+	# 检查是否激活图形继承羁绊
+	var should_inherit_ink = BondManager.has_mechanic("ink_inherit")
+	
+	if should_inherit_ink:
+		print("[Arena] [P4-2] 图形继承激活，保留旧角色的画图效果")
+		# 不清理技能效果，让它们继续存在
+	else:
+		# 正常情况：不清理技能效果（这是默认行为）
+		print("[Arena] 不清理旧玩家的技能效果（默认行为）")
+	
+	# 注意：无论是否有图形继承羁绊，我们都不清理技能效果
+	# 因为当前架构已经设计为技能效果独立于角色存在
+	# 图形继承羁绊的主要作用是：新角色可以引爆旧图形时造成额外伤害
+	# 这部分逻辑在 SkillDrawingBase 中实现
 	
 	# 销毁当前角色
 	print("[Arena] 调用 player.queue_free()")

@@ -16,8 +16,9 @@ extends EditorScript
 # 配置参数 - 修改这里来创建新角色
 # ==============================================================================
 
-const CHARACTER_ID = "lovely"           # 角色ID（小写，用下划线）
-const CHARACTER_NAME = "小可爱"          # 角色名称（中文）
+const CHARACTER_ID = "dryad"           # 角色ID（小写，用下划线）
+const CHARACTER_NAME = "德鲁伊"          # 角色名称（中文）
+const SPRITE_PATH = "res://assets/sprites/Players/Player_26.png"
 # CHARACTER_CLASS_NAME 会自动从 CHARACTER_ID 转换为大驼峰格式
 
 # 基础属性
@@ -33,7 +34,7 @@ const SKILL_LMB = "skill_dash"           # 左键技能ID
 const SKILL_RMB = ""                     # 右键技能ID（通常留空）
 
 # 视觉配置
-const SPRITE_PATH = "res://assets/sprites/Players/Player_13.png"
+
 const SPRITE_SCALE = 1.0
 const COLOR_MODULATE = "#ffffff"
 
