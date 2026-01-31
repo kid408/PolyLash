@@ -2,7 +2,11 @@
 
 importer="texture"
 type="CompressedTexture2D"
+<<<<<<< HEAD
 uid="uid://dl4c8dmmnxdqt"
+=======
+uid="uid://cnfpwh8nw3pqh"
+>>>>>>> c854a91fb50c4861cad7d822636219260531112e
 path="res://.godot/imported/Enemy_Glutton_02.png-3ec2d066ba6164c4d7a23863de6cb2a2.ctex"
 metadata={
 "vram_texture": false
