@@ -1,9 +1,1 @@
-res://scenes/skills/players/skill_fire_path.gd
-res://autoloads/bond_manager.gd
-res://autoloads/global.gd
-res://scenes/skills/skill_drawing_base.gd
-res://scenes/unit/players/player_base.gd
-res://scenes/unit/enemy/enemy.gd
-res://tools/create_character_tool.gd
-res://scenes/ui/selection_panel/selection_panel.tscn
 res://scenes/ui/selection_panel/selection_panel.gd

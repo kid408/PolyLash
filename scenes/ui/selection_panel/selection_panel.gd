@@ -312,11 +312,8 @@ func _save_templates() -> void:
 		print("[SelectionPanel] 警告: selected_list 没有按钮子节点，无法保存模板")
 
 # ============================================================================
-# 角色列表生成
+# 角色列表生成（按 Origin 分组）
 # ============================================================================
-
-# 最小槽位数量（保证两排显示）
-const MIN_CHARACTER_SLOTS = 16  # 8列 x 2行
 
 func _generate_player_buttons() -> void:
 	var enabled_players = ConfigManager.get_enabled_players()
@@ -324,30 +321,85 @@ func _generate_player_buttons() -> void:
 	# 图标尺寸配置
 	var icon_size = 120  # 角色池图标尺寸 (大图标)
 	var spacing = 10  # 间距
-	var grid_columns = 8  # 列数
+	var grid_columns = 10  # 每组列数（每行显示10个角色）
 	
-	# 获取 PlayerScrollContainer（而不是 PlayerContainerWrapper）
+	# 获取 PlayerScrollContainer
 	var scroll_container = player_scroll_container
 	
 	# 清理并重新设置PlayerContainer
 	player_container.queue_free()
 	
-	# 创建新的GridContainer - 强制设置列数
-	var grid = GridContainer.new()
-	grid.name = "PlayerContainer"
-	grid.columns = grid_columns
-	grid.add_theme_constant_override("h_separation", spacing)
-	grid.add_theme_constant_override("v_separation", spacing)
-	# 设置为填充父容器宽度
-	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	scroll_container.add_child(grid)
+	# 创建主 VBoxContainer
+	var main_vbox = VBoxContainer.new()
+	main_vbox.name = "PlayerVBox"
+	main_vbox.add_theme_constant_override("separation", 20)  # 组间距
+	main_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	main_vbox.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	scroll_container.add_child(main_vbox)
 	
 	# 更新引用
-	player_container = grid
+	player_container = main_vbox
 	
-	var real_count = 0
+	# 按 origin_tag 分组
+	var grouped_players = {
+		"colossus": [],
+		"inkborn": [],
+		"nomad": [],
+		"alchemist": []
+	}
+	
 	for player_config in enabled_players:
+		var origin = player_config.get("origin_tag", "")
+		if grouped_players.has(origin):
+			grouped_players[origin].append(player_config)
+	
+	# 定义分组信息（顺序、标题、颜色）
+	var group_info = [
+		{"id": "colossus", "title": "重装 (Colossus)", "color": Color(1, 0.3, 0.3)},
+		{"id": "inkborn", "title": "魔导 (Inkborn)", "color": Color(0.3, 0.5, 1)},
+		{"id": "nomad", "title": "游侠 (Nomad)", "color": Color(0.3, 1, 0.5)},
+		{"id": "alchemist", "title": "后勤 (Alchemist)", "color": Color(1, 0.9, 0.3)}
+	]
+	
+	# 为每个分组创建UI
+	for info in group_info:
+		var group_id = info.id
+		var players = grouped_players[group_id]
+		
+		if players.is_empty():
+			continue
+		
+		# 创建分组容器
+		var group_vbox = VBoxContainer.new()
+		group_vbox.name = "%sGroup" % group_id.capitalize()
+		group_vbox.add_theme_constant_override("separation", 10)
+		main_vbox.add_child(group_vbox)
+		
+		# 创建标题 Label
+		var title_label = Label.new()
+		title_label.name = "%sTitle" % group_id.capitalize()
+		title_label.text = info.title
+		title_label.add_theme_font_size_override("font_size", 18)
+		title_label.add_theme_color_override("font_color", info.color)
+		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		group_vbox.add_child(title_label)
+		
+		# 创建角色 GridContainer
+		var grid = GridContainer.new()
+		grid.name = "%sGrid" % group_id.capitalize()
+		grid.columns = grid_columns
+		grid.add_theme_constant_override("h_separation", spacing)
+		grid.add_theme_constant_override("v_separation", spacing)
+		group_vbox.add_child(grid)
+		
+		# 填充角色按钮
+		_populate_group(grid, players, icon_size)
+	
+	print("[SelectionPanel] 生成了 %d 个角色按钮，按 Origin 分组" % player_buttons.size())
+
+func _populate_group(grid: GridContainer, players: Array, icon_size: int) -> void:
+	"""填充指定分组的角色按钮"""
+	for player_config in players:
 		var player_id = player_config.get("player_id", "")
 		if player_id == "":
 			continue
@@ -386,21 +438,6 @@ func _generate_player_buttons() -> void:
 		
 		grid.add_child(btn)
 		player_buttons[player_id] = btn
-		real_count += 1
-	
-	# === 添加隐形占位符填充两排 ===
-	var needed_placeholders = MIN_CHARACTER_SLOTS - real_count
-	for i in range(needed_placeholders):
-		var dummy = Control.new()
-		dummy.name = "Placeholder_%d" % i
-		dummy.custom_minimum_size = Vector2(icon_size, icon_size)
-		dummy.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		dummy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		dummy.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 鼠标穿透
-		dummy.modulate.a = 0  # 完全透明
-		grid.add_child(dummy)
-	
-	print("[SelectionPanel] 生成了 %d 个角色按钮 + %d 个占位符，Grid列数: %d" % [real_count, needed_placeholders, grid_columns])
 
 
 # ============================================================================
