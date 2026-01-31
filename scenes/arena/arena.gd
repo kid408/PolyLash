@@ -16,7 +16,11 @@ class_name Arena
 @onready var exit_dialog: ExitConfirmDialog = %ExitConfirmDialog
 @onready var shop_panel = $GameUI/ShopPanel  # 商店面板
 
+# 预加载结算界面
+const GAME_OVER_SCENE = preload("res://scenes/ui/game_over/game_over_screen.tscn")
+
 var current_chest: ChestSimple = null  # 保存当前打开的宝箱引用
+var game_over_screen: GameOverScreen = null  # 结算界面实例
 
 func _ready() -> void:
 	print("[Arena] _ready() 开始")
@@ -47,6 +51,9 @@ func _ready() -> void:
 	
 	# 连接角色切换信号
 	Global.on_player_switch_requested.connect(_on_player_switch_requested)
+	
+	# 连接玩家死亡信号（通过健康组件）
+	# 注意：需要在玩家初始化后连接
 	
 	# 连接退出对话框信号
 	if exit_dialog:
@@ -142,6 +149,7 @@ func _on_upgrade_selected(attribute_id: String) -> void:
 
 func _process(delta: float) -> void:
 	if Global.game_paused: return
+	
 	# 更新 Global HUD 波次信息
 	if global_hud and spawner and not spawner.spawn_timer.is_stopped():
 		global_hud.set_wave_text(spawner.get_wave_text())
@@ -179,6 +187,13 @@ func _connect_player_signals() -> void:
 	await get_tree().process_frame
 	
 	if is_instance_valid(Global.player):
+		# 连接死亡信号
+		if Global.player.health_component:
+			if Global.player.health_component.on_unit_died.is_connected(_on_player_died):
+				Global.player.health_component.on_unit_died.disconnect(_on_player_died)
+			Global.player.health_component.on_unit_died.connect(_on_player_died)
+			print("[Arena] 玩家死亡信号已连接")
+		
 		# 先断开旧连接（如果存在）
 		if Global.player.has_signal("xp_changed"):
 			if Global.player.xp_changed.is_connected(_on_player_xp_changed):
@@ -206,6 +221,11 @@ func _on_player_gold_changed(current: int) -> void:
 	# Gold 已经由 player_base.add_gold() 更新到 DataManager
 	# 直接更新 GlobalHUD 显示
 	_update_gold_display(DataManager.get_total_gold())
+
+func _on_player_died() -> void:
+	"""玩家死亡回调（通过信号触发）"""
+	print("[Arena] ========== 收到玩家死亡信号 ==========")
+	_show_game_over_screen()
 
 func _update_xp_display(value: int) -> void:
 	# GlobalHUD 通过 Global.on_session_xp_changed 信号自动更新
@@ -500,3 +520,37 @@ func _on_shop_next_wave_requested() -> void:
 	# 恢复敌人生成
 	if spawner:
 		spawner.resume_spawning()
+
+# ============================================================================
+# 游戏结算系统
+# ============================================================================
+
+func _show_game_over_screen() -> void:
+	"""显示游戏结算界面"""
+	print("[Arena] ========== 显示游戏结算界面 ==========")
+	print("[Arena] Global.is_game_over: %s" % Global.is_game_over)
+	print("[Arena] Global.player 有效: %s" % is_instance_valid(Global.player))
+	
+	# 防止重复显示
+	if game_over_screen:
+		print("[Arena] 结算界面已存在，跳过")
+		return
+	
+	# 实例化结算界面
+	print("[Arena] 实例化结算界面...")
+	game_over_screen = GAME_OVER_SCENE.instantiate()
+	add_child(game_over_screen)
+	print("[Arena] 结算界面已添加到场景树")
+	
+	# 收集统计数据
+	var stats_data = {
+		"kills": Global.session_kills,
+		"gold": Global.session_gold
+	}
+	
+	print("[Arena] 结算数据 - 击杀: %d, 金币: %d" % [stats_data.kills, stats_data.gold])
+	
+	# 设置数据并显示
+	game_over_screen.set_stats(stats_data)
+	game_over_screen.show_screen()
+	print("[Arena] ========== 结算界面显示完成 ==========")

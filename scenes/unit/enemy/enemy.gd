@@ -680,6 +680,9 @@ func destroy_enemy() -> void:
 			var gold_value = int(enemy_config.get("gold_value", 5))
 			Global.player.add_gold(gold_value)
 	
+	# 记录击杀数
+	Global.add_session_kill()
+	
 	if Global.player and Global.player.has_method("on_enemy_killed"):
 		Global.player.on_enemy_killed(self)
 	

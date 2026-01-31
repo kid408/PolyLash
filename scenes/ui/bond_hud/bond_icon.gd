@@ -79,16 +79,9 @@ func set_border_color(color: Color) -> void:
 # ============================================================================
 
 func _setup_tooltip() -> void:
-	"""设置 Tooltip（简化版本）"""
-	var tooltip_text = "%s" % bond_name
-	
-	if is_active:
-		tooltip_text += " - Lv.%d" % bond_level
-		if effect_description != "":
-			tooltip_text += "\n%s" % effect_description
-	else:
-		if required_count > 0:
-			tooltip_text += " (%d/%d)" % [current_count, required_count]
+	"""设置 Tooltip（使用 BondManager 的标准函数）"""
+	# 使用 BondManager 的标准 tooltip 生成函数，确保与选择界面一致
+	var tooltip_text = BondManager.get_bond_tooltip_text(bond_id, current_count)
 	
 	# 在 Godot 4.x 中，直接设置 tooltip_text 属性
 	set_tooltip_text(tooltip_text)

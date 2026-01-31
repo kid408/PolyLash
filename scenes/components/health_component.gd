@@ -38,7 +38,9 @@ func setup(stats) -> void:
 # 受到伤害 从unit脚本调用过来
 func take_damage(value:float) -> void:
 	# 这里的判断加个容错，或者干脆去掉，依赖下面的计算
-	if current_health <= 0: return 
+	if current_health <= 0: 
+		print("[HealthComponent] 已经死亡，忽略伤害")
+		return 
 	
 	current_health -= value
 	
@@ -52,6 +54,7 @@ func take_damage(value:float) -> void:
 	
 	# 只要归零，就触发死亡
 	if current_health == 0:
+		print("[HealthComponent] 血量归零，触发死亡信号")
 		on_unit_died.emit()
 		die()
 

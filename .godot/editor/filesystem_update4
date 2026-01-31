@@ -1,3 +1,7 @@
-res://tools/cleanup_csv_tool.gd
-res://tools/create_character_tool.gd
-res://scenes/ui/selection_panel/selection_panel.tscn
+res://scenes/arena/arena.gd
+res://scenes/ui/game_over/game_over_screen.gd
+res://scenes/ui/game_over/game_over_screen.tscn
+res://scenes/unit/players/player_base.gd
+res://scenes/components/health_component.gd
+res://scenes/projectiles/projectile.gd
+res://scenes/ui/bond_hud/bond_icon.gd

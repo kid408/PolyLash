@@ -21,6 +21,7 @@ func _ready() -> void:
 			notifier.screen_exited.connect(_on_screen_exited)
 
 func _process(delta: float) -> void:
+	if Global.game_paused: return
 	position += velocity * delta
 
 func set_projectile(velocity: Vector2, damage: float, critical: bool, knockback: float, unit: Node2D, stats: WeaponStats = null) -> void:

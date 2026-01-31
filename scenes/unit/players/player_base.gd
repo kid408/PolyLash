@@ -93,8 +93,14 @@ func _ready() -> void:
 	Global.player = self
 	
 	# 连接死亡信号
-	if health_component and not health_component.on_unit_died.is_connected(_on_death):
-		health_component.on_unit_died.connect(_on_death)
+	if health_component:
+		if not health_component.on_unit_died.is_connected(_on_death):
+			health_component.on_unit_died.connect(_on_death)
+			print("[PlayerBase] 死亡信号已连接")
+		else:
+			print("[PlayerBase] 死亡信号已经连接过了")
+	else:
+		printerr("[PlayerBase] 错误：health_component 不存在！")
 	
 	# 初始化数值
 	energy = max_energy
@@ -575,6 +581,8 @@ func take_damage(raw_amount: float) -> void:
 	var damage_multiplier = 1.0 - (clamp(armor, 0, max_armor) * reduction_per_armor)
 	var final_damage = max(1, raw_amount * damage_multiplier)
 	
+	print("[PlayerBase] 受到伤害: raw=%d, final=%d, 当前血量=%d" % [raw_amount, final_damage, health_component.current_health])
+	
 	if armor > 0:
 		armor -= 1
 		Global.spawn_floating_text(global_position, "Armor Crack!", Color.YELLOW)
@@ -589,6 +597,8 @@ func take_damage(raw_amount: float) -> void:
 		Global.frame_freeze(0.08, 0.15)
 	
 	health_component.take_damage(final_damage)
+	
+	print("[PlayerBase] 伤害后血量=%d" % health_component.current_health)
 
 func apply_knockback_self(force: Vector2) -> void:
 	# 应用击退力缩放系数，减少击退效果（从CSV加载）
@@ -622,6 +632,7 @@ func add_gold(amount: int) -> void:
 	DataManager.add_gold(amount)  # 直接更新 DataManager
 	gold = DataManager.get_total_gold()  # 同步本地变量（兼容性）
 	gold_changed.emit(DataManager.get_total_gold())
+	Global.add_session_gold(amount)  # 记录局内金币
 	Global.spawn_floating_text(global_position + Vector2(-20, -10), "+%d Gold" % amount, Color.GOLD)
 
 func update_ui_signals() -> void:
@@ -653,6 +664,9 @@ func is_facing_right() -> bool:
 	return visuals.scale.x < 0
 
 func _on_death() -> void:
+	print("[PlayerBase] ========== 玩家死亡 ==========")
+	print("[PlayerBase] 当前血量: %d" % health_component.current_health)
+	
 	Global.play_player_death()
 	visuals.visible = false
 	# 简单的死亡粒子生成
@@ -670,8 +684,14 @@ func _on_death() -> void:
 	set_process(false)
 	set_physics_process(false)
 	
-	# 调用全局游戏结束逻辑
-	Global.game_over()
+	# 标记游戏结束并立即暂停游戏
+	print("[PlayerBase] 设置 Global.is_game_over = true")
+	Global.is_game_over = true
+	print("[PlayerBase] 设置 Global.game_paused = true")
+	Global.game_paused = true
+	
+	print("[PlayerBase] ========== 玩家死亡处理完成 ==========")
+	# Arena 会在下一帧检测到死亡并显示结算界面
 
 ## 清理技能效果（角色切换时调用）
 func _cleanup_skill_effects() -> void:

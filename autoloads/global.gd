@@ -66,6 +66,8 @@ var is_game_over: bool = false
 # 局内数据 (Session Data) - 每局重置
 # ============================================================================
 var session_xp: int = 0  # 局内经验值，每局重置
+var session_kills: int = 0  # 局内击杀数，每局重置
+var session_gold: int = 0  # 局内获得金币，每局重置
 
 func _ready() -> void:
 	# 初始化对象池，防止频繁创建销毁音频节点
@@ -333,9 +335,19 @@ func add_session_xp(amount: int) -> void:
 	emit_signal("on_session_xp_changed", session_xp)
 	#print("[Global] 获得 XP: %d, 当前: %d" % [amount, session_xp])
 
+# 添加局内击杀数
+func add_session_kill() -> void:
+	session_kills += 1
+
+# 添加局内金币记录
+func add_session_gold(amount: int) -> void:
+	session_gold += amount
+
 # 重置局内数据（新游戏时调用）
 func reset_session_data() -> void:
 	session_xp = 0
+	session_kills = 0
+	session_gold = 0
 	emit_signal("on_session_xp_changed", session_xp)
 	print("[Global] 局内数据已重置")
 
