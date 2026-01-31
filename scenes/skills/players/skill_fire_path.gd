@@ -611,6 +611,17 @@ func _spawn_fire_line_damage() -> void:
 
 ## 生成火线
 func _spawn_fire_line(start: Vector2, end: Vector2) -> void:
+	# P0-2: 应用线条持续时间加成（筑墙者羁绊）
+	var final_duration = fire_line_duration
+	if BondManager.has_mechanic("line_duration"):
+		var bonus = BondManager.get_mechanic_value("line_duration")
+		final_duration += bonus
+		print("[SkillFirePath] [P0-2] 火线持续时间延长: %.1f秒 -> %.1f秒 (+%.1f秒)" % [
+			fire_line_duration,
+			final_duration,
+			bonus
+		])
+	
 	# ✅ 使用统一的效果管理器
 	SkillEffectManager.create_line_effect({
 		"start": start,
@@ -618,7 +629,7 @@ func _spawn_fire_line(start: Vector2, end: Vector2) -> void:
 		"width": fire_line_width,
 		"damage": fire_line_damage,
 		"damage_interval": 0.5,
-		"duration": fire_line_duration,
+		"duration": final_duration,
 		"color": Color(2.0, 1.2, 0.4, 0.9)
 	})
 
@@ -680,10 +691,27 @@ func _spawn_fire_sea_no_mask(points: PackedVector2Array) -> void:
 	
 	Global.spawn_floating_text(points[0], "INFERNO!", Color(2.0, 1.0, 0.0))
 	
+	# P0-1: 应用闭合图形伤害加成（爆破师羁绊）
+	var final_damage = fire_sea_damage
+	if BondManager.has_mechanic("closed_shape_dmg"):
+		var bonus = BondManager.get_mechanic_value("closed_shape_dmg")
+		final_damage = int(fire_sea_damage * (1.0 + bonus))
+		print("[SkillFirePath] [P0-1] 火海伤害加成: %d -> %d (+%.0f%%)" % [
+			fire_sea_damage,
+			final_damage,
+			bonus * 100
+		])
+	
+	# 计算中心点（用于二次爆炸）
+	var center = Vector2.ZERO
+	for p in points:
+		center += p
+	center /= points.size()
+	
 	# ✅ 使用统一的效果管理器
-	SkillEffectManager.create_area_effect({
+	var area = SkillEffectManager.create_area_effect({
 		"polygon": points,
-		"damage": fire_sea_damage,
+		"damage": final_damage,
 		"damage_interval": 0.3,
 		"duration": fire_sea_duration,
 		"color": Color(1.5, 0.7, 0.2, 0.6),
@@ -692,10 +720,101 @@ func _spawn_fire_sea_no_mask(points: PackedVector2Array) -> void:
 		"fade_out_duration": 0.3
 	})
 	
+	# P2-4: 诅咒叠加（咒术师 Lv.2）
+	if BondManager.has_mechanic("curse_stack") and is_instance_valid(area):
+		_add_curse_stacking_to_area(area, points)
+	
+	# P2-1: 二次爆炸（爆破师 Lv.2）
+	if BondManager.has_mechanic("secondary_explode"):
+		_trigger_secondary_explosion(center, points)
+	
 	# 画圈奖励（暂时禁用，因为需要 area 引用）
 	# TODO: 如果需要奖励系统，可以通过 effect_id 获取 area
 	# await get_tree().process_frame
 	# _apply_circle_rewards(area, points)
+
+## P2-1: 触发二次爆炸（爆破师 Lv.2）
+func _trigger_secondary_explosion(center: Vector2, original_polygon: PackedVector2Array) -> void:
+	"""延迟0.3秒后触发二次余波爆炸"""
+	print("[SkillFirePath] [P2-1] 准备触发二次爆炸...")
+	
+	# 延迟0.3秒
+	await get_tree().create_timer(0.3).timeout
+	
+	# 计算二次爆炸范围（扩大1.5倍）
+	var expanded_polygon = PackedVector2Array()
+	for point in original_polygon:
+		var direction = (point - center).normalized()
+		var distance = point.distance_to(center)
+		var new_point = center + direction * distance * 1.5
+		expanded_polygon.append(new_point)
+	
+	# 二次爆炸伤害减半
+	var secondary_damage = int(fire_sea_damage * 0.5)
+	
+	print("[SkillFirePath] [P2-1] 二次爆炸触发: 伤害=%d (原始伤害的50%%)" % secondary_damage)
+	
+	# 视觉反馈
+	Global.spawn_floating_text(center, "AFTERSHOCK!", Color(2.0, 0.5, 0.0))
+	Global.on_camera_shake.emit(8.0, 0.2)
+	
+	# 生成二次爆炸效果（持续时间更短）
+	SkillEffectManager.create_area_effect({
+		"polygon": expanded_polygon,
+		"damage": secondary_damage,
+		"damage_interval": 0.5,
+		"duration": 2.0,  # 更短的持续时间
+		"color": Color(2.0, 0.3, 0.0, 0.4),  # 更深的红色，更透明
+		"z_index": 9,
+		"fade_in_duration": 0.1,
+		"fade_out_duration": 0.5
+	})
+
+## P2-4: 为火海区域添加诅咒叠加效果（咒术师 Lv.2）
+func _add_curse_stacking_to_area(area: Area2D, polygon: PackedVector2Array) -> void:
+	"""为火海区域添加诅咒叠加效果"""
+	if not is_instance_valid(area):
+		return
+	
+	print("[SkillFirePath] [P2-4] 诅咒叠加激活")
+	
+	# 创建诅咒计时器（每秒触发一次）
+	var curse_timer = Timer.new()
+	curse_timer.name = "CurseStackTimer"
+	curse_timer.wait_time = 1.0
+	curse_timer.one_shot = false
+	area.add_child(curse_timer)
+	
+	# 诅咒伤害值（每层每秒造成的伤害）
+	var curse_damage_per_stack = 3.0
+	
+	curse_timer.timeout.connect(func():
+		if not is_instance_valid(area) or area.is_queued_for_deletion():
+			curse_timer.stop()
+			return
+		
+		# 检测所有在区域内的敌人
+		var enemies = area.get_overlapping_bodies() + area.get_overlapping_areas()
+		
+		for target in enemies:
+			var enemy = null
+			
+			if target.is_in_group("enemies"):
+				enemy = target
+			elif target.owner and target.owner.is_in_group("enemies"):
+				enemy = target.owner
+			
+			if is_instance_valid(enemy):
+				# 检查敌人是否有 StatusComponent
+				var status_comp = enemy.get_node_or_null("StatusComponent")
+				if status_comp and status_comp.has_method("apply_status"):
+					# 应用诅咒状态（持续5秒，每秒叠加1层）
+					status_comp.apply_status("curse", 5.0, curse_damage_per_stack, 1, 1.0)
+					print("[SkillFirePath] [P2-4] 对 %s 叠加诅咒" % enemy.name)
+	)
+	
+	curse_timer.start()
+	print("[SkillFirePath] [P2-4] 诅咒计时器已启动")
 
 # ==============================================================================
 # 回调函数

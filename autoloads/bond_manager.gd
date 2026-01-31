@@ -410,10 +410,35 @@ func _apply_stat_modifier(stats: Dictionary, param: String, value: float) -> voi
 		param: 属性参数名
 		value: 修改值
 	"""
-	# 处理特殊的属性名映射
-	var stat_key = param
+	# 检查是否为百分比属性（_pct 后缀）
+	var is_percentage = param.ends_with("_pct")
+	var base_param = param.trim_suffix("_pct") if is_percentage else param
 	
-	# 根据属性类型应用加成
+	# 百分比属性：基于当前值的乘法加成
+	if is_percentage:
+		match base_param:
+			"energy_regen":
+				var base_value = stats.get("energy_regen", 0)
+				stats["energy_regen"] = base_value * (1.0 + value)
+			"max_health":
+				var base_value = stats.get("max_health", 100)
+				stats["max_health"] = base_value * (1.0 + value)
+			"movement_speed", "speed":
+				var base_value = stats.get("speed", 100)
+				stats["speed"] = base_value * (1.0 + value)
+			"pickup_range":
+				var base_value = stats.get("pickup_range", 100)
+				stats["pickup_range"] = base_value * (1.0 + value)
+			_:
+				# 通用百分比处理
+				if stats.has(base_param):
+					stats[base_param] = stats[base_param] * (1.0 + value)
+				else:
+					# 如果属性不存在，假设基础值为0，百分比加成无效
+					pass
+		return
+	
+	# 固定值属性：直接加法
 	match param:
 		"crit_chance":
 			stats["crit_chance"] = stats.get("crit_chance", 0) + value
@@ -429,7 +454,7 @@ func _apply_stat_modifier(stats: Dictionary, param: String, value: float) -> voi
 			stats["speed"] = stats.get("speed", 100) + value
 		"armor":
 			stats["armor"] = stats.get("armor", 0) + value
-		"stat_share_ratio":
+		"stat_share", "stat_share_ratio":
 			stats["stat_share_ratio"] = stats.get("stat_share_ratio", 0) + value
 		"gold_gain":
 			stats["gold_gain"] = stats.get("gold_gain", 1.0) + value
@@ -445,6 +470,8 @@ func _apply_stat_modifier(stats: Dictionary, param: String, value: float) -> voi
 			stats["heal_power"] = stats.get("heal_power", 1.0) + value
 		"damage_taken_reduction":
 			stats["damage_taken_reduction"] = stats.get("damage_taken_reduction", 0) + value
+		"pickup_range":
+			stats["pickup_range"] = stats.get("pickup_range", 100) + value
 		_:
 			# 通用处理：直接加到对应键
 			if stats.has(param):

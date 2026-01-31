@@ -1,9 +1,9 @@
 player_id,display_name,display_order,enabled,ties,health,health_regen,skill_q_cost,skill_e_cost,close_threshold,energy_regen,max_energy,initial_energy,max_armor,base_speed,description,external_force_decay,knockback_scale,origin_tag,mastery_tag,tactic_tag
 -1,显示名,显示顺序,是否启用,羁绊,生命值,血量恢复,Q技能消耗,E技能消耗,近战阈值,能量恢复,最大能量,初始能量,最大护甲,移动速度,说明,外力衰减,击退缩放,身世标签,职能标签,战术标签
-butcher,屠夫,1,1,战士,100,0,50,30,60,0.3,100,100,3,500,近战型角色，高冲刺伤害,50,0.3,martial,destruction,assault
-pyro,火焰,2,1,法师,100,0,20,20,60,0.3,100,100,3,500,火焰系角色，技能消耗低,50,0.3,arcane,destruction,assault
-sapper,工兵,3,1,工程师,100,0,10,40,60,0.3,100,100,3,500,远程型角色，冲刺距离长,50,0.3,martial,control,assist
-weaver,织网,4,1,控制者,100,0,20,30,60,0.3,100,100,3,500,控制型角色，技能多样,50,0.3,arcane,control,assist
-wind,疾风,5,1,刺客,100,0,20,20,60,0.3,100,100,3,500,速度型角色，高机动性,50,0.3,martial,velocity,captain
-herder,牧者,6,1,召唤师,100,0.5,20,20,60,0.3,100,100,3,500,召唤型角色，几何技能,50,0.3,survivor,control,assist
-lovely,小可爱,99,1,通用,100.0,0,50,30,60,10.0,100.0,100.0,3,300.0,新角色,50,0.3,survivor,control,assist
+butcher,屠夫,1,1,战士,120,0.5,30,50,60,0.5,100,50,5,480,近战坦克，进场爆发,50,0.3,colossus,blaster,vanguard
+pyro,火焰,2,1,法师,90,0,25,45,60,0.8,120,80,2,500,高消耗AOE，依赖回蓝,50,0.3,inkborn,blaster,vanguard
+sapper,工兵,3,1,工程师,100,0,15,35,60,0.5,100,50,3,500,埋雷布阵，资源获取,50,0.3,alchemist,architect,assist
+weaver,织网,4,1,控制者,95,0,20,40,60,0.6,110,60,2,510,持续控制，折磨敌人,50,0.3,inkborn,hexer,assist
+wind,疾风,5,1,刺客,85,0,15,30,60,0.5,100,50,2,550,超高机动，精准画图,50,0.3,nomad,geometrist,commander
+herder,牧者,6,1,召唤师,100,0.5,25,45,60,0.5,100,50,3,490,召唤阻挡，光环辅助,50,0.3,alchemist,architect,commander
+lovely,小可爱,99,1,测试,100,0,10,10,60,10,100,100,3,300,测试角色,50,0.3,inkborn,blaster,assist

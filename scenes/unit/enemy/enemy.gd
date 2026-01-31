@@ -79,7 +79,16 @@ var break_radius: float = 40.0
 var current_ai_state: AIState = AIState.CHASE
 var charge_vector: Vector2 = Vector2.ZERO # 冲锋方向
 var ai_timer: float = 0.0 # 通用计时器
-var original_modulate: Color 
+var original_modulate: Color
+
+# ==============================================================================
+# P2-3/P2-4: 状态系统（Status/Debuff System）
+# ==============================================================================
+## 激活的状态效果：{status_name: {duration: float, value: float, stacks: int}}
+var active_statuses: Dictionary = {}
+
+## 状态效果的伤害计时器（用于DoT效果）
+var status_damage_timers: Dictionary = {} 
 # ==============================================================================
 # 4. 初始化
 # ==============================================================================
@@ -399,6 +408,9 @@ func _setup_charge_animation() -> void:
 func _process(delta: float) -> void:
 	if Global.game_paused or is_dead: return
 	
+	# P2-3/P2-4: 处理状态效果
+	_process_status_effects(delta)
+	
 	# 剪刀手切线
 	if enemy_type == EnemyType.LINE_BREAKER:
 		_check_line_break()
@@ -590,6 +602,173 @@ func set_taunt_target(target: Node2D) -> void:
 	var tween = create_tween()
 	tween.tween_property(visuals, "modulate", Color.MAGENTA, 0.2)
 	tween.tween_property(visuals, "modulate", Color.WHITE, 0.2)
+
+# ==============================================================================
+# P2-3/P2-4: 状态系统实现
+# ==============================================================================
+
+## P2-3: 应用状态效果（支持Debuff延长）
+## @param type: 状态类型（"burn", "slow", "curse", "freeze"等）
+## @param duration: 持续时间（秒）
+## @param value: 效果值（伤害、减速比例等）
+## @param stacks: 叠加层数（可选，默认1）
+## @param tick_interval: DoT效果的触发间隔（可选，默认1.0秒）
+func apply_status(type: String, duration: float, value: float = 0, stacks: int = 1, tick_interval: float = 1.0) -> void:
+	if is_dead:
+		return
+	
+	# P2-3: Debuff延长机制（咒术师 Lv.1）
+	if BondManager.has_mechanic("debuff_duration"):
+		var original_duration = duration
+		duration *= 1.5
+		print("[Enemy] [P2-3] Debuff延长触发: %s 持续时间 %.1f秒 -> %.1f秒 (x1.5)" % [
+			type,
+			original_duration,
+			duration
+		])
+	
+	# 如果状态已存在，刷新持续时间并叠加层数
+	if active_statuses.has(type):
+		var status = active_statuses[type]
+		status.duration = max(status.duration, duration)  # 取更长的持续时间
+		
+		# 诅咒可以叠加层数
+		if type == "curse":
+			status.stacks += stacks
+			print("[Enemy] [P2-4] 诅咒叠加: %s 层数 %d -> %d" % [
+				name,
+				status.stacks - stacks,
+				status.stacks
+			])
+		
+		status.value = value  # 更新效果值
+		status.tick_interval = tick_interval
+	else:
+		# 初始化新状态
+		active_statuses[type] = {
+			"duration": duration,
+			"value": value,
+			"stacks": stacks,
+			"tick_interval": tick_interval,
+			"tick_timer": 0.0  # DoT计时器
+		}
+		
+		print("[Enemy] 应用状态: %s 持续%.1f秒, 值=%.1f, 层数=%d" % [
+			type,
+			duration,
+			value,
+			stacks
+		])
+		
+		# 应用初始效果
+		_apply_status_initial_effect(type, value)
+
+## 应用状态的初始效果（例如减速）
+func _apply_status_initial_effect(type: String, value: float) -> void:
+	match type:
+		"slow":
+			# 减速效果：降低移动速度
+			speed *= (1.0 - value)
+			print("[Enemy] 减速效果: 速度降低 %.0f%%" % (value * 100))
+		
+		"freeze":
+			# 冰冻效果：完全停止移动
+			can_move = false
+			print("[Enemy] 冰冻效果: 无法移动")
+		
+		"burn", "curse":
+			# DoT效果：在 _process_status_effects 中处理
+			pass
+
+## 处理状态效果（每帧调用）
+func _process_status_effects(delta: float) -> void:
+	if active_statuses.is_empty():
+		return
+	
+	var statuses_to_remove = []
+	
+	for status_type in active_statuses.keys():
+		var status = active_statuses[status_type]
+		
+		# 减少持续时间
+		status.duration -= delta
+		
+		# 处理DoT效果（燃烧、诅咒）
+		if status_type in ["burn", "curse"]:
+			status.tick_timer += delta
+			
+			if status.tick_timer >= status.tick_interval:
+				status.tick_timer = 0.0
+				_apply_dot_damage(status_type, status.value, status.stacks)
+		
+		# 检查是否过期
+		if status.duration <= 0:
+			statuses_to_remove.append(status_type)
+	
+	# 移除过期状态
+	for status_type in statuses_to_remove:
+		_remove_status(status_type)
+
+## 应用DoT伤害（燃烧、诅咒）
+func _apply_dot_damage(status_type: String, value: float, stacks: int) -> void:
+	if not health_component:
+		return
+	
+	var damage = 0
+	
+	match status_type:
+		"burn":
+			# 燃烧：固定伤害
+			damage = int(value)
+			Global.spawn_floating_text(global_position, "BURN!", Color(2.0, 0.5, 0.0))
+		
+		"curse":
+			# 诅咒：每层造成伤害
+			damage = int(value * stacks)
+			Global.spawn_floating_text(global_position, "CURSE x%d!" % stacks, Color(0.8, 0.0, 0.8))
+	
+	if damage > 0:
+		health_component.take_damage(damage)
+		print("[Enemy] %s DoT伤害: %d (层数: %d)" % [status_type.to_upper(), damage, stacks])
+
+## 移除状态效果
+func _remove_status(type: String) -> void:
+	if not active_statuses.has(type):
+		return
+	
+	print("[Enemy] 移除状态: %s" % type)
+	
+	# 恢复状态效果
+	match type:
+		"slow":
+			# 恢复移动速度（重新从配置加载）
+			var config = ConfigManager.get_enemy_config(enemy_id)
+			if not config.is_empty():
+				speed = float(config.get("speed", 100))
+		
+		"freeze":
+			# 恢复移动能力
+			can_move = true
+	
+	# 从字典中移除
+	active_statuses.erase(type)
+
+## 检查是否有指定状态
+func has_status(type: String) -> bool:
+	return active_statuses.has(type)
+
+## 获取状态的层数
+func get_status_stacks(type: String) -> int:
+	if active_statuses.has(type):
+		return active_statuses[type].stacks
+	return 0
+
+## 清除所有状态（用于死亡或特殊情况）
+func clear_all_statuses() -> void:
+	for status_type in active_statuses.keys():
+		_remove_status(status_type)
+	
+	active_statuses.clear()
 	
 # ==============================================================================
 # 击退与受击 (保持之前的修复)
@@ -665,9 +844,20 @@ func destroy_enemy() -> void:
 	if is_instance_valid(Global.player):
 		var enemy_config = ConfigManager.get_enemy_config(enemy_id)
 		
-		# 能量奖励
+		# P1-1: 击杀回能（墨灵羁绊）
 		if Global.player.has_method("gain_energy"):
 			var energy_drop = enemy_config.get("energy_drop", 5)
+			
+			# 检查墨灵羁绊 - 击杀回能
+			if BondManager.has_mechanic("kill_regen"):
+				var bonus_energy = BondManager.get_mechanic_value("kill_regen")
+				energy_drop += bonus_energy
+				print("[Enemy] [P1-1] 击杀回能触发: 基础%d + 墨灵%d = %d" % [
+					enemy_config.get("energy_drop", 5),
+					bonus_energy,
+					energy_drop
+				])
+			
 			Global.player.gain_energy(energy_drop)
 		
 		# 经验奖励
@@ -675,10 +865,10 @@ func destroy_enemy() -> void:
 			var xp_value = int(enemy_config.get("xp_value", 10))
 			Global.player.add_xp(xp_value)
 		
-		# 金币奖励
-		if Global.player.has_method("add_gold"):
-			var gold_value = int(enemy_config.get("gold_value", 5))
-			Global.player.add_gold(gold_value)
+		# 金币奖励 - 改为生成金币实体
+		var gold_value = int(enemy_config.get("gold_value", 5))
+		if gold_value > 0:
+			Global.spawn_coin(global_position, gold_value)
 	
 	# 记录击杀数
 	Global.add_session_kill()

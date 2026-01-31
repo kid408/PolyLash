@@ -36,6 +36,9 @@ var close_threshold: float = 60.0
 ## 每隔多少像素记录一个路径点
 const POINT_INTERVAL: float = 10.0
 
+## 线条持续时间（基础值，可被羁绊加成）
+var base_line_duration: float = 5.0
+
 # ==============================================================================
 # 画线技能运行时状态
 # ==============================================================================
@@ -48,6 +51,12 @@ var is_drawing: bool = false
 
 ## 上一个记录的点
 var last_point: Vector2 = Vector2.ZERO
+
+## P1-4: 上一次生成金币的位置（用于金币轨迹）
+var last_gold_spawn_pos: Vector2 = Vector2.ZERO
+
+## P1-4: 金币生成距离阈值（像素）
+const GOLD_SPAWN_DISTANCE: float = 100.0
 
 ## 累计距离（用于判断是否达到10像素）
 var accumulated_distance: float = 0.0
@@ -80,10 +89,101 @@ var line_2d: Line2D
 func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
 	push_warning("[SkillDrawingBase] _spawn_line_effect() 未实现: %s" % skill_id)
 
+## P2-2: 为线段添加反伤墙效果（筑墙者 Lv.2）
+## @param line_area: 线段的Area2D节点
+func _add_thorns_wall_effect(line_area: Area2D) -> void:
+	"""为线段添加反伤效果"""
+	if not BondManager.has_mechanic("thorns_wall"):
+		return
+	
+	if not is_instance_valid(skill_owner):
+		return
+	
+	# 获取玩家攻击力
+	var player_damage = skill_owner.damage if "damage" in skill_owner else 10.0
+	var thorns_damage = player_damage * 0.3  # 反伤30%攻击力
+	
+	print("[%s] [P2-2] 反伤墙激活: 伤害=%.0f (玩家攻击力的30%%)" % [skill_id, thorns_damage])
+	
+	# 连接碰撞信号
+	if not line_area.body_entered.is_connected(_on_thorns_wall_hit):
+		line_area.body_entered.connect(_on_thorns_wall_hit.bind(thorns_damage))
+	if not line_area.area_entered.is_connected(_on_thorns_wall_area_hit):
+		line_area.area_entered.connect(_on_thorns_wall_area_hit.bind(thorns_damage))
+
+## P2-2: 反伤墙碰撞处理（Body）
+func _on_thorns_wall_hit(body: Node2D, thorns_damage: float) -> void:
+	if body.is_in_group("enemies"):
+		_apply_thorns_damage(body, thorns_damage)
+
+## P2-2: 反伤墙碰撞处理（Area）
+func _on_thorns_wall_area_hit(area: Area2D, thorns_damage: float) -> void:
+	if area.owner and area.owner.is_in_group("enemies"):
+		_apply_thorns_damage(area.owner, thorns_damage)
+
+## P2-2: 应用反伤伤害
+func _apply_thorns_damage(enemy: Node2D, thorns_damage: float) -> void:
+	if not is_instance_valid(enemy):
+		return
+	
+	if enemy.has_node("HealthComponent"):
+		enemy.get_node("HealthComponent").take_damage(int(thorns_damage))
+		Global.spawn_floating_text(enemy.global_position, "THORNS!", Color(0.8, 0.4, 0.0))
+		print("[%s] [P2-2] 反伤墙触发: 对 %s 造成 %.0f 伤害" % [skill_id, enemy.name, thorns_damage])
+
 ## 生成区域效果（闭合状态）
 ## @param polygon: 闭合多边形的点集
 func _spawn_area_effect(polygon: PackedVector2Array) -> void:
 	push_warning("[SkillDrawingBase] _spawn_area_effect() 未实现: %s" % skill_id)
+
+## P2-4: 为闭合区域添加诅咒叠加效果（咒术师 Lv.2）
+## @param area: 区域效果的 Area2D 节点
+## @param polygon: 闭合多边形的点集
+func _add_curse_stacking_effect(area: Area2D, polygon: PackedVector2Array) -> void:
+	"""为闭合区域添加诅咒叠加效果"""
+	if not BondManager.has_mechanic("curse_stack"):
+		return
+	
+	if not is_instance_valid(area):
+		return
+	
+	print("[%s] [P2-4] 诅咒叠加激活" % skill_id)
+	
+	# 创建诅咒计时器（每秒触发一次）
+	var curse_timer = Timer.new()
+	curse_timer.name = "CurseStackTimer"
+	curse_timer.wait_time = 1.0
+	curse_timer.one_shot = false
+	area.add_child(curse_timer)
+	
+	# 诅咒伤害值（每层每秒造成的伤害）
+	var curse_damage_per_stack = 2.0  # 可以从配置读取
+	
+	curse_timer.timeout.connect(func():
+		if not is_instance_valid(area) or area.is_queued_for_deletion():
+			curse_timer.stop()
+			return
+		
+		# 检测所有在区域内的敌人
+		var enemies = area.get_overlapping_bodies() + area.get_overlapping_areas()
+		
+		for target in enemies:
+			var enemy = null
+			
+			if target.is_in_group("enemies"):
+				enemy = target
+			elif target.owner and target.owner.is_in_group("enemies"):
+				enemy = target.owner
+			
+			if is_instance_valid(enemy) and enemy.has_method("apply_status"):
+				# 应用诅咒状态（持续5秒，每秒叠加1层）
+				# P2-3: apply_status 内部会自动检查 debuff_duration 并延长持续时间
+				enemy.apply_status("curse", 5.0, curse_damage_per_stack, 1, 1.0)
+				print("[%s] [P2-4] 对 %s 叠加诅咒" % [skill_id, enemy.name])
+	)
+	
+	curse_timer.start()
+	print("[%s] [P2-4] 诅咒计时器已启动" % skill_id)
 
 ## 获取规划线条颜色（子类可重写以自定义颜色）
 ## @return: 线条颜色
@@ -96,6 +196,118 @@ func _get_line_color() -> Color:
 func _get_closure_color() -> Color:
 	# 默认红色
 	return Color(2.0, 0.1, 0.1, 1.0)
+
+# ==============================================================================
+# P0 核心画图机制 - 羁绊系统集成
+# ==============================================================================
+
+## P0-1: 计算闭合图形伤害（应用爆破师羁绊加成）
+## @param base_damage: 基础伤害值
+## @return: 应用加成后的伤害值
+func _calculate_closed_shape_damage(base_damage: float) -> float:
+	var final_damage = base_damage
+	
+	# 检查爆破师羁绊 - 闭合图形伤害加成
+	if BondManager.has_mechanic("closed_shape_dmg"):
+		var bonus = BondManager.get_mechanic_value("closed_shape_dmg")
+		final_damage *= (1.0 + bonus)
+		print("[%s] [P0-1] 闭合图形伤害加成: %.0f -> %.0f (+%.0f%%)" % [
+			skill_id, 
+			base_damage, 
+			final_damage, 
+			bonus * 100
+		])
+	
+	return final_damage
+
+## P0-2: 获取线条持续时间（应用筑墙者羁绊加成）
+## @return: 应用加成后的持续时间（秒）
+func _get_line_duration() -> float:
+	var duration = base_line_duration
+	
+	# 检查筑墙者羁绊 - 线条持续时间延长
+	if BondManager.has_mechanic("line_duration"):
+		var bonus = BondManager.get_mechanic_value("line_duration")
+		duration += bonus
+		print("[%s] [P0-2] 线条持续时间延长: %.1f秒 -> %.1f秒 (+%.1f秒)" % [
+			skill_id,
+			base_line_duration,
+			duration,
+			bonus
+		])
+	
+	return duration
+
+## P0-3: 获取闭合容错距离（应用几何学家羁绊加成）
+## @return: 应用加成后的容错距离（像素）
+func _get_closure_tolerance() -> float:
+	var tolerance = close_threshold
+	
+	# 检查几何学家羁绊 - 图形闭合容错率提升
+	if BondManager.has_mechanic("shape_tolerance"):
+		var level = BondManager.get_mechanic_value("shape_tolerance")
+		# 每级增加15像素容错
+		var bonus = level * 15.0
+		tolerance += bonus
+		print("[%s] [P0-3] 闭合容错提升: %.0f像素 -> %.0f像素 (+%.0f像素)" % [
+			skill_id,
+			close_threshold,
+			tolerance,
+			bonus
+		])
+	
+	return tolerance
+
+## P1-3: 应用速度转伤害加成（风行者羁绊）
+## @param base_damage: 基础伤害值
+## @return: 应用速度加成后的伤害值
+func _apply_speed_damage_bonus(base_damage: float) -> float:
+	if not skill_owner or not skill_owner.has_method("get_speed_damage_bonus"):
+		return base_damage
+	
+	var speed_bonus = skill_owner.get_speed_damage_bonus()
+	if speed_bonus <= 0:
+		return base_damage
+	
+	var final_damage = base_damage * (1.0 + speed_bonus)
+	
+	print("[%s] [P1-3] 速度转伤害应用: %.0f -> %.0f (+%.1f%%)" % [
+		skill_id,
+		base_damage,
+		final_damage,
+		speed_bonus * 100
+	])
+	
+	return final_damage
+
+## P1-4: 检查并生成金币轨迹（炼金术士羁绊）
+## @param current_pos: 当前位置
+func _check_and_spawn_gold_trail(current_pos: Vector2) -> void:
+	# 检查炼金术士羁绊 - 金币轨迹
+	if not BondManager.has_mechanic("gold_trail"):
+		return
+	
+	# 检查距离阈值（防止生成过多金币）
+	var distance_from_last = current_pos.distance_to(last_gold_spawn_pos)
+	if distance_from_last < GOLD_SPAWN_DISTANCE:
+		return
+	
+	# 生成金币
+	var gold_amount = int(BondManager.get_mechanic_value("gold_trail"))
+	if gold_amount <= 0:
+		gold_amount = 1  # 默认1金币
+	
+	# 生成金币实体
+	Global.spawn_coin(current_pos, gold_amount)
+	print("[%s] [P1-4] 金币轨迹触发: 生成%d金币 at (%.0f, %.0f)" % [
+		skill_id,
+		gold_amount,
+		current_pos.x,
+		current_pos.y
+	])
+	
+	# 更新上次生成位置
+	last_gold_spawn_pos = current_pos
 
 # ==============================================================================
 # 生命周期
@@ -212,7 +424,9 @@ func _exit_planning_mode_and_execute() -> void:
 
 ## 执行闭合路径
 func _execute_closed_path() -> void:
-	var polygons = PolygonUtils.find_all_closing_polygons(path_points, close_threshold)
+	# P0-3: 使用羁绊加成后的容错距离
+	var tolerance = _get_closure_tolerance()
+	var polygons = PolygonUtils.find_all_closing_polygons(path_points, tolerance)
 	
 	if polygons.size() > 0:
 		print("[%s] 检测到 %d 个闭合区域" % [skill_id, polygons.size()])
@@ -253,6 +467,9 @@ func _start_drawing() -> void:
 	path_points.append(mouse_pos)
 	last_point = mouse_pos
 	has_shown_no_energy_hint = false
+	
+	# P1-4: 重置金币生成位置
+	last_gold_spawn_pos = mouse_pos
 
 ## 继续划线
 func _continue_drawing() -> void:
@@ -295,6 +512,9 @@ func _continue_drawing() -> void:
 			
 			# 检测线段交叉
 			_check_intersection_and_closure()
+			
+			# P1-4: 金币轨迹机制
+			_check_and_spawn_gold_trail(new_point)
 			
 			# 更新状态
 			last_point = new_point
@@ -350,6 +570,9 @@ func _perform_final_closure_check() -> void:
 	if path_segments.size() < 3:
 		return
 	
+	# P0-3: 使用羁绊加成后的容错距离
+	var tolerance = _get_closure_tolerance()
+	
 	# 检查任意两条不相邻的线段是否相交
 	for i in range(path_segments.size()):
 		for j in range(i + 2, path_segments.size()):
@@ -364,15 +587,15 @@ func _perform_final_closure_check() -> void:
 	if path_points.size() >= 3:
 		var last_point_pos = path_points[path_points.size() - 1]
 		
-		# 检查是否接近起点
-		if last_point_pos.distance_to(path_points[0]) < close_threshold:
+		# 检查是否接近起点（使用羁绊加成后的容错距离）
+		if last_point_pos.distance_to(path_points[0]) < tolerance:
 			has_closure = true
 			return
 		
-		# 检查是否接近路径中的其他点
+		# 检查是否接近路径中的其他点（使用羁绊加成后的容错距离）
 		var check_until = max(0, path_points.size() - 20)
 		for i in range(check_until):
-			if last_point_pos.distance_to(path_points[i]) < close_threshold:
+			if last_point_pos.distance_to(path_points[i]) < tolerance:
 				has_closure = true
 				return
 
@@ -384,6 +607,9 @@ func _check_intersection_and_closure() -> void:
 	if path_segments.size() < 3:
 		return
 	
+	# P0-3: 使用羁绊加成后的容错距离
+	var tolerance = _get_closure_tolerance()
+	
 	# 检查最新线段是否与之前的线段相交
 	var latest_seg = path_segments[path_segments.size() - 1]
 	
@@ -394,10 +620,10 @@ func _check_intersection_and_closure() -> void:
 			has_closure = true
 			return
 	
-	# 检查距离闭合
+	# 检查距离闭合（使用羁绊加成后的容错距离）
 	if path_points.size() >= 20:
 		var current_point = path_points[path_points.size() - 1]
-		if current_point.distance_to(path_points[0]) < close_threshold:
+		if current_point.distance_to(path_points[0]) < tolerance:
 			has_closure = true
 			return
 

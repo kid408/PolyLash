@@ -75,10 +75,10 @@ func _load_bond_configs() -> void:
 # ============================================================================
 
 func get_bond_icon(bond_tag: String, bond_type: String) -> Texture2D:
-	"""获取羁绊图标
+	"""获取羁绊图标（带资源回退逻辑）
 	
 	Args:
-		bond_tag: 羁绊标签（如 "martial", "destruction"）
+		bond_tag: 羁绊标签（如 "inkborn", "blaster"）
 		bond_type: 羁绊类型（"origin", "mastery", "tactic"）
 	
 	Returns:
@@ -103,17 +103,31 @@ func get_bond_icon(bond_tag: String, bond_type: String) -> Texture2D:
 	
 	var icon_path = icon_path_template % config.icon_path_index
 	
-	# 加载图标
-	if not FileAccess.file_exists(icon_path):
-		printerr("[BondUILoader] 图标文件不存在: %s" % icon_path)
-		return null
+	# 尝试加载图标
+	if FileAccess.file_exists(icon_path):
+		var texture = load(icon_path) as Texture2D
+		if texture:
+			return texture
+		else:
+			push_warning("[BondUILoader] 无法加载图标: %s" % icon_path)
+	else:
+		push_warning("[BondUILoader] 图标文件不存在: %s，尝试回退到默认图标" % icon_path)
 	
-	var texture = load(icon_path) as Texture2D
-	if not texture:
-		printerr("[BondUILoader] 无法加载图标: %s" % icon_path)
-		return null
+	# ============================================================================
+	# 资源回退逻辑 (Asset Fallback)
+	# ============================================================================
+	# 如果指定的图标不存在，尝试加载同类型的第一个图标作为占位符
+	var fallback_path = icon_path_template % 1
 	
-	return texture
+	if FileAccess.file_exists(fallback_path):
+		var fallback_texture = load(fallback_path) as Texture2D
+		if fallback_texture:
+			push_warning("[BondUILoader] 使用回退图标: %s -> %s" % [icon_path, fallback_path])
+			return fallback_texture
+	
+	# 如果回退也失败，返回null
+	printerr("[BondUILoader] 回退图标也不存在: %s" % fallback_path)
+	return null
 
 func get_bond_display_name(bond_tag: String) -> String:
 	"""获取羁绊显示名称"""

@@ -352,6 +352,36 @@ func reset_session_data() -> void:
 	print("[Global] 局内数据已重置")
 
 # ============================================================================
+# 金币生成系统 (Gold Spawn System)
+# ============================================================================
+
+# 金币场景预加载
+const GOLD_COIN_SCENE = preload("res://scenes/items/gold_coin.tscn")
+
+## 生成金币实体
+## @param pos: 生成位置
+## @param amount: 金币数量
+func spawn_coin(pos: Vector2, amount: int = 1) -> void:
+	if not GOLD_COIN_SCENE:
+		printerr("[Global] 错误: 金币场景未加载")
+		return
+	
+	var tree = Engine.get_main_loop() as SceneTree
+	if not tree or not tree.current_scene:
+		printerr("[Global] 错误: 无法获取场景树")
+		return
+	
+	# 创建金币实例
+	var coin = GOLD_COIN_SCENE.instantiate()
+	coin.set_amount(amount)
+	coin.global_position = pos
+	
+	# 添加到场景
+	tree.current_scene.call_deferred("add_child", coin)
+	
+	#print("[Global] 生成金币: %d at (%.0f, %.0f)" % [amount, pos.x, pos.y])
+
+# ============================================================================
 # 小队切换系统 (1-2-3 键精准切换)
 # ============================================================================
 

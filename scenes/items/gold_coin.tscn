@@ -1,0 +1,44 @@
+[gd_scene load_steps=7 format=3 uid="uid://c8yvxqj5hn3wy"]
+
+[ext_resource type="Script" path="res://scenes/items/gold_coin.gd" id="1_gold_coin"]
+[ext_resource type="Texture2D" uid="uid://bqxqxqxqxqxqx" path="res://assets/sprites/Gold/gold_1.png" id="2_gold_1"]
+[ext_resource type="Texture2D" uid="uid://bqxqxqxqxqxqy" path="res://assets/sprites/Gold/gold_2.png" id="3_gold_2"]
+[ext_resource type="Texture2D" uid="uid://bqxqxqxqxqxqz" path="res://assets/sprites/Gold/gold_3.png" id="4_gold_3"]
+[ext_resource type="Texture2D" uid="uid://bqxqxqxqxqxq0" path="res://assets/sprites/Gold/gold_4.png" id="5_gold_4"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_gold"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_gold_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_gold_2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_gold_3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_gold_4")
+}],
+"loop": true,
+"name": &"default",
+"speed": 8.0
+}]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_gold"]
+radius = 16.0
+
+[node name="GoldCoin" type="Area2D"]
+collision_layer = 0
+collision_mask = 1
+script = ExtResource("1_gold_coin")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(0.4, 0.4)
+sprite_frames = SubResource("SpriteFrames_gold")
+animation = &"default"
+autoplay = "default"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_gold")

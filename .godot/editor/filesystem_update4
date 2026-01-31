@@ -1,7 +1,9 @@
-res://scenes/arena/arena.gd
-res://scenes/ui/game_over/game_over_screen.gd
-res://scenes/ui/game_over/game_over_screen.tscn
+res://autoloads/bond_manager.gd
+res://autoloads/bond_ui_loader.gd
+res://scenes/skills/skill_drawing_base.gd
+res://scenes/unit/enemy/enemy.gd
 res://scenes/unit/players/player_base.gd
-res://scenes/components/health_component.gd
-res://scenes/projectiles/projectile.gd
-res://scenes/ui/bond_hud/bond_icon.gd
+res://autoloads/global.gd
+res://scenes/items/gold_coin.tscn
+res://scenes/items/gold_coin.gd
+res://tools/create_character_tool.gd

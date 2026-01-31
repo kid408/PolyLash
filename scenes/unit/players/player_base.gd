@@ -23,6 +23,7 @@ var max_energy: float = 100.0
 var energy_regen: float = 0.5
 var max_armor: int = 3
 var base_speed: float = 300.0
+var pickup_range: float = 150.0  # 拾取范围（炼金术士羁绊会修改）
 
 # 技能消耗（从CSV加载）
 var skill_q_cost: float = 50.0
@@ -601,6 +602,14 @@ func take_damage(raw_amount: float) -> void:
 	print("[PlayerBase] 伤害后血量=%d" % health_component.current_health)
 
 func apply_knockback_self(force: Vector2) -> void:
+	# P1-2: 霸体机制 - 画图时免疫击退
+	if _is_drawing_active() and BondManager.has_mechanic("super_armor"):
+		print("[PlayerBase] [P1-2] 触发霸体，免疫击退（仍然受到伤害）")
+		Global.spawn_floating_text(global_position, "SUPER ARMOR!", Color.ORANGE)
+		# 仍然播放受击反馈，但不应用击退
+		Global.on_camera_shake.emit(3.0, 0.08)
+		return
+	
 	# 应用击退力缩放系数，减少击退效果（从CSV加载）
 	external_force = force * knockback_scale
 	Global.on_camera_shake.emit(5.0, 0.1)
@@ -662,6 +671,65 @@ func is_facing_right() -> bool:
 	# 根据 visuals 的 scale.x 判断朝向
 	# scale.x = -0.5 表示朝右，0.5 表示朝左
 	return visuals.scale.x < 0
+
+## P1-2: 检查是否正在画图（用于霸体判定）
+func _is_drawing_active() -> bool:
+	"""检查玩家是否正在画图
+	
+	Returns:
+		是否正在画图
+	"""
+	# 检查是否有SkillManager
+	if not has_node("SkillManager"):
+		return false
+	
+	var skill_manager = get_node("SkillManager")
+	
+	# 遍历所有技能，检查是否有正在画图的技能
+	if skill_manager.has_method("get_all_skills"):
+		for skill in skill_manager.get_all_skills():
+			# 检查是否是画图技能
+			if skill is SkillDrawingBase:
+				# 检查是否处于规划模式或正在画图
+				if skill.is_planning or skill.is_drawing:
+					return true
+	
+	return false
+
+## P1-3: 计算速度转伤害加成（风行者羁绊）
+func get_speed_damage_bonus() -> float:
+	"""计算基于速度的伤害加成
+	
+	Returns:
+		伤害加成倍率（例如 0.15 表示 +15% 伤害）
+	"""
+	# 检查风行者羁绊 - 速度转伤害
+	if not BondManager.has_mechanic("speed_to_damage"):
+		return 0.0
+	
+	# 获取转换系数（从配置中读取，例如 0.01 = 每点速度增加1%伤害）
+	var conversion_rate = BondManager.get_mechanic_value("speed_to_damage")
+	
+	# 计算速度差值
+	var current_speed = speed  # 当前速度（可能被buff影响）
+	var speed_diff = current_speed - base_speed
+	
+	# 只有速度高于基础速度时才有加成
+	if speed_diff <= 0:
+		return 0.0
+	
+	# 计算加成
+	var bonus = speed_diff * conversion_rate
+	
+	print("[PlayerBase] [P1-3] 速度转伤害: 当前速度%.0f, 基础速度%.0f, 差值%.0f, 转换率%.4f, 伤害加成+%.1f%%" % [
+		current_speed,
+		base_speed,
+		speed_diff,
+		conversion_rate,
+		bonus * 100
+	])
+	
+	return bonus
 
 func _on_death() -> void:
 	print("[PlayerBase] ========== 玩家死亡 ==========")
