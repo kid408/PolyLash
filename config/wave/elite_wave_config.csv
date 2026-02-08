@@ -1,4 +1,6 @@
 wave_id,elite_id,spawn_count,spawn_weight,initial_stage,allow_evolution
 -1,波次ID,精英敌人ID,生成数量,生成权重,初始阶段,是否允许进化
-wave_1_to_5,enemy_glutton,1,2,1,true
-wave_6_to_10,enemy_glutton,2,3,1,true
+wave_1_to_5,enemy_glutton,0,0,1,false
+wave_6_to_10,enemy_glutton,1,2,1,true
+wave_11_to_15,enemy_glutton,2,3,1,true
+wave_16_to_20,enemy_glutton,3,4,1,true

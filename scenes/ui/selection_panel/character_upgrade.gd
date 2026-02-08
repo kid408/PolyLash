@@ -498,8 +498,8 @@ func _create_weapon_shop_section(player_id: String) -> Control:
 	
 	# 获取武器配置
 	var weapon_id = weapon_type + "_1"
-	var weapon_stats = ConfigManager.get_weapon_stats(weapon_id)
-	if weapon_stats.is_empty():
+	var weapon_info = WeaponConfigLoader.get_weapon_info(weapon_id)
+	if weapon_info.is_empty():
 		return null
 	
 	var price = int(ConfigManager.get_game_setting("starting_weapon_price", 100))
@@ -551,7 +551,7 @@ func _create_weapon_shop_section(player_id: String) -> Control:
 	weapon_icon.custom_minimum_size = Vector2(40, 40)
 	weapon_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	weapon_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var icon_path = weapon_stats.get("icon_path", "")
+	var icon_path = weapon_info.get("icon_path", "")
 	if icon_path != "":
 		var tex = load(icon_path)
 		if tex:
@@ -560,7 +560,7 @@ func _create_weapon_shop_section(player_id: String) -> Control:
 	
 	# 武器名称
 	var weapon_name = Label.new()
-	weapon_name.text = weapon_stats.get("display_name", weapon_type)
+	weapon_name.text = weapon_info.get("display_name", weapon_type)
 	weapon_name.add_theme_font_size_override("font_size", 18)
 	weapon_name.add_theme_color_override("font_color", Color(0.9, 0.8, 0.4))
 	weapon_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL

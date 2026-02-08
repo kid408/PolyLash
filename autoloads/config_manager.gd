@@ -46,7 +46,6 @@ var enemy_weapon_configs: Dictionary = {}        # 敌人武器配置 (enemy_id 
 
 # 武器配置
 var weapon_configs: Dictionary = {}              # 武器属性配置 (weapon_id -> config)
-var weapon_stats_configs: Dictionary = {}        # 武器详细属性配置 (weapon_id -> stats)
 
 # 波次配置
 var wave_configs: Dictionary = {}                # 波次配置 (wave_id -> config)
@@ -81,8 +80,7 @@ const PLAYER_AVAILABLE_WEAPONS = CONFIG_DIR + "player/player_available_weapons.c
 const ENEMY_CONFIG = CONFIG_DIR + "enemy/enemy_config.csv"
 const ENEMY_VISUAL = CONFIG_DIR + "enemy/enemy_visual.csv"
 const ENEMY_WEAPONS = CONFIG_DIR + "enemy/enemy_weapons.csv"
-const WEAPON_CONFIG = CONFIG_DIR + "weapon/weapon_config.csv"
-const WEAPON_STATS_CONFIG = CONFIG_DIR + "weapon/weapon_stats_config.csv"
+const WEAPON_CONFIG = CONFIG_DIR + "weapon/weapon_config_optimized.csv"
 const WAVE_CONFIG = CONFIG_DIR + "wave/wave_config.csv"
 const WAVE_UNITS_CONFIG = CONFIG_DIR + "wave/wave_units_config.csv"
 const INPUT_CONFIG = CONFIG_DIR + "system/input_config.csv"
@@ -136,8 +134,7 @@ func load_all_configs() -> void:
 	enemy_weapon_configs = load_csv_as_dict(ENEMY_WEAPONS, "enemy_id")
 	
 	# 武器配置
-	weapon_configs = load_csv_as_dict(WEAPON_CONFIG, "weapon_id")
-	weapon_stats_configs = load_csv_as_dict(WEAPON_STATS_CONFIG, "weapon_id")
+	weapon_configs = load_csv_as_dict(WEAPON_CONFIG, "weapon_base_id")
 	
 	# 波次配置
 	wave_configs = load_csv_as_dict(WAVE_CONFIG, "wave_id")
@@ -393,13 +390,6 @@ func get_skill_params(skill_id: String) -> Dictionary:
 func get_weapon_config(weapon_id: String) -> Dictionary:
 	return weapon_configs.get(weapon_id, {})
 
-func get_weapon_stats(weapon_id: String) -> Dictionary:
-	return weapon_stats_configs.get(weapon_id, {})
-
-func get_all_weapon_stats() -> Dictionary:
-	"""获取所有武器详细配置"""
-	return weapon_stats_configs
-
 func get_wave_config(wave_id: String) -> Dictionary:
 	return wave_configs.get(wave_id, {})
 
@@ -500,9 +490,12 @@ func get_weapon_by_type_level(weapon_type: String, level: int = 1) -> Dictionary
 	
 	返回:
 	- Dictionary: 武器配置，如果未找到返回空字典
+	
+	注意: 此函数返回基础配置（weapon_base_id），不包含等级缩放
+	      如需完整的武器数据，请使用 WeaponConfigLoader.get_weapon_stats()
 	"""
-	var weapon_id = "%s_%d" % [weapon_type, level]
-	return weapon_configs.get(weapon_id, {})
+	# 新系统：weapon_configs 使用 weapon_base_id 作为键
+	return weapon_configs.get(weapon_type, {})
 
 func get_weapons_by_type(weapon_type: String) -> Array[Dictionary]:
 	"""

@@ -30,7 +30,9 @@ BondUILoader="*res://autoloads/bond_ui_loader.gd"
 BondManager="*res://autoloads/bond_manager.gd"
 ModifierManager="*res://autoloads/modifier_manager.gd"
 ShopManager="*res://autoloads/shop_manager.gd"
+ShopAttributeManager="*res://autoloads/shop_attribute_manager.gd"
 AbilityManager="*res://autoloads/ability_manager.gd"
+WeaponConfigLoader="*res://autoloads/weapon_config_loader.gd"
 DebugSwitcher="*res://scenes/arena/debug_switcher.gd"
 
 [display]

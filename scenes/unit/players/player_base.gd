@@ -216,70 +216,46 @@ func _load_weapons_from_config() -> void:
 
 func _create_item_weapon_from_csv(weapon_id: String) -> ItemWeapon:
 	"""从CSV配置创建ItemWeapon对象"""
-	var weapon_stats_data = ConfigManager.get_weapon_stats(weapon_id)
-	if weapon_stats_data.is_empty():
-		return null
-	
-	# 创建WeaponStats对象
-	var weapon_stats = WeaponStats.new()
-	weapon_stats.damage = weapon_stats_data.get("damage", 10.0)
-	weapon_stats.accuracy = weapon_stats_data.get("accuracy", 0.9)
-	weapon_stats.cooldown = weapon_stats_data.get("cooldown", 1.0)
-	weapon_stats.crit_chance = weapon_stats_data.get("crit_chance", 0.05)
-	weapon_stats.crit_damage = weapon_stats_data.get("crit_damage", 1.5)
-	weapon_stats.max_range = weapon_stats_data.get("max_range", 150.0)
-	weapon_stats.knockback = weapon_stats_data.get("knockback", 0.0)
-	weapon_stats.life_steal = weapon_stats_data.get("life_steal", 0.0)
-	weapon_stats.recoil = weapon_stats_data.get("recoil", 25.0)
-	weapon_stats.recoil_duration = weapon_stats_data.get("recoil_duration", 0.1)
-	weapon_stats.attack_duration = weapon_stats_data.get("attack_duration", 0.2)
-	weapon_stats.back_duration = weapon_stats_data.get("back_duration", 0.15)
-	weapon_stats.projectile_speed = weapon_stats_data.get("projectile_speed", 1600.0)
-	
-	# 加载子弹场景（如果有）
-	var projectile_scene_path = weapon_stats_data.get("projectile_scene", "")
-	if projectile_scene_path != "":
-		weapon_stats.projectile_scene = load(projectile_scene_path) as PackedScene
-		if not weapon_stats.projectile_scene:
-			printerr("[PlayerBase] 错误: 无法加载子弹场景: ", projectile_scene_path)
-	
-	# 创建ItemWeapon对象
-	var item_weapon = ItemWeapon.new()
-	item_weapon.item_name = weapon_stats_data.get("display_name", weapon_id)
-	item_weapon.stats = weapon_stats
-	
-	# 加载武器场景
-	var weapon_scene_path = weapon_stats_data.get("weapon_scene", "")
-	if weapon_scene_path == "":
-		return null
-	
-	item_weapon.scene = load(weapon_scene_path) as PackedScene
-	if not item_weapon.scene:
-		return null
-	
-	# 设置武器类型（根据是否有子弹场景判断）
-	if projectile_scene_path != "":
-		item_weapon.type = ItemWeapon.WeaponType.RANGE
-	else:
-		item_weapon.type = ItemWeapon.WeaponType.MELEE
-	
-	return item_weapon
+	# 使用 ItemWeapon 的静态方法创建武器
+	return ItemWeapon.create_from_csv(weapon_id)
 
 func _add_weapon(data: ItemWeapon) -> void:
 	"""添加武器到玩家"""
-	if not data or not data.scene:
+	if not data:
+		printerr("[Player] 错误: 武器数据为空")
+		return
+	
+	if not data.scene:
+		printerr("[Player] 错误: 武器场景为空 - weapon_id: ", data.weapon_id)
+		printerr("[Player] 场景路径: ", data.stats.base_scene_path if data.stats else "stats为空")
 		return
 	
 	var weapon := data.scene.instantiate() as Weapon
 	if not weapon:
+		printerr("[Player] 错误: 无法实例化武器场景 - weapon_id: ", data.weapon_id)
 		return
 	
+	print("[Player] 成功添加武器: ", data.item_name, " (", data.weapon_id, ")")
+	
+	# 武器应该添加到玩家节点，而不是weapon_container
+	# weapon_container只负责定位，不负责持有武器
 	add_child(weapon)
+	
+	print("[Player] 武器已添加到场景树")
+	print("[Player] 武器位置: ", weapon.position)
+	print("[Player] 武器全局位置: ", weapon.global_position)
+	print("[Player] 武器可见性: ", weapon.visible)
+	print("[Player] 武器 z_index: ", weapon.z_index)
+	
+	# 设置武器数据
 	weapon.setup_weapon(data)
 	current_weapons.append(weapon)
 	
+	# 更新武器位置（通过weapon_container的marker定位）
 	if weapon_container:
 		weapon_container.update_weapons_position(current_weapons)
+		print("[Player] 武器定位后位置: ", weapon.position)
+		print("[Player] 武器定位后全局位置: ", weapon.global_position)
 
 # ==============================================================================
 # 道具装备系统 (Item Equipment System)

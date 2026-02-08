@@ -1,0 +1,29 @@
+# 角色武器配置
+# 格式: 角色ID,默认武器,武器2,武器3
+
+butcher,hammer_smash,shotgun,single_sniper
+technology_hurricane,mace,shotgun,single_sniper
+tankman,axe,shotgun,heal_bolt
+heavy_support,swing_heavy,shotgun,heal_bolt
+warrior,sword,shotgun,single_sniper
+pyro,wand,laser,single_sniper
+weaver,magic_chain,laser,heal_bolt
+electric_shock,magic_meteor,laser,single_sniper
+wizard,laser,magic_chain,spread_fan
+fortune_teller,heal_bolt,laser,magic_heal_aoe
+tarot_reader,punch,laser,spread_fan
+necromancer,pistol,laser,spread_fan
+magician,spear,laser,heal_bolt
+witch_doctor,shotgun,laser,spread_fan
+wind,revolver,smg,spread_fan
+lovely,smg,bow_arrow,heal_bolt
+camouflage,dagger_flurry,smg,single_sniper
+the_flash,scimitar,smg,single_sniper
+light_support,bow_arrow,smg,heal_bolt
+dryad,chainsaw,smg,spread_fan
+sapper,magic_heal_aoe,heal_bolt,wand
+herder,thrust_charged,magic_heal_aoe,spread_fan
+information_Support,swing_cleave,magic_heal_aoe,spread_fan
+technical_support,circular_vortex,magic_heal_aoe,heal_bolt
+doctor,circular_dual,magic_heal_aoe,heal_bolt
+nurse,whip_lash,magic_heal_aoe,heal_bolt
