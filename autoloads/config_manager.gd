@@ -250,7 +250,13 @@ func load_skill_params_long_format(path: String) -> Dictionary:
 		result[sid][pname] = pvalue
 	
 	file.close()
-	print("[ConfigManager] 加载长表技能参数: ", path, " - ", result.size(), " 个技能")
+	# 验证 desc_ 数据是否加载成功
+	var desc_count = 0
+	for sid in result:
+		for pname in result[sid]:
+			if str(pname).begins_with("desc_"):
+				desc_count += 1
+	print("[ConfigManager] 加载长表技能参数: ", path, " - ", result.size(), " 个技能, ", desc_count, " 条描述")
 	return result
 
 func _convert_value(value_str: String):

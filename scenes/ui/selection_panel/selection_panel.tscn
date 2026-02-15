@@ -100,7 +100,7 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
 [node name="TopSection" type="VBoxContainer" parent="MarginContainer/HBoxContainer/MainContent"]
-custom_minimum_size = Vector2(0, 220)
+custom_minimum_size = Vector2(0, 420)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 0
@@ -126,7 +126,7 @@ theme_override_constants/margin_bottom = 24
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 24
+theme_override_constants/separation = 16
 
 [node name="PlayerIco" type="TextureRect" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo"]
 custom_minimum_size = Vector2(128, 128)
@@ -136,41 +136,59 @@ texture = ExtResource("1_3miu1")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="RightContent" type="VBoxContainer" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo"]
+[node name="StatsColumn" type="VBoxContainer" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 8
+size_flags_stretch_ratio = 0.8
+theme_override_constants/separation = 4
 
-[node name="PlayerName" type="Label" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent"]
+[node name="PlayerName" type="Label" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "角色名称"
 
-[node name="PlayerTies" type="Label" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent"]
+[node name="PlayerTies" type="Label" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn"]
 modulate = Color(0.9, 0.75, 0.2, 1)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "[羁绊]"
 
-[node name="BondIconsContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent"]
+[node name="BondIconsContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="HSeparator" type="HSeparator" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent"]
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn"]
 layout_mode = 2
 
-[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent"]
+[node name="StatsScroll" type="ScrollContainer" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn"]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="PlayerDescription" type="RichTextLabel" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent/ScrollContainer"]
+[node name="PlayerDescription" type="RichTextLabel" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/StatsScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_font_sizes/normal_font_size = 18
 bbcode_enabled = true
 text = "点击角色查看详情"
+fit_content = true
+
+[node name="SkillColumn" type="ScrollContainer" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.2
+horizontal_scroll_mode = 0
+
+[node name="SkillDescription" type="RichTextLabel" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/SkillColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/normal_font_size = 20
+theme_override_font_sizes/bold_font_size = 20
+bbcode_enabled = true
+text = ""
 fit_content = true
 
 [node name="MiddleSection" type="VBoxContainer" parent="MarginContainer/HBoxContainer/MainContent"]

@@ -25,10 +25,11 @@ signal selection_confirmed(selected_data: Array[Dictionary])
 @onready var synergy_list: VBoxContainer = $MarginContainer/HBoxContainer/LeftPanel/SynergyScrollContainer/SynergyList
 @onready var player_info: HBoxContainer = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo
 @onready var player_ico: TextureRect = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/PlayerIco
-@onready var player_name_label: Label = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent/PlayerName
-@onready var player_ties_label: Label = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent/PlayerTies
-@onready var bond_icons_container: HBoxContainer = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent/BondIconsContainer
-@onready var player_description: RichTextLabel = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/RightContent/ScrollContainer/PlayerDescription
+@onready var player_name_label: Label = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/PlayerName
+@onready var player_ties_label: Label = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/PlayerTies
+@onready var bond_icons_container: HBoxContainer = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/BondIconsContainer
+@onready var player_description: RichTextLabel = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/StatsScroll/PlayerDescription
+@onready var skill_description: RichTextLabel = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/SkillColumn/SkillDescription
 @onready var continue_button: Button = $MarginContainer/HBoxContainer/RightPanel/Continue
 @onready var upgrade_button: Button = $MarginContainer/HBoxContainer/RightPanel/UpgradeButton
 @onready var warehouse_button: Button = $MarginContainer/HBoxContainer/RightPanel/WarehouseButton
@@ -110,6 +111,13 @@ func _ready() -> void:
 	# 清空初始显示
 	_clear_player_info()
 	_clear_weapon_container()
+	
+	# 右列技能详情使用系统字体，避免艺术字体不清晰
+	var sys_font = SystemFont.new()
+	sys_font.font_names = PackedStringArray(["Microsoft YaHei", "SimHei", "Noto Sans CJK SC", "sans-serif"])
+	sys_font.antialiasing = TextServer.FONT_ANTIALIASING_LCD
+	skill_description.add_theme_font_override("normal_font", sys_font)
+	skill_description.add_theme_font_override("bold_font", sys_font)
 	
 	# 更新Continue按钮状态
 	_update_continue_button_state()
@@ -510,12 +518,7 @@ func _on_player_button_pressed(player_id: String) -> void:
 # ============================================================================
 
 func _update_player_info(player_id: String) -> void:
-	"""更新角色详细信息面板
-	
-	触发时机：
-	- 点击角色按钮时 (_on_player_button_pressed)
-	- 选择不同角色时
-	"""
+	"""更新角色详细信息面板（左列属性，右列技能详情）"""
 	var config = ConfigManager.get_player_config(player_id)
 	var visual_config = ConfigManager.get_player_visual(player_id)
 	
@@ -539,18 +542,75 @@ func _update_player_info(player_id: String) -> void:
 	# 更新羁绊图标
 	_update_bond_icons(player_id, config)
 	
-	# 设置属性描述
-	var desc_text = ""
-	desc_text += "生命值: %d\n" % int(config.get("health", 0))
-	desc_text += "Q技能消耗: %d\n" % int(config.get("skill_q_cost", 0))
-	desc_text += "E技能消耗: %d\n" % int(config.get("skill_e_cost", 0))
-	desc_text += "能量恢复: %.1f/秒\n" % config.get("energy_regen", 0)
-	desc_text += "最大能量: %d\n" % int(config.get("max_energy", 0))
-	desc_text += "最大护甲: %d\n" % int(config.get("max_armor", 0))
-	desc_text += "移动速度: %d\n" % int(config.get("base_speed", 0))
-	desc_text += "\n[color=gray]%s[/color]" % config.get("description", "")
+	# === 左列：属性数值 ===
+	var stats_text = ""
+	stats_text += "生命值: %d\n" % int(config.get("health", 0))
+	stats_text += "Q技能消耗: %d\n" % int(config.get("skill_q_cost", 0))
+	stats_text += "E技能消耗: %d\n" % int(config.get("skill_e_cost", 0))
+	stats_text += "能量恢复: %.1f/秒\n" % config.get("energy_regen", 0)
+	stats_text += "最大能量: %d\n" % int(config.get("max_energy", 0))
+	stats_text += "最大护甲: %d\n" % int(config.get("max_armor", 0))
+	stats_text += "移动速度: %d" % int(config.get("base_speed", 0))
 	
-	player_description.text = desc_text
+	var final_desc = config.get("description", "")
+	if final_desc != "" and str(final_desc) != "0":
+		stats_text += "\n\n[color=gray]" + str(final_desc) + "[/color]"
+	
+	player_description.text = stats_text
+	
+	# === 右列：技能详情 ===
+	var skill_text = "[color=#FFD700][b]=== 技能详情 ===[/b][/color]\n"
+	
+	# 从 player_skill_bindings 获取技能ID
+	var bindings = ConfigManager.get_player_skill_bindings(player_id)
+	var q_skill_id = str(bindings.get("slot_q", ""))
+	var e_skill_id = str(bindings.get("slot_e", ""))
+	
+	# Q技能描述（画线 + 画圈）
+	if q_skill_id != "":
+		var q_params = ConfigManager.get_skill_params(q_skill_id)
+		var q_line_desc = str(q_params.get("desc_q_line", ""))
+		var q_circle_desc = str(q_params.get("desc_q_circle", ""))
+		if q_line_desc != "" and q_line_desc != "0":
+			skill_text += "\n[b][color=#87CEEB]Q (画线):[/color][/b]\n" + q_line_desc + "\n"
+		if q_circle_desc != "" and q_circle_desc != "0":
+			skill_text += "\n[b][color=#87CEEB]Q (画圈):[/color][/b]\n" + q_circle_desc + "\n"
+	
+	# E技能描述
+	if e_skill_id != "":
+		var e_params = ConfigManager.get_skill_params(e_skill_id)
+		var e_desc = str(e_params.get("desc_e", ""))
+		if e_desc != "" and e_desc != "0":
+			skill_text += "\n[b][color=#FFA07A]E 技能:[/color][/b]\n" + e_desc + "\n"
+	
+	# F大招描述（从 ult_config.csv 读取）
+	var f_desc = _get_ult_description(player_id)
+	if f_desc != "" and f_desc != "0":
+		skill_text += "\n[b][color=#98FB98]F 大招:[/color][/b]\n" + f_desc + "\n"
+	
+	skill_description.text = skill_text
+
+func _get_ult_description(player_id: String) -> String:
+	"""从 ult_config.csv 获取大招描述"""
+	var csv_path = "res://config/player/ult_config.csv"
+	if not FileAccess.file_exists(csv_path):
+		return ""
+	var file = FileAccess.open(csv_path, FileAccess.READ)
+	if not file:
+		return ""
+	var target_id = player_id + "_ult"
+	file.get_line()  # 跳过表头
+	while not file.eof_reached():
+		var line = file.get_csv_line()
+		if line.size() < 10:
+			continue
+		if line[0].strip_edges() == "-1":
+			continue
+		if line[0].strip_edges() == target_id:
+			file.close()
+			return line[9].strip_edges()
+	file.close()
+	return ""
 
 func _update_bond_icons(player_id: String, config: Dictionary) -> void:
 	"""更新羁绊图标显示"""
@@ -583,7 +643,8 @@ func _clear_player_info() -> void:
 	for child in bond_icons_container.get_children():
 		child.queue_free()
 	
-	player_description.text = "点击下方角色查看详情"
+	player_description.text = "点击角色查看详情"
+	skill_description.text = ""
 
 # ============================================================================
 # 队伍羁绊统计（事件驱动：当队伍成员变化时触发）

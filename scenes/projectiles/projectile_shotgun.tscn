@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://nvi5ivklpxnn"]
+[gd_scene load_steps=3 format=3 uid="uid://ubhhc0dsf4kp"]
 
 [ext_resource type="PackedScene" uid="uid://cs4y516rwuuxm" path="res://scenes/projectiles/projectile_pistol.tscn" id="1_jyw81"]
 [ext_resource type="Texture2D" uid="uid://cmr4xxqrthts7" path="res://assets/sprites/Projectiles/Projectile_1.png" id="2_57jjv"]
