@@ -37,7 +37,7 @@ func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
 	# 创建伤害区域
 	var area = Area2D.new()
 	area.global_position = Vector2.ZERO
-	area.collision_mask = 2
+	area.collision_mask = 1 | 2  # 检测 Layer1(Player/Enemy默认) + Layer2(Enemy标记)
 	area.monitorable = false
 	area.monitoring = true
 	

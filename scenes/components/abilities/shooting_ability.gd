@@ -52,7 +52,13 @@ func activate() -> void:
 
 func _shoot_projectiles() -> void:
 	"""发射多个投射物"""
-	var direction = owner_enemy.global_position.direction_to(Global.player.global_position)
+	# 优先攻击嘲讽目标（override_target），否则攻击玩家
+	var target_node = Global.player
+	if "override_target" in owner_enemy and is_instance_valid(owner_enemy.override_target):
+		target_node = owner_enemy.override_target
+	if not is_instance_valid(target_node):
+		return
+	var direction = owner_enemy.global_position.direction_to(target_node.global_position)
 	var damage = int(owner_enemy.damage * projectile_damage_mult) if owner_enemy.has("damage") else 10
 	
 	# 计算扇形角度

@@ -67,9 +67,12 @@ func can_activate() -> bool:
 	if not is_instance_valid(owner_enemy):
 		return false
 	
-	# 检查距离条件
-	if is_instance_valid(Global.player):
-		var distance = owner_enemy.global_position.distance_to(Global.player.global_position)
+	# 检查距离条件（优先使用嘲讽目标）
+	var dist_target = Global.player
+	if "override_target" in owner_enemy and is_instance_valid(owner_enemy.override_target):
+		dist_target = owner_enemy.override_target
+	if is_instance_valid(dist_target):
+		var distance = owner_enemy.global_position.distance_to(dist_target.global_position)
 		if distance < min_distance or distance > max_distance:
 			return false
 	

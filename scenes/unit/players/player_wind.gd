@@ -49,6 +49,8 @@ func _handle_input(delta: float) -> void:
 	move_dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if can_move():
 		var current_speed = speed  # 直接使用 Unit 基类的 speed 属性
+		if has_meta("buff_speed_boost"):
+			current_speed *= (1.0 + get_meta("buff_speed_boost"))
 		position += move_dir * current_speed * delta
 	
 	# 2. 技能按键分发

@@ -423,11 +423,13 @@ func _spawn_mini_explosion(pos: Vector2) -> void:
 	
 	get_tree().current_scene.call_deferred("add_child", vfx)
 	
-	# 自动清理
+	# 自动清理 - 使用 weakref 避免 lambda capture freed 错误
+	var vfx_ref = weakref(vfx)
 	var cleanup_timer = get_tree().create_timer(1.0)
 	cleanup_timer.timeout.connect(func():
-		if is_instance_valid(vfx):
-			vfx.queue_free()
+		var v = vfx_ref.get_ref()
+		if v and is_instance_valid(v):
+			v.queue_free()
 	)
 
 ## P3-2: 永久牢笼（筑墙者 Lv.3）
@@ -451,7 +453,7 @@ func _apply_permanent_cage(area: Area2D, polygon: PackedVector2Array) -> void:
 	var cage = StaticBody2D.new()
 	cage.name = "PermanentCage"
 	cage.collision_layer = 4  # 独立碰撞层
-	cage.collision_mask = 2   # 只与敌人碰撞
+	cage.collision_mask = 1 | 2  # 检测 Layer1(Player/Enemy默认) + Layer2(Enemy标记)
 	
 	# 添加碰撞形状
 	var col = CollisionPolygon2D.new()
@@ -517,8 +519,21 @@ func _manage_cage_lifecycle(cage: StaticBody2D) -> void:
 	lifetime_timer.one_shot = true
 	cage.add_child(lifetime_timer)
 	
+	var cage_ref = weakref(cage)
 	lifetime_timer.timeout.connect(func():
-		_remove_cage(cage)
+		var c = cage_ref.get_ref()
+		if c and is_instance_valid(c):
+			# 淡出动画
+			var vis = c.get_node_or_null("Line2D")
+			if is_instance_valid(vis):
+				var tween = c.create_tween()
+				tween.tween_property(vis, "modulate:a", 0.0, 0.5)
+				tween.tween_callback(func():
+					if is_instance_valid(c):
+						c.queue_free()
+				)
+			else:
+				c.queue_free()
 	)
 	
 	lifetime_timer.start()
@@ -616,6 +631,8 @@ func _calculate_polygon_center(polygon: PackedVector2Array) -> Vector2:
 func _ready() -> void:
 	super._ready()
 	
+	print("[SkillDrawingBase] _ready() 技能: %s, skill_owner: %s" % [skill_id, skill_owner])
+	
 	if skill_owner:
 		# 创建Line2D用于绘制规划路径
 		line_2d = Line2D.new()
@@ -634,6 +651,9 @@ func _ready() -> void:
 		line_2d.top_level = true
 		line_2d.clear_points()
 		line_2d.default_color = _get_line_color()
+		print("[SkillDrawingBase] ✅ Line2D 创建成功: %s" % skill_id)
+	else:
+		print("[SkillDrawingBase] ⚠️ skill_owner 为空，无法创建 Line2D: %s" % skill_id)
 
 func _process(delta: float) -> void:
 	super._process(delta)
@@ -698,6 +718,8 @@ func _enter_planning_mode() -> void:
 	path_points.append(start_pos)
 	last_point = start_pos
 	
+	print("[%s] ===== 进入规划模式 ===== 起点: %s, line_2d有效: %s" % [skill_id, start_pos, is_instance_valid(line_2d)])
+	
 	Engine.time_scale = 0.1
 
 ## 退出规划模式并执行技能
@@ -707,9 +729,13 @@ func _exit_planning_mode_and_execute() -> void:
 	is_drawing = false
 	Engine.time_scale = 1.0
 	
+	print("[%s] ===== 退出规划模式 ===== 路径点数: %d, 闭合: %s" % [skill_id, path_points.size(), has_closure])
+	
 	if path_points.size() > 1:
 		# 最终闭合检测
 		_perform_final_closure_check()
+		
+		print("[%s] 最终闭合检测结果: %s" % [skill_id, has_closure])
 		
 		# 根据闭合状态生成效果
 		if has_closure:
@@ -720,6 +746,7 @@ func _exit_planning_mode_and_execute() -> void:
 		start_cooldown()
 		_clear_all_points()
 	else:
+		print("[%s] 路径点不足，跳过执行" % skill_id)
 		_clear_all_points()
 
 ## 执行闭合路径
@@ -743,11 +770,33 @@ func _execute_closed_path() -> void:
 
 ## 执行开放路径
 func _execute_open_path() -> void:
-	print("[%s] 生成开放路径效果，点数: %d" % [skill_id, path_points.size()])
+	if path_points.size() < 2:
+		print("[%s] 路径点不足，跳过开放路径" % skill_id)
+		return
 	
-	# 沿路径生成线段效果
-	for i in range(path_points.size() - 1):
-		_spawn_line_effect(path_points[i], path_points[i + 1])
+	# 将密集的小路径点合并为较长的线段（每段约 80-120px）
+	# 这样墙体更宽、更容易阻挡敌人，同时减少节点数量
+	const MERGE_DISTANCE: float = 100.0  # 每段目标长度
+	
+	var merged_segments: Array[Dictionary] = []
+	var seg_start: Vector2 = path_points[0]
+	var accumulated: float = 0.0
+	
+	for i in range(1, path_points.size()):
+		var dist = path_points[i - 1].distance_to(path_points[i])
+		accumulated += dist
+		
+		if accumulated >= MERGE_DISTANCE or i == path_points.size() - 1:
+			merged_segments.append({"start": seg_start, "end": path_points[i]})
+			seg_start = path_points[i]
+			accumulated = 0.0
+	
+	print("[%s] 生成开放路径效果，原始点数: %d, 合并线段数: %d" % [skill_id, path_points.size(), merged_segments.size()])
+	
+	for seg in merged_segments:
+		_spawn_line_effect(seg["start"], seg["end"])
+	
+	print("[%s] 开放路径效果生成完毕" % skill_id)
 
 # ==============================================================================
 # 划线逻辑

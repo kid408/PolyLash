@@ -114,8 +114,9 @@ func _ready() -> void:
 	# 加载大招技能
 	_load_ultimate_skill()
 	
-	# 自动创建技能管理器（如果子类没有创建）
-	_auto_create_skill_manager()
+	# 延迟创建技能管理器，等待子类 _ready() 完成后再检查
+	# 这样子类有机会先创建自己的 SkillManager
+	call_deferred("_auto_create_skill_manager")
 
 func _exit_tree() -> void:
 	# 不清理任何技能效果，让它们按照自己的生命周期自然消失
@@ -532,6 +533,9 @@ func _handle_input(delta: float) -> void:
 	move_dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if can_move():
 		var current_speed = speed  # 直接使用 Unit 基类的 speed 属性
+		# 应用 Buff 区域的速度加成（如新风暴风带）
+		if has_meta("buff_speed_boost"):
+			current_speed *= (1.0 + get_meta("buff_speed_boost"))
 		position += move_dir * current_speed * delta
 		# 移除移动限制，允许无限移动
 		# position.x = clamp(position.x, -2000, 2000)
@@ -543,6 +547,7 @@ func _handle_input(delta: float) -> void:
 		
 		# E技能（瞬发）
 		if Input.is_action_just_pressed("skill_e"):
+			print("[PlayerBase] E键按下，调用 execute_skill('e')")
 			skill_manager.execute_skill("e")
 			return
 		
@@ -551,6 +556,7 @@ func _handle_input(delta: float) -> void:
 			skill_manager.charge_skill("q", delta)
 			return
 		elif Input.is_action_just_released("skill_q"):
+			print("[PlayerBase] Q键释放，调用 release_skill('q')")
 			skill_manager.release_skill("q")
 			return
 		
@@ -934,6 +940,12 @@ func _get_ultimate_script_for_player(pid: String) -> Script:
 		"butcher": "res://scenes/skills/players/skill_ultimate_butcher.gd",
 		"pyro": "res://scenes/skills/players/skill_ultimate_pyro.gd",
 		"sapper": "res://scenes/skills/players/skill_ultimate_sapper.gd",
+		"merchant": "res://scenes/skills/players/skill_ultimate_merchant.gd",
+		"midas": "res://scenes/skills/players/skill_ultimate_midas.gd",
+		"vacuum": "res://scenes/skills/players/skill_ultimate_vacuum.gd",
+		"executioner": "res://scenes/skills/players/skill_ultimate_executioner.gd",
+		"gambler": "res://scenes/skills/players/skill_ultimate_gambler.gd",
+		"hunter": "res://scenes/skills/players/skill_ultimate_hunter.gd",
 		# 其他角色使用基础大招（包含爆炸效果）
 	}
 	
@@ -954,9 +966,17 @@ func _get_ultimate_script_for_player(pid: String) -> Script:
 ## 这使得纯CSV配置的角色也能拥有Q/E/LMB技能
 func _auto_create_skill_manager() -> void:
 	# 检查是否已经有SkillManager（子类可能已经创建）
-	if has_node("SkillManager"):
-		print("[PlayerBase] 技能管理器已存在（由子类创建），跳过自动创建")
-		return
+	# 同时检查名称和类型，防止子类创建了未命名的SkillManager导致重复
+	for child in get_children():
+		if child is SkillManager:
+			var sm = child as SkillManager
+			print("[PlayerBase] 技能管理器已存在（由子类创建: %s），已加载 %d 个技能，跳过自动创建" % [child.name, sm.get_loaded_skill_count()])
+			# 确保名称统一为 "SkillManager"，以便 _handle_input 能找到
+			if child.name != "SkillManager":
+				child.name = "SkillManager"
+			# 打印技能槽位信息
+			sm.print_skills_info()
+			return
 	
 	# 检查是否有技能绑定配置
 	var bindings = ConfigManager.get_player_skill_bindings(player_id)

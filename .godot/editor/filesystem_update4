@@ -1,1 +1,7 @@
-res://scenes/ui/selection_panel/selection_panel.gd
+res://autoloads/skill_effect_manager.gd
+res://scenes/skills/skill_base.gd
+res://scenes/unit/unit.gd
+res://scenes/weapons/weapon_behavior.gd
+res://scenes/unit/enemy/elites/enemy_glutton.gd
+res://scenes/components/abilities/ability_base.gd
+res://scenes/unit/players/player_base.gd

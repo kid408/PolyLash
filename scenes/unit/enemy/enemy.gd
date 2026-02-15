@@ -634,10 +634,11 @@ func apply_status(type: String, duration: float, value: float = 0, stacks: int =
 		var status = active_statuses[type]
 		status.duration = max(status.duration, duration)  # 取更长的持续时间
 		
-		# 诅咒可以叠加层数
-		if type == "curse":
+		# 诅咒和中毒可以叠加层数
+		if type in ["curse", "poison"]:
 			status.stacks += stacks
-			print("[Enemy] [P2-4] 诅咒叠加: %s 层数 %d -> %d" % [
+			print("[Enemy] %s叠加: %s 层数 %d -> %d" % [
+				type,
 				name,
 				status.stacks - stacks,
 				status.stacks
@@ -678,7 +679,16 @@ func _apply_status_initial_effect(type: String, value: float) -> void:
 			can_move = false
 			print("[Enemy] 冰冻效果: 无法移动")
 		
-		"burn", "curse":
+		"stun":
+			# 眩晕效果：完全停止移动（类似冰冻）
+			can_move = false
+			print("[Enemy] 眩晕效果: 无法移动 %.1f秒" % active_statuses["stun"].duration)
+		
+		"marked":
+			# 标记效果：受到的伤害增加（在 HealthComponent.take_damage 中检查）
+			print("[Enemy] 标记效果: 受伤增加 %.0f%%" % (value * 100))
+		
+		"burn", "curse", "poison":
 			# DoT效果：在 _process_status_effects 中处理
 			pass
 
@@ -695,8 +705,8 @@ func _process_status_effects(delta: float) -> void:
 		# 减少持续时间
 		status.duration -= delta
 		
-		# 处理DoT效果（燃烧、诅咒）
-		if status_type in ["burn", "curse"]:
+		# 处理DoT效果（燃烧、诅咒、中毒）
+		if status_type in ["burn", "curse", "poison"]:
 			status.tick_timer += delta
 			
 			if status.tick_timer >= status.tick_interval:
@@ -711,7 +721,7 @@ func _process_status_effects(delta: float) -> void:
 	for status_type in statuses_to_remove:
 		_remove_status(status_type)
 
-## 应用DoT伤害（燃烧、诅咒）
+## 应用DoT伤害（燃烧、诅咒、中毒）
 func _apply_dot_damage(status_type: String, value: float, stacks: int) -> void:
 	if not health_component:
 		return
@@ -728,6 +738,11 @@ func _apply_dot_damage(status_type: String, value: float, stacks: int) -> void:
 			# 诅咒：每层造成伤害
 			damage = int(value * stacks)
 			Global.spawn_floating_text(global_position, "CURSE x%d!" % stacks, Color(0.8, 0.0, 0.8))
+		
+		"poison":
+			# 中毒：每层造成伤害
+			damage = int(value * stacks)
+			Global.spawn_floating_text(global_position, "POISON x%d!" % stacks, Color(0.4, 0.7, 0.1))
 	
 	if damage > 0:
 		health_component.take_damage(damage)
@@ -749,6 +764,10 @@ func _remove_status(type: String) -> void:
 				speed = float(config.get("speed", 100))
 		
 		"freeze":
+			# 恢复移动能力
+			can_move = true
+		
+		"stun":
 			# 恢复移动能力
 			can_move = true
 	

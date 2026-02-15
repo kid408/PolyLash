@@ -495,6 +495,8 @@ func _show_exit_dialog() -> void:
 func _on_exit_confirmed() -> void:
 	"""玩家确认退出游戏"""
 	print("[Arena] 玩家确认退出游戏")
+	# 清理所有残留的精英投射物
+	_cleanup_all_projectiles()
 	# 返回到选择界面
 	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
 
@@ -542,6 +544,9 @@ func _show_game_over_screen() -> void:
 	print("[Arena] Global.is_game_over: %s" % Global.is_game_over)
 	print("[Arena] Global.player 有效: %s" % is_instance_valid(Global.player))
 	
+	# 清理所有残留的精英投射物
+	_cleanup_all_projectiles()
+	
 	# 防止重复显示
 	if game_over_screen:
 		print("[Arena] 结算界面已存在，跳过")
@@ -565,3 +570,21 @@ func _show_game_over_screen() -> void:
 	game_over_screen.set_stats(stats_data)
 	game_over_screen.show_screen()
 	print("[Arena] ========== 结算界面显示完成 ==========")
+
+func _cleanup_all_projectiles() -> void:
+	"""清理所有残留在根节点上的精英投射物"""
+	var cleaned = 0
+	for group_name in ["elite_projectiles", "projectiles"]:
+		var nodes = get_tree().get_nodes_in_group(group_name)
+		for node in nodes:
+			if is_instance_valid(node):
+				node.queue_free()
+				cleaned += 1
+	if cleaned > 0:
+		print("[Arena] 清理了 %d 个残留投射物" % cleaned)
+
+func _notification(what: int) -> void:
+	# 场景树退出时也清理投射物
+	if what == NOTIFICATION_PREDELETE or what == NOTIFICATION_EXIT_TREE:
+		if is_inside_tree():
+			_cleanup_all_projectiles()

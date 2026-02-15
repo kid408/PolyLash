@@ -98,7 +98,11 @@ func consume_energy() -> bool:
 func start_cooldown() -> void:
 	if cooldown_time > 0:
 		is_on_cooldown = true
-		cooldown_timer = cooldown_time
+		var cd = cooldown_time
+		# 应用冷却缩减 buff
+		if skill_owner and is_instance_valid(skill_owner) and skill_owner.has_meta("buff_cooldown_reduction"):
+			cd *= (1.0 - skill_owner.get_meta("buff_cooldown_reduction"))
+		cooldown_timer = cd
 
 ## 重置冷却
 func reset_cooldown() -> void:
@@ -144,6 +148,28 @@ func _on_cooldown_complete() -> void:
 func _exit_tree() -> void:
 	# 不调用 cleanup()，让技能效果继续存在
 	pass
+
+## 在指定位置生成爆炸VFX（E技能通用视觉反馈）
+func spawn_skill_vfx(pos: Vector2, color: Color = Color.WHITE, vfx_scale: float = 0.6) -> void:
+	var explosion_scene = load("res://scenes/vfx/explosion_area.tscn")
+	if not explosion_scene:
+		return
+	var tree = get_tree()
+	if not tree or not tree.current_scene:
+		return
+	var vfx = explosion_scene.instantiate()
+	vfx.global_position = pos
+	vfx.scale = Vector2(vfx_scale, vfx_scale)
+	vfx.modulate = color
+	vfx.z_index = 100
+	tree.current_scene.call_deferred("add_child", vfx)
+	# 自动清理 - 使用 weakref 避免 lambda capture freed 错误
+	var vfx_ref = weakref(vfx)
+	tree.create_timer(1.0).timeout.connect(func():
+		var v = vfx_ref.get_ref()
+		if v and is_instance_valid(v):
+			v.queue_free()
+	)
 
 # ==============================================================================
 # 调试和日志

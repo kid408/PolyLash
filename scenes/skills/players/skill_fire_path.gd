@@ -896,11 +896,13 @@ func _spawn_mini_explosion(pos: Vector2) -> void:
 	
 	get_tree().current_scene.call_deferred("add_child", vfx)
 	
-	# 自动清理
+	# 自动清理 - 使用 weakref 避免 lambda capture freed 错误
+	var vfx_ref = weakref(vfx)
 	var cleanup_timer = get_tree().create_timer(1.0)
 	cleanup_timer.timeout.connect(func():
-		if is_instance_valid(vfx):
-			vfx.queue_free()
+		var v = vfx_ref.get_ref()
+		if v and is_instance_valid(v):
+			v.queue_free()
 	)
 
 ## P3-2: 永久牢笼（筑墙者 Lv.3）
@@ -915,7 +917,7 @@ func _apply_permanent_cage(area: Area2D, polygon: PackedVector2Array) -> void:
 	var cage = StaticBody2D.new()
 	cage.name = "PermanentCage"
 	cage.collision_layer = 4  # 独立碰撞层
-	cage.collision_mask = 2   # 只与敌人碰撞
+	cage.collision_mask = 1 | 2  # 检测 Layer1(Player/Enemy默认) + Layer2(Enemy标记)
 	
 	# 添加碰撞形状
 	var col = CollisionPolygon2D.new()
@@ -977,8 +979,20 @@ func _manage_cage_lifecycle(cage: StaticBody2D) -> void:
 	lifetime_timer.one_shot = true
 	cage.add_child(lifetime_timer)
 	
+	var cage_ref = weakref(cage)
 	lifetime_timer.timeout.connect(func():
-		_remove_cage(cage)
+		var c = cage_ref.get_ref()
+		if c and is_instance_valid(c):
+			var vis = c.get_node_or_null("Line2D")
+			if is_instance_valid(vis):
+				var tween = c.create_tween()
+				tween.tween_property(vis, "modulate:a", 0.0, 0.5)
+				tween.tween_callback(func():
+					if is_instance_valid(c):
+						c.queue_free()
+				)
+			else:
+				c.queue_free()
 	)
 	
 	lifetime_timer.start()

@@ -132,6 +132,10 @@ func _load_skill_to_slot(slot: String, skill_id: String) -> bool:
 	# 保存到槽位
 	skill_slots[slot] = skill
 	
+	print("[SkillManager] ✅ 加载技能: %s -> %s (能量: %.0f, 冷却: %.1fs)" % [
+		slot.to_upper(), skill_id, skill.energy_cost, skill.cooldown_time
+	])
+	
 	return true
 
 ## 从CSV加载技能参数
@@ -171,30 +175,33 @@ func _load_skill_params(skill: SkillBase, skill_id: String) -> void:
 func execute_skill(slot: String) -> void:
 	var skill = skill_slots.get(slot)
 	if not skill:
-		if debug_mode:
-			print("[SkillManager] 槽位 %s 没有技能" % slot.to_upper())
+		print("[SkillManager] ⚠️ 槽位 %s 没有技能 | 所有槽位: %s" % [slot.to_upper(), str(skill_slots.keys().filter(func(k): return skill_slots[k] != null))])
 		return
 	
 	if not is_instance_valid(skill):
 		printerr("[SkillManager] 错误: 槽位 %s 的技能实例无效" % slot.to_upper())
 		return
 	
-	if skill.can_execute():
-		if debug_mode:
-			print("[SkillManager] 执行技能: %s (%s)" % [slot.to_upper(), skill.skill_id])
-		skill.execute()
-	else:
-		if debug_mode:
-			if skill.is_on_cooldown:
-				print("[SkillManager] 技能冷却中: %s (剩余: %.1fs)" % [
-					slot.to_upper(), 
-					skill.get_cooldown_remaining()
-				])
-			else:
-				print("[SkillManager] 能量不足: %s (需要: %.0f)" % [
-					slot.to_upper(), 
-					skill.energy_cost
-				])
+	# 直接检查条件并执行，不依赖技能内部的 can_execute
+	if skill.is_on_cooldown:
+		print("[SkillManager] ❌ 技能冷却中: %s (%s) 剩余: %.1fs" % [
+			slot.to_upper(), skill.skill_id, skill.get_cooldown_remaining()
+		])
+		return
+	
+	var owner_energy = skill.skill_owner.energy if skill.skill_owner else -1.0
+	if skill.energy_cost > 0 and owner_energy < skill.energy_cost:
+		print("[SkillManager] ❌ 能量不足: %s (%s) 需要: %.0f, 当前: %.0f" % [
+			slot.to_upper(), skill.skill_id, skill.energy_cost, owner_energy
+		])
+		return
+	
+	print("[SkillManager] ✅ 执行技能: %s (%s) 能量: %.0f/%.0f, 消耗: %.0f" % [
+		slot.to_upper(), skill.skill_id, owner_energy,
+		skill.skill_owner.max_energy if skill.skill_owner else 0.0,
+		skill.energy_cost
+	])
+	skill.execute()
 
 ## 蓄力技能（持续按住）
 ## @param slot: 槽位名称
@@ -202,11 +209,17 @@ func execute_skill(slot: String) -> void:
 func charge_skill(slot: String, delta: float) -> void:
 	var skill = skill_slots.get(slot)
 	if not skill or not is_instance_valid(skill):
+		# 只打印一次警告，避免每帧刷屏
+		if not has_meta("_warned_no_skill_%s" % slot):
+			set_meta("_warned_no_skill_%s" % slot, true)
+			print("[SkillManager] ⚠️ charge_skill: 槽位 %s 没有技能! 所有槽位: %s" % [
+				slot.to_upper(),
+				str(skill_slots.keys().map(func(k): return "%s=%s" % [k, skill_slots[k].skill_id if skill_slots[k] else "null"]))
+			])
 		return
 	
 	if not skill.is_charging:
-		if debug_mode:
-			print("[SkillManager] 开始蓄力: %s (%s)" % [slot.to_upper(), skill.skill_id])
+		print("[SkillManager] 开始蓄力: %s (%s)" % [slot.to_upper(), skill.skill_id])
 		skill.is_charging = true
 	
 	skill.charge(delta)
@@ -216,13 +229,18 @@ func charge_skill(slot: String, delta: float) -> void:
 func release_skill(slot: String) -> void:
 	var skill = skill_slots.get(slot)
 	if not skill or not is_instance_valid(skill):
+		print("[SkillManager] ⚠️ release_skill: 槽位 %s 没有技能!" % slot.to_upper())
 		return
 	
 	if skill.is_charging:
-		if debug_mode:
-			print("[SkillManager] 释放技能: %s (%s)" % [slot.to_upper(), skill.skill_id])
+		print("[SkillManager] 释放技能: %s (%s) 路径点数: %d" % [
+			slot.to_upper(), skill.skill_id,
+			skill.path_points.size() if "path_points" in skill else -1
+		])
 		skill.is_charging = false
 		skill.release()
+	else:
+		print("[SkillManager] ⚠️ release_skill: %s (%s) 未在蓄力状态" % [slot.to_upper(), skill.skill_id])
 
 # ==============================================================================
 # 技能查询

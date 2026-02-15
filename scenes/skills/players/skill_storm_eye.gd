@@ -79,7 +79,7 @@ func execute() -> void:
 func _spawn_storm_eye(center_pos: Vector2) -> void:
 	var area = Area2D.new()
 	area.global_position = center_pos
-	area.collision_mask = 2
+	area.collision_mask = 1 | 2  # 检测 Layer1(Player/Enemy默认) + Layer2(Enemy标记)
 	area.monitorable = false
 	area.monitoring = true
 	

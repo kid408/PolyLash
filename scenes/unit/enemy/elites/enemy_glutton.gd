@@ -101,86 +101,34 @@ func _update_stage2_behavior(delta: float) -> void:
 			_shoot_acid_projectile()
 			stage2_shoot_timer = stage2_shoot_cooldown
 
+## 预加载标准敌人投射物场景（与普通敌人共用，确保碰撞层、信号链、反射全部一致）
+var _enemy_projectile_scene: PackedScene = preload("res://scenes/projectiles/projectile_enemy.tscn")
+
 func _shoot_acid_projectile() -> void:
-	"""向玩家射击酸液投射物"""
+	"""向玩家射击酸液投射物（复用标准 projectile_enemy.tscn）"""
 	if not is_instance_valid(Global.player):
 		return
 	
-	# 计算指向玩家的方向
 	var direction = global_position.direction_to(Global.player.global_position)
 	var projectile_damage = int(damage * 0.5)
 	
-	# 创建投射物节点
-	var projectile = Node2D.new()
-	projectile.name = "AcidProjectile"
+	var projectile = _enemy_projectile_scene.instantiate() as Projectile
 	projectile.global_position = global_position
-	projectile.set_meta("owner", self)  # 标记所有者
-	
-	# 添加精灵
-	var sprite = Sprite2D.new()
-	sprite.texture = preload("res://assets/sprites/Projectiles/Projectile_enemy.png")
-	sprite.modulate = Color.GREEN
-	sprite.scale = Vector2(0.3, 0.3)
-	projectile.add_child(sprite)
-	
-	# 添加碰撞检测
-	var area = Area2D.new()
-	area.name = "HitArea"
-	var collision_shape = CollisionShape2D.new()
-	var circle_shape = CircleShape2D.new()
-	circle_shape.radius = 8.0
-	collision_shape.shape = circle_shape
-	area.add_child(collision_shape)
-	projectile.add_child(area)
-	
-	# 设置投射物属性
-	projectile.set_meta("damage", projectile_damage)
-	projectile.set_meta("direction", direction)
-	projectile.set_meta("speed", stage2_projectile_speed)
-	
-	# 标记为投射物
-	projectile.add_to_group("projectiles")
-	
-	# 连接碰撞信号处理伤害
-	var hit_once = false
-	area.area_entered.connect(func(hit_area):
-		if hit_once:
-			return
-		
-		# 检查是否击中玩家
-		if hit_area.is_in_group("hurtbox") and hit_area.get_parent() == Global.player:
-			hit_once = true
-			if Global.player.has_method("take_damage"):
-				Global.player.take_damage(projectile_damage)
-			projectile.queue_free()
-			return
-		
-		# 检查是否击中其他敌人
-		if hit_area.is_in_group("hurtbox"):
-			var parent = hit_area.get_parent()
-			if parent and parent != self and parent.has_method("take_damage"):
-				hit_once = true
-				parent.take_damage(projectile_damage)
-				projectile.queue_free()
+	projectile.set_projectile(
+		direction * stage2_projectile_speed,
+		projectile_damage,
+		false,  # critical
+		0.0,    # knockback
+		self
 	)
+	# 绿色酸液外观
+	var sprite = projectile.get_node_or_null("Sprite2D")
+	if sprite:
+		sprite.modulate = Color.GREEN
+		sprite.scale = Vector2(0.3, 0.3)
 	
-	# 添加到场景
+	projectile.add_to_group("elite_projectiles")
 	get_tree().root.add_child(projectile)
-	
-	# 添加移动逻辑
-	var tween = create_tween()
-	tween.set_trans(Tween.TRANS_LINEAR)
-	tween.set_ease(Tween.EASE_IN)
-	
-	# 移动投射物
-	var target_pos = global_position + direction * stage2_shoot_range
-	var travel_time = stage2_shoot_range / stage2_projectile_speed
-	tween.tween_property(projectile, "global_position", target_pos, travel_time)
-	
-	# 自动销毁
-	await tween.finished
-	if is_instance_valid(projectile):
-		projectile.queue_free()
 
 # ==============================================================================
 # Stage 3 - AoE 踩踏伤害
@@ -213,10 +161,14 @@ func _perform_aoe_stomp() -> void:
 	circle.color = Color(1.0, 0.0, 0.0, 0.0)  # 初始透明
 	aoe_visual.add_child(circle)
 	
-	# 动画：闪烁效果
-	var tween = create_tween()
+	# 动画：闪烁效果（tween 创建在 aoe_visual 上，不依赖精英节点）
+	var tween = aoe_visual.create_tween()
 	tween.tween_property(circle, "color:a", 0.6, 0.1)
 	tween.tween_property(circle, "color:a", 0.0, 0.2)
+	tween.tween_callback(func():
+		if is_instance_valid(aoe_visual):
+			aoe_visual.queue_free()
+	)
 	
 	# 检测范围内的所有玩家（支持多角色）
 	var players = get_tree().get_nodes_in_group("player")
@@ -242,11 +194,6 @@ func _perform_aoe_stomp() -> void:
 		# 震屏效果
 		if Global.has_signal("on_camera_shake"):
 			Global.on_camera_shake.emit(5.0, 0.3)
-	
-	# 清理视觉效果
-	await tween.finished
-	if is_instance_valid(aoe_visual):
-		aoe_visual.queue_free()
 
 # ==============================================================================
 # Stage 4 - 冲撞攻击
@@ -286,8 +233,8 @@ func _start_charge_attack() -> void:
 	glutton_charge_line.z_index = 100
 	get_tree().root.add_child(glutton_charge_line)
 	
-	# 闪烁动画
-	var tween = create_tween()
+	# 闪烁动画（tween 创建在 line 上，不依赖精英节点）
+	var tween = glutton_charge_line.create_tween()
 	tween.set_loops(int(stage4_warning_duration / 0.2))
 	tween.tween_property(glutton_charge_line, "modulate:a", 0.3, 0.1)
 	tween.tween_property(glutton_charge_line, "modulate:a", 1.0, 0.1)
@@ -370,7 +317,7 @@ func _execute_charge() -> void:
 	
 	# 清理轨迹
 	if is_instance_valid(trail):
-		var fade_tween = create_tween()
+		var fade_tween = trail.create_tween()
 		fade_tween.tween_property(trail, "modulate:a", 0.0, 0.5)
 		fade_tween.tween_callback(func(): 
 			if is_instance_valid(trail):
@@ -417,67 +364,30 @@ func _shoot_eight_directions() -> void:
 		# 等待下一轮
 		if burst < stage5_burst_count - 1:
 			await get_tree().create_timer(stage5_burst_interval).timeout
+			if not is_instance_valid(self):
+				return
 
 func _shoot_projectile_in_direction(direction: Vector2) -> void:
-	"""向指定方向发射投射物"""
+	"""向指定方向发射投射物（复用标准 projectile_enemy.tscn）"""
 	var projectile_damage = int(damage * 0.6)
 	
-	# 创建投射物
-	var projectile = Node2D.new()
-	projectile.name = "OmniProjectile"
+	var projectile = _enemy_projectile_scene.instantiate() as Projectile
 	projectile.global_position = global_position
-	projectile.set_meta("owner", self)  # 标记所有者
-	
-	# 添加精灵
-	var sprite = Sprite2D.new()
-	sprite.texture = preload("res://assets/sprites/Projectiles/Projectile_enemy.png")
-	sprite.modulate = Color(1.0, 0.3, 1.0)  # 紫色
-	sprite.scale = Vector2(0.4, 0.4)
-	sprite.rotation = direction.angle()
-	projectile.add_child(sprite)
-	
-	# 添加碰撞检测
-	var area = Area2D.new()
-	area.name = "HitArea"
-	var collision_shape = CollisionShape2D.new()
-	var circle_shape = CircleShape2D.new()
-	circle_shape.radius = 10.0
-	collision_shape.shape = circle_shape
-	area.add_child(collision_shape)
-	projectile.add_child(area)
-	
-	projectile.add_to_group("projectiles")
-	
-	# 碰撞检测
-	var hit_once = false
-	area.area_entered.connect(func(hit_area):
-		if hit_once:
-			return
-		
-		if hit_area.is_in_group("hurtbox"):
-			var parent = hit_area.get_parent()
-			if parent and parent.is_in_group("player"):
-				hit_once = true
-				if parent.has_method("take_damage"):
-					parent.take_damage(projectile_damage)
-					print("[EnemyGlutton] 八方向子弹击中，造成 %d 伤害！" % projectile_damage)
-				projectile.queue_free()
+	projectile.set_projectile(
+		direction * stage5_projectile_speed,
+		projectile_damage,
+		false,  # critical
+		0.0,    # knockback
+		self
 	)
+	# 紫色外观
+	var sprite = projectile.get_node_or_null("Sprite2D")
+	if sprite:
+		sprite.modulate = Color(1.0, 0.3, 1.0)
+		sprite.scale = Vector2(0.4, 0.4)
 	
-	# 添加到场景
+	projectile.add_to_group("elite_projectiles")
 	get_tree().root.add_child(projectile)
-	
-	# 移动投射物
-	var tween = create_tween()
-	tween.set_trans(Tween.TRANS_LINEAR)
-	var target_pos = global_position + direction * 800.0
-	var travel_time = 800.0 / stage5_projectile_speed
-	tween.tween_property(projectile, "global_position", target_pos, travel_time)
-	
-	# 自动销毁
-	await tween.finished
-	if is_instance_valid(projectile):
-		projectile.queue_free()
 
 # ==============================================================================
 # 死亡处理 - 清理所有投射物和特效
@@ -485,45 +395,18 @@ func _shoot_projectile_in_direction(direction: Vector2) -> void:
 
 func destroy_enemy() -> void:
 	"""重写死亡处理，清理所有 Glutton 创建的投射物和特效"""
-	print("[EnemyGlutton] 死亡，清理所有投射物和特效...")
-	
 	# 清理冲撞预警线
 	if is_instance_valid(glutton_charge_line):
 		glutton_charge_line.queue_free()
 		glutton_charge_line = null
 	
-	# 清理所有这个 Glutton 创建的投射物
-	# 方法1: 通过 meta 数据清理
-	var projectiles = get_tree().get_nodes_in_group("projectiles")
-	var cleaned_count = 0
-	
+	# 清理所有这个 Glutton 创建的投射物（标准 Projectile，通过 owner_unit 匹配）
+	var projectiles = get_tree().get_nodes_in_group("elite_projectiles")
 	for projectile in projectiles:
 		if not is_instance_valid(projectile):
 			continue
-		
-		# 检查是否是这个 Glutton 创建的
-		if projectile.has_meta("owner"):
-			var owner = projectile.get_meta("owner")
-			if owner == self or not is_instance_valid(owner):
-				print("[EnemyGlutton] 清理投射物: %s" % projectile.name)
-				projectile.queue_free()
-				cleaned_count += 1
-	
-	# 方法2: 清理所有名称匹配的投射物（备用）
-	var all_nodes = get_tree().root.get_children()
-	for node in all_nodes:
-		if not is_instance_valid(node):
-			continue
-		
-		# 检查是否是 Glutton 的投射物
-		if node.name in ["AcidProjectile", "OmniProjectile"]:
-			if node.has_meta("owner") and node.get_meta("owner") == self:
-				if is_instance_valid(node):
-					print("[EnemyGlutton] 清理遗留投射物: %s" % node.name)
-					node.queue_free()
-					cleaned_count += 1
-	
-	print("[EnemyGlutton] 共清理 %d 个投射物" % cleaned_count)
+		if projectile is Projectile and projectile.owner_unit == self:
+			projectile.queue_free()
 	
 	# 调用父类的死亡处理
 	super.destroy_enemy()

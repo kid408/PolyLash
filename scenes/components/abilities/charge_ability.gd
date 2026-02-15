@@ -66,9 +66,12 @@ func activate() -> void:
 	charge_state = ChargeState.PREPARING
 	charge_timer = prep_time
 	
-	# 锁定冲锋方向
+	# 锁定冲锋方向（优先嘲讽目标）
+	var target_node = Global.player
+	if "override_target" in owner_enemy and is_instance_valid(owner_enemy.override_target):
+		target_node = owner_enemy.override_target
 	charge_direction = owner_enemy.global_position.direction_to(
-		Global.player.global_position).normalized()
+		target_node.global_position).normalized()
 	
 	# 敌人变色提示
 	if owner_enemy.has_node("Visuals"):

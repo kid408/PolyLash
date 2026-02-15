@@ -39,6 +39,11 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 	if health_component.current_health <=0:
 		return
 	
+	# 无敌状态检查
+	if has_meta("buff_invincible"):
+		Global.on_create_block_text.emit(self)
+		return
+	
 	var blocked := Global.get_chance_sucess(block_chance / 100)
 	if blocked:
 		# 发送闪避的信号
@@ -49,6 +54,15 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 	
 	# 受到伤害，调用健康组件的受到伤害
 	health_component.take_damage(hitbox.damage)
+	
+	# 生命偷取：如果攻击来源有 buff_lifesteal，恢复其生命
+	if hitbox.source and is_instance_valid(hitbox.source) and hitbox.source.has_meta("buff_lifesteal"):
+		var lifesteal_pct = hitbox.source.get_meta("buff_lifesteal")
+		var heal_amount = int(hitbox.damage * lifesteal_pct)
+		if heal_amount > 0 and hitbox.source.has_node("HealthComponent"):
+			var src_hc = hitbox.source.health_component
+			src_hc.current_health = min(src_hc.current_health + heal_amount, src_hc.max_health)
+			src_hc.on_health_changed.emit(src_hc.current_health, src_hc.max_health)
 	
 	# 累积伤害而不是立即显示
 	accumulated_damage += hitbox.damage

@@ -128,7 +128,7 @@ func load_all_configs() -> void:
 	player_weapon_configs = load_csv_as_dict(PLAYER_WEAPONS, "player_id")
 	player_skill_bindings = load_csv_as_dict(PLAYER_SKILL_BINDINGS, "player_id")
 	player_available_weapons = load_csv_as_dict(PLAYER_AVAILABLE_WEAPONS, "player_id")
-	skill_params = load_csv_as_dict(SKILL_PARAMS, "skill_id")
+	skill_params = load_skill_params_long_format(SKILL_PARAMS)
 	
 	# 敌人配置
 	enemy_configs = load_csv_as_dict(ENEMY_CONFIG, "enemy_id")
@@ -164,6 +164,112 @@ func load_all_configs() -> void:
 # ============================================================================
 # CSV 加载方法
 # ============================================================================
+
+func load_skill_params_long_format(path: String) -> Dictionary:
+	"""
+	加载长表格式的 skill_params CSV 文件
+	
+	参数:
+	- path: CSV 文件路径
+	
+	返回:
+	- Dictionary: {skill_id: {param_name: param_value, ...}, ...}
+	
+	CSV 格式:
+	- 第一行: 列名 (skill_id, param_name, param_value, description)
+	- 第二行: 注释行（第一列为 -1）
+	- 第三行及以后: 数据行，每行一个参数
+	
+	说明:
+	- 自动将数值字符串转换为 float 或 int
+	- 重复的 skill_id + param_name 使用最后出现的值，输出警告
+	- 空 skill_id 或列数不足的行会被跳过
+	"""
+	var result: Dictionary = {}
+	var file = FileAccess.open(path, FileAccess.READ)
+	
+	if not file:
+		push_warning("[ConfigManager] 警告: 无法打开文件 %s" % path)
+		return result
+	
+	var headers: PackedStringArray = []
+	var line_num: int = 0
+	
+	# 查找各列的索引
+	var idx_skill_id: int = -1
+	var idx_param_name: int = -1
+	var idx_param_value: int = -1
+	
+	while not file.eof_reached():
+		var line = file.get_csv_line()
+		line_num += 1
+		
+		# 跳过空行
+		if line.size() == 0 or (line.size() == 1 and line[0].strip_edges() == ""):
+			continue
+		
+		# 第一行：列名
+		if line_num == 1:
+			headers = line
+			for i in range(headers.size()):
+				var h = headers[i].strip_edges()
+				match h:
+					"skill_id":
+						idx_skill_id = i
+					"param_name":
+						idx_param_name = i
+					"param_value":
+						idx_param_value = i
+			continue
+		
+		# 第二行：如果第一列是 -1，跳过（注释行）
+		if line_num == 2 and line[0].strip_edges() == "-1":
+			continue
+		
+		# 数据行：需要至少包含 skill_id, param_name, param_value 三列
+		var min_columns = max(idx_skill_id, max(idx_param_name, idx_param_value)) + 1
+		if line.size() < min_columns:
+			push_warning("[ConfigManager] 警告: %s 第 %d 行列数不足，跳过" % [path, line_num])
+			continue
+		
+		var sid = line[idx_skill_id].strip_edges()
+		var pname = line[idx_param_name].strip_edges()
+		var pvalue_str = line[idx_param_value].strip_edges()
+		
+		# 跳过空 skill_id
+		if sid == "":
+			continue
+		
+		# 转换数值
+		var pvalue = _convert_value(pvalue_str)
+		
+		# 检查重复
+		if result.has(sid) and result[sid].has(pname):
+			push_warning("[ConfigManager] 警告: 重复的 skill_id + param_name: %s.%s，使用最后出现的值" % [sid, pname])
+		
+		# 写入结果
+		if not result.has(sid):
+			result[sid] = {}
+		result[sid][pname] = pvalue
+	
+	file.close()
+	print("[ConfigManager] 加载长表技能参数: ", path, " - ", result.size(), " 个技能")
+	return result
+
+func _convert_value(value_str: String):
+	"""
+	将字符串值转换为合适的类型（int、float 或保留字符串）
+	
+	转换规则:
+	- 优先尝试 int（纯整数字符串）
+	- 其次尝试 float（含小数点的数值字符串）
+	- 否则保留为字符串
+	"""
+	if value_str.is_valid_int():
+		return int(value_str)
+	if value_str.is_valid_float():
+		return float(value_str)
+	return value_str
 
 func load_csv_as_dict(path: String, key_column: String) -> Dictionary:
 	"""

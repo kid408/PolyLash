@@ -707,7 +707,7 @@ func _spawn_mine(pos: Vector2) -> void:
 	
 	var mine = Area2D.new()
 	mine.global_position = pos
-	mine.collision_mask = 2
+	mine.collision_mask = 1 | 2  # 检测 Layer1(Player/Enemy默认) + Layer2(Enemy标记)
 	mine.monitorable = false
 	mine.monitoring = true
 	

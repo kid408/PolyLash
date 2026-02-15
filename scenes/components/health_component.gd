@@ -42,6 +42,17 @@ func take_damage(value:float) -> void:
 		print("[HealthComponent] 已经死亡，忽略伤害")
 		return 
 	
+	# 检查 marked 状态（伤害放大）
+	var owner_node = get_parent()
+	if owner_node and owner_node.has_method("has_status") and owner_node.has_status("marked"):
+		var marked_value = 0.0
+		if "active_statuses" in owner_node and owner_node.active_statuses.has("marked"):
+			marked_value = owner_node.active_statuses["marked"].value
+		elif owner_node.has_node("StatusComponent"):
+			marked_value = owner_node.get_node("StatusComponent").get_status_value("marked")
+		if marked_value > 0:
+			value *= (1.0 + marked_value)
+	
 	current_health -= value
 	
 	# 【修改】强制归零逻辑
