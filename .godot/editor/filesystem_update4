@@ -1,1 +1,3 @@
 res://scenes/ui/selection_panel/selection_panel.gd
+res://autoloads/data_manager.gd
+res://autoloads/global.gd

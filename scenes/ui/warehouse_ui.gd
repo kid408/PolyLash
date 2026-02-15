@@ -216,9 +216,8 @@ func _show_tooltip(item_type: int) -> void:
 	var description = config.get("description", "未知道具")
 	tooltip_label.text = description
 	
-	# 调整tooltip大小
-	tooltip_panel.custom_minimum_size = Vector2(200, 0)
-	tooltip_panel.size = Vector2.ZERO  # 重置大小以自适应内容
+	# 重置大小让Panel根据内容自适应
+	tooltip_panel.reset_size()
 	
 	# 显示tooltip
 	tooltip_panel.visible = true
@@ -231,11 +230,10 @@ func _hide_tooltip() -> void:
 	tooltip_panel.visible = false
 
 func _update_tooltip_position() -> void:
-	"""更新tooltip位置"""
+	"""更新tooltip位置（top_level模式，使用视口坐标）"""
 	var mouse_pos = get_viewport().get_mouse_position()
-	var offset = Vector2(15, 15)  # 鼠标偏移
+	var offset = Vector2(15, 15)
 	
-	# 确保tooltip不超出屏幕
 	var viewport_size = get_viewport_rect().size
 	var tooltip_size = tooltip_panel.size
 	

@@ -79,11 +79,43 @@ var session_kills: int = 0  # 局内击杀数，每局重置
 var session_gold: int = 0  # 局内获得金币，每局重置
 
 func _ready() -> void:
+	# 设置全局 Tooltip 样式
+	_setup_tooltip_theme()
+	
 	# 初始化对象池，防止频繁创建销毁音频节点
 	for i in range(POOL_SIZE):
 		var player = AudioStreamPlayer.new()
 		add_child(player)
 		pool.append(player)
+
+func _setup_tooltip_theme() -> void:
+	"""设置全局 Tooltip 主题样式（深色背景 + 暖白字体）"""
+	# 获取现有主题或创建新主题
+	var theme = get_tree().root.theme
+	if theme == null:
+		theme = Theme.new()
+	
+	# TooltipPanel 背景样式
+	var panel_style = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.06, 0.06, 0.08, 0.98)
+	panel_style.set_corner_radius_all(6)
+	panel_style.set_border_width_all(1)
+	panel_style.border_color = Color(0.55, 0.48, 0.2, 0.8)
+	panel_style.content_margin_left = 10
+	panel_style.content_margin_top = 6
+	panel_style.content_margin_right = 10
+	panel_style.content_margin_bottom = 6
+	panel_style.shadow_color = Color(0, 0, 0, 0.5)
+	panel_style.shadow_size = 4
+	theme.set_stylebox("panel", "TooltipPanel", panel_style)
+	
+	# TooltipLabel 字体颜色和大小
+	theme.set_color("font_color", "TooltipLabel", Color(0.93, 0.9, 0.82, 1))
+	theme.set_font_size("font_size", "TooltipLabel", 16)
+	
+	# 应用到场景树根节点
+	get_tree().root.theme = theme
+	print("[Global] 全局 Tooltip 主题已设置")
 
 func _process(delta: float) -> void:
 	# P4-1: 处理切换冷却计时器

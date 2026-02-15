@@ -545,12 +545,14 @@ func _update_player_info(player_id: String) -> void:
 	# === 左列：属性数值 ===
 	var stats_text = ""
 	stats_text += "生命值: %d\n" % int(config.get("health", 0))
-	stats_text += "Q技能消耗: %d\n" % int(config.get("skill_q_cost", 0))
-	stats_text += "E技能消耗: %d\n" % int(config.get("skill_e_cost", 0))
-	stats_text += "能量恢复: %.1f/秒\n" % config.get("energy_regen", 0)
-	stats_text += "最大能量: %d\n" % int(config.get("max_energy", 0))
+	stats_text += "生命恢复: %.1f/秒\n" % config.get("health_regen", 0)
 	stats_text += "最大护甲: %d\n" % int(config.get("max_armor", 0))
-	stats_text += "移动速度: %d" % int(config.get("base_speed", 0))
+	stats_text += "移动速度: %d\n" % int(config.get("base_speed", 0))
+	stats_text += "最大能量: %d\n" % int(config.get("max_energy", 0))
+	stats_text += "初始能量: %d\n" % int(config.get("initial_energy", 0))
+	stats_text += "能量恢复: %.1f/秒\n" % config.get("energy_regen", 0)
+	stats_text += "Q技能消耗: %d\n" % int(config.get("skill_q_cost", 0))
+	stats_text += "E技能消耗: %d" % int(config.get("skill_e_cost", 0))
 	
 	var final_desc = config.get("description", "")
 	if final_desc != "" and str(final_desc) != "0":

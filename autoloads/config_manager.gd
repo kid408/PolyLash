@@ -75,7 +75,7 @@ const PLAYER_CONFIG = CONFIG_DIR + "player/player_config.csv"
 const PLAYER_VISUAL = CONFIG_DIR + "player/player_visual.csv"
 const PLAYER_WEAPONS = CONFIG_DIR + "player/player_weapons.csv"
 const PLAYER_SKILL_BINDINGS = CONFIG_DIR + "player/player_skill_bindings.csv"
-const SKILL_PARAMS = CONFIG_DIR + "player/skill_params.csv"
+const SKILL_PARAMS = CONFIG_DIR + "player/skill_params_wide.csv"
 const PLAYER_AVAILABLE_WEAPONS = CONFIG_DIR + "player/player_available_weapons.csv"
 const ENEMY_CONFIG = CONFIG_DIR + "enemy/enemy_config.csv"
 const ENEMY_VISUAL = CONFIG_DIR + "enemy/enemy_visual.csv"
@@ -126,7 +126,7 @@ func load_all_configs() -> void:
 	player_weapon_configs = load_csv_as_dict(PLAYER_WEAPONS, "player_id")
 	player_skill_bindings = load_csv_as_dict(PLAYER_SKILL_BINDINGS, "player_id")
 	player_available_weapons = load_csv_as_dict(PLAYER_AVAILABLE_WEAPONS, "player_id")
-	skill_params = load_skill_params_long_format(SKILL_PARAMS)
+	skill_params = load_skill_params_wide_format(SKILL_PARAMS)
 	
 	# 敌人配置
 	enemy_configs = load_csv_as_dict(ENEMY_CONFIG, "enemy_id")
@@ -162,9 +162,9 @@ func load_all_configs() -> void:
 # CSV 加载方法
 # ============================================================================
 
-func load_skill_params_long_format(path: String) -> Dictionary:
+func load_skill_params_wide_format(path: String) -> Dictionary:
 	"""
-	加载长表格式的 skill_params CSV 文件
+	加载宽表格式的 skill_params CSV 文件
 	
 	参数:
 	- path: CSV 文件路径
@@ -173,14 +173,15 @@ func load_skill_params_long_format(path: String) -> Dictionary:
 	- Dictionary: {skill_id: {param_name: param_value, ...}, ...}
 	
 	CSV 格式:
-	- 第一行: 列名 (skill_id, param_name, param_value, description)
+	- 第一行: 列名 (skill_id, energy_cost, cooldown, ..., param1, param1_note, ...)
 	- 第二行: 注释行（第一列为 -1）
-	- 第三行及以后: 数据行，每行一个参数
+	- 第三行及以后: 数据行，每行一个技能
 	
-	说明:
-	- 自动将数值字符串转换为 float 或 int
-	- 重复的 skill_id + param_name 使用最后出现的值，输出警告
-	- 空 skill_id 或列数不足的行会被跳过
+	通用列（列名即变量名）: energy_cost, cooldown, fixed_segment_length, dash_speed,
+	  energy_per_10px, energy_threshold_distance, energy_scale_multiplier, base_line_duration
+	描述列: desc_q_line, desc_q_circle, desc_e
+	扩展列: param1~param10 + param1_note~param10_note
+	  note格式: "中文说明(变量名)" — 括号内的英文名作为字典key
 	"""
 	var result: Dictionary = {}
 	var file = FileAccess.open(path, FileAccess.READ)
@@ -192,10 +193,15 @@ func load_skill_params_long_format(path: String) -> Dictionary:
 	var headers: PackedStringArray = []
 	var line_num: int = 0
 	
-	# 查找各列的索引
-	var idx_skill_id: int = -1
-	var idx_param_name: int = -1
-	var idx_param_value: int = -1
+	# 通用列和描述列（列名直接作为key）
+	var direct_cols: Array[String] = [
+		"energy_cost", "cooldown", "fixed_segment_length", "dash_speed",
+		"energy_per_10px", "energy_threshold_distance", "energy_scale_multiplier",
+		"base_line_duration", "desc_q_line", "desc_q_circle", "desc_e"
+	]
+	
+	# 列名 -> 索引 映射
+	var col_indices: Dictionary = {}
 	
 	while not file.eof_reached():
 		var line = file.get_csv_line()
@@ -209,55 +215,69 @@ func load_skill_params_long_format(path: String) -> Dictionary:
 		if line_num == 1:
 			headers = line
 			for i in range(headers.size()):
-				var h = headers[i].strip_edges()
-				match h:
-					"skill_id":
-						idx_skill_id = i
-					"param_name":
-						idx_param_name = i
-					"param_value":
-						idx_param_value = i
+				col_indices[headers[i].strip_edges()] = i
 			continue
 		
-		# 第二行：如果第一列是 -1，跳过（注释行）
-		if line_num == 2 and line[0].strip_edges() == "-1":
+		# 第二行：注释行（第一列为 -1）
+		if line[0].strip_edges() == "-1":
 			continue
 		
-		# 数据行：需要至少包含 skill_id, param_name, param_value 三列
-		var min_columns = max(idx_skill_id, max(idx_param_name, idx_param_value)) + 1
-		if line.size() < min_columns:
-			push_warning("[ConfigManager] 警告: %s 第 %d 行列数不足，跳过" % [path, line_num])
-			continue
-		
-		var sid = line[idx_skill_id].strip_edges()
-		var pname = line[idx_param_name].strip_edges()
-		var pvalue_str = line[idx_param_value].strip_edges()
-		
-		# 跳过空 skill_id
+		var sid = line[0].strip_edges()
 		if sid == "":
 			continue
 		
-		# 转换数值
-		var pvalue = _convert_value(pvalue_str)
+		var params: Dictionary = {}
 		
-		# 检查重复
-		if result.has(sid) and result[sid].has(pname):
-			push_warning("[ConfigManager] 警告: 重复的 skill_id + param_name: %s.%s，使用最后出现的值" % [sid, pname])
+		# 读取通用列和描述列
+		for col_name in direct_cols:
+			if not col_indices.has(col_name):
+				continue
+			var idx = col_indices[col_name]
+			if idx >= line.size():
+				continue
+			var val_str = line[idx].strip_edges()
+			if val_str == "":
+				continue
+			params[col_name] = _convert_value(val_str)
 		
-		# 写入结果
-		if not result.has(sid):
-			result[sid] = {}
-		result[sid][pname] = pvalue
+		# 读取扩展列 param1~param10
+		for i in range(1, 11):
+			var param_col = "param%d" % i
+			var note_col = "param%d_note" % i
+			if not col_indices.has(param_col) or not col_indices.has(note_col):
+				continue
+			var param_idx = col_indices[param_col]
+			var note_idx = col_indices[note_col]
+			if param_idx >= line.size() or note_idx >= line.size():
+				continue
+			var val_str = line[param_idx].strip_edges()
+			var note_str = line[note_idx].strip_edges()
+			if val_str == "" or note_str == "":
+				continue
+			# 从 note 提取变量名: "中文说明(变量名)" -> "变量名"
+			var var_name = _extract_var_name(note_str)
+			if var_name != "":
+				params[var_name] = _convert_value(val_str)
+		
+		result[sid] = params
 	
 	file.close()
-	# 验证 desc_ 数据是否加载成功
 	var desc_count = 0
 	for sid in result:
 		for pname in result[sid]:
 			if str(pname).begins_with("desc_"):
 				desc_count += 1
-	print("[ConfigManager] 加载长表技能参数: ", path, " - ", result.size(), " 个技能, ", desc_count, " 条描述")
+	print("[ConfigManager] 加载宽表技能参数: ", path, " - ", result.size(), " 个技能, ", desc_count, " 条描述")
 	return result
+
+func _extract_var_name(note: String) -> String:
+	"""从 note 字符串提取变量名: '中文说明(var_name)' -> 'var_name'"""
+	var start = note.find("(")
+	var end = note.find(")")
+	if start >= 0 and end > start:
+		return note.substr(start + 1, end - start - 1).strip_edges()
+	# 如果没有括号，整个字符串作为变量名（纯英文的情况）
+	return note.strip_edges()
 
 func _convert_value(value_str: String):
 	"""

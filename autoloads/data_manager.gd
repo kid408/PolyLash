@@ -309,7 +309,7 @@ func generate_random_weapons_for_players(player_ids: Array) -> void:
 	
 	# 获取所有可用武器类型（排除默认武器 punch）
 	var available_types: Array[String] = []
-	var all_weapons = ConfigManager.get_all_weapon_stats()
+	var all_weapons = ConfigManager.weapon_configs
 	
 	for weapon_id in all_weapons.keys():
 		var weapon_type = _extract_weapon_type(weapon_id)
@@ -331,13 +331,12 @@ func generate_random_weapons_for_players(player_ids: Array) -> void:
 		random_weapons[player_id] = available_types[type_index]
 		type_index += 1
 	
-	print("[DataManager] 生成随机武器: %s" % str(random_weapons))
+	print("[DataManager] 生成随机武器: %s (可用类型: %d)" % [str(random_weapons), available_types.size()])
 
 func _extract_weapon_type(weapon_id: String) -> String:
-	"""从 weapon_id 提取武器类型 (例如 laser_1 -> laser)"""
-	var parts = weapon_id.split("_")
-	if parts.size() >= 2:
-		return parts[0]
+	"""从 weapon_id 提取武器类型
+	   ConfigManager.weapon_configs 的键已经是 base_id（如 punch, laser, heal_bolt）
+	   直接返回即可，不需要拆分"""
 	return weapon_id
 
 func get_random_weapon_for_player(player_id: String) -> String:
