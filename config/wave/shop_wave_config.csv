@@ -1,0 +1,7 @@
+wave_range_start,wave_range_end,item_count,reroll_cost,positive_weight,negative_weight,allow_duplicates,price_multiplier
+-1,波次结束,物品数量,刷新费用,正属性权重,负属性权重,允许重复,价格倍率
+1,3,3,35,85,15,0,0.7
+4,6,4,45,78,22,0,0.85
+7,10,5,55,70,30,1,1.0
+11,15,6,65,62,38,1,1.15
+16,999,6,80,55,45,1,1.3

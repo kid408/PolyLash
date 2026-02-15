@@ -670,7 +670,7 @@ func _update_weapon_container(player_id: String) -> void:
 		
 		# 获取武器详细配置（包含图标路径）
 		var weapon_id = "%s_1" % weapon_type
-		var weapon_stats = ConfigManager.get_weapon_stats(weapon_id)
+		var weapon_info = WeaponConfigLoader.get_weapon_info(weapon_id)
 		
 		# 创建 Panel 作为 Slot 容器（不使用 CenterContainer，直接左对齐）
 		var slot = Panel.new()
@@ -705,11 +705,20 @@ func _update_weapon_container(player_id: String) -> void:
 		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		
 		# 设置图标纹理
-		var icon_path = weapon_stats.get("icon_path", "")
+		var icon_path = weapon_info.get("icon_path", "")
+		print("[SelectionPanel] 武器 %s 图标路径: %s" % [weapon_type, icon_path])
 		if icon_path != "":
-			var texture = load(icon_path)
-			if texture:
-				icon_rect.texture = texture
+			if ResourceLoader.exists(icon_path):
+				var texture = load(icon_path)
+				if texture:
+					icon_rect.texture = texture
+					print("[SelectionPanel] ✓ 成功加载武器图标: %s" % weapon_type)
+				else:
+					printerr("[SelectionPanel] ✗ 加载纹理失败: %s" % icon_path)
+			else:
+				printerr("[SelectionPanel] ✗ 图标文件不存在: %s" % icon_path)
+		else:
+			printerr("[SelectionPanel] ✗ 武器 %s 没有 icon_path" % weapon_type)
 		
 		slot.add_child(icon_rect)
 		

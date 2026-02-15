@@ -1,0 +1,42 @@
+[gd_scene load_steps=5 format=3 uid="uid://d13ajfsg1un3p"]
+
+[ext_resource type="Script" uid="uid://jgcwdnw0j3td" path="res://scenes/weapons/weapon.gd" id="1_l3m2d"]
+[ext_resource type="Script" uid="uid://cyj3i1371tt7i" path="res://scenes/components/hitbox_component.gd" id="2_vln2f"]
+[ext_resource type="Script" uid="uid://v6gqfor36uur" path="res://scenes/weapons/melee/melee_behavior.gd" id="3_bsjs4"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_range"]
+radius = 300.0
+
+[node name="Weapon" type="Node2D"]
+script = ExtResource("1_l3m2d")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+
+[node name="HitboxComponent" type="Area2D" parent="."]
+unique_name_in_owner = true
+collision_layer = 4
+collision_mask = 8
+script = ExtResource("2_vln2f")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitboxComponent"]
+disabled = true
+
+[node name="RangeArea2" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 8
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RangeArea2"]
+shape = SubResource("CircleShape2D_range")
+
+[node name="CooldownTimer" type="Timer" parent="."]
+unique_name_in_owner = true
+one_shot = true
+
+[node name="WeaponBehavior" type="Node2D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_bsjs4")
+
+[connection signal="area_entered" from="RangeArea2" to="." method="_on_range_area_2_area_entered"]
+[connection signal="area_exited" from="RangeArea2" to="." method="_on_range_area_2_area_exited"]
+[connection signal="timeout" from="CooldownTimer" to="." method="_on_cooldown_timer_timeout"]
