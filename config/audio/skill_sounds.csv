@@ -1,0 +1,12 @@
+sound_id,sound_path,volume_db,min_pitch,max_pitch,cooldown,group,description,start_time,end_time,enabled
+-1,音效文件路径,音量(dB),最小音调,最大音调,冷却时间(秒),音效组,描述,起始时间(秒),截止时间(秒),是否启用
+skill_q_planning,res://assets/audio/skill/q_planning.wav,-3,1.0,1.0,0.5,,Q规划模式进入,0.0,0.0,1
+skill_q_draw_start,res://assets/audio/skill/q_draw_start.wav,-5,0.9,1.1,0.1,,画线开始,0.0,0.0,1
+skill_q_closure_detected,res://assets/audio/skill/q_closure_detected.wav,0,1.0,1.0,0.1,,闭合检测,0.0,0.0,1
+skill_q_closure_generic,res://assets/audio/skill/q_closure_generic.wav,0,0.9,1.1,0,,Q闭合执行(通用),0.0,0.0,1
+skill_q_open_execute,res://assets/audio/skill/q_open_execute.wav,-3,0.9,1.1,0,,Q开放路径执行,0.0,0.0,1
+skill_q_energy_depleted,res://assets/audio/skill/q_energy_depleted.wav,-3,1.0,1.0,0.5,,画线能量耗尽,0.0,0.0,1
+skill_e_instant,res://assets/audio/skill/e_instant.wav,0,0.9,1.1,0.1,,E技能瞬发,0.0,0.0,1
+skill_e_aoe,res://assets/audio/skill/e_aoe.wav,0,0.9,1.1,0.1,,E技能AOE,0.0,0.0,1
+skill_ult_activate,res://assets/audio/skill/ult_activate.wav,2,1.0,1.0,0.5,,终极技能激活,0.0,0.0,1
+skill_ult_deactivate,res://assets/audio/skill/ult_deactivate.wav,0,1.0,1.0,0.5,,终极技能结束,0.0,0.0,1

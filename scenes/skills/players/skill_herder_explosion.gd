@@ -78,7 +78,7 @@ func _perform_explosion() -> void:
 	Global.on_camera_shake.emit(10.0, 0.3)
 	
 	# 播放音效
-	Global.play_player_explosion()
+	SoundManager.play("player_explosion")
 	
 	# 创建视觉效果
 	_create_explosion_visual(explosion_radius)

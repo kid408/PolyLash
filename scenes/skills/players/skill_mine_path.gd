@@ -535,7 +535,7 @@ func _start_dash_sequence() -> void:
 			dash_hitbox.setup(dash_base_damage, false, dash_knockback, skill_owner)
 	
 	# 播放音效
-	Global.play_player_dash()
+	SoundManager.play("player_dash")
 	
 	# 开始冷却
 	start_cooldown()

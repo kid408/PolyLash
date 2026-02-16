@@ -566,8 +566,14 @@ func take_damage(raw_amount: float) -> void:
 	
 	print("[PlayerBase] 受到伤害: raw=%d, final=%d, 当前血量=%d" % [raw_amount, final_damage, health_component.current_health])
 	
+	# 玩家受击音效
+	SoundManager.play("player_hurt")
+	
 	if armor > 0:
 		armor -= 1
+		# 护甲破碎音效（护甲层数减少时播放）
+		if armor == 0:
+			SoundManager.play("player_armor_break")
 		Global.spawn_floating_text(global_position, "Armor Crack!", Color.YELLOW)
 		armor_changed.emit(armor)
 		# 护甲破碎时的轻微反馈
@@ -623,6 +629,7 @@ func _trigger_soul_attach_on_hit() -> void:
 	
 	if hit_count > 0:
 		# 播放反击特效
+		SoundManager.play("bond_soul_attach")
 		Global.on_camera_shake.emit(5.0, 0.15)
 		Global.spawn_floating_text(global_position, "SOUL ATTACH!", Color(2.0, 0.5, 2.0))
 		print("[PlayerBase] [P4-4] 灵魂附着命中 %d 个敌人" % hit_count)
@@ -631,6 +638,7 @@ func apply_knockback_self(force: Vector2) -> void:
 	# P1-2: 霸体机制 - 画图时免疫击退
 	if _is_drawing_active() and BondManager.has_mechanic("super_armor"):
 		print("[PlayerBase] [P1-2] 触发霸体，免疫击退（仍然受到伤害）")
+		SoundManager.play("super_armor_trigger")
 		Global.spawn_floating_text(global_position, "SUPER ARMOR!", Color.ORANGE)
 		# 仍然播放受击反馈，但不应用击退
 		Global.on_camera_shake.emit(3.0, 0.08)
@@ -646,6 +654,7 @@ func consume_energy(amount: float) -> bool:
 		update_ui_signals()
 		return true
 	else:
+		SoundManager.play("player_energy_low")
 		Global.spawn_floating_text(global_position, "No Energy!", Color.RED)
 		return false
 
@@ -653,6 +662,7 @@ func consume_energy(amount: float) -> bool:
 func gain_energy(amount: float) -> void:
 	energy = min(energy + amount, max_energy)
 	update_ui_signals()
+	SoundManager.play("player_energy_gain")
 	Global.spawn_floating_text(global_position, "+%d Energy" % amount, Color.CYAN)
 
 # 获得经验值 - 使用 Global.session_xp（局内累积）
@@ -660,6 +670,7 @@ func add_xp(amount: int) -> void:
 	Global.add_session_xp(amount)  # 直接更新 Global 的 session_xp
 	xp = Global.session_xp  # 同步本地变量（兼容性）
 	xp_changed.emit(Global.session_xp)
+	SoundManager.play("player_level_up")
 	Global.spawn_floating_text(global_position + Vector2(20, -10), "+%d XP" % amount, Color.MEDIUM_PURPLE)
 
 # 获得金币 - 使用 DataManager（局外持久化）
@@ -761,7 +772,7 @@ func _on_death() -> void:
 	print("[PlayerBase] ========== 玩家死亡 ==========")
 	print("[PlayerBase] 当前血量: %d" % health_component.current_health)
 	
-	Global.play_player_death()
+	SoundManager.play("player_death")
 	visuals.visible = false
 	# 简单的死亡粒子生成
 	var emitter = CPUParticles2D.new()

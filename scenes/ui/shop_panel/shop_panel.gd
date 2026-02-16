@@ -68,6 +68,7 @@ func show_shop(wave_number: int) -> void:
 	
 	# 显示面板
 	visible = true
+	SoundManager.play("ui_panel_open")
 	
 	# 暂停游戏
 	get_tree().paused = true
@@ -76,6 +77,7 @@ func hide_shop() -> void:
 	"""隐藏商店"""
 	print("[ShopPanel] 隐藏商店")
 	
+	SoundManager.play("ui_panel_close")
 	visible = false
 	
 	# 恢复游戏
@@ -154,6 +156,7 @@ func _on_card_purchase_requested(card_index: int) -> void:
 func _on_item_purchased(item_id: String, index: int) -> void:
 	"""物品购买成功"""
 	print("[ShopPanel] 物品购买成功: item_id=%s, index=%d" % [item_id, index])
+	SoundManager.play("ui_purchase")
 	
 	# 更新卡片状态
 	if index >= 0 and index < item_cards.size():
@@ -172,7 +175,7 @@ func _on_shop_rerolled() -> void:
 func _on_purchase_failed(reason: String) -> void:
 	"""购买失败"""
 	print("[ShopPanel] 购买失败: %s" % reason)
-	# TODO: 显示错误提示
+	SoundManager.play("ui_error")
 
 func _on_gold_changed(new_gold: int) -> void:
 	"""金币变化"""
@@ -182,10 +185,12 @@ func _on_gold_changed(new_gold: int) -> void:
 func _on_reroll_button_pressed() -> void:
 	"""刷新按钮被点击"""
 	print("[ShopPanel] 刷新按钮被点击")
+	SoundManager.play("ui_click")
 	ShopManager.reroll_shop()
 
 func _on_next_wave_button_pressed() -> void:
 	"""下一波按钮被点击"""
 	print("[ShopPanel] 下一波按钮被点击")
+	SoundManager.play("ui_click")
 	hide_shop()
 	next_wave_requested.emit()

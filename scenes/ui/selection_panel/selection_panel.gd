@@ -483,6 +483,7 @@ func _generate_selected_slots() -> void:
 
 func _on_player_button_pressed(player_id: String) -> void:
 	print("[SelectionPanel] === 开始处理角色点击: %s ===" % player_id)
+	SoundManager.play("ui_char_select")
 	preview_player_id = player_id
 	
 	# 获取该角色可用武器
@@ -805,6 +806,7 @@ func _clear_weapon_container() -> void:
 
 func _on_weapon_button_pressed(weapon_type: String) -> void:
 	print("[SelectionPanel] 武器按钮点击: %s (当前预览角色: %s)" % [weapon_type, preview_player_id])
+	SoundManager.play("ui_tab_switch")
 	preview_weapon_type = weapon_type
 	
 	# 更新武器按钮高亮 - 使用 StyleBox 边框
@@ -1004,6 +1006,7 @@ func _update_continue_button_state() -> void:
 
 func _on_upgrade_pressed() -> void:
 	"""打开角色强化界面"""
+	SoundManager.play("ui_click")
 	# 先保存当前选择
 	_save_selection_cache()
 	
@@ -1031,6 +1034,7 @@ func _on_upgrade_pressed() -> void:
 func _on_warehouse_pressed() -> void:
 	"""打开仓库界面"""
 	print("[SelectionPanel] 打开仓库")
+	SoundManager.play("ui_click")
 	
 	# 加载仓库UI场景
 	var warehouse_scene = load("res://scenes/ui/warehouse_ui.tscn")
@@ -1043,9 +1047,12 @@ func _on_warehouse_pressed() -> void:
 func _on_continue_pressed() -> void:
 	if selected_players.size() == 0:
 		print("[SelectionPanel] 请至少选择一个角色")
+		SoundManager.play("ui_error")
 		# 显示提示信息
 		_show_selection_hint("请至少选择一个角色！")
 		return
+	
+	SoundManager.play("ui_click")
 	
 	# 保存已选角色缓存到本地
 	_save_selection_cache()

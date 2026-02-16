@@ -61,6 +61,7 @@ func show_upgrades(tier: int) -> void:
 	# 显示UI
 	visible = true
 	Global.game_paused = true
+	SoundManager.play("ui_panel_open")
 	
 	print("[UpgradeSelectionUI] UI shown, game paused")
 
@@ -102,6 +103,7 @@ func _on_option_selected(index: int) -> void:
 	# 应用升级
 	var result = UpgradeManager.apply_upgrade(attribute_id, chest_tier)
 	print("[UpgradeSelectionUI] 升级结果: %s" % str(result))
+	SoundManager.play("ui_upgrade_select")
 	
 	# 发送信号
 	upgrade_selected.emit(attribute_id)
@@ -112,6 +114,7 @@ func _on_option_selected(index: int) -> void:
 	print("[UpgradeSelectionUI] UI已隐藏，游戏继续")
 
 func hide_ui() -> void:
+	SoundManager.play("ui_panel_close")
 	visible = false
 	Global.game_paused = false
 	available_upgrades.clear()

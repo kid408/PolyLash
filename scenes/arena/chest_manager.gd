@@ -325,6 +325,7 @@ func _instantiate_chest(chest_data: Dictionary) -> void:
 	
 	add_child(chest)
 	active_chests[chest_id] = chest
+	SoundManager.play("chest_spawn")
 	
 	# print("[ChestManager] 实例化宝箱 ID:%d, 等级:%d, 位置:%v" % [chest_id, chest_tier, chest_pos])
 

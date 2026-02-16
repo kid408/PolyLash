@@ -1,0 +1,16 @@
+sound_id,sound_path,volume_db,min_pitch,max_pitch,cooldown,group,description,start_time,end_time,enabled
+-1,音效文件路径,音量(dB),最小音调,最大音调,冷却时间(秒),音效组,描述,起始时间(秒),截止时间(秒),是否启用
+enemy_hit,res://assets/audio/EnemyHit.wav,-8,0.9,1.2,0.02,,敌人受击,0.0,0.0,1
+enemy_death,res://assets/audio/pop_squish.wav,-10,0.9,1.4,0,,敌人死亡,0.0,0.0,1
+enemy_charge_warning,res://assets/audio/combat/charge_warning.wav,-3,1.0,1.0,0.5,,冲锋预警,0.0,0.0,1
+enemy_charge,res://assets/audio/combat/charge.wav,0,0.9,1.1,0.3,,冲锋,0.0,0.0,1
+crit_hit,res://assets/audio/combat/crit_hit.wav,2,0.9,1.1,0.05,,暴击,0.0,0.0,1
+loop_kill,res://assets/audio/magic_chord.wav,5,0.6,0.8,0,,闭环绞杀,0.0,0.0,1
+player_explosion,res://assets/audio/magical_explosion.wav,2,1.0,1.0,0.1,,爆炸,0.0,0.0,1
+debuff_burn,res://assets/audio/combat/debuff_burn.wav,-5,0.9,1.1,0.3,debuff,燃烧,0.0,0.0,1
+debuff_curse,res://assets/audio/combat/debuff_curse.wav,-5,0.9,1.1,0.3,debuff,诅咒,0.0,0.0,1
+debuff_poison,res://assets/audio/combat/debuff_poison.wav,-5,0.9,1.1,0.3,debuff,中毒,0.0,0.0,1
+debuff_slow,res://assets/audio/combat/debuff_slow.wav,-5,0.9,1.1,0.3,debuff,减速,0.0,0.0,1
+debuff_freeze,res://assets/audio/combat/debuff_freeze.wav,-5,0.9,1.1,0.3,debuff,冰冻,0.0,0.0,1
+debuff_stun,res://assets/audio/combat/debuff_stun.wav,-5,0.9,1.1,0.3,debuff,眩晕,0.0,0.0,1
+poison_pool_spawn,res://assets/audio/combat/poison_pool.wav,-3,0.9,1.1,0.5,,毒池生成,0.0,0.0,1

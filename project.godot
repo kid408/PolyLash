@@ -18,6 +18,7 @@ config/icon="uid://b02x7h4bntic6"
 [autoload]
 
 ConfigManager="*res://autoloads/config_manager.gd"
+SoundManager="*res://autoloads/sound_manager.gd"
 Global="*res://autoloads/global.gd"
 DataManager="*res://autoloads/data_manager.gd"
 UpgradeManager="*res://autoloads/upgrade_manager.gd"

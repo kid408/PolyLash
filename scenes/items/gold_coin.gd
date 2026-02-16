@@ -146,15 +146,15 @@ func _collect_coin(player: Node2D) -> void:
 	# 标记为已拾取
 	is_collected = true
 	
+	# 播放金币拾取音效
+	SoundManager.play("gold_pickup")
+	
 	# 给予金币
 	if player.has_method("add_gold"):
 		player.add_gold(gold_amount)
 		print("[GoldCoin] ✅ 拾取金币成功: %d" % gold_amount)
 	else:
 		print("[GoldCoin] ⚠️ 玩家没有 add_gold 方法")
-	
-	# 播放拾取音效（如果有）
-	# Global.play_sfx(...)
 	
 	# 销毁金币
 	print("[GoldCoin] 调用 queue_free()")

@@ -63,6 +63,7 @@ func show_screen() -> void:
 # 返回按钮点击
 func _on_return_button_pressed() -> void:
 	print("[GameOverScreen] 返回大厅")
+	SoundManager.play("ui_click")
 	
 	# 恢复游戏状态
 	get_tree().paused = false

@@ -458,6 +458,7 @@ func _state_chase(delta: float) -> void:
 func start_charge_sequence() -> void:
 	current_ai_state = AIState.PREPARING
 	ai_timer = charge_prep_time
+	SoundManager.play("enemy_charge_warning")
 	
 	# 锁定冲锋方向 (归一化！)
 	charge_vector = global_position.direction_to(Global.player.global_position).normalized()
@@ -501,6 +502,7 @@ func _state_preparing(delta: float) -> void:
 func enter_charge_state() -> void:
 	current_ai_state = AIState.CHARGING
 	ai_timer = charge_duration
+	SoundManager.play("enemy_charge")
 	
 	# 恢复视觉
 	visuals.position = Vector2.ZERO
@@ -662,6 +664,10 @@ func apply_status(type: String, duration: float, value: float = 0, stacks: int =
 			value,
 			stacks
 		])
+		
+		# 播放异常状态音效
+		if type in ["burn", "curse", "poison", "slow", "freeze", "stun"]:
+			SoundManager.play("debuff_" + type)
 		
 		# 应用初始效果
 		_apply_status_initial_effect(type, value)
@@ -899,7 +905,7 @@ func destroy_enemy() -> void:
 	if Global.player and Global.player.has_method("on_enemy_killed"):
 		Global.player.on_enemy_killed(self)
 	
-	Global.play_enemy_death()
+	SoundManager.play("enemy_death")
 	spawn_explosion_safe()
 	# 增强打击感：敌人死亡时的反馈
 	Global.frame_freeze(0.04, 0.3)
@@ -1024,4 +1030,5 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 	
 	life_timer.start()
 	
+	SoundManager.play("poison_pool_spawn")
 	Global.spawn_floating_text(pos, "TOXIC!", Color(0.5, 1.0, 0.5))

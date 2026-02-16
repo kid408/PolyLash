@@ -147,6 +147,7 @@ func _activate() -> void:
 	remaining_time = duration
 	
 	print("[SkillUltimate] 激活大招: %s" % ult_name)
+	SoundManager.play("skill_ult_activate")
 	
 	# 添加临时羁绊标签
 	if bonus_bond_tag != "":
@@ -176,6 +177,7 @@ func deactivate() -> void:
 	remaining_time = 0.0
 	
 	print("[SkillUltimate] 停用大招: %s" % ult_name)
+	SoundManager.play("skill_ult_deactivate")
 	
 	# 移除临时羁绊标签（安全检查）
 	if bonus_bond_tag != "" and BondManager:

@@ -1,0 +1,14 @@
+sound_id,sound_path,volume_db,min_pitch,max_pitch,cooldown,group,description,start_time,end_time,enabled
+-1,音效文件路径,音量(dB),最小音调,最大音调,冷却时间(秒),音效组,描述,起始时间(秒),截止时间(秒),是否启用
+ui_click,res://assets/audio/ui/click.wav,-5,0.95,1.05,0.05,,按钮点击,0.0,0.0,1
+ui_hover,res://assets/audio/ui/hover.wav,-10,0.9,1.1,0.03,,按钮悬停,0.0,0.0,1
+ui_panel_open,res://assets/audio/ui/panel_open.wav,-3,0.95,1.05,0.1,,面板打开,0.0,0.0,1
+ui_panel_close,res://assets/audio/ui/panel_close.wav,-3,0.95,1.05,0.1,,面板关闭,0.0,0.0,1
+ui_purchase,res://assets/audio/ui/purchase.wav,0,1.0,1.0,0.2,,商店购买,0.0,0.0,1
+ui_upgrade_select,res://assets/audio/ui/upgrade_select.wav,0,0.95,1.05,0.1,,升级选择,0.0,0.0,1
+ui_error,res://assets/audio/ui/error.wav,-5,1.0,1.0,0.2,,无效操作,0.0,0.0,1
+ui_pause,res://assets/audio/ui/pause.wav,-3,1.0,1.0,0.5,,暂停,0.0,0.0,1
+ui_resume,res://assets/audio/ui/resume.wav,-3,1.0,1.0,0.5,,恢复,0.0,0.0,1
+ui_game_start,res://assets/audio/ui/game_start.wav,0,1.0,1.0,1.0,,游戏开始,0.0,0.0,1
+ui_char_select,res://assets/audio/ui/char_select.wav,0,0.95,1.05,0.2,,角色选择确认,0.0,0.0,1
+ui_tab_switch,res://assets/audio/ui/tab_switch.wav,-8,0.9,1.1,0.05,,标签切换,0.0,0.0,1

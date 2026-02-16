@@ -635,7 +635,7 @@ func _start_dash_sequence() -> void:
 			dash_hitbox.setup(dash_base_damage, false, dash_knockback, skill_owner)
 	
 	# 播放音效（只播放一次）
-	Global.play_player_dash()
+	SoundManager.play("player_dash")
 	
 	# 开始冷却
 	start_cooldown()
@@ -1557,7 +1557,7 @@ func _trigger_geometry_kill_multiple(polygons: Array[PackedVector2Array]) -> voi
 		_perform_geometry_damage_no_shake(polygon_points)
 	
 	# 播放音效和camera shake（只执行一次）
-	Global.play_loop_kill_impact()
+	SoundManager.play("loop_kill")
 	Global.on_camera_shake.emit(20.0, 0.5)
 	
 	# ✅ 同步动画所有遮罩
@@ -1661,7 +1661,7 @@ func _trigger_geometry_kill_single(polygon_points: PackedVector2Array, z_offset:
 	var design_color = mask_result["design_color"]
 	
 	# 播放音效
-	Global.play_loop_kill_impact()
+	SoundManager.play("loop_kill")
 	
 	# 立即执行几何伤害
 	_perform_geometry_damage(polygon_points)

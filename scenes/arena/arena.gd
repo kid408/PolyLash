@@ -127,6 +127,7 @@ func _reset_game_state() -> void:
 
 func _on_chest_opened(chest: ChestSimple) -> void:
 	print("[Arena] Chest opened signal received, chest tier: %d" % chest.get_tier())
+	SoundManager.play("chest_open")
 	
 	# 保存宝箱引用
 	current_chest = chest
@@ -481,7 +482,7 @@ func _try_switch_to_next() -> void:
 func _play_invalid_switch_sound() -> void:
 	# 播放拒绝音效 - 使用现有的音效或静默
 	# 如果有 ui_reject.wav 则播放，否则使用 player_shatter 的变体
-	Global.play_sfx(Global.sfx_player_shatter, 1.5, 1.8, -15.0)
+	SoundManager.play("ui_error")
 
 # ============================================================================
 # 退出确认对话框
@@ -512,6 +513,7 @@ func _on_exit_cancelled() -> void:
 func _on_wave_completed(wave_number: int) -> void:
 	"""波次完成，显示商店"""
 	print("[Arena] 波次 %d 完成，显示商店" % wave_number)
+	SoundManager.play("wave_complete")
 	
 	# 暂停敌人生成
 	if spawner:
@@ -519,6 +521,7 @@ func _on_wave_completed(wave_number: int) -> void:
 	
 	# 显示商店
 	if shop_panel:
+		SoundManager.play("shop_open")
 		shop_panel.show_shop(wave_number + 1)
 	else:
 		printerr("[Arena] 错误: 找不到 ShopPanel 节点")
@@ -529,6 +532,8 @@ func _on_wave_completed(wave_number: int) -> void:
 func _on_shop_next_wave_requested() -> void:
 	"""商店关闭，开始下一波"""
 	print("[Arena] 商店关闭，开始下一波")
+	SoundManager.play("shop_close")
+	SoundManager.play("wave_start")
 	
 	# 恢复敌人生成
 	if spawner:
@@ -551,6 +556,8 @@ func _show_game_over_screen() -> void:
 	if game_over_screen:
 		print("[Arena] 结算界面已存在，跳过")
 		return
+	
+	SoundManager.play("game_over")
 	
 	# 实例化结算界面
 	print("[Arena] 实例化结算界面...")

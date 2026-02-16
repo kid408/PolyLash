@@ -21,6 +21,7 @@ func show_dialog() -> void:
 	print("[ExitConfirmDialog] show_dialog() called")
 	show()
 	is_visible_dialog = true
+	SoundManager.play("ui_pause")
 	# 暂停游戏
 	get_tree().paused = true
 
@@ -28,6 +29,7 @@ func _on_yes_pressed() -> void:
 	print("[ExitConfirmDialog] Yes button pressed")
 	if not is_visible_dialog:
 		return
+	SoundManager.play("ui_click")
 	# 恢复游戏
 	get_tree().paused = false
 	confirmed.emit()
@@ -38,6 +40,7 @@ func _on_no_pressed() -> void:
 	print("[ExitConfirmDialog] No button pressed")
 	if not is_visible_dialog:
 		return
+	SoundManager.play("ui_resume")
 	# 恢复游戏
 	get_tree().paused = false
 	cancelled.emit()

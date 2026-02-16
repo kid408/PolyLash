@@ -635,10 +635,12 @@ func _on_weapon_purchase_pressed(player_id: String) -> void:
 	
 	if DataManager.purchase_starting_weapon(player_id):
 		print("[CharacterUpgrade] 武器购买成功!")
+		SoundManager.play("ui_purchase")
 		_update_gold_display()
 		_generate_character_cards()
 	else:
 		print("[CharacterUpgrade] 武器购买失败 - 金币不足或已购买")
+		SoundManager.play("ui_error")
 
 # ============================================================================
 # 升级按钮事件
@@ -649,10 +651,12 @@ func _on_upgrade_pressed(player_id: String, attr_name: String) -> void:
 	
 	if DataManager.do_upgrade(player_id, attr_name):
 		print("[CharacterUpgrade] 升级成功!")
+		SoundManager.play("ui_purchase")
 		_update_gold_display()
 		_generate_character_cards()
 	else:
 		print("[CharacterUpgrade] 升级失败 - 金币不足或已满级")
+		SoundManager.play("ui_error")
 
 # ============================================================================
 # 返回按钮
@@ -660,4 +664,5 @@ func _on_upgrade_pressed(player_id: String, attr_name: String) -> void:
 
 func _on_back_pressed() -> void:
 	print("[CharacterUpgrade] 返回角色选择")
+	SoundManager.play("ui_click")
 	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")

@@ -110,6 +110,7 @@ func _add_thorns_wall_effect(line_area: Area2D) -> void:
 		line_area.body_entered.connect(_on_thorns_wall_hit.bind(thorns_damage))
 	if not line_area.area_entered.is_connected(_on_thorns_wall_area_hit):
 		line_area.area_entered.connect(_on_thorns_wall_area_hit.bind(thorns_damage))
+	SoundManager.play("bond_thorns_wall")
 
 ## P2-2: 反伤墙碰撞处理（Body）
 func _on_thorns_wall_hit(body: Node2D, thorns_damage: float) -> void:
@@ -336,6 +337,7 @@ func _check_and_spawn_gold_trail(current_pos: Vector2) -> void:
 	
 	# 生成金币实体
 	Global.spawn_coin(current_pos, gold_amount)
+	SoundManager.play("bond_gold_trail")
 	print("[%s] [P1-4] 金币轨迹触发: 生成%d金币 at (%.0f, %.0f)" % [
 		skill_id,
 		gold_amount,
@@ -392,6 +394,7 @@ func _trigger_chain_reaction(polygon: PackedVector2Array, main_damage: int) -> v
 		outside_enemies.size(),
 		chain_damage
 	])
+	SoundManager.play("bond_chain_reaction")
 	
 	# 对每个敌人造成伤害并播放特效
 	for enemy in outside_enemies:
@@ -444,6 +447,7 @@ func _apply_permanent_cage(area: Area2D, polygon: PackedVector2Array) -> void:
 		return
 	
 	print("[%s] [P3-2] 永久牢笼激活" % skill_id)
+	SoundManager.play("bond_permanent_cage")
 	
 	# 视觉反馈
 	var center = _calculate_polygon_center(polygon)
@@ -574,6 +578,7 @@ func _apply_small_shape_crit(polygon: PackedVector2Array, base_damage: float) ->
 	# 检查是否触发暴击
 	if area < AREA_THRESHOLD:
 		var crit_damage = base_damage * 2.0
+		SoundManager.play("bond_small_shape_crit")
 		
 		print("[%s] [P3-3] 图形面积: %.2f (阈值: %.2f) -> 暴击触发! 伤害: %.0f -> %.0f" % [
 			skill_id,
@@ -720,6 +725,7 @@ func _enter_planning_mode() -> void:
 	
 	print("[%s] ===== 进入规划模式 ===== 起点: %s, line_2d有效: %s" % [skill_id, start_pos, is_instance_valid(line_2d)])
 	
+	SoundManager.play("skill_q_planning")
 	Engine.time_scale = 0.1
 
 ## 退出规划模式并执行技能
@@ -751,6 +757,12 @@ func _exit_planning_mode_and_execute() -> void:
 
 ## 执行闭合路径
 func _execute_closed_path() -> void:
+	# 播放角色专属 Q 闭合音效
+	if skill_owner and "player_id" in skill_owner:
+		SoundManager.play_character_q_closure(skill_owner.player_id)
+	else:
+		SoundManager.play("skill_q_closure_generic")
+	
 	# P0-3: 使用羁绊加成后的容错距离
 	var tolerance = _get_closure_tolerance()
 	var polygons = PolygonUtils.find_all_closing_polygons(path_points, tolerance)
@@ -773,6 +785,8 @@ func _execute_open_path() -> void:
 	if path_points.size() < 2:
 		print("[%s] 路径点不足，跳过开放路径" % skill_id)
 		return
+	
+	SoundManager.play("skill_q_open_execute")
 	
 	# 将密集的小路径点合并为较长的线段（每段约 80-120px）
 	# 这样墙体更宽、更容易阻挡敌人，同时减少节点数量
@@ -805,6 +819,7 @@ func _execute_open_path() -> void:
 ## 开始划线
 func _start_drawing() -> void:
 	is_drawing = true
+	SoundManager.play("skill_q_draw_start")
 	var mouse_pos = skill_owner.get_global_mouse_position()
 	
 	# 清空之前的路径，重新从鼠标位置开始
@@ -871,6 +886,7 @@ func _continue_drawing() -> void:
 		else:
 			# 能量不足
 			is_drawing = false
+			SoundManager.play("skill_q_energy_depleted")
 			if not has_shown_no_energy_hint:
 				has_shown_no_energy_hint = true
 				Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
@@ -968,6 +984,7 @@ func _check_intersection_and_closure() -> void:
 		
 		if _segments_intersect(latest_seg, old_seg):
 			has_closure = true
+			SoundManager.play("skill_q_closure_detected")
 			return
 	
 	# 检查距离闭合（使用羁绊加成后的容错距离）
@@ -975,6 +992,7 @@ func _check_intersection_and_closure() -> void:
 		var current_point = path_points[path_points.size() - 1]
 		if current_point.distance_to(path_points[0]) < tolerance:
 			has_closure = true
+			SoundManager.play("skill_q_closure_detected")
 			return
 
 ## 检测两条线段是否相交

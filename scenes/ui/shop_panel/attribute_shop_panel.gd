@@ -81,10 +81,12 @@ func show_shop(wave_number: int) -> void:
 	
 	# 显示面板
 	visible = true
+	SoundManager.play("ui_panel_open")
 
 func hide_shop() -> void:
 	"""隐藏属性商店"""
 	print("[AttributeShopPanel] 隐藏属性商店")
+	SoundManager.play("ui_panel_close")
 	visible = false
 	shop_closed.emit()
 
@@ -212,6 +214,7 @@ func _on_card_purchase_requested(card_index: int) -> void:
 	# 检查金币
 	if gold < price:
 		print("[AttributeShopPanel] 金币不足: 需要=%d, 拥有=%d" % [price, gold])
+		SoundManager.play("ui_error")
 		return
 	
 	# 扣除金币
@@ -231,6 +234,7 @@ func _on_card_purchase_requested(card_index: int) -> void:
 	
 	# 发送信号
 	attribute_purchased.emit(attr.attribute_id)
+	SoundManager.play("ui_purchase")
 	
 	print("[AttributeShopPanel] 购买成功: %s" % attr.display_name)
 
@@ -336,7 +340,10 @@ func _on_reroll_button_pressed() -> void:
 	
 	if gold < reroll_cost:
 		print("[AttributeShopPanel] 金币不足，无法刷新")
+		SoundManager.play("ui_error")
 		return
+	
+	SoundManager.play("ui_click")
 	
 	# 扣除金币
 	DataManager.add_gold(-reroll_cost)
@@ -351,6 +358,7 @@ func _on_reroll_button_pressed() -> void:
 func _on_close_button_pressed() -> void:
 	"""关闭按钮被点击"""
 	print("[AttributeShopPanel] 关闭按钮被点击")
+	SoundManager.play("ui_click")
 	hide_shop()
 
 func _on_gold_changed(new_gold: int) -> void:

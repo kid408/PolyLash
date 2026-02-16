@@ -66,9 +66,6 @@ var upgrade_attributes: Dictionary = {}          # 升级属性配置 (attribute
 var chest_configs: Dictionary = {}               # 宝箱配置 (tier -> config)
 var wave_chest_configs: Array[Dictionary] = []   # 波次宝箱配置 (数组，按波次范围)
 
-# 音效系统配置
-var sound_configs: Dictionary = {}               # 音效配置 (sound_id -> config)
-
 # 配置文件路径
 const CONFIG_DIR = "res://config/"
 const PLAYER_CONFIG = CONFIG_DIR + "player/player_config.csv"
@@ -90,7 +87,6 @@ const MAP_CONFIG = CONFIG_DIR + "system/map_config.csv"
 const UPGRADE_ATTRIBUTES = CONFIG_DIR + "item/upgrade_attributes.csv"
 const CHEST_CONFIG = CONFIG_DIR + "item/chest_config.csv"
 const WAVE_CHEST_CONFIG = CONFIG_DIR + "wave/wave_chest_config.csv"
-const SOUND_CONFIG = CONFIG_DIR + "system/sound_config.csv"
 
 # ============================================================================
 # 初始化
@@ -149,9 +145,6 @@ func load_all_configs() -> void:
 	# 宝箱系统配置
 	chest_configs = load_csv_as_dict(CHEST_CONFIG, "chest_tier")
 	wave_chest_configs = load_csv_as_array(WAVE_CHEST_CONFIG)
-	
-	# 音效配置
-	sound_configs = load_csv_as_dict(SOUND_CONFIG, "sound_id")
 	
 	# 全局配置 (key-value 格式)
 	game_config = _load_key_value_config(GAME_CONFIG)
@@ -566,12 +559,6 @@ func get_all_upgrade_attributes() -> Dictionary:
 
 func get_all_chest_configs() -> Dictionary:
 	return chest_configs
-
-func get_sound_config(sound_id: String) -> Dictionary:
-	return sound_configs.get(sound_id, {})
-
-func get_all_sound_configs() -> Dictionary:
-	return sound_configs
 
 # ============================================================================
 # 角色选择相关方法

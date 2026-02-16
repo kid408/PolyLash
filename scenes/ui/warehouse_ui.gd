@@ -195,6 +195,7 @@ func _on_slot_pressed(slot_index: int) -> void:
 	"""点击格子（预留接口，可用于道具使用/移除等）"""
 	var item_type = WarehouseManager.get_item_at_slot(slot_index)
 	if item_type > 0:
+		SoundManager.play("ui_click")
 		print("[WarehouseUI] 点击槽位 %d, 道具类型: %d" % [slot_index, item_type])
 		
 		# 如果是选择模式，发出信号并关闭
@@ -256,6 +257,7 @@ func _process(_delta: float) -> void:
 
 func _on_close_pressed() -> void:
 	"""关闭仓库UI"""
+	SoundManager.play("ui_click")
 	queue_free()
 	print("[WarehouseUI] 关闭仓库")
 

@@ -51,7 +51,7 @@ func _ready() -> void:
 	_create_visual_effects()
 	
 	# 播放音效
-	Global.play_player_explosion()
+	SoundManager.play("player_explosion")
 	
 	# 等待物理系统准备好
 	await get_tree().physics_frame

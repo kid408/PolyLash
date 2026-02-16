@@ -134,7 +134,7 @@ func _start_dash() -> void:
 		trail.start_trail()
 	
 	# 播放音效
-	Global.play_player_dash()
+	SoundManager.play("player_dash")
 	
 	# 开始冷却
 	start_cooldown()

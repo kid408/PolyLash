@@ -121,4 +121,5 @@ func set_affordable(affordable: bool) -> void:
 func _on_price_button_pressed() -> void:
 	"""购买按钮被点击"""
 	if not is_purchased:
+		SoundManager.play("ui_click")
 		purchase_requested.emit(card_index)

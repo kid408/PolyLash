@@ -201,6 +201,9 @@ func execute_skill(slot: String) -> void:
 		skill.skill_owner.max_energy if skill.skill_owner else 0.0,
 		skill.energy_cost
 	])
+	# E 技能播放通用音效
+	if slot == "e":
+		SoundManager.play("skill_e_instant")
 	skill.execute()
 
 ## 蓄力技能（持续按住）

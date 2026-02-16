@@ -1,0 +1,191 @@
+# 实现计划：PolyLash 音效系统
+
+## 概述
+
+分阶段实现 SoundManager 自动加载节点、CSV 配置文件、占位音频资源、游戏逻辑集成和旧代码迁移。每个任务构建在前一个任务之上，确保增量可验证。
+
+## 任务
+
+- [x] 1. 创建音频资源目录结构和占位文件
+  - [x] 1.1 创建子目录：`assets/audio/ui/`、`assets/audio/player/`、`assets/audio/combat/`、`assets/audio/skill/`、`assets/audio/skill/q_closure/`、`assets/audio/enemy/`、`assets/audio/environment/`
+    - 每个子目录中放置一个 `.gdignore` 占位（如果 Godot 需要）或直接创建占位音频
+    - _需求: 12.1_
+  - [x] 1.2 为所有新增音效创建占位音频文件（使用 `assets/audio/UI Pop.mp3` 作为模板，转换/复制为 .wav 格式）
+    - UI 音效：click.wav, hover.wav, panel_open.wav, panel_close.wav, purchase.wav, upgrade_select.wav, error.wav, pause.wav, resume.wav, game_start.wav, char_select.wav, tab_switch.wav
+    - 玩家音效：hurt.wav, armor_break.wav, energy_gain.wav, energy_low.wav, level_up.wav, gold_pickup.wav, switch_success.wav, switch_fail.wav, super_armor.wav
+    - 战斗音效：charge_warning.wav, charge.wav, crit_hit.wav, debuff_burn.wav, debuff_curse.wav, debuff_poison.wav, debuff_slow.wav, debuff_freeze.wav, debuff_stun.wav, poison_pool.wav
+    - 技能音效：q_planning.wav, q_draw_start.wav, q_closure_detected.wav, q_closure_generic.wav, q_open_execute.wav, q_energy_depleted.wav, e_instant.wav, e_aoe.wav, ult_activate.wav, ult_deactivate.wav
+    - 环境音效：wave_start.wav, wave_complete.wav, shop_open.wav, shop_close.wav, chest_spawn.wav, chest_open.wav, game_over.wav, bond_generic.wav, bond_chain.wav, bond_cage.wav, bond_soul.wav, bond_gold.wav, bond_thorns.wav, bond_crit.wav
+    - _需求: 12.2_
+  - [x] 1.3 为所有已启用角色创建 Q 闭合占位音频文件到 `assets/audio/skill/q_closure/` 目录
+    - 读取 `player_config.csv` 获取所有 player_id，为每个创建 `{player_id}.wav`
+    - _需求: 8.1, 12.2_
+
+- [x] 2. 创建分类 CSV 音效配置文件
+  - [x] 2.1 创建 `config/audio/` 目录和四个分类 CSV 文件
+    - `config/audio/ui_sounds.csv` - 按设计文档中的 ui_sounds.csv 示例创建
+    - `config/audio/combat_sounds.csv` - 按设计文档中的 combat_sounds.csv 示例创建
+    - `config/audio/skill_sounds.csv` - 按设计文档中的 skill_sounds.csv 示例创建
+    - `config/audio/environment_sounds.csv` - 按设计文档中的 environment_sounds.csv 示例创建（包含玩家音效、羁绊音效等）
+    - 所有 CSV 遵循项目标准格式：首行列名、第二行 `-1` 注释行、后续数据行
+    - _需求: 2.1, 2.2, 2.4_
+  - [x] 2.2 在 `player_config.csv` 末尾新增 `q_closure_sfx` 列
+    - 为每个已启用角色填入对应路径：`res://assets/audio/skill/q_closure/{player_id}.wav`
+    - 未启用角色留空
+    - _需求: 8.1_
+
+- [x] 3. 实现 SoundManager 核心（`autoloads/sound_manager.gd`）
+  - [x] 3.1 创建 SoundManager 基础结构
+    - 创建 `autoloads/sound_manager.gd`，继承 Node
+    - 实现 32 槽 AudioStreamPlayer 对象池（`_pool`、`_next_idx`）
+    - 在 `_ready()` 中初始化对象池
+    - 定义内部数据结构：`_sound_configs`、`_audio_cache`、`_cooldown_tracker`、`_group_map`
+    - _需求: 1.1, 1.2_
+  - [x] 3.2 实现 CSV 加载和音频预加载
+    - 在 `_ready()` 中调用 `ConfigManager.load_csv_as_dict()` 加载 4 个分类 CSV
+    - 合并所有分类配置到 `_sound_configs` 字典
+    - 遍历所有配置条目，使用 `load()` 预加载音频资源到 `_audio_cache`
+    - 构建 `_group_map`：遍历配置，将同一 `group` 的 sound_id 归组
+    - 对不存在的音频文件输出 `push_warning()` 并跳过
+    - _需求: 1.3, 1.4, 1.7_
+  - [x] 3.3 实现 `play(sound_id)` 核心播放方法
+    - 检查 sound_id 是否存在于 `_sound_configs`
+    - 检查冷却：比较当前时间与 `_cooldown_tracker[sound_id]` 的差值
+    - 如果 sound_id 属于某个 group，从 `_group_map` 中随机选取实际 sound_id
+    - 从 `_audio_cache` 获取 AudioStream
+    - 从对象池获取 AudioStreamPlayer，设置 stream、pitch_scale（随机范围）、volume_db
+    - 播放并记录冷却时间戳
+    - _需求: 3.1, 3.2, 3.3_
+  - [x] 3.4 实现分类播放方法和辅助方法
+    - `play_ui(sound_id)` / `play_combat(sound_id)` / `play_skill(sound_id)` / `play_environment(sound_id)` → 内部调用 `play()`
+    - `play_group(group)` → 从 `_group_map` 随机选取并播放
+    - `play_character_q_closure(player_id)` → 从 ConfigManager 获取 q_closure_sfx 路径，回退到通用音效
+    - `get_sound_config(sound_id)` / `has_sound(sound_id)`
+    - _需求: 3.4, 8.2, 8.3_
+
+- [x] 4. 检查点 - 验证 SoundManager 核心功能
+  - 确保 SoundManager 可以正确加载 CSV、预加载音频、播放音效
+  - 在 Godot 编辑器中将 SoundManager 注册为自动加载节点并测试
+  - 确保所有测试通过，如有问题请询问用户
+
+- [x] 5. 迁移 Global.gd 中的硬编码音效
+  - [x] 5.1 将现有音效参数迁移到 CSV 配置
+    - 确认 combat_sounds.csv 和 environment_sounds.csv 中已包含所有迁移音效的配置
+    - 验证 CSV 中的 volume_db、min_pitch、max_pitch 与 Global.gd 中的硬编码值一致：
+      - enemy_death: volume_db=-10, min_pitch=0.9, max_pitch=1.4
+      - loop_kill: volume_db=5, min_pitch=0.6, max_pitch=0.8
+      - player_death: volume_db=5, min_pitch=1.0, max_pitch=1.0
+      - player_dash: volume_db=-2, min_pitch=1.0, max_pitch=1.0
+      - player_explosion: volume_db=2, min_pitch=1.0, max_pitch=1.0
+    - _需求: 11.4_
+  - [x] 5.2 更新所有调用旧 `Global.play_*` 方法的代码
+    - `enemy.gd: destroy_enemy()` → `Global.play_enemy_death()` 改为 `SoundManager.play("enemy_death")`
+    - `player_base.gd: _on_death()` → `Global.play_player_death()` 改为 `SoundManager.play("player_death")`
+    - `skill_dash.gd` → `Global.play_player_dash()` 改为 `SoundManager.play("player_dash")`
+    - `skill_fire_path.gd` → `Global.play_player_dash()` 改为 `SoundManager.play("player_dash")`
+    - `skill_mine_path.gd` → `Global.play_player_dash()` 改为 `SoundManager.play("player_dash")`
+    - `skill_herder_loop.gd` → `Global.play_player_dash()` 改为 `SoundManager.play("player_dash")`，`Global.play_loop_kill_impact()` 改为 `SoundManager.play("loop_kill")`（2处）
+    - `skill_wind_path.gd` → `Global.play_player_dash()` 改为 `SoundManager.play("player_dash")`
+    - `explosion_area.gd` → `Global.play_player_explosion()` 改为 `SoundManager.play("player_explosion")`
+    - `skill_herder_explosion.gd` → `Global.play_player_explosion()` 改为 `SoundManager.play("player_explosion")`
+    - `arena.gd` → `Global.play_sfx(Global.sfx_player_shatter, 1.5, 1.8, -15.0)` 改为 `SoundManager.play("ui_error")`
+    - _需求: 11.3_
+  - [x] 5.3 清理 Global.gd 中的音效相关代码
+    - 移除 preload 变量：`sfx_enemy_pop`、`sfx_player_shatter`、`sfx_loop_kill`、`sfx_player_dash`、`sfx_player_explosion`
+    - 移除对象池相关代码：`POOL_SIZE`、`pool`、`next_idx`、`_ready()` 中的对象池初始化循环
+    - 移除所有播放方法：`play_sfx()`、`play_enemy_death()`、`play_loop_kill_impact()`、`play_player_death()`、`play_player_dash()`、`play_player_explosion()`
+    - _需求: 11.2_
+  - [x] 5.4 清理 ConfigManager.gd 中的旧音效配置
+    - 移除 `SOUND_CONFIG` 常量
+    - 移除 `sound_configs` 字典变量
+    - 移除 `load_all_configs()` 中的 `sound_configs = load_csv_as_dict(SOUND_CONFIG, "sound_id")` 行
+    - 移除 `get_sound_config()` 和 `get_all_sound_configs()` 方法
+    - _需求: 11.2_
+
+- [x] 6. 检查点 - 验证迁移完整性
+  - 确保所有旧的 `Global.play_*` 调用已替换
+  - 确保 Global.gd 中不再包含任何音效相关代码
+  - 确保游戏运行时所有迁移音效播放正常
+  - 确保所有测试通过，如有问题请询问用户
+
+- [x] 7. 集成玩家/角色音效
+  - [x] 7.1 在 `player_base.gd` 中集成玩家音效
+    - `take_damage()` → 添加 `SoundManager.play("player_hurt")`
+    - 护甲破碎时 → 添加 `SoundManager.play("player_armor_break")`
+    - `gain_energy()` → 添加 `SoundManager.play("player_energy_gain")`
+    - `consume_energy()` 能量不足时 → 添加 `SoundManager.play("player_energy_low")`
+    - `add_xp()` 升级时 → 添加 `SoundManager.play("player_level_up")`
+    - 超级护甲触发时 → 添加 `SoundManager.play("super_armor_trigger")`
+    - _需求: 5.1, 5.2, 5.3, 5.5, 5.6, 5.7, 5.11_
+  - [x] 7.2 在 `gold_coin.gd` 中集成金币拾取音效
+    - 金币被拾取时 → 添加 `SoundManager.play("gold_pickup")`
+    - _需求: 5.8_
+  - [x] 7.3 在 `arena.gd` 和 `global.gd` 中集成角色切换音效
+    - `switch_to_player_by_index()` 成功时 → 添加 `SoundManager.play("char_switch_success")`
+    - 切换失败（冷却/死亡）时 → 添加 `SoundManager.play("char_switch_fail")`
+    - _需求: 5.9, 5.10_
+
+- [x] 8. 集成战斗音效
+  - [x] 8.1 在 `enemy.gd` 中集成战斗音效
+    - `start_charge_sequence()` → 添加 `SoundManager.play("enemy_charge_warning")`
+    - `enter_charge_state()` → 添加 `SoundManager.play("enemy_charge")`
+    - `apply_status()` → 根据 status type 添加 `SoundManager.play("debuff_" + type)`
+    - `_spawn_poison_pool()` → 添加 `SoundManager.play("poison_pool_spawn")`
+    - _需求: 6.3, 6.4, 6.8, 6.9_
+  - [x] 8.2 在 `player_base.gd` 或相关战斗组件中集成暴击音效
+    - 暴击触发时 → 添加 `SoundManager.play("crit_hit")`
+    - _需求: 6.5_
+
+- [x] 9. 集成技能音效
+  - [x] 9.1 在 `skill_drawing_base.gd` 中集成 Q 技能音效
+    - `_enter_planning_mode()` → 添加 `SoundManager.play("skill_q_planning")`
+    - `_start_drawing()` → 添加 `SoundManager.play("skill_q_draw_start")`
+    - 闭合检测成功时（`has_closure` 变为 true）→ 添加 `SoundManager.play("skill_q_closure_detected")`
+    - `_execute_closed_path()` → 添加 `SoundManager.play_character_q_closure(skill_owner.player_id)`
+    - `_execute_open_path()` → 添加 `SoundManager.play("skill_q_open_execute")`
+    - 能量耗尽时 → 添加 `SoundManager.play("skill_q_energy_depleted")`
+    - _需求: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
+  - [x] 9.2 在 E 技能和 F 技能基类中集成音效
+    - E 技能施放时 → 添加 `SoundManager.play("skill_e_instant")` 或 `SoundManager.play("skill_e_aoe")`（根据技能类型）
+    - `skill_ultimate_base.gd: _activate()` → 添加 `SoundManager.play("skill_ult_activate")`
+    - `skill_ultimate_base.gd: deactivate()` → 添加 `SoundManager.play("skill_ult_deactivate")`
+    - _需求: 7.7, 7.8, 7.9_
+
+- [x] 10. 集成环境/游戏状态和羁绊音效
+  - [x] 10.1 在 `arena.gd` 中集成环境音效
+    - `_on_wave_completed()` → 添加 `SoundManager.play("wave_complete")`
+    - 波次开始时 → 添加 `SoundManager.play("wave_start")`
+    - `_on_shop_next_wave_requested()` → 添加 `SoundManager.play("shop_close")`
+    - 商店打开时 → 添加 `SoundManager.play("shop_open")`
+    - `_on_chest_opened()` → 添加 `SoundManager.play("chest_open")`
+    - 宝箱出现时 → 添加 `SoundManager.play("chest_spawn")`
+    - `_show_game_over_screen()` → 添加 `SoundManager.play("game_over")`
+    - _需求: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
+  - [x] 10.2 在羁绊触发点集成羁绊音效
+    - 在 `skill_drawing_base.gd` 和 `player_base.gd` 中的 `BondManager.has_mechanic()` 检查点添加音效：
+      - `chain_reaction` → `SoundManager.play("bond_chain_reaction")`
+      - `permanent_cage` → `SoundManager.play("bond_permanent_cage")`
+      - `soul_attach` → `SoundManager.play("bond_soul_attach")`
+      - `gold_trail` → `SoundManager.play("bond_gold_trail")`
+      - `thorns_wall` → `SoundManager.play("bond_thorns_wall")`
+      - `small_shape_crit` → `SoundManager.play("bond_small_shape_crit")`
+      - 其他羁绊 → `SoundManager.play("bond_trigger_generic")`
+    - _需求: 9.1, 9.2, 9.3_
+
+- [x] 11. 集成 UI 音效
+  - [x] 11.1 在 UI 场景脚本中集成音效
+    - 按钮点击 → `SoundManager.play("ui_click")`
+    - 面板打开/关闭 → `SoundManager.play("ui_panel_open")` / `SoundManager.play("ui_panel_close")`
+    - 商店购买 → `SoundManager.play("ui_purchase")`
+    - 升级选择 → `SoundManager.play("ui_upgrade_select")`
+    - 无效操作 → `SoundManager.play("ui_error")`
+    - 暂停/恢复 → `SoundManager.play("ui_pause")` / `SoundManager.play("ui_resume")`
+    - _需求: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
+
+- [x] 12. 最终检查点 - 全面验证
+  - 确保所有音效类别（UI、玩家、战斗、技能、环境、羁绊）正常播放
+  - 确保冷却防刷机制正常工作（高频事件如敌人死亡不会音效刷屏）
+  - 确保音效组随机选择正常工作
+  - 确保每角色 Q 闭合音效正确播放
+  - 确保 Global.gd 中不再包含任何音效相关代码
+  - 确保所有测试通过，如有问题请询问用户
