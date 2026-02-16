@@ -498,6 +498,9 @@ func _on_exit_confirmed() -> void:
 	print("[Arena] 玩家确认退出游戏")
 	# 清理所有残留的精英投射物
 	_cleanup_all_projectiles()
+	# 重置全局状态（包括武器商店购买记录）
+	Global.reset_selection()
+	Global.reset_session_data()
 	# 返回到选择界面
 	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
 

@@ -315,6 +315,9 @@ func reset_selection() -> void:
 	player_states.clear()
 	current_player_index = 0
 	is_game_over = false
+	
+	# 重置武器商店购买记录（购买的武器仅本局生效）
+	DataManager.reset_weapon_shop()
 
 # ============================================================================
 # 局内数据管理 (Session Data)

@@ -207,13 +207,27 @@ func _load_weapons_from_config() -> void:
 	if Global.selected_player_weapons.has(player_id):
 		selected_weapon_type = Global.selected_player_weapons[player_id]
 	
-	# 如果有选择的武器类型，只加载1级武器
+	# 加载选择界面选定的武器（1级）
 	if selected_weapon_type != "":
 		var weapon_id = "%s_1" % selected_weapon_type
 		var item_weapon = _create_item_weapon_from_csv(weapon_id)
 		if item_weapon:
 			_add_weapon(item_weapon)
-		return
+	
+	# 加载强化界面购买的武器（1级，仅本局生效）
+	var purchased_weapon_type = DataManager.get_purchased_weapon(player_id)
+	if purchased_weapon_type != "" and purchased_weapon_type != selected_weapon_type:
+		var purchased_weapon_id = "%s_1" % purchased_weapon_type
+		var purchased_item = _create_item_weapon_from_csv(purchased_weapon_id)
+		if purchased_item:
+			_add_weapon(purchased_item)
+			print("[PlayerBase] 加载购买武器: %s" % purchased_weapon_id)
+	
+	if current_weapons.is_empty():
+		print("[PlayerBase] 警告: 角色 %s 没有加载任何武器" % player_id)
+	else:
+		print("[PlayerBase] 角色 %s 共加载 %d 把武器" % [player_id, current_weapons.size()])
+	return
 
 func _create_item_weapon_from_csv(weapon_id: String) -> ItemWeapon:
 	"""从CSV配置创建ItemWeapon对象"""
