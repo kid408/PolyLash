@@ -1,22 +1,24 @@
-itemType,description,resourcePath,bond_grant
--1,道具描述,资源路径,羁绊标签
-1,生命药水 - 增加50点生命值,res://assets/sprites/Icons/origins/origin1.png,
-2,疾风靴 - 增加50点移动速度,res://assets/sprites/Icons/origins/origin2.png,
-3,锋利匕首 - 增加10点攻击力,res://assets/sprites/Icons/origins/origin3.png,
-4,火焰之心 - 所有火焰伤害+20%,res://assets/sprites/Icons/masterys/mastery1.png,
-5,冰霜水晶 - 所有冰霜伤害+25%,res://assets/sprites/Icons/masterys/mastery2.png,
-6,范围扩增器 - 所有范围技能效果+30%,res://assets/sprites/Icons/masterys/mastery3.png,
-7,通用伤害增幅 - 所有伤害+15%,res://assets/sprites/Icons/masterys/mastery4.png,
-8,持续时间延长 - 所有持续效果+40%,res://assets/sprites/Icons/masterys/mastery5.png,
-9,速度强化 - 所有速度相关+25%,res://assets/sprites/Icons/masterys/mastery6.png,
-10,巨擘圣物 - 提供1个巨擘羁绊标签,res://assets/sprites/Icons/origins/origin2.png,colossus
-11,墨灵圣物 - 提供1个墨灵羁绊标签,res://assets/sprites/Icons/origins/origin1.png,inkborn
-12,炼金圣物 - 提供1个炼金术士羁绊标签,res://assets/sprites/Icons/origins/origin4.png,alchemist
-13,爆破圣物 - 提供1个爆破师羁绊标签,res://assets/sprites/Icons/masterys/mastery1.png,blaster
-14,风行圣物 - 提供1个风行者羁绊标签,res://assets/sprites/Icons/origins/origin3.png,nomad
-15,筑墙圣物 - 提供1个筑墙者羁绊标签,res://assets/sprites/Icons/masterys/mastery2.png,architect
-16,咒术圣物 - 提供1个咒术师羁绊标签,res://assets/sprites/Icons/masterys/mastery3.png,hexer
-17,几何圣物 - 提供1个几何学家羁绊标签,res://assets/sprites/Icons/masterys/mastery4.png,geometrist
-18,支援圣物 - 提供1个支援型羁绊标签,res://assets/sprites/Icons/tactics/tactic1.png,assist
-19,突击圣物 - 提供1个突击型羁绊标签,res://assets/sprites/Icons/tactics/tactic2.png,vanguard
-20,指挥圣物 - 提供1个指挥型羁绊标签,res://assets/sprites/Icons/tactics/tactic3.png,commander
+id,name,tier,type,slot_type,base_stat,base_value,mod_type,mod_value,bond_grant,shop_price,icon_path,description
+-1,名称,层级,类型,槽位类型,基础属性,基础值,修正类型,修正值,羁绊标签,商店价格,图标路径,描述
+attr_hp_potion,生命药水,1,equipment,weapon,hp,50,,,,,res://assets/sprites/Icons/origins/origin1.png,增加50点生命值
+attr_speed_boots,疾风靴,1,equipment,weapon,speed,50,,,,,res://assets/sprites/Icons/origins/origin2.png,增加50点移动速度
+attr_damage_dagger,锋利匕首,1,equipment,weapon,attack,10,,,,,res://assets/sprites/Icons/origins/origin3.png,增加10点攻击力
+magic_fire_heart,火焰之心,2,equipment,weapon,attack,15,fire_percent,0.20,,,res://assets/sprites/Icons/masterys/mastery1.png,所有火焰伤害+20%
+magic_ice_crystal,冰霜水晶,2,equipment,weapon,attack,15,ice_percent,0.25,,,res://assets/sprites/Icons/masterys/mastery2.png,所有冰霜伤害+25%
+magic_aoe_amplifier,范围扩增器,2,equipment,weapon,attack,10,aoe_percent,0.30,,,res://assets/sprites/Icons/masterys/mastery3.png,所有范围技能效果+30%
+magic_damage_boost,通用伤害增幅,2,equipment,weapon,attack,10,damage_percent,0.15,,,res://assets/sprites/Icons/masterys/mastery4.png,所有伤害+15%
+magic_duration_extend,持续时间延长,2,equipment,weapon,hp,30,duration_percent,0.40,,,res://assets/sprites/Icons/masterys/mastery5.png,所有持续效果+40%
+magic_speed_boost,速度强化,2,equipment,weapon,speed,30,speed_percent,0.25,,,res://assets/sprites/Icons/masterys/mastery6.png,所有速度相关+25%
+relic_colossus,巨擘圣物,3,equipment,weapon,hp,500,max_health_pct,0.15,colossus,200,res://assets/sprites/Icons/origins/origin2.png,重装神器 生命+500 最大生命+15%
+relic_inkborn,墨灵圣物,3,equipment,weapon,attack,30,energy_regen_pct,0.20,inkborn,200,res://assets/sprites/Icons/origins/origin1.png,魔导神器 攻击+30 魔力回复+20%
+relic_alchemist,炼金圣物,3,equipment,weapon,hp,300,pickup_range_pct,0.30,alchemist,200,res://assets/sprites/Icons/origins/origin4.png,后勤神器 生命+300 拾取范围+30%
+relic_blaster,爆破圣物,3,equipment,weapon,attack,35,damage_percent,0.20,blaster,200,res://assets/sprites/Icons/masterys/mastery1.png,爆破神器 攻击+35 伤害+20%
+relic_nomad,风行圣物,3,equipment,weapon,speed,80,movement_speed_pct,0.20,nomad,200,res://assets/sprites/Icons/origins/origin3.png,游侠神器 速度+80 移速+20%
+relic_architect,筑墙圣物,3,equipment,weapon,hp,400,line_duration_pct,0.25,architect,200,res://assets/sprites/Icons/masterys/mastery2.png,筑墙神器 生命+400 线条持续+25%
+relic_hexer,咒术圣物,3,equipment,weapon,attack,25,debuff_duration_pct,0.30,hexer,200,res://assets/sprites/Icons/masterys/mastery3.png,咒术神器 攻击+25 减益延长+30%
+relic_geometrist,几何圣物,3,equipment,weapon,attack,20,shape_tolerance_pct,0.25,geometrist,200,res://assets/sprites/Icons/masterys/mastery4.png,几何神器 攻击+20 图形容错+25%
+relic_assist,支援圣物,3,equipment,weapon,hp,350,bench_cd_reduce_pct,0.20,assist,200,res://assets/sprites/Icons/tactics/tactic1.png,支援神器 生命+350 后台冷却-20%
+relic_vanguard,突击圣物,3,equipment,weapon,attack,30,attack_speed;switch_cd_reduce_pct,0.15;0.25,vanguard,200,res://assets/sprites/Icons/tactics/tactic2.png,突击神器 攻击+30 攻速+15% 切换冷却-25%
+relic_commander,指挥圣物,3,equipment,weapon,hp,300,stat_share_pct,0.20,commander,200,res://assets/sprites/Icons/tactics/tactic3.png,指挥神器 生命+300 属性共享+20%
+potion_heal,生命药水,0,consumable,,hp,100,,,,,res://assets/sprites/Icons/origins/origin1.png,恢复100点生命
+potion_energy,能量药水,0,consumable,,energy,50,,,,,res://assets/sprites/Icons/origins/origin2.png,恢复50点能量

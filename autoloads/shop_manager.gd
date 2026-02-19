@@ -32,6 +32,7 @@ signal purchase_failed(reason: String)  # 购买失败
 
 const SHOP_CSV_PATH = "res://config/item/shop_item_config.csv"
 const REROLL_COST = 50  # 刷新商店的金币消耗
+const EMBLEM_SPAWN_CHANCE: float = 0.25  # 25% 概率刷出徽章
 
 # ============================================================================
 # 数据结构
@@ -135,7 +136,7 @@ func _load_shop_configs() -> void:
 # ============================================================================
 
 func generate_shop_items(count: int = 3) -> void:
-	"""生成商店物品
+	"""生成商店物品（支持徽章 + 装备混合，带去重池）
 	
 	Args:
 		count: 生成的物品数量（默认3个）
@@ -145,28 +146,18 @@ func generate_shop_items(count: int = 3) -> void:
 	current_shop_items.clear()
 	purchased_indices.clear()
 	
-	if shop_item_configs.is_empty():
-		printerr("[ShopManager] 错误: 没有可用的商店物品配置")
-		return
+	var used_ids: Array[String] = []  # 去重池
 	
-	# 构建权重池
-	var weighted_pool: Array = []
-	for item_id in shop_item_configs.keys():
-		var config = shop_item_configs[item_id]
-		var weight = config.get("shop_weight", 10)
-		for i in range(weight):
-			weighted_pool.append(item_id)
-	
-	if weighted_pool.is_empty():
-		printerr("[ShopManager] 错误: 权重池为空")
-		return
-	
-	# 随机抽取物品（允许重复）
 	for i in range(count):
-		var random_index = randi() % weighted_pool.size()
-		var item_id = weighted_pool[random_index]
-		var config = shop_item_configs[item_id].duplicate(true)
-		current_shop_items.append(config)
+		var item: Dictionary
+		if randf() < EMBLEM_SPAWN_CHANCE:
+			item = _generate_emblem_item(used_ids)
+		else:
+			item = _generate_equipment_item(used_ids)
+		
+		if not item.is_empty():
+			used_ids.append(item.get("item_id", ""))
+			current_shop_items.append(item)
 	
 	print("[ShopManager] 商店物品生成完成: %s" % str(_get_item_ids()))
 	shop_items_generated.emit(current_shop_items)
@@ -177,6 +168,158 @@ func _get_item_ids() -> Array:
 	for item in current_shop_items:
 		ids.append(item.get("item_id", "unknown"))
 	return ids
+
+# ============================================================================
+# 徽章商品生成（Task 7.1 + 7.2）
+# ============================================================================
+
+func _generate_emblem_item(used_ids: Array[String]) -> Dictionary:
+	"""生成一个徽章商品（智能权重选择，带去重）
+	
+	从 emblem_config.csv 中选择一个徽章，排除：
+	- 已在去重池中的徽章
+	- 已持有的唯一遗物
+	- 万能鬼牌（仅从 Boss/隐藏房间获得）
+	
+	Args:
+		used_ids: 去重池，已使用的 item_id 列表
+	
+	Returns:
+		商品字典，失败时返回空字典
+	"""
+	var all_configs = ConfigManager.get_all_emblem_configs()
+	if all_configs.is_empty():
+		return _generate_equipment_item(used_ids)  # 回退到装备
+	
+	# 构建候选池：排除去重池、已持有唯一遗物、万能鬼牌
+	var candidates: Array[Dictionary] = []
+	for emblem_id in all_configs.keys():
+		# 排除万能鬼牌（仅从 Boss/隐藏房间获得）
+		if emblem_id == "emblem_wildcard":
+			continue
+		# 排除去重池中的
+		if emblem_id in used_ids:
+			continue
+		# 排除已持有的唯一遗物
+		var config = all_configs[emblem_id]
+		if config.get("is_unique", "0") == "1" and EmblemManager.has_unique_relic(emblem_id):
+			continue
+		candidates.append(config)
+	
+	if candidates.is_empty():
+		return _generate_equipment_item(used_ids)  # 候选池耗尽，回退到装备
+	
+	# 使用智能权重选择
+	var weights = _get_smart_emblem_weights()
+	var weighted_candidates: Array[Dictionary] = []
+	var total_weight: float = 0.0
+	
+	for config in candidates:
+		var emblem_id = str(config.get("emblem_id", ""))
+		var bond_tag = str(config.get("bond_tag", ""))
+		var weight: float = weights.get(bond_tag, 1.0)
+		# 遗物使用固定权重
+		if str(config.get("artifact_type", "")) == "relic":
+			weight = 1.0
+		weighted_candidates.append({"config": config, "weight": weight})
+		total_weight += weight
+	
+	if total_weight <= 0:
+		return _generate_equipment_item(used_ids)
+	
+	# 加权随机选择
+	var roll = randf() * total_weight
+	var cumulative: float = 0.0
+	var selected_config: Dictionary = weighted_candidates[0].config
+	
+	for entry in weighted_candidates:
+		cumulative += entry.weight
+		if roll <= cumulative:
+			selected_config = entry.config
+			break
+	
+	# 构建商品字典
+	var emblem_id = str(selected_config.get("emblem_id", ""))
+	return {
+		"item_id": emblem_id,
+		"item_name": str(selected_config.get("display_name", "")),
+		"item_type": "emblem",
+		"item_tier": 0,
+		"icon_path": str(selected_config.get("icon_path", "")),
+		"price": int(selected_config.get("shop_price", 120)),
+		"shop_weight": 10,
+		"effects": [],
+		"description": str(selected_config.get("description", "")),
+		"artifact_type": str(selected_config.get("artifact_type", "emblem")),
+		"bond_tag": str(selected_config.get("bond_tag", "")),
+		"rarity": str(selected_config.get("rarity", "common"))
+	}
+
+func _generate_equipment_item(used_ids: Array[String]) -> Dictionary:
+	"""生成一个装备/消耗品商品（带去重）
+	
+	从 shop_item_config.csv 中选择，排除去重池中的物品。
+	
+	Args:
+		used_ids: 去重池，已使用的 item_id 列表
+	
+	Returns:
+		商品字典，失败时返回空字典
+	"""
+	if shop_item_configs.is_empty():
+		return {}
+	
+	# 构建权重池（排除去重池中的）
+	var weighted_pool: Array = []
+	for item_id in shop_item_configs.keys():
+		if item_id in used_ids:
+			continue
+		var config = shop_item_configs[item_id]
+		var weight = config.get("shop_weight", 10)
+		for i in range(weight):
+			weighted_pool.append(item_id)
+	
+	if weighted_pool.is_empty():
+		return {}
+	
+	var random_index = randi() % weighted_pool.size()
+	var item_id = weighted_pool[random_index]
+	var config = shop_item_configs[item_id].duplicate(true)
+	# 确保 item_type 字段存在（旧配置可能没有统一的 item_type）
+	if not config.has("item_type"):
+		config["item_type"] = "equipment"
+	return config
+
+func _get_smart_emblem_weights() -> Dictionary:
+	"""根据当前队伍羁绊状态计算徽章权重
+	
+	已拥有但未满级的羁绊对应徽章权重更高（3x），
+	未拥有的羁绊对应徽章使用基础权重（1x）。
+	
+	Returns:
+		{bond_tag: weight} 权重字典
+	"""
+	var weights: Dictionary = {}
+	var base_weight: float = 1.0
+	var boosted_weight: float = 3.0
+	
+	# 获取当前羁绊计数和配置
+	var bond_counts = BondManager.current_bond_counts
+	var bond_configs = BondManager.bond_configs
+	
+	for bond_id in bond_configs.keys():
+		var count = bond_counts.get(bond_id, 0)
+		var max_level = BondManager.get_bond_max_level(bond_id)
+		var current_level = BondManager.get_activated_level(bond_id, count)
+		
+		if count > 0 and current_level < max_level:
+			# 已拥有但未满级 → 高权重
+			weights[bond_id] = boosted_weight
+		else:
+			# 未拥有或已满级 → 基础权重
+			weights[bond_id] = base_weight
+	
+	return weights
 
 # ============================================================================
 # 购买逻辑
@@ -220,8 +363,21 @@ func purchase_item(index: int) -> bool:
 	DataManager.add_gold(-price)
 	print("[ShopManager] 扣除金币: %d, 剩余: %d" % [price, DataManager.get_total_gold()])
 	
-	# 应用物品效果到玩家
-	_apply_item_effects(item)
+	# 根据物品类型分支处理
+	var item_type = item.get("item_type", "")
+	if item_type == "emblem":
+		# 徽章购买：调用 EmblemManager.add_emblem()
+		var success = EmblemManager.add_emblem(item_id)
+		if not success:
+			# 添加失败（如唯一遗物已持有），退还金币
+			DataManager.add_gold(price)
+			print("[ShopManager] 徽章添加失败，已退还金币: %d" % price)
+			purchase_failed.emit("无法添加该护符")
+			return false
+		print("[ShopManager] 徽章购买成功: %s" % item_id)
+	else:
+		# 装备/消耗品：应用物品效果
+		_apply_item_effects(item)
 	
 	# 标记为已购买
 	purchased_indices.append(index)

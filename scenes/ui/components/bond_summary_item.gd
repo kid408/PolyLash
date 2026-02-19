@@ -88,11 +88,11 @@ func _update_name() -> void:
 	name_label.text = display_name
 
 func _update_count() -> void:
-	"""更新计数显示"""
+	"""更新计数显示（使用统一格式化逻辑）"""
 	if not count_label:
 		return
 	
-	count_label.text = "%d/%d" % [current_count, max_count]
+	count_label.text = BondManager.get_bond_status_text(bond_id, current_count)
 
 func _update_colors() -> void:
 	"""更新颜色状态"""

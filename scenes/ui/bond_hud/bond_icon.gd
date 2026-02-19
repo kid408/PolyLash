@@ -53,13 +53,11 @@ func setup(
 	else:
 		printerr("[BondIcon] 图标文件不存在: %s" % p_icon_path)
 	
-	# 设置等级标签（只在激活时显示）
+	# 设置等级标签（使用统一格式化逻辑）
 	if level_label:
-		if is_active and bond_level > 0:
-			level_label.text = "Lv.%d" % bond_level
-			level_label.visible = true
-		else:
-			level_label.visible = false
+		var status_text = BondManager.get_bond_status_text(bond_id, current_count)
+		level_label.text = status_text
+		level_label.visible = true
 	
 	# 设置 Tooltip（鼠标悬停时显示）
 	_setup_tooltip()
@@ -79,10 +77,26 @@ func set_border_color(color: Color) -> void:
 # ============================================================================
 
 func _setup_tooltip() -> void:
-	"""设置 Tooltip（使用 BondManager 的标准函数）"""
-	# 使用 BondManager 的标准 tooltip 生成函数，确保与选择界面一致
-	var tooltip_text = BondManager.get_bond_tooltip_text(bond_id, current_count)
+	"""设置 Tooltip（使用 BondManager 的标准函数 + 标签来源分布）"""
+	# 使用 BondManager 的标准 tooltip 生成函数
+	var tooltip_content = BondManager.get_bond_tooltip_text(bond_id, current_count)
 	
-	# 在 Godot 4.x 中，直接设置 tooltip_text 属性
-	set_tooltip_text(tooltip_text)
+	# 追加标签来源分布信息（角色/装备/徽章）
+	var sources = BondManager.get_tag_sources(bond_id)
+	var char_count = sources.get("character", 0)
+	var equip_count = sources.get("equipment", 0)
+	var emblem_count = sources.get("emblem", 0)
+	var total = char_count + equip_count + emblem_count
+	
+	if total > 0:
+		var source_parts: Array = []
+		if char_count > 0:
+			source_parts.append("%d角色" % char_count)
+		if equip_count > 0:
+			source_parts.append("%d装备" % equip_count)
+		if emblem_count > 0:
+			source_parts.append("%d徽章" % emblem_count)
+		tooltip_content += "\n来源: %s = %d" % [" + ".join(source_parts), total]
+	
+	set_tooltip_text(tooltip_content)
 	mouse_filter = Control.MOUSE_FILTER_PASS

@@ -7,8 +7,13 @@ extends Node
 # 仓库数据：{slot_index: itemType}
 var warehouse_items: Dictionary = {}
 
-# 道具配置缓存：{itemType: {description, resourcePath}}
+# 道具配置缓存：{itemType: config_dict}（含完整新格式字段 + 向后兼容字段）
 var item_configs: Dictionary = {}
+
+# 整数类型 → 字符串ID 映射表（按 CSV 行序自动生成）
+var _type_to_id_map: Dictionary = {}
+# 字符串ID → 整数类型 反向映射
+var _id_to_type_map: Dictionary = {}
 
 # 仓库容量
 var warehouse_capacity: int = 48
@@ -30,41 +35,29 @@ func _ready() -> void:
 # ============================================================================
 
 func _load_item_configs() -> void:
-	"""从 CSV 加载道具配置"""
-	var csv_path = "res://config/item/item_config.csv"
-	if not FileAccess.file_exists(csv_path):
-		printerr("[WarehouseManager] 道具配置文件不存在: %s" % csv_path)
-		return
+	"""从 ConfigManager 加载道具配置（委托模式，避免重复解析 CSV）"""
+	item_configs.clear()
+	_type_to_id_map.clear()
+	_id_to_type_map.clear()
 	
-	var file = FileAccess.open(csv_path, FileAccess.READ)
-	if not file:
-		printerr("[WarehouseManager] 无法打开道具配置文件")
-		return
-	
-	# 跳过表头
-	file.get_csv_line()
-	# 跳过说明行
-	file.get_csv_line()
-	
-	while not file.eof_reached():
-		var line = file.get_csv_line()
-		if line.size() < 3:
-			continue
+	# ConfigManager 在 _ready() 中已加载 item_configs_new
+	# 按插入顺序为每个 item_id 分配整数 type（从 1 开始，跳过 consumable）
+	var type_counter: int = 0
+	for item_id in ConfigManager.item_configs_new.keys():
+		var cfg: Dictionary = ConfigManager.item_configs_new[item_id]
+		type_counter += 1
 		
-		var item_type = int(line[0])
-		var description = line[1]
-		var resource_path = line[2]
+		_type_to_id_map[type_counter] = item_id
+		_id_to_type_map[item_id] = type_counter
 		
-		if item_type <= 0:
-			continue
+		# 构建兼容旧调用方的配置字典（保留 description / resourcePath 键）
+		var compat_config: Dictionary = cfg.duplicate()
+		compat_config["description"] = cfg.get("name", "")
+		compat_config["resourcePath"] = cfg.get("icon_path", "")
 		
-		item_configs[item_type] = {
-			"description": description,
-			"resourcePath": resource_path
-		}
+		item_configs[type_counter] = compat_config
 	
-	file.close()
-	print("[WarehouseManager] 加载了 %d 个道具配置" % item_configs.size())
+	print("[WarehouseManager] 加载了 %d 个道具配置（委托 ConfigManager）" % item_configs.size())
 
 # ============================================================================
 # 仓库数据持久化
@@ -118,26 +111,26 @@ func _init_default_items() -> void:
 	"""初始化默认测试道具（包含所有三个层级）"""
 	warehouse_items.clear()
 	
-	# Tier 1: 属性道具（3个）
-	warehouse_items[0] = 1   # 生命药水
-	warehouse_items[1] = 2   # 疾风靴
-	warehouse_items[2] = 3   # 锋利匕首
+	# Tier 1: 属性道具（3个）— 对应 CSV 行序 1-3
+	warehouse_items[0] = 1   # attr_hp_potion 生命药水
+	warehouse_items[1] = 2   # attr_speed_boots 疾风靴
+	warehouse_items[2] = 3   # attr_damage_dagger 锋利匕首
 	
-	# Tier 2: 魔法道具（6个）
-	warehouse_items[3] = 4   # 火焰之心
-	warehouse_items[4] = 5   # 冰霜水晶
-	warehouse_items[5] = 6   # 范围扩增器
-	warehouse_items[6] = 7   # 通用伤害增幅
-	warehouse_items[7] = 8   # 持续时间延长
-	warehouse_items[8] = 9   # 速度强化
+	# Tier 2: 魔法道具（6个）— 对应 CSV 行序 4-9
+	warehouse_items[3] = 4   # magic_fire_heart 火焰之心
+	warehouse_items[4] = 5   # magic_ice_crystal 冰霜水晶
+	warehouse_items[5] = 6   # magic_aoe_amplifier 范围扩增器
+	warehouse_items[6] = 7   # magic_damage_boost 通用伤害增幅
+	warehouse_items[7] = 8   # magic_duration_extend 持续时间延长
+	warehouse_items[8] = 9   # magic_speed_boost 速度强化
 	
-	# Tier 3: 圣物道具（6个）
-	warehouse_items[9] = 10   # 武道圣物
-	warehouse_items[10] = 11  # 秘术圣物
-	warehouse_items[11] = 12  # 幸存者圣物
-	warehouse_items[12] = 13  # 毁灭圣物
-	warehouse_items[13] = 14  # 速度圣物
-	warehouse_items[14] = 15  # 控制圣物
+	# Tier 3: 圣物道具（6个）— 对应 CSV 行序 10-15
+	warehouse_items[9] = 10   # relic_colossus 巨擘圣物
+	warehouse_items[10] = 11  # relic_inkborn 墨灵圣物
+	warehouse_items[11] = 12  # relic_alchemist 炼金圣物
+	warehouse_items[12] = 13  # relic_blaster 爆破圣物
+	warehouse_items[13] = 14  # relic_nomad 风行圣物
+	warehouse_items[14] = 15  # relic_architect 筑墙圣物
 	
 	save_warehouse_data()
 	print("[WarehouseManager] 初始化默认测试道具: 15个（Tier1:3, Tier2:6, Tier3:6）")
@@ -201,8 +194,23 @@ func get_item_at_slot(slot_index: int) -> int:
 	return warehouse_items.get(slot_index, 0)
 
 func get_item_config(item_type: int) -> Dictionary:
-	"""获取道具配置"""
+	"""获取道具配置（完整数据，含 bond_grant、modifiers 等新字段及向后兼容的 description/resourcePath）"""
 	return item_configs.get(item_type, {})
+
+func get_item_config_by_id(item_id: String) -> Dictionary:
+	"""通过字符串 item_id 获取道具配置（委托 ConfigManager，附加兼容字段）"""
+	var type_val = _id_to_type_map.get(item_id, 0)
+	if type_val > 0:
+		return item_configs.get(type_val, {})
+	return ConfigManager.get_item_config_by_id(item_id)
+
+func get_item_id_from_type(item_type: int) -> String:
+	"""将整数 item_type 转换为字符串 item_id"""
+	return _type_to_id_map.get(item_type, "")
+
+func get_type_from_item_id(item_id: String) -> int:
+	"""将字符串 item_id 转换为整数 item_type"""
+	return _id_to_type_map.get(item_id, 0)
 
 func get_all_items() -> Dictionary:
 	"""获取所有仓库道具"""

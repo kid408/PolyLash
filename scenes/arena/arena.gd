@@ -22,6 +22,17 @@ const GAME_OVER_SCENE = preload("res://scenes/ui/game_over/game_over_screen.tscn
 var current_chest: ChestSimple = null  # 保存当前打开的宝箱引用
 var game_over_screen: GameOverScreen = null  # 结算界面实例
 
+# 波次奖励系统
+var wave_reward_system: Node = null
+var wave_reward_panel: WaveRewardPanel = null
+# 记录当前完成的波次号，用于奖励面板关闭后继续显示商店
+var _pending_shop_wave: int = -1
+
+# UI 弹窗栈机制 - 确保多个弹窗不会重叠显示
+var ui_panel_stack: Array[Control] = []
+# 万能鬼牌选择面板
+var wildcard_panel: WildcardPanel = null
+
 func _ready() -> void:
 	print("[Arena] _ready() 开始")
 	
@@ -64,6 +75,9 @@ func _ready() -> void:
 	if shop_panel:
 		shop_panel.next_wave_requested.connect(_on_shop_next_wave_requested)
 		print("[Arena] 商店面板已连接")
+	
+	# 初始化波次奖励系统
+	_init_wave_reward_system()
 	
 	# 连接 Spawner 的波次完成信号
 	if spawner:
@@ -514,23 +528,25 @@ func _on_exit_cancelled() -> void:
 # ============================================================================
 
 func _on_wave_completed(wave_number: int) -> void:
-	"""波次完成，显示商店"""
-	print("[Arena] 波次 %d 完成，显示商店" % wave_number)
+	"""波次完成，检查是否触发奖励，然后显示商店"""
+	print("[Arena] 波次 %d 完成" % wave_number)
 	SoundManager.play("wave_complete")
 	
 	# 暂停敌人生成
 	if spawner:
 		spawner.pause_spawning()
 	
-	# 显示商店
-	if shop_panel:
-		SoundManager.play("shop_open")
-		shop_panel.show_shop(wave_number + 1)
-	else:
-		printerr("[Arena] 错误: 找不到 ShopPanel 节点")
-		# 如果没有商店，直接开始下一波
-		if spawner:
-			spawner.resume_spawning()
+	# 检查是否触发波次奖励
+	if wave_reward_system and wave_reward_system.check_wave_reward(wave_number):
+		print("[Arena] 波次 %d 触发三选一奖励" % wave_number)
+		_pending_shop_wave = wave_number
+		var options = wave_reward_system.generate_reward_options()
+		if wave_reward_panel:
+			wave_reward_panel.show_rewards(options)
+		return
+	
+	# 没有奖励，直接显示商店
+	_show_shop_for_wave(wave_number)
 
 func _on_shop_next_wave_requested() -> void:
 	"""商店关闭，开始下一波"""
@@ -541,6 +557,105 @@ func _on_shop_next_wave_requested() -> void:
 	# 恢复敌人生成
 	if spawner:
 		spawner.resume_spawning()
+
+# ============================================================================
+# 波次奖励系统
+# ============================================================================
+
+func _init_wave_reward_system() -> void:
+	"""初始化波次奖励系统、UI 和万能鬼牌面板"""
+	# 创建 WaveRewardSystem
+	var wrs_script = load("res://scenes/arena/wave_reward_system.gd")
+	if wrs_script:
+		wave_reward_system = wrs_script.new()
+		wave_reward_system.name = "WaveRewardSystem"
+		add_child(wave_reward_system)
+		print("[Arena] WaveRewardSystem 已创建")
+	else:
+		printerr("[Arena] 无法加载 WaveRewardSystem 脚本")
+		return
+	
+	# 创建 WaveRewardPanel 并添加到 GameUI（CanvasLayer）
+	var game_ui = get_node_or_null("GameUI")
+	if game_ui:
+		wave_reward_panel = WaveRewardPanel.new()
+		wave_reward_panel.name = "WaveRewardPanel"
+		wave_reward_panel.wave_reward_system = wave_reward_system
+		wave_reward_panel.reward_chosen.connect(_on_wave_reward_chosen)
+		game_ui.add_child(wave_reward_panel)
+		print("[Arena] WaveRewardPanel 已添加到 GameUI")
+		
+		# 创建 WildcardPanel 并添加到 GameUI
+		wildcard_panel = WildcardPanel.new()
+		wildcard_panel.name = "WildcardPanel"
+		wildcard_panel.wildcard_assigned.connect(_on_wildcard_assigned)
+		game_ui.add_child(wildcard_panel)
+		print("[Arena] WildcardPanel 已添加到 GameUI")
+	else:
+		printerr("[Arena] 找不到 GameUI 节点，无法添加 WaveRewardPanel")
+	
+	# 监听万能鬼牌分配请求信号
+	EmblemManager.wildcard_assignment_requested.connect(_on_wildcard_requested)
+
+func _on_wave_reward_chosen(_reward_data: Dictionary) -> void:
+	"""波次奖励选择完成，继续显示商店"""
+	print("[Arena] 波次奖励已选择，继续显示商店")
+	if _pending_shop_wave >= 0:
+		# 奖励面板已恢复游戏暂停，商店会重新暂停
+		_show_shop_for_wave(_pending_shop_wave)
+		_pending_shop_wave = -1
+
+func _show_shop_for_wave(wave_number: int) -> void:
+	"""显示商店面板"""
+	if shop_panel:
+		SoundManager.play("shop_open")
+		shop_panel.show_shop(wave_number + 1)
+	else:
+		printerr("[Arena] 错误: 找不到 ShopPanel 节点")
+		if spawner:
+			spawner.resume_spawning()
+
+# ============================================================================
+# UI 弹窗栈机制
+# ============================================================================
+
+func push_panel(panel: Control) -> void:
+	"""将面板压入栈，隐藏当前栈顶面板"""
+	if not ui_panel_stack.is_empty():
+		ui_panel_stack.back().hide()
+	ui_panel_stack.append(panel)
+	panel.show()
+	get_tree().paused = true
+
+func pop_panel() -> void:
+	"""弹出栈顶面板，恢复上一个面板或解除暂停"""
+	if ui_panel_stack.is_empty():
+		return
+	var top = ui_panel_stack.pop_back()
+	top.hide()
+	if ui_panel_stack.is_empty():
+		get_tree().paused = false  # 栈空，恢复游戏
+	else:
+		ui_panel_stack.back().show()  # 恢复上一个面板
+
+# ============================================================================
+# 万能鬼牌信号处理
+# ============================================================================
+
+func _on_wildcard_requested(emblem_data: Dictionary) -> void:
+	"""EmblemManager 发出万能鬼牌分配请求，push WildcardPanel"""
+	print("[Arena] 收到万能鬼牌分配请求")
+	if wildcard_panel:
+		wildcard_panel.show_wildcard_selection(emblem_data)
+		push_panel(wildcard_panel)
+
+func _on_wildcard_assigned() -> void:
+	"""WildcardPanel 选择完毕，pop 面板"""
+	print("[Arena] 万能鬼牌分配完成")
+	pop_panel()
+	# 触发羁绊重算
+	if Global.selected_player_ids.size() > 0:
+		BondManager.recalculate_active_bonds(Global.selected_player_ids)
 
 # ============================================================================
 # 游戏结算系统

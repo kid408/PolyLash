@@ -7,6 +7,7 @@ extends Node
 # 信号
 signal bonds_recalculated(active_bonds: Dictionary)
 signal stat_modifiers_changed()
+signal bond_level_changed(bond_id: String, old_level: int, new_level: int)
 
 # ============================================================================
 # 数据结构
@@ -20,6 +21,9 @@ var active_bonds: Dictionary = {}
 
 # 当前队伍的羁绊标签统计：{bond_id: count}
 var current_bond_counts: Dictionary = {}
+
+# 标签来源追踪：{bond_tag: {character: int, equipment: int, emblem: int}}
+var tag_sources: Dictionary = {}
 
 # 临时羁绊标签（来自技能/大招）：{bond_id: count}
 var temp_bonus_tags: Dictionary = {}
@@ -110,46 +114,31 @@ func _load_bond_configs() -> void:
 # ============================================================================
 
 func recalculate_active_bonds(team_player_ids: Array, equipped_relics: Array = []) -> void:
-	"""重新计算激活的羁绊
+	"""重新计算激活的羁绊（三源标签统计）
 	
 	Args:
 		team_player_ids: 当前队伍角色ID列表
 		equipped_relics: 已装备圣物列表（可选，未来扩展）
 	"""
+	# 保存旧的激活羁绊状态（用于等级变化检测）
+	var old_bonds = active_bonds.duplicate(true)
+	
 	# 清空当前数据
 	current_bond_counts.clear()
+	tag_sources.clear()
 	active_bonds.clear()
 	
-	# 统计所有羁绊标签
-	for player_id in team_player_ids:
-		var config = ConfigManager.get_player_config(player_id)
-		if config.is_empty():
-			continue
-		
-		# 统计三种羁绊标签
-		var tags = [
-			config.get("origin_tag", ""),
-			config.get("mastery_tag", ""),
-			config.get("tactic_tag", "")
-		]
-		
-		for tag in tags:
-			if tag == "":
-				continue
-			
-			if not current_bond_counts.has(tag):
-				current_bond_counts[tag] = 0
-			current_bond_counts[tag] += 1
+	# 来源1: 角色自带标签
+	_count_character_tags(team_player_ids)
+	
+	# 来源2: 装备 bond_grant
+	_count_equipment_tags(team_player_ids)
+	
+	# 来源3: 全局徽章
+	_count_emblem_tags()
 	
 	# 添加临时标签
-	for tag in temp_bonus_tags.keys():
-		current_bond_counts[tag] = current_bond_counts.get(tag, 0) + temp_bonus_tags[tag]
-	
-	# TODO: 处理圣物提供的额外羁绊标签
-	# for relic in equipped_relics:
-	#     if relic.has("bond_tags"):
-	#         for tag in relic.bond_tags:
-	#             current_bond_counts[tag] = current_bond_counts.get(tag, 0) + 1
+	_add_temp_tags()
 	
 	# 检查每个羁绊的激活状态
 	for bond_id in bond_configs.keys():
@@ -162,13 +151,76 @@ func recalculate_active_bonds(team_player_ids: Array, equipped_relics: Array = [
 		if activated_level > 0:
 			_activate_bond(bond_id, activated_level)
 	
+	# 检测等级变化（升级/降级/失活）
+	_detect_level_changes(old_bonds)
+	
 	print("[BondManager] 重新计算羁绊: %d 个标签, %d 个激活羁绊" % [current_bond_counts.size(), active_bonds.size()])
 	print("[BondManager] 羁绊统计: %s" % str(current_bond_counts))
+	print("[BondManager] 标签来源: %s" % str(tag_sources))
 	print("[BondManager] 激活羁绊: %s" % str(active_bonds.keys()))
 	
 	# 发出信号
 	bonds_recalculated.emit(active_bonds)
 	stat_modifiers_changed.emit()
+
+# ============================================================================
+# 三源标签统计内部方法
+# ============================================================================
+
+func _count_character_tags(team_player_ids: Array) -> void:
+	"""来源1: 统计角色自带的羁绊标签（origin_tag, mastery_tag, tactic_tag）"""
+	for player_id in team_player_ids:
+		var config = ConfigManager.get_player_config(player_id)
+		if config.is_empty():
+			continue
+		
+		var tags = [
+			config.get("origin_tag", ""),
+			config.get("mastery_tag", ""),
+			config.get("tactic_tag", "")
+		]
+		
+		for tag in tags:
+			if tag == "":
+				continue
+			current_bond_counts[tag] = current_bond_counts.get(tag, 0) + 1
+			_add_tag_source(tag, "character", 1)
+
+func _count_equipment_tags(team_player_ids: Array) -> void:
+	"""来源2: 统计角色装备的 bond_grant 标签"""
+	for pid in team_player_ids:
+		var item_data = EquipmentManager.get_equipped_item_data(str(pid))
+		if item_data.is_empty():
+			continue
+		var bond_grant = str(item_data.get("bond_grant", "")).strip_edges()
+		if bond_grant.is_empty():
+			continue
+		current_bond_counts[bond_grant] = current_bond_counts.get(bond_grant, 0) + 1
+		_add_tag_source(bond_grant, "equipment", 1)
+
+func _count_emblem_tags() -> void:
+	"""来源3: 统计全局徽章提供的羁绊标签"""
+	var emblem_tags = EmblemManager.get_emblem_tags()
+	for tag in emblem_tags:
+		current_bond_counts[tag] = current_bond_counts.get(tag, 0) + emblem_tags[tag]
+		_add_tag_source(tag, "emblem", emblem_tags[tag])
+
+func _add_temp_tags() -> void:
+	"""添加临时羁绊标签（来自技能/大招）到统计"""
+	for tag in temp_bonus_tags.keys():
+		current_bond_counts[tag] = current_bond_counts.get(tag, 0) + temp_bonus_tags[tag]
+
+func _add_tag_source(bond_tag: String, source: String, count: int) -> void:
+	"""更新标签来源追踪字典
+	
+	Args:
+		bond_tag: 羁绊标签
+		source: 来源类型（"character", "equipment", "emblem"）
+		count: 数量
+	"""
+	if not tag_sources.has(bond_tag):
+		tag_sources[bond_tag] = {"character": 0, "equipment": 0, "emblem": 0}
+	tag_sources[bond_tag][source] += count
 
 func _get_activated_level(bond_id: String, current_count: int) -> int:
 	"""获取羁绊的激活等级
@@ -230,6 +282,27 @@ func _activate_bond(bond_id: String, level: int) -> void:
 		"bond_type": bond_configs[bond_id].bond_type,
 		"display_name": bond_configs[bond_id].display_name
 	}
+
+func _detect_level_changes(old_bonds: Dictionary) -> void:
+	"""检测羁绊等级变化（升级/降级/失活），发出 bond_level_changed 信号
+	
+	stat_mod 效果基于基础值重算，降级自动生效；
+	mechanic 效果通过实时查询 active_bonds，降级后自动失效。
+	
+	Args:
+		old_bonds: 重算前的 active_bonds 快照
+	"""
+	# 检查升级或降级（当前激活的羁绊）
+	for bond_id in active_bonds.keys():
+		var new_level = active_bonds[bond_id].level
+		var old_level = old_bonds.get(bond_id, {}).get("level", 0)
+		if new_level != old_level:
+			bond_level_changed.emit(bond_id, old_level, new_level)
+	
+	# 检查完全失活（旧有但新没有）
+	for bond_id in old_bonds.keys():
+		if not active_bonds.has(bond_id):
+			bond_level_changed.emit(bond_id, old_bonds[bond_id].level, 0)
 
 # ============================================================================
 # 查询接口
@@ -339,6 +412,91 @@ func get_bond_display_name(bond_id: String) -> String:
 		return bond_id
 	
 	return bond_configs[bond_id].get("display_name", bond_id)
+
+func get_activated_level(bond_id: String, count: int) -> int:
+	"""获取指定标签数量下的羁绊激活等级（供 UI 组件调用）
+	
+	Args:
+		bond_id: 羁绊ID
+		count: 当前标签数量
+	
+	Returns:
+		激活的等级（0表示未激活）
+	"""
+	return _get_activated_level(bond_id, count)
+
+func get_tag_sources(bond_tag: String) -> Dictionary:
+	"""获取指定羁绊标签的来源分布
+	
+	Args:
+		bond_tag: 羁绊标签
+	
+	Returns:
+		来源分布字典 {character: int, equipment: int, emblem: int}
+	"""
+	if tag_sources.has(bond_tag):
+		return tag_sources[bond_tag].duplicate()
+	return {"character": 0, "equipment": 0, "emblem": 0}
+
+# ============================================================================
+# 格式化工具函数
+# ============================================================================
+
+static func format_bond_status(count: int, activated_level: int, max_level: int, next_required: int) -> String:
+	"""统一格式化羁绊状态文本，供 BondHUD 和 BondSummaryItem 共用
+	
+	格式规则：
+	- 未激活: "0/N"（N 为 Lv.1 需求数量）
+	- 已激活未满级: "Lv.X (cur/next)"
+	- 已满级: "Lv.MAX"；溢出时 "Lv.X (cur/next)"
+	
+	Args:
+		count: 当前标签数量
+		activated_level: 当前激活等级（0=未激活）
+		max_level: 该羁绊的最大等级
+		next_required: 下一级需求数量（满级时为当前级需求数量）
+	
+	Returns:
+		格式化的状态文本
+	"""
+	if activated_level == 0:
+		return "0/%d" % next_required
+	elif activated_level >= max_level:
+		if count > next_required:
+			return "Lv.%d (%d/%d)" % [activated_level, count, next_required]
+		return "Lv.MAX"
+	else:
+		return "Lv.%d (%d/%d)" % [activated_level, count, next_required]
+
+func get_bond_status_text(bond_id: String, count: int) -> String:
+	"""便捷方法：根据 bond_id 和当前数量生成格式化状态文本
+	
+	Args:
+		bond_id: 羁绊ID
+		count: 当前标签数量
+	
+	Returns:
+		格式化的状态文本
+	"""
+	var activated_level = get_activated_level(bond_id, count)
+	var max_level = get_bond_max_level(bond_id)
+	
+	# 计算 next_required：下一级需求，满级时用当前级需求
+	var next_required: int = 0
+	if activated_level == 0:
+		# 未激活：Lv.1 的需求
+		next_required = get_bond_required_count(bond_id, 1)
+	elif activated_level >= max_level:
+		# 满级：当前级需求（用于溢出判断）
+		next_required = get_bond_required_count(bond_id, max_level)
+	else:
+		# 已激活未满级：下一级需求
+		next_required = get_bond_required_count(bond_id, activated_level + 1)
+	
+	if next_required == 0:
+		next_required = 1  # 防止除零或显示异常
+	
+	return BondManager.format_bond_status(count, activated_level, max_level, next_required)
 
 func get_bond_tooltip_text(bond_id: String, current_count: int) -> String:
 	"""获取羁绊的悬浮提示文本

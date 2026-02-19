@@ -35,6 +35,7 @@ func _ready() -> void:
 	# 连接 BondManager 的信号
 	if BondManager:
 		BondManager.bonds_recalculated.connect(_on_bonds_recalculated)
+		BondManager.bond_level_changed.connect(_on_bond_level_changed)
 		print("[BondHUD] ✅ 已连接 BondManager 信号")
 		print("[BondHUD] BondManager.active_bonds: %s" % str(BondManager.active_bonds.keys()))
 		print("[BondHUD] BondManager.current_bond_counts: %s" % str(BondManager.current_bond_counts))
@@ -57,6 +58,96 @@ func _ready() -> void:
 func _on_bonds_recalculated(active_bonds: Dictionary) -> void:
 	"""BondManager 重新计算羁绊时调用"""
 	_update_display()
+
+func _on_bond_level_changed(bond_id: String, old_level: int, new_level: int) -> void:
+	"""羁绊等级变化时的视觉反馈"""
+	if new_level > old_level:
+		# 升级：弹跳动画 + 飘字 + 音效
+		_play_upgrade_feedback(bond_id, new_level)
+	elif new_level < old_level:
+		# 降级：缩小动画 + 降级提示
+		_play_downgrade_feedback(bond_id, new_level)
+
+# ============================================================================
+# 等级变化视觉反馈
+# ============================================================================
+
+func _play_upgrade_feedback(bond_id: String, new_level: int) -> void:
+	"""升级反馈：图标弹跳 + 屏幕中央飘字 + 音效"""
+	# 1. 图标放大弹跳动画
+	var icon_node = _find_bond_icon(bond_id)
+	if icon_node:
+		var tween = create_tween()
+		tween.tween_property(icon_node, "scale", Vector2(1.4, 1.4), 0.15).set_ease(Tween.EASE_OUT)
+		tween.tween_property(icon_node, "scale", Vector2(0.9, 0.9), 0.1).set_ease(Tween.EASE_IN)
+		tween.tween_property(icon_node, "scale", Vector2(1.0, 1.0), 0.1).set_ease(Tween.EASE_OUT)
+		icon_node.pivot_offset = icon_node.size / 2.0
+	
+	# 2. 屏幕中央飘字
+	var display_name = BondManager.get_bond_display_name(bond_id)
+	var text = "%s Lv.%d" % [display_name, new_level]
+	_show_floating_text(text, Color(1.0, 0.85, 0.2))  # 金色
+	
+	# 3. 播放音效
+	if SoundManager:
+		SoundManager.play("bond_trigger_generic")
+
+func _play_downgrade_feedback(bond_id: String, new_level: int) -> void:
+	"""降级反馈：图标缩小 + 降级提示"""
+	# 1. 图标缩小动画
+	var icon_node = _find_bond_icon(bond_id)
+	if icon_node:
+		var tween = create_tween()
+		tween.tween_property(icon_node, "scale", Vector2(0.6, 0.6), 0.2).set_ease(Tween.EASE_IN)
+		tween.tween_property(icon_node, "scale", Vector2(1.0, 1.0), 0.15).set_ease(Tween.EASE_OUT)
+		icon_node.pivot_offset = icon_node.size / 2.0
+	
+	# 2. 降级提示飘字
+	var display_name = BondManager.get_bond_display_name(bond_id)
+	var text = "%s 降级" % display_name if new_level == 0 else "%s Lv.%d" % [display_name, new_level]
+	_show_floating_text(text, Color(0.8, 0.3, 0.3))  # 红色
+
+func _find_bond_icon(bond_id: String) -> BondIcon:
+	"""在容器中查找指定 bond_id 的图标节点"""
+	for container in [active_container, inactive_container]:
+		for child in container.get_children():
+			if child is BondIcon and child.bond_id == bond_id:
+				return child
+	return null
+
+func _show_floating_text(text: String, color: Color) -> void:
+	"""在屏幕中央显示飘字提示"""
+	var label = Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 28)
+	label.add_theme_color_override("font_color", color)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	
+	# 添加到场景树顶层
+	var canvas_layer = get_tree().root
+	canvas_layer.add_child(label)
+	
+	# 居中定位
+	var viewport_size = get_viewport_rect().size
+	label.position = Vector2(viewport_size.x / 2.0, viewport_size.y * 0.35)
+	label.pivot_offset = label.size / 2.0
+	
+	# 飘字动画：放大出现 → 上飘 → 淡出
+	label.modulate.a = 0.0
+	label.scale = Vector2(0.5, 0.5)
+	
+	var tween = create_tween()
+	# 出现
+	tween.tween_property(label, "modulate:a", 1.0, 0.2)
+	tween.parallel().tween_property(label, "scale", Vector2(1.0, 1.0), 0.2).set_ease(Tween.EASE_OUT)
+	# 停留
+	tween.tween_interval(0.8)
+	# 上飘淡出
+	tween.tween_property(label, "position:y", label.position.y - 60, 0.5).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.5)
+	# 清理
+	tween.tween_callback(label.queue_free)
 
 # ============================================================================
 # 显示更新

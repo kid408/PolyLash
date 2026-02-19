@@ -66,6 +66,12 @@ var upgrade_attributes: Dictionary = {}          # 升级属性配置 (attribute
 var chest_configs: Dictionary = {}               # 宝箱配置 (tier -> config)
 var wave_chest_configs: Array[Dictionary] = []   # 波次宝箱配置 (数组，按波次范围)
 
+# 新格式道具配置（合并后的统一道具配置）
+var item_configs_new: Dictionary = {}            # 新格式道具配置 (item_id -> config)
+
+# 团队护符配置
+var emblem_configs: Dictionary = {}              # 护符配置 (emblem_id -> config)
+
 # 配置文件路径
 const CONFIG_DIR = "res://config/"
 const PLAYER_CONFIG = CONFIG_DIR + "player/player_config.csv"
@@ -87,6 +93,8 @@ const MAP_CONFIG = CONFIG_DIR + "system/map_config.csv"
 const UPGRADE_ATTRIBUTES = CONFIG_DIR + "item/upgrade_attributes.csv"
 const CHEST_CONFIG = CONFIG_DIR + "item/chest_config.csv"
 const WAVE_CHEST_CONFIG = CONFIG_DIR + "wave/wave_chest_config.csv"
+const ITEM_CONFIG_NEW = CONFIG_DIR + "item/item_config.csv"
+const EMBLEM_CONFIG = CONFIG_DIR + "item/emblem_config.csv"
 
 # ============================================================================
 # 初始化
@@ -150,6 +158,12 @@ func load_all_configs() -> void:
 	game_config = _load_key_value_config(GAME_CONFIG)
 	camera_config = _load_key_value_config(CAMERA_CONFIG)
 	map_config = _load_key_value_config(MAP_CONFIG)
+	
+	# 新格式道具配置
+	_load_item_configs_new()
+	
+	# 团队护符配置
+	_load_emblem_configs()
 
 # ============================================================================
 # CSV 加载方法
@@ -559,6 +573,220 @@ func get_all_upgrade_attributes() -> Dictionary:
 
 func get_all_chest_configs() -> Dictionary:
 	return chest_configs
+
+# ============================================================================
+# 新格式道具配置加载与访问
+# ============================================================================
+
+func _load_item_configs_new() -> void:
+	"""
+	加载新格式 item_config.csv 并缓存到 item_configs_new
+	
+	新格式字段: id, name, tier, type, slot_type, base_stat, base_value,
+	            mod_type, mod_value, bond_grant, shop_price, icon_path, description
+	
+	mod_type 和 mod_value 支持分号分隔的多修正（如 "attack_speed;switch_cd_reduce_pct" / "0.15;0.25"）
+	"""
+	item_configs_new.clear()
+	var file = FileAccess.open(ITEM_CONFIG_NEW, FileAccess.READ)
+	
+	if not file:
+		push_warning("[ConfigManager] 警告: 无法打开新格式道具配置 %s" % ITEM_CONFIG_NEW)
+		return
+	
+	var headers: PackedStringArray = []
+	var line_num: int = 0
+	
+	while not file.eof_reached():
+		var line = file.get_csv_line()
+		line_num += 1
+		
+		# 跳过空行
+		if line.size() == 0 or (line.size() == 1 and line[0].strip_edges() == ""):
+			continue
+		
+		# 第一行：列名
+		if line_num == 1:
+			headers = line
+			continue
+		
+		# 第二行：注释行（第一列为 -1）
+		if line_num == 2 and line[0].strip_edges() == "-1":
+			continue
+		
+		if headers.size() == 0:
+			continue
+		
+		var row_data: Dictionary = {}
+		for i in range(mini(line.size(), headers.size())):
+			var header = headers[i].strip_edges()
+			var value = line[i].strip_edges()
+			
+			# tier、base_value、shop_price 转为数值
+			if header in ["tier", "base_value", "shop_price"]:
+				if value.is_valid_float():
+					row_data[header] = float(value)
+				elif value.is_valid_int():
+					row_data[header] = int(value)
+				else:
+					row_data[header] = 0
+			else:
+				row_data[header] = value
+		
+		var item_id = row_data.get("id", "")
+		if item_id == "":
+			continue
+		
+		# 解析多修正字段
+		var mod_type_str = str(row_data.get("mod_type", ""))
+		var mod_value_str = str(row_data.get("mod_value", ""))
+		row_data["modifiers"] = _parse_modifiers(mod_type_str, mod_value_str)
+		
+		item_configs_new[item_id] = row_data
+	
+	file.close()
+	print("[ConfigManager] 加载新格式道具配置: %s - %d 条记录" % [ITEM_CONFIG_NEW, item_configs_new.size()])
+
+func _parse_modifiers(mod_type_str: String, mod_value_str: String) -> Array:
+	"""
+	解析分号分隔的多修正字段
+	
+	参数:
+	- mod_type_str: 修正类型字符串，如 "attack_speed;switch_cd_reduce_pct"
+	- mod_value_str: 修正值字符串，如 "0.15;0.25"
+	
+	返回:
+	- Array: [{"type": "attack_speed", "value": 0.15}, {"type": "switch_cd_reduce_pct", "value": 0.25}]
+	"""
+	var modifiers: Array = []
+	if mod_type_str.is_empty():
+		return modifiers
+	var types = mod_type_str.split(";")
+	var values = mod_value_str.split(";")
+	for i in range(types.size()):
+		modifiers.append({
+			"type": types[i].strip_edges(),
+			"value": float(values[i].strip_edges()) if i < values.size() else 0.0
+		})
+	return modifiers
+
+func get_item_config_by_id(item_id: String) -> Dictionary:
+	"""
+	通过 item_id 获取新格式道具配置
+	
+	参数:
+	- item_id: 道具唯一标识符（如 "relic_colossus", "potion_heal"）
+	
+	返回:
+	- Dictionary: 完整的道具配置，包含 modifiers 数组；未找到返回空字典
+	"""
+	return item_configs_new.get(item_id, {})
+
+# ============================================================================
+# 团队护符配置加载与访问
+# ============================================================================
+
+func _load_emblem_configs() -> void:
+	"""
+	加载 emblem_config.csv 并缓存到 emblem_configs
+	
+	字段: emblem_id, display_name, artifact_type, bond_tag, rarity,
+	      shop_price, is_unique, icon_path, description
+	
+	shop_price 和 is_unique 解析为数值，其余字段保留为字符串。
+	"""
+	emblem_configs.clear()
+	var file = FileAccess.open(EMBLEM_CONFIG, FileAccess.READ)
+	
+	if not file:
+		push_warning("[ConfigManager] 警告: 无法打开护符配置 %s" % EMBLEM_CONFIG)
+		return
+	
+	var headers: PackedStringArray = []
+	var line_num: int = 0
+	
+	while not file.eof_reached():
+		var line = file.get_csv_line()
+		line_num += 1
+		
+		# 跳过空行
+		if line.size() == 0 or (line.size() == 1 and line[0].strip_edges() == ""):
+			continue
+		
+		# 第一行：列名
+		if line_num == 1:
+			headers = line
+			continue
+		
+		# 第二行：注释行（第一列为 -1）
+		if line_num == 2 and line[0].strip_edges() == "-1":
+			continue
+		
+		if headers.size() == 0:
+			continue
+		
+		var row_data: Dictionary = {}
+		for i in range(mini(line.size(), headers.size())):
+			var header = headers[i].strip_edges()
+			var value = line[i].strip_edges()
+			
+			# shop_price 和 is_unique 转为数值
+			if header in ["shop_price", "is_unique"]:
+				if value.is_valid_int():
+					row_data[header] = int(value)
+				elif value.is_valid_float():
+					row_data[header] = float(value)
+				else:
+					row_data[header] = 0
+			else:
+				row_data[header] = value
+		
+		var emblem_id = row_data.get("emblem_id", "")
+		if emblem_id == "":
+			continue
+		
+		emblem_configs[emblem_id] = row_data
+	
+	file.close()
+	print("[ConfigManager] 加载护符配置: %s - %d 条记录" % [EMBLEM_CONFIG, emblem_configs.size()])
+
+func get_emblem_config(emblem_id: String) -> Dictionary:
+	"""
+	通过 emblem_id 获取护符配置
+	
+	参数:
+	- emblem_id: 护符唯一标识符（如 "emblem_inkborn", "relic_gold_ink"）
+	
+	返回:
+	- Dictionary: 完整的护符配置；未找到返回空字典
+	"""
+	return emblem_configs.get(emblem_id, {})
+
+func get_all_emblem_configs() -> Dictionary:
+	"""
+	获取所有护符配置
+	
+	返回:
+	- Dictionary: {emblem_id: config_dict, ...}
+	"""
+	return emblem_configs
+
+func get_emblems_by_bond_tag(bond_tag: String) -> Array:
+	"""
+	获取指定羁绊标签的所有护符配置
+	
+	参数:
+	- bond_tag: 羁绊标签（如 "inkborn", "colossus"）
+	
+	返回:
+	- Array: 匹配的护符配置数组
+	"""
+	var result: Array = []
+	for emblem_id in emblem_configs:
+		var config = emblem_configs[emblem_id]
+		if config.get("bond_tag", "") == bond_tag:
+			result.append(config)
+	return result
 
 # ============================================================================
 # 角色选择相关方法

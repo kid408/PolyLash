@@ -125,3 +125,89 @@ func clear_all_equipment() -> void:
 	equipped_items.clear()
 	save_equipment_data()
 	print("[EquipmentManager] 清空所有装备")
+
+# ============================================================================
+# 新增：统一装备/使用入口 & 数据查询
+# ============================================================================
+
+func equip_or_use_item(player_id: String, item_id: String, slot_index: int = 0) -> bool:
+	"""统一入口：根据道具类型决定穿戴还是立即使用
+	
+	consumable 类型 -> 调用 player.apply_consumable_effect() 立即使用，不存入槽位
+	equipment 类型 -> 执行穿戴/替换逻辑
+	"""
+	var config = ConfigManager.get_item_config_by_id(item_id)
+	if config.is_empty():
+		printerr("[EquipmentManager] 未找到道具配置: %s" % item_id)
+		return false
+	
+	# 消耗品分支：立即使用，不存入槽位
+	if config.get("type", "") == "consumable":
+		var player = _get_player_node(player_id)
+		if player and player.has_method("apply_consumable_effect"):
+			player.apply_consumable_effect(config)
+			print("[EquipmentManager] 消耗品已使用: %s" % config.get("name", item_id))
+		return true
+	
+	# 装备分支：执行穿戴/替换逻辑
+	return _equip_item_with_replace(player_id, item_id, slot_index)
+
+func _equip_item_with_replace(player_id: String, new_item_id: String, slot_index: int) -> bool:
+	"""装备新道具，自动替换旧装备（旧装备按 50% 回收金币）"""
+	var old_item_type = get_equipped_item(player_id)
+	if old_item_type > 0:
+		# 旧装备自动出售（50% 回收）
+		var old_item_id = WarehouseManager.get_item_id_from_type(old_item_type)
+		if not old_item_id.is_empty():
+			var old_config = ConfigManager.get_item_config_by_id(old_item_id)
+			var sell_price = int(float(old_config.get("shop_price", 0)) * 0.5)
+			if sell_price > 0:
+				DataManager.add_gold(sell_price)
+				print("[EquipmentManager] 旧装备自动出售: +%d 金币" % sell_price)
+	
+	# 装备新道具
+	var new_item_type = WarehouseManager.get_type_from_item_id(new_item_id)
+	if new_item_type <= 0:
+		# 如果 WarehouseManager 没有映射，直接用 item_id 的 hash 作为 type
+		# 这是为了兼容新格式道具
+		new_item_type = new_item_id.hash()
+	
+	equipped_items[player_id] = new_item_type
+	save_equipment_data()
+	
+	# 让角色实际装备道具
+	var player = _get_player_node(player_id)
+	if player and player.has_method("equip_item"):
+		player.equip_item(new_item_id)
+	
+	# 触发 BondManager 重算
+	if BondManager:
+		BondManager.stat_modifiers_changed.emit()
+	
+	print("[EquipmentManager] 角色 %s 装备了 %s" % [player_id, new_item_id])
+	return true
+
+func get_equipped_item_data(player_id: String) -> Dictionary:
+	"""获取角色装备的完整道具数据（含 bond_grant）"""
+	var item_type = get_equipped_item(player_id)
+	if item_type <= 0:
+		return {}
+	var item_id = WarehouseManager.get_item_id_from_type(item_type)
+	if item_id.is_empty():
+		return {}
+	return ConfigManager.get_item_config_by_id(item_id)
+
+func _get_player_node(player_id: String) -> Node:
+	"""获取指定 player_id 的玩家节点"""
+	# 优先检查 Global.player
+	if Global.player and is_instance_valid(Global.player):
+		if Global.player.get("player_id") == player_id:
+			return Global.player
+	
+	# 遍历 player 组查找
+	var players = get_tree().get_nodes_in_group("player")
+	for player in players:
+		if is_instance_valid(player) and player.get("player_id") == player_id:
+			return player
+	
+	return null

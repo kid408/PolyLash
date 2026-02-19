@@ -8,6 +8,7 @@ extends Node
 signal gold_changed(new_gold: int)  # 金币变化信号
 
 const SAVE_PATH = "user://player_save.json"
+const SESSION_SAVE_PATH = "user://session_data.json"
 
 # 保存数据结构
 var save_data: Dictionary = {
@@ -26,6 +27,9 @@ var max_upgrade_level: int = 5
 func _ready() -> void:
 	_load_upgrade_configs()
 	_load_save_data()
+	# 检查局内会话存档并恢复
+	if has_session_data():
+		load_session_data()
 	print("[DataManager] 初始化完成，当前金币: %d" % save_data.total_gold)
 
 # ============================================================================
@@ -292,6 +296,61 @@ func get_player_current_attribute(player_id: String, attribute_name: String) -> 
 	var base_value = get_player_base_attribute(player_id, attribute_name)
 	var bonus = get_attribute_bonus(player_id, attribute_name)
 	return base_value + bonus
+
+# ============================================================================
+# 局内会话存档（防崩溃恢复）
+# ============================================================================
+
+func save_session_data() -> void:
+	"""保存局内会话数据（每波结束时调用）"""
+	var session: Dictionary = {
+		"emblem_data": EmblemManager.serialize()
+	}
+	
+	var file = FileAccess.open(SESSION_SAVE_PATH, FileAccess.WRITE)
+	if not file:
+		printerr("[DataManager] 无法创建局内会话存档文件")
+		return
+	
+	var json_text = JSON.stringify(session, "\t")
+	file.store_string(json_text)
+	file.close()
+	print("[DataManager] 局内会话存档已保存")
+
+func load_session_data() -> void:
+	"""加载局内会话存档并恢复状态"""
+	if not FileAccess.file_exists(SESSION_SAVE_PATH):
+		print("[DataManager] 无局内会话存档")
+		return
+	
+	var file = FileAccess.open(SESSION_SAVE_PATH, FileAccess.READ)
+	if not file:
+		printerr("[DataManager] 无法打开局内会话存档文件")
+		return
+	
+	var json_text = file.get_as_text()
+	file.close()
+	
+	var json = JSON.new()
+	var error = json.parse(json_text)
+	if error != OK:
+		printerr("[DataManager] 解析局内会话存档失败: %s" % json.get_error_message())
+		return
+	
+	var data = json.get_data()
+	if data is Dictionary and data.has("emblem_data"):
+		EmblemManager.deserialize(data["emblem_data"])
+		print("[DataManager] 局内会话存档已恢复")
+
+func clear_session_data() -> void:
+	"""清理局内会话存档（局结束时调用）"""
+	if FileAccess.file_exists(SESSION_SAVE_PATH):
+		DirAccess.remove_absolute(SESSION_SAVE_PATH)
+		print("[DataManager] 局内会话存档已清理")
+
+func has_session_data() -> bool:
+	"""检查是否存在局内会话存档"""
+	return FileAccess.file_exists(SESSION_SAVE_PATH)
 
 # ============================================================================
 # 随机武器商店 (Starting Weapon Shop)
