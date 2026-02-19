@@ -44,7 +44,7 @@ func test_warehouse_initialization() -> void:
 	for i in range(min(5, items.size())):
 		var item_type = items.get(i, 0)
 		var config = WarehouseManager.get_item_config(item_type)
-		print("  槽位 %d: 道具 %d - %s" % [i, item_type, config.get("description", "未知")])
+		print("  槽位 %d: 道具 %d - %s" % [i, item_type, config.get("name", "未知")])
 
 # ==============================================================================
 # 测试 2: item_config.csv 配置

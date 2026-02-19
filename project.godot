@@ -25,8 +25,8 @@ UpgradeManager="*res://autoloads/upgrade_manager.gd"
 EliteConfigManager="*res://autoloads/elite_config_manager.gd"
 PlayerFactory="*res://autoloads/player_factory.gd"
 SkillEffectManager="*res://autoloads/skill_effect_manager.gd"
-WarehouseManager="*res://autoloads/warehouse_manager.gd"
 EquipmentManager="*res://autoloads/equipment_manager.gd"
+WarehouseManager="*res://autoloads/warehouse_manager.gd"
 BondUILoader="*res://autoloads/bond_ui_loader.gd"
 BondManager="*res://autoloads/bond_manager.gd"
 EmblemManager="*res://autoloads/emblem_manager.gd"
@@ -36,6 +36,7 @@ ShopAttributeManager="*res://autoloads/shop_attribute_manager.gd"
 AbilityManager="*res://autoloads/ability_manager.gd"
 WeaponConfigLoader="*res://autoloads/weapon_config_loader.gd"
 DebugSwitcher="*res://scenes/arena/debug_switcher.gd"
+ItemTooltipHelper="*res://autoloads/item_tooltip_helper.gd"
 
 [display]
 

@@ -21,6 +21,9 @@ var gold_texture: Texture2D = null
 # 武器商店开关
 var weapon_shop_enabled: bool = false
 
+# 道具Tooltip面板
+var _item_tooltip: PanelContainer = null
+
 # ============================================================================
 # 初始化
 # ============================================================================
@@ -32,6 +35,10 @@ func _ready() -> void:
 	gold_texture = load("res://assets/sprites/Gold/gold_1.png")
 	if gold_texture:
 		gold_icon.texture = gold_texture
+	
+	# 创建道具Tooltip面板
+	_item_tooltip = ItemTooltipHelper.create_tooltip_panel()
+	add_child(_item_tooltip)
 	
 	# 检查武器商店开关
 	weapon_shop_enabled = int(ConfigManager.get_game_setting("enable_starting_weapon_shop", 0)) == 1
@@ -342,6 +349,9 @@ func _create_equipment_slot_section(player_id: String) -> Control:
 	content_hbox.add_theme_constant_override("separation", 16)
 	equip_panel.add_child(content_hbox)
 	
+	# 检查是否已装备
+	var equipped_item = EquipmentManager.get_equipped_item(player_id)
+	
 	# 左侧：标签
 	var label_vbox = VBoxContainer.new()
 	label_vbox.add_theme_constant_override("separation", 4)
@@ -360,6 +370,12 @@ func _create_equipment_slot_section(player_id: String) -> Control:
 	hint_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 	label_vbox.add_child(hint_label)
 	
+	# 中间：已装备道具简要信息
+	if equipped_item > 0:
+		var info_widget = ItemTooltipHelper.create_equip_info_widget(equipped_item)
+		info_widget.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		content_hbox.add_child(info_widget)
+	
 	# 弹性空间
 	var spacer = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -375,9 +391,6 @@ func _create_equipment_slot_section(player_id: String) -> Control:
 	var slot_button = Button.new()
 	slot_button.name = "EquipSlot_" + player_id
 	slot_button.custom_minimum_size = Vector2(64, 64)
-	
-	# 检查是否已装备
-	var equipped_item = EquipmentManager.get_equipped_item(player_id)
 	
 	if equipped_item > 0:
 		# 已装备：显示道具图标
@@ -415,6 +428,11 @@ func _create_equipment_slot_section(player_id: String) -> Control:
 	slot_button.pressed.connect(_on_equipment_slot_pressed.bind(player_id))
 	slot_container.add_child(slot_button)
 	
+	# 装备槽悬浮Tooltip
+	if equipped_item > 0:
+		slot_button.mouse_entered.connect(_on_equip_slot_mouse_entered.bind(equipped_item))
+		slot_button.mouse_exited.connect(_on_equip_slot_mouse_exited)
+	
 	# 卸下按钮（仅在已装备时显示）
 	if equipped_item > 0:
 		var unequip_btn = Button.new()
@@ -438,6 +456,20 @@ func _create_equipment_slot_section(player_id: String) -> Control:
 # ============================================================================
 # 装备槽事件
 # ============================================================================
+
+func _on_equip_slot_mouse_entered(item_type: int) -> void:
+	"""装备槽鼠标悬浮 - 显示道具Tooltip"""
+	ItemTooltipHelper.populate_tooltip(_item_tooltip, item_type)
+	_item_tooltip.reset_size()
+	_item_tooltip.visible = true
+
+func _on_equip_slot_mouse_exited() -> void:
+	"""装备槽鼠标离开 - 隐藏Tooltip"""
+	_item_tooltip.visible = false
+
+func _process(_delta: float) -> void:
+	if _item_tooltip and _item_tooltip.visible:
+		ItemTooltipHelper.update_tooltip_position(_item_tooltip, get_viewport())
 
 func _on_equipment_slot_pressed(player_id: String) -> void:
 	"""点击装备槽 - 打开仓库选择模式"""

@@ -312,6 +312,11 @@ func _init_bond_hud() -> void:
 		print("[Arena] 当前队伍: %s" % str(Global.selected_player_ids))
 		BondManager.recalculate_active_bonds(Global.selected_player_ids)
 		print("[Arena] ✅ 羁绊计算完成")
+		
+		# 将羁绊属性加成应用到当前玩家
+		if is_instance_valid(Global.player) and Global.player.has_method("apply_bond_stat_modifiers"):
+			Global.player.apply_bond_stat_modifiers()
+			print("[Arena] ✅ 羁绊属性已应用到玩家")
 	else:
 		print("[Arena] ⚠️ 警告: 没有选择角色，无法计算羁绊")
 	
@@ -434,6 +439,14 @@ func _on_player_switch_requested(player_id: String) -> void:
 	
 	# 生成新角色
 	_spawn_player(player_id, old_pos)
+	
+	# 重新应用羁绊属性加成到新角色
+	if is_instance_valid(Global.player) and Global.player.has_method("apply_bond_stat_modifiers"):
+		# 重新计算羁绊（角色切换可能影响标签统计）
+		BondManager.recalculate_active_bonds(Global.selected_player_ids)
+		Global.player.apply_bond_stat_modifiers()
+		print("[Arena] ✅ 角色切换后羁绊属性已重新应用")
+	
 	print("[Arena] ===== 角色切换结束 =====")
 
 func _input(event: InputEvent) -> void:

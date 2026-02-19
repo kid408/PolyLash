@@ -187,7 +187,7 @@ func _count_character_tags(team_player_ids: Array) -> void:
 			_add_tag_source(tag, "character", 1)
 
 func _count_equipment_tags(team_player_ids: Array) -> void:
-	"""来源2: 统计角色装备的 bond_grant 标签"""
+	"""来源2: 统计角色装备的 bond_grant 标签（支持 | 分隔多羁绊）"""
 	for pid in team_player_ids:
 		var item_data = EquipmentManager.get_equipped_item_data(str(pid))
 		if item_data.is_empty():
@@ -195,8 +195,13 @@ func _count_equipment_tags(team_player_ids: Array) -> void:
 		var bond_grant = str(item_data.get("bond_grant", "")).strip_edges()
 		if bond_grant.is_empty():
 			continue
-		current_bond_counts[bond_grant] = current_bond_counts.get(bond_grant, 0) + 1
-		_add_tag_source(bond_grant, "equipment", 1)
+		var bond_tags = bond_grant.split("|")
+		for tag in bond_tags:
+			tag = tag.strip_edges()
+			if tag.is_empty():
+				continue
+			current_bond_counts[tag] = current_bond_counts.get(tag, 0) + 1
+			_add_tag_source(tag, "equipment", 1)
 
 func _count_emblem_tags() -> void:
 	"""来源3: 统计全局徽章提供的羁绊标签"""

@@ -28,5 +28,5 @@ assist,tactic,1,2,mechanic,bench_cd_reduce,0.3,1,支援型,后台技能冷却减
 assist,tactic,2,4,mechanic,mirror_draw,1,1,支援型,激活后台角色镜像作画
 vanguard,tactic,1,2,mechanic,switch_cd_reduce,0.5,2,突击型,切换冷却减少50%
 vanguard,tactic,2,4,mechanic,ink_inherit,1,2,突击型,切换时保留地面图形并增伤
-commander,tactic,1,2,stat_mod,stat_share,0.3,3,指挥型,后台角色30%属性共享给前台
-commander,tactic,2,4,mechanic,soul_attach,1,3,指挥型,前台攻击附带后台角色特效
+commander,tactic,1,2,stat_mod,stat_share,0.3,5,指挥型,后台角色30%属性共享给前台
+commander,tactic,2,4,mechanic,soul_attach,1,5,指挥型,前台攻击附带后台角色特效

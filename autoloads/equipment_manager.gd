@@ -44,9 +44,15 @@ func _load_equipment_data() -> void:
 	
 	var data = json.get_data()
 	if data is Dictionary:
-		# 加载装备数据
+		# 加载装备数据（JSON数字为float，需转int）
 		if data.has("equipped_items"):
-			equipped_items = data["equipped_items"]
+			var raw = data["equipped_items"]
+			equipped_items.clear()
+			for key in raw.keys():
+				var val = raw[key]
+				if val is float:
+					val = int(val)
+				equipped_items[key] = val
 		
 		print("[EquipmentManager] 加载装备数据: %s" % str(equipped_items))
 
@@ -97,6 +103,8 @@ func unequip_item(player_id: String) -> bool:
 		return false
 	
 	var item_type = equipped_items[player_id]
+	if item_type is float:
+		item_type = int(item_type)
 	if item_type <= 0:
 		return false
 	
@@ -114,7 +122,10 @@ func unequip_item(player_id: String) -> bool:
 
 func get_equipped_item(player_id: String) -> int:
 	"""获取角色装备的道具类型（0表示未装备）"""
-	return equipped_items.get(player_id, 0)
+	var val = equipped_items.get(player_id, 0)
+	if val is float:
+		val = int(val)
+	return val
 
 func is_equipped(player_id: String) -> bool:
 	"""检查角色是否装备了道具"""

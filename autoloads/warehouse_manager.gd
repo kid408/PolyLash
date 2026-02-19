@@ -52,7 +52,7 @@ func _load_item_configs() -> void:
 		
 		# 构建兼容旧调用方的配置字典（保留 description / resourcePath 键）
 		var compat_config: Dictionary = cfg.duplicate()
-		compat_config["description"] = cfg.get("name", "")
+		compat_config["display_name"] = cfg.get("name", "")
 		compat_config["resourcePath"] = cfg.get("icon_path", "")
 		
 		item_configs[type_counter] = compat_config
@@ -91,7 +91,36 @@ func _load_warehouse_data() -> void:
 		# 转换键为整数
 		for key in data.keys():
 			warehouse_items[int(key)] = int(data[key])
-		print("[WarehouseManager] 加载仓库数据: %d 个道具" % warehouse_items.size())
+		
+		# 去重：每个 item_type 只保留一个
+		_deduplicate_warehouse()
+		
+		print("[WarehouseManager] 加载仓库数据: %d 个道具（去重后）" % warehouse_items.size())
+		
+		# 检查仓库是否包含完整的圣物
+		# 旧存档可能缺少圣物，需要重新初始化
+		var relic_count = 0
+		for slot in warehouse_items.keys():
+			var item_type = warehouse_items[slot]
+			var item_id = _type_to_id_map.get(item_type, "")
+			if item_id.begins_with("relic_"):
+				relic_count += 1
+		
+		# 加上已装备的圣物数量
+		var equipped_relic_count = 0
+		for player_id in EquipmentManager.equipped_items.keys():
+			var eq_type = EquipmentManager.equipped_items[player_id]
+			if eq_type is float:
+				eq_type = int(eq_type)
+			if eq_type > 0:
+				var eq_id = _type_to_id_map.get(eq_type, "")
+				if eq_id.begins_with("relic_"):
+					equipped_relic_count += 1
+		
+		var total_relics = relic_count + equipped_relic_count
+		if total_relics < 48:
+			print("[WarehouseManager] 圣物总数不足 (仓库%d + 装备%d = %d/48)，重新初始化" % [relic_count, equipped_relic_count, total_relics])
+			_init_default_items()
 	else:
 		_init_default_items()
 
@@ -108,53 +137,72 @@ func save_warehouse_data() -> void:
 	print("[WarehouseManager] 保存仓库数据: %d 个道具" % warehouse_items.size())
 
 func _init_default_items() -> void:
-	"""初始化默认测试道具（包含所有三个层级）"""
+	"""初始化默认道具（48个圣物，排除已装备的）"""
 	warehouse_items.clear()
 	
-	# Tier 1: 属性道具（3个）— 对应 CSV 行序 1-3
-	warehouse_items[0] = 1   # attr_hp_potion 生命药水
-	warehouse_items[1] = 2   # attr_speed_boots 疾风靴
-	warehouse_items[2] = 3   # attr_damage_dagger 锋利匕首
+	var slot = 0
 	
-	# Tier 2: 魔法道具（6个）— 对应 CSV 行序 4-9
-	warehouse_items[3] = 4   # magic_fire_heart 火焰之心
-	warehouse_items[4] = 5   # magic_ice_crystal 冰霜水晶
-	warehouse_items[5] = 6   # magic_aoe_amplifier 范围扩增器
-	warehouse_items[6] = 7   # magic_damage_boost 通用伤害增幅
-	warehouse_items[7] = 8   # magic_duration_extend 持续时间延长
-	warehouse_items[8] = 9   # magic_speed_boost 速度强化
+	# 收集所有已装备的 item_type，初始化时排除
+	var equipped_types: Dictionary = {}
+	for player_id in EquipmentManager.equipped_items.keys():
+		var item_type = EquipmentManager.equipped_items[player_id]
+		if item_type is float:
+			item_type = int(item_type)
+		if item_type > 0:
+			equipped_types[item_type] = true
 	
-	# Tier 3: 圣物道具（6个）— 对应 CSV 行序 10-15
-	warehouse_items[9] = 10   # relic_colossus 巨擘圣物
-	warehouse_items[10] = 11  # relic_inkborn 墨灵圣物
-	warehouse_items[11] = 12  # relic_alchemist 炼金圣物
-	warehouse_items[12] = 13  # relic_blaster 爆破圣物
-	warehouse_items[13] = 14  # relic_nomad 风行圣物
-	warehouse_items[14] = 15  # relic_architect 筑墙圣物
+	# Tier 3: 48个圣物道具
+	var relic_ids: Array[String] = [
+		"relic_skull_human", "relic_bone_femur", "relic_bone_jaw", "relic_bone_wrapped",
+		"relic_skeletal_hand", "relic_bone_cross", "relic_ribcage", "relic_giant_tooth",
+		"relic_sharp_fang", "relic_skull_bird", "relic_jaw_trap", "relic_fresh_heart",
+		"relic_dual_eyes", "relic_brain", "relic_severed_arm", "relic_severed_foot",
+		"relic_gem_bone_green", "relic_ring_sapphire", "relic_ring_amethyst", "relic_crown_spiked",
+		"relic_necklace_teeth", "relic_rune_blue", "relic_rune_red", "relic_necklace_skull",
+		"relic_flask_green", "relic_bag_leather", "relic_wood_logs", "relic_scroll_rolled",
+		"relic_book_necro", "relic_glove_dark", "relic_dagger_ritual", "relic_hood_dark",
+		"relic_candle_skull", "relic_candle_dual", "relic_page_script", "relic_vial_blood",
+		"relic_root_mandrake", "relic_doll_voodoo", "relic_coin_ancient", "relic_bowl_blood",
+		"relic_key_skeleton", "relic_letter_sealed", "relic_parchment_open", "relic_horn_war",
+		"relic_glove_leather", "relic_boot_worn", "relic_arrow_broken", "relic_skull_deer"
+	]
+	
+	for relic_id in relic_ids:
+		var type_val = _id_to_type_map.get(relic_id, 0)
+		if type_val > 0 and not equipped_types.has(type_val):
+			warehouse_items[slot] = type_val
+			slot += 1
 	
 	save_warehouse_data()
-	print("[WarehouseManager] 初始化默认测试道具: 15个（Tier1:3, Tier2:6, Tier3:6）")
+	print("[WarehouseManager] 初始化默认道具: %d 个圣物已放入仓库（排除 %d 个已装备）" % [slot, equipped_types.size()])
 
 # ============================================================================
 # 仓库操作接口
 # ============================================================================
 
 func add_item(item_type: int) -> bool:
-	"""添加道具到仓库（自动寻找空槽位）"""
+	"""添加道具到仓库（自动追加到末尾，不允许重复）"""
 	if not item_configs.has(item_type):
 		printerr("[WarehouseManager] 道具类型不存在: %d" % item_type)
 		return false
 	
-	# 查找空槽位
-	for i in range(warehouse_capacity):
-		if not warehouse_items.has(i):
-			warehouse_items[i] = item_type
-			save_warehouse_data()
-			print("[WarehouseManager] 添加道具 %d 到槽位 %d" % [item_type, i])
-			return true
+	# 检查仓库中是否已有该道具（去重）
+	for slot in warehouse_items.keys():
+		if warehouse_items[slot] == item_type:
+			printerr("[WarehouseManager] 仓库中已存在道具 %d，跳过添加" % item_type)
+			return false
 	
-	printerr("[WarehouseManager] 仓库已满，无法添加道具 %d" % item_type)
-	return false
+	# 追加到末尾
+	var next_slot = 0
+	if not warehouse_items.is_empty():
+		var keys = warehouse_items.keys()
+		keys.sort()
+		next_slot = keys[-1] + 1
+	
+	warehouse_items[next_slot] = item_type
+	save_warehouse_data()
+	print("[WarehouseManager] 添加道具 %d 到槽位 %d" % [item_type, next_slot])
+	return true
 
 func remove_item(slot_index: int) -> bool:
 	"""从指定槽位移除道具"""
@@ -188,6 +236,28 @@ func _compact_warehouse() -> void:
 		warehouse_items[i] = items_list[i]
 	
 	print("[WarehouseManager] 仓库整理完成，当前有 %d 个道具" % items_list.size())
+
+func _deduplicate_warehouse() -> void:
+	"""去重：每个 item_type 只保留第一个，移除重复项"""
+	var seen_types: Dictionary = {}
+	var duplicates: Array = []
+	
+	var sorted_slots = warehouse_items.keys()
+	sorted_slots.sort()
+	
+	for slot in sorted_slots:
+		var item_type = warehouse_items[slot]
+		if seen_types.has(item_type):
+			duplicates.append(slot)
+		else:
+			seen_types[item_type] = true
+	
+	if duplicates.size() > 0:
+		for slot in duplicates:
+			warehouse_items.erase(slot)
+		_compact_warehouse()
+		save_warehouse_data()
+		print("[WarehouseManager] 去重完成，移除了 %d 个重复道具" % duplicates.size())
 
 func get_item_at_slot(slot_index: int) -> int:
 	"""获取指定槽位的道具类型（0表示空）"""

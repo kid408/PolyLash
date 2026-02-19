@@ -11,9 +11,10 @@ class_name WarehouseUI
 
 @onready var grid_container: GridContainer = $MarginContainer/VBoxContainer/ScrollContainer/GridContainer
 @onready var close_button: Button = $MarginContainer/VBoxContainer/TopBar/CloseButton
+@onready var equipped_button: Button = $MarginContainer/VBoxContainer/TopBar/EquippedButton
 @onready var title_label: Label = $MarginContainer/VBoxContainer/TopBar/TitleLabel
-@onready var tooltip_panel: Panel = $TooltipPanel
-@onready var tooltip_label: Label = $TooltipPanel/MarginContainer/TooltipLabel
+@onready var tooltip_panel: PanelContainer = $TooltipPanel
+# tooltip_label 不再直接使用，由 ItemTooltipHelper 管理内容
 
 # ============================================================================
 # 配置变量
@@ -56,6 +57,10 @@ func _ready() -> void:
 	
 	# 连接关闭按钮
 	close_button.pressed.connect(_on_close_pressed)
+	equipped_button.pressed.connect(_on_equipped_pressed)
+	
+	# 注册tscn面板到helper缓存
+	ItemTooltipHelper.register_panel(tooltip_panel)
 	
 	# 初始隐藏tooltip
 	tooltip_panel.visible = false
@@ -63,6 +68,7 @@ func _ready() -> void:
 	# 如果是选择模式，更新标题
 	if selection_mode:
 		title_label.text = "选择装备"
+		equipped_button.visible = false
 	
 	print("[WarehouseUI] 初始化完成 - 容量: %d, 列数: %d, 选择模式: %s" % [warehouse_capacity, warehouse_columns, selection_mode])
 
@@ -77,38 +83,42 @@ func _setup_ui() -> void:
 	grid_container.add_theme_constant_override("h_separation", slot_spacing)
 	grid_container.add_theme_constant_override("v_separation", slot_spacing)
 	
-	# 计算窗口大小
-	var rows = ceili(float(warehouse_capacity) / float(warehouse_columns))
+	# 计算窗口大小（限制最大显示行数，超出部分滚动）
+	var max_visible_rows = 6  # 最多显示6行，超出滚动
 	var grid_width = warehouse_columns * slot_size + (warehouse_columns - 1) * slot_spacing
-	var grid_height = rows * slot_size + (rows - 1) * slot_spacing
+	var visible_grid_height = max_visible_rows * slot_size + (max_visible_rows - 1) * slot_spacing
 	
 	# 设置背景Panel大小（包含边距和标题栏）
 	var margin = 20
 	var top_bar_height = 60
-	var total_width = grid_width + margin * 2
-	var total_height = grid_height + margin * 2 + top_bar_height
+	var total_width = grid_width + margin * 2 + 16  # +16 给滚动条留空间
+	var total_height = visible_grid_height + margin * 2 + top_bar_height
 	
 	# 居中显示
 	custom_minimum_size = Vector2(total_width, total_height)
 	size = custom_minimum_size
 	position = (get_viewport_rect().size - size) / 2
 	
-	print("[WarehouseUI] 窗口大小: %dx%d, 格子区域: %dx%d" % [total_width, total_height, grid_width, grid_height])
+	print("[WarehouseUI] 窗口大小: %dx%d, 最大显示 %d 行" % [total_width, total_height, max_visible_rows])
 
 # ============================================================================
 # 格子生成
 # ============================================================================
 
 func _generate_slots() -> void:
-	"""生成仓库格子"""
+	"""生成仓库格子（数量 = 实际道具数 向上取整到列数的倍数，至少 warehouse_columns 个）"""
 	slot_buttons.clear()
 	
-	for i in range(warehouse_capacity):
+	var item_count = WarehouseManager.get_all_items().size()
+	# 向上取整到列数的整数倍，至少一行
+	var slot_count = max(warehouse_columns, ceili(float(item_count) / float(warehouse_columns)) * warehouse_columns)
+	
+	for i in range(slot_count):
 		var slot = _create_slot(i)
 		grid_container.add_child(slot)
 		slot_buttons.append(slot)
 	
-	print("[WarehouseUI] 生成了 %d 个格子" % warehouse_capacity)
+	print("[WarehouseUI] 生成了 %d 个格子（道具数: %d）" % [slot_count, item_count])
 
 func _create_slot(slot_index: int) -> Button:
 	"""创建单个格子"""
@@ -209,47 +219,58 @@ func _on_slot_pressed(slot_index: int) -> void:
 # ============================================================================
 
 func _show_tooltip(item_type: int) -> void:
-	"""显示道具提示"""
+	"""显示道具提示（使用共享的ItemTooltipHelper）"""
 	var config = WarehouseManager.get_item_config(item_type)
 	if config.is_empty():
 		return
 	
-	var description = config.get("description", "未知道具")
-	tooltip_label.text = description
-	
-	# 重置大小让Panel根据内容自适应
+	ItemTooltipHelper.populate_tooltip(tooltip_panel, item_type)
 	tooltip_panel.reset_size()
-	
-	# 显示tooltip
 	tooltip_panel.visible = true
-	
-	# 更新tooltip位置（跟随鼠标）
+	# 等一帧让 PanelContainer 完成布局计算
+	await get_tree().process_frame
 	_update_tooltip_position()
+
+func _get_stat_display_name(stat_key: String) -> String:
+	"""将属性键名转为中文显示名"""
+	return ItemTooltipHelper.get_stat_display_name(stat_key)
 
 func _hide_tooltip() -> void:
 	"""隐藏道具提示"""
 	tooltip_panel.visible = false
 
 func _update_tooltip_position() -> void:
-	"""更新tooltip位置（top_level模式，使用视口坐标）"""
-	var mouse_pos = get_viewport().get_mouse_position()
-	var offset = Vector2(15, 15)
-	
-	var viewport_size = get_viewport_rect().size
-	var tooltip_size = tooltip_panel.size
-	
-	var pos = mouse_pos + offset
-	if pos.x + tooltip_size.x > viewport_size.x:
-		pos.x = mouse_pos.x - tooltip_size.x - offset.x
-	if pos.y + tooltip_size.y > viewport_size.y:
-		pos.y = mouse_pos.y - tooltip_size.y - offset.y
-	
-	tooltip_panel.position = pos
+	"""更新tooltip位置"""
+	ItemTooltipHelper.update_tooltip_position(tooltip_panel, get_viewport())
 
 func _process(_delta: float) -> void:
 	"""每帧更新tooltip位置"""
 	if tooltip_panel.visible:
 		_update_tooltip_position()
+
+# ============================================================================
+# 已装备按钮
+# ============================================================================
+
+func _on_equipped_pressed() -> void:
+	"""打开已装备面板"""
+	SoundManager.play("ui_click")
+	var scene = load("res://scenes/ui/equipped_panel.tscn")
+	if not scene:
+		printerr("[WarehouseUI] 无法加载已装备面板场景")
+		return
+	var panel = scene.instantiate() as EquippedPanel
+	panel.equipment_changed.connect(_on_equipment_changed)
+	add_child(panel)
+
+func _on_equipment_changed() -> void:
+	"""已装备面板卸下装备后刷新仓库"""
+	# 重新生成格子和刷新显示
+	for child in grid_container.get_children():
+		child.queue_free()
+	slot_buttons.clear()
+	_generate_slots()
+	_refresh_items()
 
 # ============================================================================
 # 关闭按钮

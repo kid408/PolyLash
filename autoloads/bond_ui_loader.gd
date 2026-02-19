@@ -275,7 +275,7 @@ func update_bond_icons(container: HBoxContainer, origin_tag: String, mastery_tag
 # ============================================================================
 
 func calculate_team_bonds(selected_player_ids: Array) -> Dictionary:
-	"""计算队伍羁绊统计
+	"""计算队伍羁绊统计（角色标签 + 装备bond_grant）
 	
 	Args:
 		selected_player_ids: 已选角色ID数组（如 ["butcher", "wind", "pyro"]）
@@ -322,6 +322,26 @@ func calculate_team_bonds(selected_player_ids: Array) -> Dictionary:
 				}
 			
 			result.bonds[tag].count += 1
+		
+		# 统计装备的 bond_grant（支持 | 分隔多羁绊）
+		var item_data = EquipmentManager.get_equipped_item_data(str(player_id))
+		if not item_data.is_empty():
+			var bond_grant = str(item_data.get("bond_grant", "")).strip_edges()
+			if bond_grant != "":
+				var bond_tags = bond_grant.split("|")
+				for bt in bond_tags:
+					bt = bt.strip_edges()
+					if bt == "":
+						continue
+					# 查找该羁绊的类型
+					var bt_config = bond_configs.get(bt, {})
+					var bt_type = bt_config.get("bond_type", "tactic")
+					if not result.bonds.has(bt):
+						result.bonds[bt] = {
+							"count": 0,
+							"type": bt_type
+						}
+					result.bonds[bt].count += 1
 	
 	return result
 

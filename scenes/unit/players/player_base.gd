@@ -165,8 +165,74 @@ func _load_config_from_csv() -> void:
 	health = csv_health
 	speed = csv_speed
 	
+	# 应用 DataManager 升级加成（角色强化界面购买的属性提升）
+	if DataManager:
+		var hp_bonus = DataManager.get_attribute_bonus(player_id, "hp")
+		var energy_bonus = DataManager.get_attribute_bonus(player_id, "max_energy")
+		var regen_bonus = DataManager.get_attribute_bonus(player_id, "energy_regen")
+		var speed_bonus = DataManager.get_attribute_bonus(player_id, "base_speed")
+		var armor_bonus = DataManager.get_attribute_bonus(player_id, "max_armor")
+		
+		if hp_bonus > 0:
+			health += hp_bonus
+			print("[PlayerBase] 升级加成 HP: +%.0f -> %.0f" % [hp_bonus, health])
+		if energy_bonus > 0:
+			max_energy += energy_bonus
+			print("[PlayerBase] 升级加成 能量: +%.0f -> %.0f" % [energy_bonus, max_energy])
+		if regen_bonus > 0:
+			energy_regen += regen_bonus
+			print("[PlayerBase] 升级加成 能量恢复: +%.1f -> %.1f" % [regen_bonus, energy_regen])
+		if speed_bonus > 0:
+			speed += speed_bonus
+			base_speed += speed_bonus
+			print("[PlayerBase] 升级加成 速度: +%.0f -> %.0f" % [speed_bonus, speed])
+		if armor_bonus > 0:
+			max_armor += int(armor_bonus)
+			print("[PlayerBase] 升级加成 护甲: +%d -> %d" % [int(armor_bonus), max_armor])
+	
 	# 确保 block_chance 被初始化
 	block_chance = 0.0
+
+## 应用羁绊属性加成（在 BondManager 计算完成后调用）
+func apply_bond_stat_modifiers() -> void:
+	"""将 BondManager 的 stat_mod 效果应用到玩家属性上"""
+	if not BondManager:
+		return
+	
+	# 构建当前属性字典
+	var stats = {
+		"max_health": health,
+		"speed": speed,
+		"energy_regen": energy_regen,
+		"pickup_range": pickup_range,
+		"damage": damage,
+	}
+	
+	# 调用 BondManager 应用属性修改
+	var modified = BondManager.apply_stat_modifiers(stats)
+	
+	# 写回修改后的属性
+	var old_health = health
+	health = modified.get("max_health", health)
+	speed = modified.get("speed", speed)
+	energy_regen = modified.get("energy_regen", energy_regen)
+	pickup_range = modified.get("pickup_range", pickup_range)
+	damage = modified.get("damage", damage)
+	
+	# 更新 health_component（如果已初始化且数值有变化）
+	if health_component:
+		# 始终同步 health_component，确保道具和羁绊加成都生效
+		if abs(health - health_component.max_health) > 0.01:
+			health_component.setup_with_health(health)
+		energy = max_energy  # 重置能量为满
+	
+	if OS.is_debug_build():
+		print("[PlayerBase] 羁绊属性加成已应用:")
+		print("  HP: %.0f -> %.0f" % [old_health, health])
+		print("  速度: %.0f" % speed)
+		print("  能量恢复: %.1f" % energy_regen)
+		print("  拾取范围: %.0f" % pickup_range)
+		print("  攻击力: %.0f" % damage)
 
 func _load_sprite_from_csv() -> void:
 	"""从CSV加载角色精灵图片，覆盖场景文件中的硬编码纹理"""

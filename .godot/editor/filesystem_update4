@@ -1,0 +1,6 @@
+res://autoloads/warehouse_manager.gd
+res://autoloads/bond_manager.gd
+res://autoloads/bond_ui_loader.gd
+res://autoloads/item_tooltip_helper.gd
+res://scenes/unit/players/player_base.gd
+res://autoloads/equipment_manager.gd
