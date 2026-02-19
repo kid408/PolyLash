@@ -1,0 +1,339 @@
+extends Control
+# ============================================================================
+# 图鉴界面 - 展示已解锁的角色、圣物和怪物
+# ============================================================================
+
+signal back_pressed
+
+# 解锁数据文件路径
+const COMPENDIUM_DATA_PATH = "user://compendium_data.json"
+
+# 卡片尺寸
+const CARD_WIDTH := 100
+const CARD_HEIGHT := 120
+const PORTRAIT_SIZE := 80
+const GRID_COLUMNS := 7
+
+# Tier 颜色
+const TIER_COLORS := {
+	1: Color.WHITE,
+	2: Color("#4488FF"),
+	3: Color("#AA44FF"),
+}
+
+# 统一字体
+var _font: Font = preload("res://assets/font/Bake Soda.otf")
+
+# 当前选中的 Tab
+var current_tab: String = "characters"
+# 解锁数据
+var unlocked_data: Dictionary = {
+	"unlocked_characters": [],
+	"unlocked_relics": [],
+	"encountered_monsters": [],
+}
+
+# 节点引用
+@onready var back_button: Button = $TopBar/BackButton
+@onready var tab_characters: Button = $TopBar/TabContainer/TabCharacters
+@onready var tab_relics: Button = $TopBar/TabContainer/TabRelics
+@onready var tab_monsters: Button = $TopBar/TabContainer/TabMonsters
+@onready var progress_label: Label = $TopBar/ProgressLabel
+@onready var scroll_container: ScrollContainer = $ScrollContainer
+@onready var content_grid: GridContainer = $ScrollContainer/ContentGrid
+@onready var detail_panel: PanelContainer = $CompendiumDetailPanel
+
+func _ready() -> void:
+	_load_unlock_data()
+	_connect_signals()
+	_show_tab("characters")
+
+# ============================================================================
+# 信号连接
+# ============================================================================
+
+func _connect_signals() -> void:
+	back_button.pressed.connect(func(): back_pressed.emit())
+	tab_characters.pressed.connect(func(): _show_tab("characters"))
+	tab_relics.pressed.connect(func(): _show_tab("relics"))
+	tab_monsters.pressed.connect(func(): _show_tab("monsters"))
+
+# ============================================================================
+# 解锁数据加载
+# ============================================================================
+
+func _load_unlock_data() -> void:
+	# 从 user://compendium_data.json 加载解锁数据
+	if not FileAccess.file_exists(COMPENDIUM_DATA_PATH):
+		return
+	var file := FileAccess.open(COMPENDIUM_DATA_PATH, FileAccess.READ)
+	if not file:
+		return
+	var json_str := file.get_as_text()
+	file.close()
+	var json := JSON.new()
+	if json.parse(json_str) != OK:
+		# 解析失败，重置为全部未解锁
+		push_warning("[Compendium] 解锁数据解析失败，使用默认值")
+		return
+	var data = json.data
+	if data is Dictionary:
+		unlocked_data["unlocked_characters"] = data.get("unlocked_characters", [])
+		unlocked_data["unlocked_relics"] = data.get("unlocked_relics", [])
+		unlocked_data["encountered_monsters"] = data.get("encountered_monsters", [])
+
+# ============================================================================
+# Tab 切换
+# ============================================================================
+
+func _show_tab(tab: String) -> void:
+	current_tab = tab
+	_update_tab_styles()
+	_clear_grid()
+	# 切换 Tab 时隐藏详情面板
+	if detail_panel:
+		detail_panel.hide_panel()
+	match tab:
+		"characters":
+			_populate_characters()
+		"relics":
+			_populate_relics()
+		"monsters":
+			_populate_monsters()
+	_update_progress()
+	# 滚动回顶部
+	scroll_container.scroll_vertical = 0
+
+func _update_tab_styles() -> void:
+	# 选中的 Tab 使用绿色，未选中使用灰色
+	var active_color := Color("#4CAF50")
+	var inactive_color := Color("#AAAAAA")
+	tab_characters.add_theme_color_override("font_color", active_color if current_tab == "characters" else inactive_color)
+	tab_relics.add_theme_color_override("font_color", active_color if current_tab == "relics" else inactive_color)
+	tab_monsters.add_theme_color_override("font_color", active_color if current_tab == "monsters" else inactive_color)
+	# 下划线通过 stylebox 实现
+	_set_tab_underline(tab_characters, current_tab == "characters")
+	_set_tab_underline(tab_relics, current_tab == "relics")
+	_set_tab_underline(tab_monsters, current_tab == "monsters")
+
+func _set_tab_underline(btn: Button, active: bool) -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color.TRANSPARENT
+	style.border_color = Color("#4CAF50") if active else Color.TRANSPARENT
+	style.border_width_bottom = 3 if active else 0
+	style.content_margin_bottom = 4
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 4
+	btn.add_theme_stylebox_override("normal", style)
+	btn.add_theme_stylebox_override("hover", style)
+	btn.add_theme_stylebox_override("pressed", style)
+
+# ============================================================================
+# 内容填充
+# ============================================================================
+
+func _populate_characters() -> void:
+	content_grid.columns = GRID_COLUMNS
+	var configs := ConfigManager.player_configs
+	var unlocked: Array = unlocked_data.get("unlocked_characters", [])
+	for player_id in configs:
+		var config: Dictionary = configs[player_id]
+		var is_unlocked: bool = unlocked.has(player_id)
+		var display_name: String = config.get("display_name", player_id)
+		# 获取头像路径
+		var visual: Dictionary = ConfigManager.player_visual_configs.get(player_id, {})
+		var sprite_path: String = visual.get("sprite_path", "")
+		_add_card(player_id, display_name, sprite_path, is_unlocked)
+
+func _populate_relics() -> void:
+	# 按 Tier 分组显示圣物
+	var configs := ConfigManager.item_configs_new
+	var unlocked: Array = unlocked_data.get("unlocked_relics", [])
+	# 按 tier 分组
+	var grouped: Dictionary = {}  # tier -> Array[{id, config}]
+	for item_id in configs:
+		var config: Dictionary = configs[item_id]
+		var tier: int = int(config.get("tier", 1))
+		if not grouped.has(tier):
+			grouped[tier] = []
+		grouped[tier].append({"id": item_id, "config": config})
+	# 按 tier 排序显示
+	var tiers := grouped.keys()
+	tiers.sort()
+	# 使用 VBoxContainer 替代 GridContainer 来实现分组布局
+	# 先将 content_grid 的列数设为1，当作纯垂直容器使用
+	content_grid.columns = 1
+	for tier in tiers:
+		# 添加 Tier 标题行
+		var tier_names: Dictionary = {0: "基础", 1: "普通", 2: "稀有", 3: "史诗"}
+		var color: Color = TIER_COLORS.get(tier, Color.WHITE)
+		var header := Label.new()
+		header.text = "── %s ──" % tier_names.get(tier, "Tier %d" % tier)
+		header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		header.add_theme_color_override("font_color", color)
+		header.add_theme_font_size_override("font_size", 16)
+		header.add_theme_font_override("font", _font)
+		content_grid.add_child(header)
+		# 为该 Tier 的圣物创建一个 GridContainer
+		var tier_grid := GridContainer.new()
+		tier_grid.columns = GRID_COLUMNS
+		tier_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		content_grid.add_child(tier_grid)
+		# 添加该 Tier 的所有圣物卡片到子 grid
+		for entry in grouped[tier]:
+			var item_id: String = entry["id"]
+			var config: Dictionary = entry["config"]
+			var is_unlocked: bool = unlocked.has(item_id)
+			var display_name: String = config.get("name", item_id)
+			var icon_path: String = config.get("icon_path", "")
+			_add_card_to(tier_grid, item_id, display_name, icon_path, is_unlocked)
+
+func _populate_monsters() -> void:
+	content_grid.columns = GRID_COLUMNS
+	var configs := ConfigManager.enemy_configs
+	var encountered: Array = unlocked_data.get("encountered_monsters", [])
+	for enemy_id in configs:
+		var config: Dictionary = configs[enemy_id]
+		var is_encountered: bool = encountered.has(enemy_id)
+		var display_name: String = config.get("display_name", enemy_id)
+		# 获取头像路径
+		var visual: Dictionary = ConfigManager.enemy_visual_configs.get(enemy_id, {})
+		var sprite_path: String = visual.get("sprite_path", "")
+		_add_card(enemy_id, display_name, sprite_path, is_encountered)
+
+# ============================================================================
+# 卡片创建（程序化生成）
+# ============================================================================
+
+func _add_card(id: String, display_name: String, sprite_path: String, is_unlocked: bool) -> void:
+	_add_card_to(content_grid, id, display_name, sprite_path, is_unlocked)
+
+func _add_card_to(container: Container, id: String, display_name: String, sprite_path: String, is_unlocked: bool) -> void:
+	# 创建卡片容器
+	var card := VBoxContainer.new()
+	card.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
+	card.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	# 头像容器（用于叠加锁图标）
+	var portrait_container := CenterContainer.new()
+	portrait_container.custom_minimum_size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
+
+	# 头像
+	var portrait := TextureRect.new()
+	portrait.custom_minimum_size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
+	portrait.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+
+	# 加载纹理
+	if sprite_path != "" and ResourceLoader.exists(sprite_path):
+		portrait.texture = load(sprite_path)
+	
+	if is_unlocked:
+		portrait.modulate = Color.WHITE
+	else:
+		# 未解锁：黑色剪影
+		portrait.modulate = Color.BLACK
+
+	portrait_container.add_child(portrait)
+
+	# 未解锁时添加锁图标
+	if not is_unlocked:
+		var lock_label := Label.new()
+		lock_label.text = "🔒"
+		lock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lock_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lock_label.add_theme_font_override("font", _font)
+		portrait_container.add_child(lock_label)
+
+	card.add_child(portrait_container)
+
+	# 名称标签
+	var name_label := Label.new()
+	name_label.text = display_name if is_unlocked else "???"
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.add_theme_font_override("font", _font)
+	if is_unlocked:
+		name_label.add_theme_color_override("font_color", Color.WHITE)
+	else:
+		name_label.add_theme_color_override("font_color", Color("#666666"))
+	card.add_child(name_label)
+
+	# 已解锁卡片可点击，显示详情
+	if is_unlocked:
+		card.mouse_filter = Control.MOUSE_FILTER_STOP
+		card.gui_input.connect(_on_card_gui_input.bind(id, current_tab))
+		card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+
+	container.add_child(card)
+
+func _add_tier_header(tier: int) -> void:
+	# Tier 标题占满一整行
+	# 先确保 grid 列数正确
+	content_grid.columns = GRID_COLUMNS
+	var tier_names := {1: "Tier 1", 2: "Tier 2", 3: "Tier 3"}
+	var color: Color = TIER_COLORS.get(tier, Color.WHITE)
+
+	var header := Label.new()
+	header.text = "── %s ──" % tier_names.get(tier, "Tier %d" % tier)
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	header.add_theme_color_override("font_color", color)
+	header.add_theme_font_size_override("font_size", 16)
+	header.add_theme_font_override("font", _font)
+	content_grid.add_child(header)
+
+	# 用空占位符填满该行剩余列
+	for i in range(GRID_COLUMNS - 1):
+		var spacer := Control.new()
+		content_grid.add_child(spacer)
+
+# ============================================================================
+# 进度更新
+# ============================================================================
+
+func _update_progress() -> void:
+	var total := 0
+	var unlocked_count := 0
+	match current_tab:
+		"characters":
+			total = ConfigManager.player_configs.size()
+			var unlocked_list: Array = unlocked_data.get("unlocked_characters", [])
+			for id in unlocked_list:
+				if ConfigManager.player_configs.has(id):
+					unlocked_count += 1
+		"relics":
+			total = ConfigManager.item_configs_new.size()
+			var unlocked_list: Array = unlocked_data.get("unlocked_relics", [])
+			for id in unlocked_list:
+				if ConfigManager.item_configs_new.has(id):
+					unlocked_count += 1
+		"monsters":
+			total = ConfigManager.enemy_configs.size()
+			var unlocked_list: Array = unlocked_data.get("encountered_monsters", [])
+			for id in unlocked_list:
+				if ConfigManager.enemy_configs.has(id):
+					unlocked_count += 1
+	progress_label.text = "已解锁 %d/%d" % [unlocked_count, total]
+
+# ============================================================================
+# 卡片点击 → 显示详情
+# ============================================================================
+
+func _on_card_gui_input(event: InputEvent, id: String, tab: String) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		match tab:
+			"characters":
+				detail_panel.show_character_detail(id)
+			"relics":
+				detail_panel.show_relic_detail(id)
+			"monsters":
+				detail_panel.show_monster_detail(id)
+
+# ============================================================================
+# 工具方法
+# ============================================================================
+
+func _clear_grid() -> void:
+	for child in content_grid.get_children():
+		child.queue_free()

@@ -62,16 +62,55 @@ func show_screen() -> void:
 
 # 返回按钮点击
 func _on_return_button_pressed() -> void:
-	print("[GameOverScreen] 返回大厅")
+	print("[GameOverScreen] 返回角色选择界面")
 	SoundManager.play("ui_click")
 	
 	# 恢复游戏状态
 	get_tree().paused = false
 	Global.game_paused = false
 	
-	# 重置全局状态
+	# 先同步选角缓存（reset_selection 会清空数据，必须在之前写入）
+	_sync_selection_cache_from_global()
+	
+	# 重置全局状态，但保留 current_save_slot
+	var slot := Global.current_save_slot
 	Global.reset_selection()
 	Global.reset_session_data()
+	Global.current_save_slot = slot
 	
-	# 切换到选择界面
+	# 先处理输入再切换场景
+	get_viewport().set_input_as_handled()
+	# 返回角色选择界面
 	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
+
+func _sync_selection_cache_from_global() -> void:
+	"""将当前 Global 的角色/武器数据写入 SelectionPanel 的缓存文件"""
+	# 写入 player_selection_cache.json
+	var selection_cache: Array = []
+	for i in range(Global.selected_player_ids.size()):
+		var pid: String = Global.selected_player_ids[i]
+		var wtype: String = Global.selected_player_weapons.get(pid, "")
+		selection_cache.append({
+			"player_id": pid,
+			"weapon_type": wtype,
+			"slot_index": i
+		})
+	
+	var sel_file := FileAccess.open("user://player_selection_cache.json", FileAccess.WRITE)
+	if sel_file:
+		sel_file.store_string(JSON.stringify(selection_cache))
+		sel_file.close()
+		print("[GameOverScreen] 已同步角色选择缓存: %s" % str(selection_cache))
+	
+	# 写入 player_weapon_cache.json
+	var weapon_cache: Dictionary = {}
+	for pid in Global.selected_player_ids:
+		var wtype: String = Global.selected_player_weapons.get(pid, "")
+		if wtype != "":
+			weapon_cache[pid] = wtype
+	
+	var wpn_file := FileAccess.open("user://player_weapon_cache.json", FileAccess.WRITE)
+	if wpn_file:
+		wpn_file.store_string(JSON.stringify(weapon_cache))
+		wpn_file.close()
+		print("[GameOverScreen] 已同步武器选择缓存: %s" % str(weapon_cache))

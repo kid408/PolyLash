@@ -72,6 +72,9 @@ var item_configs_new: Dictionary = {}            # 新格式道具配置 (item_i
 # 团队护符配置
 var emblem_configs: Dictionary = {}              # 护符配置 (emblem_id -> config)
 
+# 致谢配置
+var credits_configs: Array[Dictionary] = []      # 致谢条目配置 (数组，按顺序)
+
 # 配置文件路径
 const CONFIG_DIR = "res://config/"
 const PLAYER_CONFIG = CONFIG_DIR + "player/player_config.csv"
@@ -95,6 +98,7 @@ const CHEST_CONFIG = CONFIG_DIR + "item/chest_config.csv"
 const WAVE_CHEST_CONFIG = CONFIG_DIR + "wave/wave_chest_config.csv"
 const ITEM_CONFIG_NEW = CONFIG_DIR + "item/item_config.csv"
 const EMBLEM_CONFIG = CONFIG_DIR + "item/emblem_config.csv"
+const CREDITS_CONFIG = CONFIG_DIR + "system/credits_config.csv"
 
 # ============================================================================
 # 初始化
@@ -164,6 +168,9 @@ func load_all_configs() -> void:
 	
 	# 团队护符配置
 	_load_emblem_configs()
+	
+	# 致谢配置
+	_load_credits_configs()
 
 # ============================================================================
 # CSV 加载方法
@@ -1114,3 +1121,69 @@ func load_wave_units_grouped(path: String) -> Dictionary:
 	file.close()
 	print("[ConfigManager] 加载波次单位配置: ", path, " - ", result.size(), " 个波次")
 	return result
+
+# ============================================================================
+# 致谢配置加载与访问
+# ============================================================================
+
+func _load_credits_configs() -> void:
+	"""
+	加载 credits_config.csv 并缓存到 credits_configs
+	
+	字段: id, category, asset_name, author, license_type, url, description
+	
+	使用 Array 存储以保持条目顺序。
+	"""
+	credits_configs.clear()
+	var file = FileAccess.open(CREDITS_CONFIG, FileAccess.READ)
+	
+	if not file:
+		push_warning("[ConfigManager] 警告: 无法打开致谢配置 %s" % CREDITS_CONFIG)
+		return
+	
+	var headers: PackedStringArray = []
+	var line_num: int = 0
+	
+	while not file.eof_reached():
+		var line = file.get_csv_line()
+		line_num += 1
+		
+		# 跳过空行
+		if line.size() == 0 or (line.size() == 1 and line[0].strip_edges() == ""):
+			continue
+		
+		# 第一行：列名
+		if line_num == 1:
+			headers = line
+			continue
+		
+		# 第二行：注释行（第一列为 -1）
+		if line_num == 2 and line[0].strip_edges() == "-1":
+			continue
+		
+		if headers.size() == 0:
+			continue
+		
+		var row_data: Dictionary = {}
+		for i in range(mini(line.size(), headers.size())):
+			var header = headers[i].strip_edges()
+			var value = line[i].strip_edges()
+			row_data[header] = value
+		
+		var entry_id = row_data.get("id", "")
+		if entry_id == "":
+			continue
+		
+		credits_configs.append(row_data)
+	
+	file.close()
+	print("[ConfigManager] 加载致谢配置: %s - %d 条记录" % [CREDITS_CONFIG, credits_configs.size()])
+
+func get_credits_configs() -> Array[Dictionary]:
+	"""
+	获取所有致谢配置条目
+	
+	返回:
+	- Array[Dictionary]: 致谢条目数组，每个条目包含 id, category, asset_name, author, license_type, url, description
+	"""
+	return credits_configs

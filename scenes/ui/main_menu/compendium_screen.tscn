@@ -1,0 +1,90 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/main_menu/compendium_screen.gd" id="1"]
+[ext_resource type="FontFile" path="res://assets/font/Bake Soda.otf" id="2_font"]
+[ext_resource type="PackedScene" path="res://scenes/ui/main_menu/compendium_detail_panel.tscn" id="3_detail_panel"]
+
+[node name="CompendiumScreen" type="Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 50.0
+grow_horizontal = 2
+
+[node name="BackButton" type="Button" parent="TopBar"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 40)
+theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+text = "← 返回"
+
+[node name="TabContainer" type="HBoxContainer" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 6
+alignment = 1
+
+[node name="TabCharacters" type="Button" parent="TopBar/TabContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 40)
+theme_override_colors/font_color = Color(0.298, 0.686, 0.314, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "角色"
+flat = true
+
+[node name="TabRelics" type="Button" parent="TopBar/TabContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 40)
+theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "圣物"
+flat = true
+
+[node name="TabMonsters" type="Button" parent="TopBar/TabContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 40)
+theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "怪物"
+flat = true
+
+[node name="ProgressLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 10
+theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 14
+text = "已解锁 0/0"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 55.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ContentGrid" type="GridContainer" parent="ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+columns = 7
+
+[node name="CompendiumDetailPanel" parent="." instance=ExtResource("3_detail_panel")]
+layout_mode = 1

@@ -33,8 +33,14 @@ var ui_panel_stack: Array[Control] = []
 # 万能鬼牌选择面板
 var wildcard_panel: WildcardPanel = null
 
+# 初始化保护标志 - 防止初始化期间产生飘字
+var _arena_initialized: bool = false
+
 func _ready() -> void:
 	print("[Arena] _ready() 开始")
+	
+	# 清理上一局残留在 root 节点上的飘字（FloatingText 被添加到 root，跨场景不会自动销毁）
+	_cleanup_stale_floating_texts()
 	
 	# 只在重新进入时重置游戏状态（不是第一次进入）
 	# 检查是否已经有敌人存在（表示这不是第一次进入）
@@ -43,6 +49,11 @@ func _ready() -> void:
 	
 	# 将角色添加到全局变量中
 	#Global.player = player
+	# 先断开旧连接（防止跨场景重复连接）
+	if Global.on_create_block_text.is_connected(_on_create_block_text):
+		Global.on_create_block_text.disconnect(_on_create_block_text)
+	if Global.on_create_damage_text.is_connected(_on_create_damage_text):
+		Global.on_create_damage_text.disconnect(_on_create_damage_text)
 	# 闪避飘字信号 Unit类 _on_hurtbox_component_on_damaged 调用
 	Global.on_create_block_text.connect(_on_create_block_text)
 	# 伤害飘字信号
@@ -100,6 +111,10 @@ func _ready() -> void:
 	
 	# 连接玩家的 XP 和 Gold 信号
 	_connect_player_signals()
+	
+	# 标记初始化完成 - 此后飘字正常显示
+	_arena_initialized = true
+	print("[Arena] _ready() 完成，飘字保护已解除")
 
 # ==============================================================================
 # 游戏状态重置
@@ -134,6 +149,18 @@ func _reset_game_state() -> void:
 		chest_manager.reset_chest_manager()
 	
 	print("[Arena] 游戏状态重置完成")
+
+func _cleanup_stale_floating_texts() -> void:
+	"""清理残留在 root 节点上的飘字实例
+	create_floating_text() 将飘字添加到 get_tree().root，
+	这些节点不会随场景切换自动销毁，切换存档后可能残留。"""
+	var cleaned := 0
+	for child in get_tree().root.get_children():
+		if child is FloatingText:
+			child.queue_free()
+			cleaned += 1
+	if cleaned > 0:
+		print("[Arena] 清理了 %d 个残留飘字" % cleaned)
 
 # ==============================================================================
 # 宝箱系统
@@ -186,12 +213,16 @@ func create_floating_text(unit: Node2D) -> FloatingText:
 	
 # 创建闪避飘字
 func _on_create_block_text(unit:Node2D) -> void:
+	if not _arena_initialized:
+		return
 	var text := create_floating_text(unit)
 	text.setup("闪!",blockedl_color)
 	
 
 # 创建伤害飘字
 func _on_create_damage_text(uinit:Node2D,hitbox:HitboxComponent) -> void:
+	if not _arena_initialized:
+		return
 	var text := create_floating_text(uinit)
 	var color := critical_color if hitbox.critical else normal_color
 	text.setup(str(hitbox.damage),color)
@@ -525,16 +556,86 @@ func _on_exit_confirmed() -> void:
 	print("[Arena] 玩家确认退出游戏")
 	# 清理所有残留的精英投射物
 	_cleanup_all_projectiles()
-	# 重置全局状态（包括武器商店购买记录）
+	# 保存当前进度到存档槽位
+	_save_progress_before_exit()
+	# 重置全局状态（包括武器商店购买记录），但保留 current_save_slot
+	var slot := Global.current_save_slot
 	Global.reset_selection()
 	Global.reset_session_data()
-	# 返回到选择界面
+	Global.current_save_slot = slot
+	# 返回到角色选择界面
+	get_viewport().set_input_as_handled()
 	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
 
 func _on_exit_cancelled() -> void:
 	"""玩家取消退出"""
 	print("[Arena] 玩家取消退出")
 	# 对话框已在脚本中恢复游戏状态
+
+func _save_progress_before_exit() -> void:
+	"""退出前保存当前进度到存档槽位，并同步选角缓存"""
+	var slot_index: int = Global.current_save_slot
+	if slot_index < 0:
+		print("[Arena] 没有选择存档槽位，跳过保存")
+		return
+	
+	# 保存当前角色状态
+	Global.save_current_player_state()
+	
+	# 构建进度数据
+	var progress: Dictionary = {
+		"current_wave": spawner.wave_index if spawner else 1,
+		"current_floor": 1,
+		"play_time_seconds": 0,
+	}
+	
+	# 保存已选角色及武器
+	var save_players: Array = []
+	for pid in Global.selected_player_ids:
+		var wtype: String = Global.selected_player_weapons.get(pid, "")
+		save_players.append({"player_id": pid, "weapon_type": wtype})
+	progress["selected_players"] = save_players
+	
+	if Global.selected_player_ids.size() > 0:
+		progress["leader_id"] = Global.selected_player_ids[0]
+	
+	SaveManager.save_game_progress(slot_index, progress)
+	print("[Arena] 进度已保存到槽位 %d" % slot_index)
+	
+	# 同步角色选择缓存和武器缓存，确保回到 SelectionPanel 时数据一致
+	_sync_selection_cache_from_global()
+
+func _sync_selection_cache_from_global() -> void:
+	"""将当前 Global 的角色/武器数据写入 SelectionPanel 的缓存文件"""
+	# 写入 player_selection_cache.json
+	var selection_cache: Array = []
+	for i in range(Global.selected_player_ids.size()):
+		var pid: String = Global.selected_player_ids[i]
+		var wtype: String = Global.selected_player_weapons.get(pid, "")
+		selection_cache.append({
+			"player_id": pid,
+			"weapon_type": wtype,
+			"slot_index": i
+		})
+	
+	var sel_file := FileAccess.open("user://player_selection_cache.json", FileAccess.WRITE)
+	if sel_file:
+		sel_file.store_string(JSON.stringify(selection_cache))
+		sel_file.close()
+		print("[Arena] 已同步角色选择缓存: %s" % str(selection_cache))
+	
+	# 写入 player_weapon_cache.json
+	var weapon_cache: Dictionary = {}
+	for pid in Global.selected_player_ids:
+		var wtype: String = Global.selected_player_weapons.get(pid, "")
+		if wtype != "":
+			weapon_cache[pid] = wtype
+	
+	var wpn_file := FileAccess.open("user://player_weapon_cache.json", FileAccess.WRITE)
+	if wpn_file:
+		wpn_file.store_string(JSON.stringify(weapon_cache))
+		wpn_file.close()
+		print("[Arena] 已同步武器选择缓存: %s" % str(weapon_cache))
 
 # ============================================================================
 # 商店系统

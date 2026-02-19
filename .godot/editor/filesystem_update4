@@ -1,6 +1,4 @@
-res://autoloads/warehouse_manager.gd
-res://autoloads/bond_manager.gd
-res://autoloads/bond_ui_loader.gd
-res://autoloads/item_tooltip_helper.gd
-res://scenes/unit/players/player_base.gd
-res://autoloads/equipment_manager.gd
+res://scenes/ui/selection_panel/selection_panel.gd
+res://scenes/ui/main_menu/save_slot_card.gd
+res://autoloads/global.gd
+res://scenes/ui/main_menu/main_menu_root.gd

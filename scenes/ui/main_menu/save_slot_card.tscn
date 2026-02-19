@@ -1,0 +1,147 @@
+[gd_scene load_steps=5 format=3 uid="uid://save_slot_card_prefab"]
+
+[ext_resource type="Script" path="res://scenes/ui/main_menu/save_slot_card.gd" id="1_script"]
+[ext_resource type="FontFile" uid="uid://kfh6ooeul77g" path="res://assets/font/Bake Soda.otf" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.133, 0.133, 0.133, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.267, 0.267, 0.267, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_delete_btn"]
+bg_color = Color(0.3, 0.1, 0.1, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="SaveSlotCard" type="PanelContainer"]
+custom_minimum_size = Vector2(280, 220)
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+script = ExtResource("1_script")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="SlotLabel" type="Label" parent="MarginContainer/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 22
+text = "SLOT 1"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "空"
+horizontal_alignment = 1
+
+[node name="EmptyLabel" type="Label" parent="MarginContainer/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.4, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 48
+text = "空"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WarningIcon" type="Label" parent="MarginContainer/VBox"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.267, 0.267, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 48
+text = "⚠"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InfoContainer" type="VBoxContainer" parent="MarginContainer/VBox"]
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/VBox/InfoContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="LeaderIcon" type="TextureRect" parent="MarginContainer/VBox/InfoContainer/HBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(64, 64)
+stretch_mode = 5
+expand_mode = 1
+
+[node name="InfoVBox" type="VBoxContainer" parent="MarginContainer/VBox/InfoContainer/HBox"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="FloorWaveLabel" type="Label" parent="MarginContainer/VBox/InfoContainer/HBox/InfoVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "第1层 - 波次1"
+
+[node name="BondContainer" type="HBoxContainer" parent="MarginContainer/VBox/InfoContainer/HBox/InfoVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TimeVBox" type="VBoxContainer" parent="MarginContainer/VBox/InfoContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="PlayTimeLabel" type="Label" parent="MarginContainer/VBox/InfoContainer/TimeVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 14
+text = "00:00:00"
+
+[node name="LastPlayedLabel" type="Label" parent="MarginContainer/VBox/InfoContainer/TimeVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 14
+text = "2024-01-01 00:00"
+
+[node name="DeleteButton" type="Button" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -36.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = 32.0
+grow_horizontal = 0
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+theme_override_colors/font_hover_color = Color(1, 0.6, 0.6, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_delete_btn")
+text = "✕"

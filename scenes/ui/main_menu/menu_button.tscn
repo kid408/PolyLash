@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://menu_button_prefab"]
+
+[ext_resource type="Script" path="res://scenes/ui/main_menu/menu_button.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/font/Bake Soda.otf" id="2_font"]
+
+[node name="MenuButton" type="Button"]
+offset_right = 300.0
+offset_bottom = 50.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(0.298, 0.686, 0.314, 1)
+theme_override_colors/font_pressed_color = Color(0.298, 0.686, 0.314, 1)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 36
+flat = true
+text = "BUTTON"
+script = ExtResource("1_script")

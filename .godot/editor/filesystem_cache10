@@ -1,5 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1771476354
+::res://::1771494099
 _START_HERE.md::TextFile::-1::1770422238::0::1::::<><><>0<>0<><>::
 BALANCE_ADJUSTMENTS.md::TextFile::-1::1771123838::0::1::::<><><>0<>0<><>::
 DUAL_SHOP_SUMMARY.md::TextFile::-1::1771123838::0::1::::<><><>0<>0<><>::
@@ -286,7 +286,7 @@ Icon45.png::CompressedTexture2D::6165250913665778366::1771473981::1771474325::1:
 Icon46.png::CompressedTexture2D::7598436144261404535::1771473981::1771474325::1::::<><><>0<>0<>a651821d67888c3cddb1e0d4bdc5a15c<>res://.godot/imported/Icon46.png-5d9ddbe718699691c757e46e95b441ab.ctex::
 Icon47.png::CompressedTexture2D::4316881780826257757::1771473981::1771474325::1::::<><><>0<>0<>ef35e0e2464af9460b630bb27f4b2b85<>res://.godot/imported/Icon47.png-8a1bbd21c481237bd3126aa8f62721f2.ctex::
 Icon48.png::CompressedTexture2D::4009666101485250976::1771473981::1771474325::1::::<><><>0<>0<>5d717d80a3fa3654939de92fc8f1b136<>res://.godot/imported/Icon48.png-4207fda863172b0d1e954985dc1bb66e.ctex::
-::res://assets/sprites/Item/Relics/::1771476114
+::res://assets/sprites/Item/Relics/::1771476356
 relic_arrow_broken.png::CompressedTexture2D::4216690018979633634::1771473981::1771476039::1::::<><><>0<>0<>691f85436db4e67517bc9c2111d023cc<>res://.godot/imported/relic_arrow_broken.png-feed2eee2d23abcaccd3e91769ecddb2.ctex::
 relic_bag_leather.png::CompressedTexture2D::4776196037320189771::1771473981::1771476039::1::::<><><>0<>0<>8f668b7ee74f65c2c1562fd546168cd9<>res://.godot/imported/relic_bag_leather.png-a6dbb19998d31663a545c37d8b89f620.ctex::
 relic_bone_cross.png::CompressedTexture2D::8150282375192022958::1771473981::1771476039::1::::<><><>0<>0<>8561a88ba782956645127368fc6e4561<>res://.godot/imported/relic_bone_cross.png-9dd2045f88e8fa4ca621e54624d52df3.ctex::
@@ -425,26 +425,28 @@ WeaponRevolver.png::CompressedTexture2D::8596554517593031486::1769528500::177107
 WeaponShotgun.png::CompressedTexture2D::7024380308258801515::1769528500::1771073412::1::::<><><>0<>0<>3295560049088c3150e3cf26b60373b3<>res://.godot/imported/WeaponShotgun.png-92a9cf14b44284b399904a0f48d0089b.ctex::
 WeaponSMG.png::CompressedTexture2D::6719343259487316355::1769528500::1771073412::1::::<><><>0<>0<>021afdb7393221911845b536ae3c020f<>res://.godot/imported/WeaponSMG.png-0bb94804a8aac39ff943aade4cb82412.ctex::
 Weapon_wand.png::CompressedTexture2D::5944358085283835524::1771123839::1771124795::1::::<><><>0<>0<>40e10665471aceb19608957385244928<>res://.godot/imported/Weapon_wand.png-dc7cc8839a2184cb62c6f6d839e711a7.ctex::
-::res://autoloads/::1771241195
+::res://autoloads/::1771487864
 ability_manager.gd::GDScript::5268116812975746129::1769528500::0::1::::<>Node<><>0<>0<><>::
-bond_manager.gd::GDScript::2114479458212321404::1771237899::0::1::::<>Node<><>0<>0<><>::
-bond_ui_loader.gd::GDScript::-1::1770422238::0::1::::<>Node<><>0<>0<><>::
-config_manager.gd::GDScript::6161209431084733178::1771236816::0::1::::<>Node<><>0<>0<><>::
+bond_manager.gd::GDScript::2114479458212321404::1771478729::0::1::::<>Node<><>0<>0<><>::
+bond_ui_loader.gd::GDScript::-1::1771478719::0::1::::<>Node<><>0<>0<><>::
+config_manager.gd::GDScript::6161209431084733178::1771485571::0::1::::<>Node<><>0<>0<><>::
 data_manager.gd::GDScript::1168783571837414416::1771238348::0::1::::<>Node<><>0<>0<><>::
 elite_config_manager.gd::GDScript::2817759429836498982::1769528500::0::1::::<>Node<><>0<>0<><>::
 emblem_manager.gd::GDScript::279428172147469119::1771236216::0::1::::<>Node<><>0<>0<><>::
-equipment_manager.gd::GDScript::-1::1771235763::0::1::::<>Node<><>0<>0<><>::
-global.gd::GDScript::143348280982661186::1771227798::0::1::::<>Node<><>0<>0<><>::
+equipment_manager.gd::GDScript::-1::1771481743::0::1::::<>Node<><>0<>0<><>::
+global.gd::GDScript::143348280982661186::1771491645::0::1::::<>Node<><>0<>0<><>::
+item_tooltip_helper.gd::GDScript::7670744538627470869::1771479235::0::1::::<>Node<><>0<>0<><>::
 item_weapon.gd::GDScript::-1::1771123839::0::1::::ItemWeapon<>RefCounted<><>0<>0<><>::
 modifier_manager.gd::GDScript::4696948666716935827::1769528500::0::1::::<>Node<><>0<>0<><>::
 player_factory.gd::GDScript::3327389074686366144::1769528500::0::1::::<>Node<><>0<>0<><>::
 polygon_utils.gd::GDScript::5287253962670571876::1769528500::0::1::::PolygonUtils<>Node<><>0<>0<><>::
+save_manager.gd::GDScript::4452845392504836323::1771485473::0::1::::<>Node<><>0<>0<><>::
 shop_attribute_manager.gd::GDScript::-1::1771123839::0::1::::<>Node<><>0<>0<><>::
 shop_manager.gd::GDScript::758916905523300399::1771237027::0::1::::<>Node<><>0<>0<><>::
 skill_effect_manager.gd::GDScript::7362046239172419739::1771116809::0::1::::<>Node<><>0<>0<><>::
 sound_manager.gd::GDScript::6852865587516144166::1771162666::0::1::::<>Node<><>0<>0<><>::
 upgrade_manager.gd::GDScript::7166158279115057107::1769528500::0::1::::<>Node<><>0<>0<><>::
-warehouse_manager.gd::GDScript::-1::1771475750::0::1::::<>Node<><>0<>0<><>::
+warehouse_manager.gd::GDScript::-1::1771479949::0::1::::<>Node<><>0<>0<><>::
 weapon_config_loader.gd::GDScript::-1::1771123839::0::1::::<>Node<><>0<>0<><>::
 weapon_stats.gd::GDScript::-1::1771123839::0::1::::WeaponStats<>RefCounted<><>0<>0<><>::
 ::res://docs/::1771241635
@@ -508,7 +510,7 @@ wave_unit.gd::GDScript::3438751202075541029::1769528500::0::1::::WaveUnit<>Resou
 wave_1_to_5.tres::Resource/WaveData::-1::1769528500::0::1::::<><><>0<>0<><>::res://resouce/waves/wave_data.gd
 ::res://scenes/::1769528500
 ::res://scenes/arena/::1771241195
-arena.gd::GDScript::401190298922256092::1771237633::0::1::::Arena<>Node2D<><>0<>0<><>::
+arena.gd::GDScript::401190298922256092::1771480514::0::1::::Arena<>Node2D<><>0<>0<><>::
 arena.tscn::PackedScene::3033604404464949307::1769528500::0::1::::<><><>0<>0<><>::uid://fylssyuoxjey::::res://scenes/arena/arena.gd<>uid://ov4fmsbglo55::::res://assets/sprites/Map.png<>uid://xik4iqa2n4lo::::res://scenes/arena/camera_2d.gd<>uid://ba7a7f4xdjhru::::res://scenes/arena/background_manager.gd<>uid://b2bivn8xpy1ko::::res://scenes/arena/chest_manager.gd<>res://scenes/ui/upgrade_selection_ui.tscn<>uid://c1r0p6xkr6l1v::::res://scenes/arena/spawner.gd<>res://scenes/ui/chest_indicator.tscn<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf<>res://scenes/ui/global_hud/global_hud.tscn<>res://scenes/ui/squad_hud/squad_hud.tscn<>res://scenes/ui/exit_confirm_dialog.tscn<>res://scenes/ui/shop_panel/shop_panel.tscn
 background_manager.gd::GDScript::2452538225693435530::1769528500::0::1::::BackgroundManager<>Node2D<><>0<>0<><>::
 camera_2d.gd::GDScript::1631517828598427408::1769528500::0::1::::Camera<>Camera2D<><>0<>0<><>::
@@ -638,12 +640,14 @@ skill_voodoo_q.gd::GDScript::1123573580083472686::1771069577::0::1::::SkillVoodo
 skill_web_weave.gd::GDScript::8278107262938836886::1769528500::0::1::::SkillWebWeave<>SkillBase<><>0<>0<><>::
 skill_wind_path.gd::GDScript::4078000996493824724::1771147774::0::1::::SkillWindPath<>SkillBase<><>0<>0<><>::
 skill_wind_path_refactored.gd::GDScript::8049703135023043887::1769528500::0::1::::SkillWindPathRefactored<>SkillDrawingBase<><>0<>0<><>::
-::res://scenes/ui/::1771237564
+::res://scenes/ui/::1771485667
 chest_indicator.gd::GDScript::101773751435956797::1769528500::0::1::::ChestIndicator<>CanvasLayer<><>0<>0<><>::
 chest_indicator.tscn::PackedScene::-1::1769528500::0::1::::<><><>0<>0<><>::res://scenes/ui/chest_indicator.gd
 energy_bar.gd::GDScript::2869351533575420727::1769528500::0::1::::EnergyBar<>Control<><>0<>0<><>::
 energy_bar_auto_setup.gd::GDScript::741212578379556127::1769528500::0::1::::<>Node<><>0<>0<><>::
-exit_confirm_dialog.gd::GDScript::6082174758023367863::1771153357::0::1::::ExitConfirmDialog<>CanvasLayer<><>0<>0<><>::
+equipped_panel.gd::GDScript::6592489501319910573::1771481467::0::1::::EquippedPanel<>Panel<><>0<>0<><>::
+equipped_panel.tscn::PackedScene::-1::1771481390::0::1::::<><><>0<>0<><>::res://scenes/ui/equipped_panel.gd
+exit_confirm_dialog.gd::GDScript::6082174758023367863::1771492070::0::1::::ExitConfirmDialog<>CanvasLayer<><>0<>0<><>::
 exit_confirm_dialog.tscn::PackedScene::-1::1769528500::0::1::::<><><>0<>0<><>::res://scenes/ui/exit_confirm_dialog.gd
 floating_text.gd::GDScript::693988724169907074::1769528500::0::1::::FloatingText<>Node2D<><>0<>0<><>::
 floating_text.tscn::PackedScene::5895687726383318882::1769528500::0::1::::<><><>0<>0<><>::uid://j5f5mgkqcauk::::res://scenes/ui/floating_text.gd
@@ -651,8 +655,8 @@ health_bar.gd::GDScript::6745345476856237189::1769528500::0::1::::HealthBar<>Con
 health_bar.tscn::PackedScene::7679491042787671124::1769528500::0::1::::<><><>0<>0<><>::uid://c3dq4b2epo7g0::::res://scenes/ui/health_bar.gd
 upgrade_selection_ui.gd::GDScript::8049752656406372743::1771153316::0::1::::UpgradeSelectionUI<>CanvasLayer<><>0<>0<><>::
 upgrade_selection_ui.tscn::PackedScene::-1::1769528500::0::1::::<><><>0<>0<><>::res://scenes/ui/upgrade_selection_ui.gd
-warehouse_ui.gd::GDScript::-1::1771153366::0::1::::WarehouseUI<>Panel<><>0<>0<><>::
-warehouse_ui.tscn::PackedScene::-1::1771133630::0::1::::<><><>0<>0<><>::res://scenes/ui/warehouse_ui.gd
+warehouse_ui.gd::GDScript::-1::1771481481::0::1::::WarehouseUI<>Panel<><>0<>0<><>::
+warehouse_ui.tscn::PackedScene::-1::1771481427::0::1::::<><><>0<>0<><>::res://scenes/ui/warehouse_ui.gd
 ::res://scenes/ui/bond_hud/::1770422238
 bond_hud.gd::GDScript::6272729304273073101::1771238172::0::1::::BondHUD<>Control<><>0<>0<><>::
 bond_hud.tscn::PackedScene::7109614899690097934::1769528500::0::1::::<><><>0<>0<><>::res://scenes/ui/bond_hud/bond_hud.gd
@@ -669,12 +673,40 @@ README.md::TextFile::-1::1770422238::0::1::::<><><>0<>0<><>::
 ::res://scenes/ui/global_hud/::1769528500
 global_hud.gd::GDScript::5884398511240847816::1769528500::0::1::::GlobalHUD<>Control<><>0<>0<><>::
 global_hud.tscn::PackedScene::-1::1769528500::0::1::::<><><>0<>0<><>::res://scenes/ui/global_hud/global_hud.gd
+::res://scenes/ui/main_menu/::1771489579
+background_lines.gd::GDScript::2577794475628517084::1771486040::0::1::::<>Node2D<><>0<>0<><>::
+compendium_detail_panel.gd::GDScript::8672393109445996365::1771488288::0::1::::<>PanelContainer<><>0<>0<><>::
+compendium_detail_panel.tscn::PackedScene::-1::1771488393::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/compendium_detail_panel.gd<>res://assets/font/Bake Soda.otf
+compendium_screen.gd::GDScript::2903225757756189450::1771490868::0::1::::<>Control<><>0<>0<><>::
+compendium_screen.tscn::PackedScene::-1::1771490532::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/compendium_screen.gd<>res://assets/font/Bake Soda.otf<>res://scenes/ui/main_menu/compendium_detail_panel.tscn
+confirm_dialog.gd::GDScript::558117829907582095::1771490458::0::1::::ConfirmDialog<>CanvasLayer<><>0<>0<><>::
+confirm_dialog.tscn::PackedScene::-1::1771487013::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/confirm_dialog.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf
+credits_item.gd::GDScript::2515623108242743168::1771488720::0::1::::<>PanelContainer<><>0<>0<><>::
+credits_item.tscn::PackedScene::-1::1771488927::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/credits_item.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf
+credits_screen.gd::GDScript::4462765540091945647::1771489704::0::1::::<>Control<><>0<>0<><>::
+credits_screen.tscn::PackedScene::-1::1771488591::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/credits_screen.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf
+main_menu.gd::GDScript::4596754618584738448::1771490466::0::1::::<>Control<><>0<>0<><>::
+main_menu.tscn::PackedScene::-1::1771486603::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/main_menu.gd<>res://assets/font/Bake Soda.otf
+main_menu_root.gd::GDScript::465763968516467504::1771493791::0::1::::<>Control<><>0<>0<><>::
+main_menu_root.tscn::PackedScene::8062997660888927537::1771488921::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/main_menu_root.gd<>res://scenes/ui/main_menu/title_screen.tscn<>res://scenes/ui/main_menu/main_menu.tscn<>res://scenes/ui/main_menu/confirm_dialog.tscn<>res://scenes/ui/main_menu/save_slot_panel.tscn<>res://scenes/ui/main_menu/settings_panel.tscn<>res://scenes/ui/main_menu/compendium_screen.tscn<>res://scenes/ui/main_menu/credits_screen.tscn
+menu_button.gd::GDScript::3289169751519815178::1771490504::0::1::::<>Button<><>0<>0<><>::
+menu_button.tscn::PackedScene::-1::1771486279::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/menu_button.gd<>res://assets/font/Bake Soda.otf
+save_slot_card.gd::GDScript::7610453755252205267::1771490810::0::1::::<>PanelContainer<><>0<>0<><>::
+save_slot_card.tscn::PackedScene::-1::1771490803::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/save_slot_card.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf
+save_slot_panel.gd::GDScript::7766287943961573775::1771487402::0::1::::<>Control<><>0<>0<><>::
+save_slot_panel.tscn::PackedScene::-1::1771490781::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/save_slot_panel.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf
+settings_panel.gd::GDScript::6684721651645166133::1771487737::0::1::::<>CanvasLayer<><>0<>0<><>::
+settings_panel.tscn::PackedScene::-1::1771487657::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/settings_panel.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf
+splash_screen.gd::GDScript::6947806604179224761::1771485670::0::1::::<>Control<><>0<>0<><>::
+splash_screen.tscn::PackedScene::8455206501741856093::1771485674::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/splash_screen.gd<>uid://b02x7h4bntic6::::res://icon.png
+title_screen.gd::GDScript::8937091879767028987::1771486033::0::1::::<>Control<><>0<>0<><>::
+title_screen.tscn::PackedScene::6919343010507711517::1771486053::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/title_screen.gd<>res://icon.png<>res://assets/font/Bake Soda.otf<>res://scenes/ui/main_menu/background_lines.gd
 ::res://scenes/ui/selection_panel/::1771123839
-character_upgrade.gd::GDScript::2994815284368660252::1771153342::0::1::::CharacterUpgradePanel<>Panel<><>0<>0<><>::
+character_upgrade.gd::GDScript::2994815284368660252::1771479302::0::1::::CharacterUpgradePanel<>Panel<><>0<>0<><>::
 character_upgrade.tscn::PackedScene::1392345570707975973::1769528500::0::1::::<><><>0<>0<><>::uid://biwyf1y8dhch5::::res://scenes/ui/selection_panel/character_upgrade.gd
 player_select_button.gd::GDScript::1724180135034001988::1769528500::0::1::::PlayerSelectButton<>Button<><>0<>0<><>::
 selected_slot_button.gd::GDScript::7103104506879643123::1769528500::0::1::::SelectedSlotButton<>Button<><>0<>0<><>::
-selection_panel.gd::GDScript::2686125043203603204::1771153330::0::1::::SelectionPanel<>Panel<><>0<>0<><>::
+selection_panel.gd::GDScript::2686125043203603204::1771493780::0::1::::SelectionPanel<>Panel<><>0<>0<><>::
 selection_panel.tscn::PackedScene::6853719228978906030::1771126543::0::1::::<><><>0<>0<><>::uid://b02x7h4bntic6::::res://icon.png<>uid://bejgc7t8weklg::::res://scenes/ui/selection_panel/selection_panel.gd<>uid://byggcc877ibn7::::res://assets/sprites/Players/Player_1.png<>res://scenes/ui/exit_confirm_dialog.tscn
 ::res://scenes/ui/shop_panel/::1771123839
 attribute_shop_panel.gd::GDScript::8664979596605734974::1771153307::0::1::::AttributeShopPanel<>Control<><>0<>0<><>::
@@ -707,7 +739,7 @@ enemy_glutton.tscn::PackedScene::8818271082523704971::1771123839::0::1::::<><><>
 ::res://scenes/unit/players/::1771123839
 player_ammo.gd::GDScript::3408916062591625783::1771112853::0::1::::PlayerAmmo<>PlayerBase<><>0<>0<><>::
 player_banner.gd::GDScript::7292862774402507564::1771112767::0::1::::PlayerBanner<>PlayerBase<><>0<>0<><>::
-player_base.gd::GDScript::2512524217351251223::1771235793::0::1::::PlayerBase<>Unit<><>0<>0<><>::
+player_base.gd::GDScript::2512524217351251223::1771480559::0::1::::PlayerBase<>Unit<><>0<>0<><>::
 player_blacksmith.gd::GDScript::1937818968001568730::1771112838::0::1::::PlayerBlacksmith<>PlayerBase<><>0<>0<><>::
 player_butcher.gd::GDScript::8156668503323171576::1771112986::0::1::::PlayerButcher<>PlayerBase<><>0<>0<><>::
 player_executioner.gd::GDScript::1994723497502880800::1771117761::0::1::::PlayerExecutioner<>PlayerBase<><>0<>0<><>::
@@ -763,7 +795,7 @@ weapon_range_physical.tscn::PackedScene::7038990578726977050::1771124794::0::1::
 ::res://scripts/::1771475929
 generate_full_weapon_csv.gd::GDScript::3343064059885769383::1771123839::0::1::::<>Node<><>0<>0<><>::
 ::res://tests/::1771123839
-test_item_data.gd::GDScript::1859119810913775869::1769528500::0::1::::<>Node<><>0<>0<><>::
+test_item_data.gd::GDScript::1859119810913775869::1771477213::0::1::::<>Node<><>0<>0<><>::
 test_melee_behavior.gd::GDScript::-1::1771123839::0::1::::<>Node<><>0<>0<><>::
 test_modifier_system.gd::GDScript::4611085007227032754::1769528500::0::1::::<>Node<><>0<>0<><>::
 test_range_behavior.gd::GDScript::-1::1771123839::0::1::::<>Node<><>0<>0<><>::

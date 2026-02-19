@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="PolyLash"
-run/main_scene="uid://c4v80wbm6lca5"
+run/main_scene="res://scenes/ui/main_menu/splash_screen.tscn"
 config/features=PackedStringArray("4.5", "Mobile")
 config/icon="uid://b02x7h4bntic6"
 
@@ -21,6 +21,7 @@ ConfigManager="*res://autoloads/config_manager.gd"
 SoundManager="*res://autoloads/sound_manager.gd"
 Global="*res://autoloads/global.gd"
 DataManager="*res://autoloads/data_manager.gd"
+SaveManager="*res://autoloads/save_manager.gd"
 UpgradeManager="*res://autoloads/upgrade_manager.gd"
 EliteConfigManager="*res://autoloads/elite_config_manager.gd"
 PlayerFactory="*res://autoloads/player_factory.gd"

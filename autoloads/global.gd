@@ -34,6 +34,9 @@ var game_paused:= false
 # 角色选择系统
 # ============================================================================
 
+# 当前存档槽位索引（-1 表示未选择）
+var current_save_slot: int = -1
+
 # 已选角色ID列表（从选择界面传入）
 var selected_player_ids: Array[String] = []
 
@@ -174,16 +177,20 @@ func frame_freeze(duration: float, time_scale: float = 0.05) -> void:
 	
 
 func spawn_floating_text(pos: Vector2, value: String, color: Color) -> void:
-	if FLOATING_TEXT_SCENE:
-		var text_instance = FLOATING_TEXT_SCENE.instantiate()
-		# 添加到当前场景中
-		get_tree().current_scene.add_child(text_instance)
-		
-		# 随机偏移位置（在主角四周）
-		var random_offset = Vector2(randf_range(-40, 40), randf_range(-40, 40))
-		text_instance.global_position = pos + random_offset
-		
-		text_instance.setup(value, color)
+	if not FLOATING_TEXT_SCENE:
+		return
+	# 安全检查：场景切换期间 current_scene 可能为 null
+	var scene := get_tree().current_scene
+	if not is_instance_valid(scene):
+		return
+	var text_instance = FLOATING_TEXT_SCENE.instantiate()
+	scene.add_child(text_instance)
+	
+	# 随机偏移位置（在主角四周）
+	var random_offset = Vector2(randf_range(-40, 40), randf_range(-40, 40))
+	text_instance.global_position = pos + random_offset
+	
+	text_instance.setup(value, color)
 		
 
 
@@ -303,10 +310,8 @@ func game_over() -> void:
 	# 暂停游戏
 	game_paused = true
 	
-	# 可以在这里添加游戏结束UI显示逻辑
-	# 或者重新加载场景
-	await get_tree().create_timer(2.0).timeout
-	get_tree().reload_current_scene()
+	# 结算界面由 Arena._on_player_died() -> _show_game_over_screen() 处理
+	# 不再自动重载场景
 
 # 重置选择数据（用于返回主菜单时）
 func reset_selection() -> void:

@@ -6,6 +6,7 @@ signal cancelled
 
 @onready var yes_button = $Panel/VBoxContainer/HBoxContainer/YesButton
 @onready var no_button = $Panel/VBoxContainer/HBoxContainer/NoButton
+@onready var label = $Panel/VBoxContainer/Label
 
 var is_visible_dialog: bool = false
 
@@ -17,8 +18,10 @@ func _ready() -> void:
 	no_button.pressed.connect(_on_no_pressed)
 	hide()
 
-func show_dialog() -> void:
+func show_dialog(custom_text: String = "") -> void:
 	print("[ExitConfirmDialog] show_dialog() called")
+	if custom_text != "":
+		label.text = custom_text
 	show()
 	is_visible_dialog = true
 	SoundManager.play("ui_pause")

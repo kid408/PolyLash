@@ -1091,6 +1091,18 @@ func _on_continue_pressed() -> void:
 	# === 检查是否需要重置属性升级 (Roguelike模式) ===
 	DataManager.check_and_reset_on_new_game()
 	
+	# === 自动保存到当前槽位 ===
+	if Global.current_save_slot >= 0:
+		var leader_id: String = player_ids[0] if player_ids.size() > 0 else ""
+		var save_players: Array = []
+		for data in sorted_players:
+			save_players.append({
+				"player_id": data.player_id,
+				"weapon_type": data.weapon_type
+			})
+		SaveManager.create_new_save(Global.current_save_slot, leader_id, save_players)
+		print("[SelectionPanel] 自动保存到槽位 %d" % Global.current_save_slot)
+	
 	print("[SelectionPanel] 确认选择，角色: %s" % str(player_ids))
 	
 	# 发出信号
@@ -1136,28 +1148,11 @@ func _show_selection_hint(message: String) -> void:
 # ============================================================================
 
 func _create_exit_dialog() -> void:
-	"""初始化退出确认对话框"""
-	if exit_dialog:
-		exit_dialog.confirmed.connect(_on_exit_confirmed)
-		exit_dialog.cancelled.connect(_on_exit_cancelled)
-		print("[SelectionPanel] 退出确认对话框初始化完成")
+	pass
 
 func _input(event: InputEvent) -> void:
-	"""处理输入事件"""
+	"""处理输入事件 - ESC 直接返回主菜单"""
 	if event.is_action_pressed("ui_cancel"):
-		_show_exit_dialog()
+		print("[SelectionPanel] 返回主菜单")
 		get_viewport().set_input_as_handled()
-
-func _show_exit_dialog() -> void:
-	"""显示退出确认对话框"""
-	if exit_dialog and not exit_dialog.visible:
-		exit_dialog.show_dialog()
-
-func _on_exit_confirmed() -> void:
-	"""玩家确认退出"""
-	print("[SelectionPanel] 玩家确认退出")
-	get_tree().quit()
-
-func _on_exit_cancelled() -> void:
-	"""玩家取消退出"""
-	print("[SelectionPanel] 玩家取消退出")
+		get_tree().change_scene_to_file("res://scenes/ui/main_menu/main_menu_root.tscn")
