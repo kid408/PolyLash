@@ -888,6 +888,47 @@ func is_in_overdrive_mode() -> bool:
 # 调试接口
 # ============================================================================
 
+func get_bond_summary() -> Array:
+	"""获取羁绊摘要（用于存档）
+	
+	Returns:
+		羁绊摘要数组 [{bond_id: String, level: int, count: int}]
+	"""
+	var summary: Array = []
+	
+	for bond_id in active_bonds.keys():
+		var bond_data = active_bonds[bond_id]
+		summary.append({
+			"bond_id": bond_id,
+			"level": bond_data.level,
+			"count": current_bond_counts.get(bond_id, 0)
+		})
+	
+	return summary
+
+func restore_from_save(bond_counts_data: Dictionary) -> void:
+	"""从存档恢复羁绊统计数据
+	
+	Args:
+		bond_counts_data: 羁绊标签统计数据 {bond_id: count}
+	"""
+	print("[BondManager] 从存档恢复羁绊数据: %s" % str(bond_counts_data))
+	
+	# 直接使用存档的标签统计
+	current_bond_counts = bond_counts_data.duplicate(true)
+	
+	# 重新计算激活的羁绊
+	active_bonds.clear()
+	for bond_id in current_bond_counts.keys():
+		var count = current_bond_counts[bond_id]
+		var activated_level = _get_activated_level(bond_id, count)
+		if activated_level > 0:
+			_activate_bond(bond_id, activated_level)
+	
+	print("[BondManager] 恢复完成: %d 个激活羁绊" % active_bonds.size())
+	bonds_recalculated.emit(active_bonds)
+	stat_modifiers_changed.emit()
+
 func print_active_bonds() -> void:
 	"""打印所有激活的羁绊（调试用）"""
 	print("\n========== 激活的羁绊 ==========")

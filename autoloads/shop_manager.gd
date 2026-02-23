@@ -195,14 +195,14 @@ func _generate_emblem_item(used_ids: Array[String]) -> Dictionary:
 	var candidates: Array[Dictionary] = []
 	for emblem_id in all_configs.keys():
 		# 排除万能鬼牌（仅从 Boss/隐藏房间获得）
-		if emblem_id == "emblem_wildcard":
+		if str(emblem_id) == "emblem_wildcard":
 			continue
 		# 排除去重池中的
-		if emblem_id in used_ids:
+		if str(emblem_id) in used_ids:
 			continue
 		# 排除已持有的唯一遗物
 		var config = all_configs[emblem_id]
-		if config.get("is_unique", "0") == "1" and EmblemManager.has_unique_relic(emblem_id):
+		if str(config.get("is_unique", "0")) == "1" and EmblemManager.has_unique_relic(str(emblem_id)):
 			continue
 		candidates.append(config)
 	

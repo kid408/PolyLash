@@ -92,6 +92,31 @@ func clear_modifiers() -> void:
 func get_modifier_count() -> int:
 	return modifiers.size()
 
+## 序列化修改器数据（用于存档）
+func serialize() -> Dictionary:
+	"""序列化为可存储的字典
+	
+	Returns:
+		包含 modifiers 的字典
+	"""
+	return {
+		"modifiers": modifiers.duplicate(true)
+	}
+
+## 从存档恢复修改器数据
+func deserialize(data: Dictionary) -> void:
+	"""从存档恢复修改器数据
+	
+	Args:
+		data: 序列化的字典数据
+	"""
+	modifiers.clear()
+	var saved_modifiers = data.get("modifiers", [])
+	for modifier in saved_modifiers:
+		modifiers.append(modifier)
+	
+	print("[ModifierManager] 从存档恢复 %d 个修改器" % modifiers.size())
+
 # ==============================================================================
 # 内部辅助函数
 # ==============================================================================

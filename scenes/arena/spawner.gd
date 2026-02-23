@@ -153,9 +153,16 @@ func reset_spawner() -> void:
 func _ready() -> void:
 	"""
 	初始化生成器，从CSV加载配置，开始第一波
+	注意：如果正在恢复战斗状态，不要自动开始第一波
 	"""
 	_load_config_from_csv()
 	_init_elite_spawn_timer()
+	
+	# 检查是否正在恢复战斗状态
+	if not Global.pending_battle_state.is_empty():
+		print("[Spawner] 检测到待恢复的战斗状态，跳过自动开始第一波")
+		return
+	
 	start_wave()
 
 func _load_config_from_csv() -> void:

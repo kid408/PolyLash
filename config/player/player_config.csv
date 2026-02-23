@@ -15,7 +15,6 @@ new_tempest,新风暴,12,1,游侠|几何师|指挥型,88,0.1,0,0,60,1.0,1000,100
 blacksmith,铁匠,13,1,重装|爆破师|支援型,105,0.4,0,0,60,0.8,1000,1000,3,490,锻造强化,50,0.3,colossus,blaster,assist,res://assets/audio/skill/q_closure/blacksmith.wav,0,1
 medic,军医,14,1,后勤|咒术师|支援型,100,0.4,0,0,60,0.8,1000,1000,2,500,治疗与吸血,50,0.3,alchemist,hexer,assist,res://assets/audio/skill/q_closure/medic.wav,0,1
 ammo,弹药,15,1,后勤|爆破师|支援型,100,0.3,0,0,60,0.7,1000,1000,2,500,弹药补给,50,0.3,alchemist,blaster,assist,res://assets/audio/skill/q_closure/ammo.wav,0,1
-
 paladin,圣骑士,16,1,重装|几何师|支援型,155,0.7,0,0,60,0.4,1000,1000,7,380,光墙与嘲讽,50,0.3,colossus,geometrist,assist,res://assets/audio/skill/q_closure/paladin.wav,0,1
 vampire,血族,17,1,魔导|咒术师|突击型,95,0.3,0,0,60,0.9,1000,1000,2,510,血路与吸血,50,0.3,inkborn,hexer,vanguard,res://assets/audio/skill/q_closure/vampire.wav,0,1
 banner,旗手,18,1,游侠|几何师|指挥型,100,0.3,0,0,60,0.8,1000,1000,2,510,冲锋与决斗,50,0.3,nomad,geometrist,commander,res://assets/audio/skill/q_closure/banner.wav,0,1

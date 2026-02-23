@@ -286,6 +286,10 @@ func get_all_items() -> Dictionary:
 	"""获取所有仓库道具"""
 	return warehouse_items.duplicate()
 
+func get_capacity() -> int:
+	"""获取仓库容量"""
+	return warehouse_capacity
+
 func clear_warehouse() -> void:
 	"""清空仓库"""
 	warehouse_items.clear()
@@ -297,3 +301,25 @@ func compact_warehouse() -> void:
 	_compact_warehouse()
 	save_warehouse_data()
 	print("[WarehouseManager] 手动整理仓库完成")
+
+func restore_from_save(warehouse_data: Dictionary) -> void:
+	"""从存档恢复仓库数据
+	
+	Args:
+		warehouse_data: 仓库数据字典 {items: Dictionary, capacity: int}
+	"""
+	warehouse_items.clear()
+	
+	var items = warehouse_data.get("items", {})
+	for slot_key in items.keys():
+		var slot_index = int(slot_key)
+		var item_type = int(items[slot_key])
+		if item_type > 0:
+			warehouse_items[slot_index] = item_type
+	
+	var capacity = warehouse_data.get("capacity", 48)
+	if capacity > 0:
+		warehouse_capacity = capacity
+	
+	save_warehouse_data()
+	print("[WarehouseManager] 从存档恢复 %d 个道具，容量: %d" % [warehouse_items.size(), warehouse_capacity])

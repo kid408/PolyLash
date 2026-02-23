@@ -155,7 +155,18 @@ func _on_menu_action(action: String) -> void:
 				if not data.is_empty():
 					Global.current_save_slot = slot_index
 					_restore_global_from_save(data)
-					get_tree().change_scene_to_file("res://scenes/arena/arena.tscn")
+					# 检查游戏状态，决定跳转到哪个场景
+					var game_state = data.get("game_state", "in_progress")
+					if game_state == "character_selection":
+						# 返回角色选择界面
+						get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
+					elif game_state == "in_battle" and data.has("battle_state"):
+						# 恢复战斗状态
+						Global.pending_battle_state = data["battle_state"]
+						get_tree().change_scene_to_file("res://scenes/arena/arena.tscn")
+					else:
+						# 默认进入战斗场景
+						get_tree().change_scene_to_file("res://scenes/arena/arena.tscn")
 				else:
 					print("[MainMenuRoot] CONTINUE: 槽位 %d 数据为空" % slot_index)
 			else:
@@ -206,7 +217,15 @@ func _on_save_slot_selected(slot_index: int) -> void:
 			print("[MainMenuRoot] LOAD: 加载槽位 %d" % slot_index)
 			Global.current_save_slot = slot_index
 			_restore_global_from_save(data)
-			get_tree().change_scene_to_file("res://scenes/arena/arena.tscn")
+			# 检查游戏状态
+			var game_state = data.get("game_state", "in_progress")
+			if game_state == "character_selection":
+				get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
+			elif game_state == "in_battle" and data.has("battle_state"):
+				Global.pending_battle_state = data["battle_state"]
+				get_tree().change_scene_to_file("res://scenes/arena/arena.tscn")
+			else:
+				get_tree().change_scene_to_file("res://scenes/arena/arena.tscn")
 
 func _on_save_slot_back() -> void:
 	go_to_main_menu()
@@ -297,13 +316,61 @@ func _restore_global_from_save(data: Dictionary) -> void:
 			Global.selected_player_ids.append(leader)
 			print("[MainMenuRoot] 使用 leader_id 作为唯一角色: %s" % leader)
 	
-	Global.current_player_index = 0
-	Global.init_player_states()
+	# 恢复当前角色索引
+	Global.current_player_index = int(data.get("current_player_index", 0))
+	
+	# 恢复角色状态
+	var player_states = data.get("player_states", {})
+	if not player_states.is_empty():
+		Global.player_states = player_states.duplicate(true)
+	else:
+		Global.init_player_states()
+	
+	# 恢复金币
+	var gold = int(data.get("gold", 0))
+	if gold > 0:
+		DataManager.save_data.total_gold = gold
+	
+	# 恢复局内数据
+	Global.session_xp = int(data.get("session_xp", 0))
+	Global.session_kills = int(data.get("session_kills", 0))
+	Global.session_gold = int(data.get("session_gold", 0))
+	
+	# 恢复升级数据
+	var upgrades = data.get("upgrades", {})
+	if not upgrades.is_empty():
+		DataManager.save_data.upgrades = upgrades.duplicate(true)
+	
+	# 恢复徽章数据
+	var emblems_data = data.get("emblems", {})
+	if not emblems_data.is_empty():
+		EmblemManager.deserialize(emblems_data)
+	
+	# 恢复修改器数据
+	var modifiers_data = data.get("modifiers", {})
+	if not modifiers_data.is_empty():
+		ModifierManager.deserialize(modifiers_data)
+	
+	# 恢复羁绊数据（使用 bond_counts 而不是 bond_summary）
+	var bond_counts = data.get("bond_counts", {})
+	if not bond_counts.is_empty():
+		BondManager.restore_from_save(bond_counts)
+	
+	# 恢复装备数据
+	var equipment_data = data.get("equipment", {})
+	if not equipment_data.is_empty():
+		EquipmentManager.restore_from_save(equipment_data)
+	
+	# 恢复仓库数据
+	var warehouse_data = data.get("warehouse", {})
+	if not warehouse_data.is_empty():
+		WarehouseManager.restore_from_save(warehouse_data)
 	
 	# 同步选角缓存，确保 SelectionPanel 读取到正确数据
 	_sync_selection_cache_from_global()
 	
-	print("[MainMenuRoot] 恢复 Global: 角色=%s, 武器=%s" % [
+	print("[MainMenuRoot] 恢复 Global: 角色=%s, 武器=%s, 波次=%d" % [
 		str(Global.selected_player_ids),
-		str(Global.selected_player_weapons)
+		str(Global.selected_player_weapons),
+		int(data.get("current_wave", 1))
 	])

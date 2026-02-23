@@ -37,6 +37,9 @@ var game_paused:= false
 # 当前存档槽位索引（-1 表示未选择）
 var current_save_slot: int = -1
 
+# 待恢复的战斗状态（从主菜单加载时使用）
+var pending_battle_state: Dictionary = {}
+
 # 已选角色ID列表（从选择界面传入）
 var selected_player_ids: Array[String] = []
 

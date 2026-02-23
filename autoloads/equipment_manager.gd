@@ -137,6 +137,26 @@ func clear_all_equipment() -> void:
 	save_equipment_data()
 	print("[EquipmentManager] 清空所有装备")
 
+func restore_from_save(equipment_data: Dictionary) -> void:
+	"""从存档恢复装备数据
+	
+	Args:
+		equipment_data: 装备数据字典 {player_id: item_data}
+	"""
+	equipped_items.clear()
+	
+	for player_id in equipment_data.keys():
+		var item_data = equipment_data[player_id]
+		if item_data is Dictionary and not item_data.is_empty():
+			var item_id = item_data.get("id", "")
+			if not item_id.is_empty():
+				var item_type = WarehouseManager.get_type_from_item_id(item_id)
+				if item_type > 0:
+					equipped_items[player_id] = item_type
+	
+	save_equipment_data()
+	print("[EquipmentManager] 从存档恢复 %d 个装备" % equipped_items.size())
+
 # ============================================================================
 # 新增：统一装备/使用入口 & 数据查询
 # ============================================================================

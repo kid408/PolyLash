@@ -15,9 +15,11 @@ class_name Arena
 @onready var chest_indicator: ChestIndicator = $ChestIndicator
 @onready var exit_dialog: ExitConfirmDialog = %ExitConfirmDialog
 @onready var shop_panel = $GameUI/ShopPanel  # 商店面板
+@onready var pause_menu: PauseMenu = null  # 暂停菜单（动态创建）
 
-# 预加载结算界面
+# 预加载结算界面和暂停菜单
 const GAME_OVER_SCENE = preload("res://scenes/ui/game_over/game_over_screen.tscn")
+const PAUSE_MENU_SCENE = preload("res://scenes/ui/pause_menu/pause_menu.tscn")
 
 var current_chest: ChestSimple = null  # 保存当前打开的宝箱引用
 var game_over_screen: GameOverScreen = null  # 结算界面实例
@@ -39,12 +41,20 @@ var _arena_initialized: bool = false
 func _ready() -> void:
 	print("[Arena] _ready() 开始")
 	
+	# 确保 Arena 在 "arena" 组中
+	if not is_in_group("arena"):
+		add_to_group("arena")
+		print("[Arena] 已添加到 arena 组")
+	
 	# 清理上一局残留在 root 节点上的飘字（FloatingText 被添加到 root，跨场景不会自动销毁）
 	_cleanup_stale_floating_texts()
 	
 	# 只在重新进入时重置游戏状态（不是第一次进入）
 	# 检查是否已经有敌人存在（表示这不是第一次进入）
-	if get_tree().get_nodes_in_group("enemies").size() > 0:
+	# 注意：重新开始游戏时会调用 reload_current_scene()，不会触发这个逻辑
+	var existing_enemies = get_tree().get_nodes_in_group("enemies")
+	if existing_enemies.size() > 0:
+		print("[Arena] 检测到残留敌人，执行清理")
 		_reset_game_state()
 	
 	# 将角色添加到全局变量中
@@ -82,6 +92,9 @@ func _ready() -> void:
 		exit_dialog.confirmed.connect(_on_exit_confirmed)
 		exit_dialog.cancelled.connect(_on_exit_cancelled)
 	
+	# 初始化暂停菜单
+	_init_pause_menu()
+	
 	# 连接商店信号
 	if shop_panel:
 		shop_panel.next_wave_requested.connect(_on_shop_next_wave_requested)
@@ -100,14 +113,20 @@ func _ready() -> void:
 	await _init_player_from_selection()
 	print("[Arena] 玩家初始化完成")
 	
+	# 检查是否需要恢复战斗状态
+	if not Global.pending_battle_state.is_empty():
+		print("[Arena] 检测到待恢复的战斗状态")
+		await _restore_battle_state()
+		Global.pending_battle_state = {}  # 清除待恢复状态
+	else:
+		# 只有在不恢复战斗状态时才重置局内数据
+		Global.reset_session_data()
+	
 	# 初始化小队 HUD
 	_init_squad_hud()
 	
 	# 初始化羁绊 HUD
 	_init_bond_hud()
-	
-	# 重置局内数据
-	Global.reset_session_data()
 	
 	# 连接玩家的 XP 和 Gold 信号
 	_connect_player_signals()
@@ -430,6 +449,9 @@ func _on_player_switch_requested(player_id: String) -> void:
 	print("[Arena] ===== 角色切换开始 =====")
 	print("[Arena] 收到角色切换请求: %s" % player_id)
 	
+	# 角色切换前自动保存进度
+	_auto_save_progress("character_switch")
+	
 	if not is_instance_valid(player):
 		print("[Arena] 当前玩家无效，尝试直接生成")
 		# 尝试在默认位置生成
@@ -480,12 +502,37 @@ func _on_player_switch_requested(player_id: String) -> void:
 	
 	print("[Arena] ===== 角色切换结束 =====")
 
+func _auto_save_progress(trigger: String) -> void:
+	"""自动保存进度（在关键节点触发）
+	
+	Args:
+		trigger: 触发原因（"shop_closed", "character_switch", "item_purchased" 等）
+	"""
+	var slot_index: int = Global.current_save_slot
+	if slot_index < 0:
+		return
+	
+	print("[Arena] 自动保存进度: %s" % trigger)
+	
+	# 保存当前角色状态
+	Global.save_current_player_state()
+	
+	# 构建完整的进度数据
+	var progress: Dictionary = _build_save_data()
+	
+	# 添加触发信息（用于调试）
+	progress["last_save_trigger"] = trigger
+	progress["last_save_timestamp"] = int(Time.get_unix_time_from_system())
+	
+	SaveManager.save_game_progress(slot_index, progress)
+	print("[Arena] 自动保存完成: 槽位 %d, 触发: %s" % [slot_index, trigger])
+
 func _input(event: InputEvent) -> void:
-	# ESC 键打开退出确认对话框
+	# ESC 键打开暂停菜单
 	if event.is_action_pressed("ui_cancel"):
-		# 检查对话框是否已显示
-		if exit_dialog and not exit_dialog.visible:
-			_show_exit_dialog()
+		# 检查暂停菜单是否已显示
+		if pause_menu and not pause_menu.is_visible_menu:
+			_show_pause_menu()
 			get_viewport().set_input_as_handled()
 	# Tab 键循环切换角色
 	elif event.is_action_pressed("switch_player"):
@@ -546,6 +593,124 @@ func _play_invalid_switch_sound() -> void:
 # 退出确认对话框
 # ============================================================================
 
+func _init_pause_menu() -> void:
+	"""初始化暂停菜单"""
+	var game_ui = get_node_or_null("GameUI")
+	if not game_ui:
+		printerr("[Arena] 找不到 GameUI 节点")
+		return
+	
+	# 创建暂停菜单
+	pause_menu = PAUSE_MENU_SCENE.instantiate()
+	pause_menu.name = "PauseMenu"
+	game_ui.add_child(pause_menu)
+	
+	# 连接信号
+	pause_menu.resume_requested.connect(_on_pause_resume)
+	pause_menu.restart_requested.connect(_on_pause_restart)
+	pause_menu.end_run_requested.connect(_on_pause_end_run)
+	pause_menu.codex_requested.connect(_on_pause_codex)
+	pause_menu.settings_requested.connect(_on_pause_settings)
+	pause_menu.return_to_menu_requested.connect(_on_pause_return_to_menu)
+	
+	print("[Arena] 暂停菜单已初始化")
+
+func _show_pause_menu() -> void:
+	"""显示暂停菜单"""
+	if pause_menu:
+		pause_menu.show_menu()
+
+func _on_pause_resume() -> void:
+	"""继续游戏"""
+	print("[Arena] 继续游戏")
+	# 暂停菜单已经恢复了游戏状态
+
+func _on_pause_restart() -> void:
+	"""重新开始当前关卡"""
+	print("[Arena] 重新开始当前关卡")
+	# 恢复游戏暂停状态
+	get_tree().paused = false
+	# 清理所有残留的投射物
+	_cleanup_all_projectiles()
+	# 重置全局会话数据
+	Global.reset_session_data()
+	# 清除待恢复的战斗状态（如果有）
+	Global.pending_battle_state = {}
+	# 重新加载场景（场景的 _ready() 会自动初始化所有内容）
+	get_tree().reload_current_scene()
+
+func _on_pause_end_run() -> void:
+	"""结束本轮游戏 - 返回角色选择界面"""
+	print("[Arena] 结束本轮游戏，返回角色选择界面")
+	# 清理所有残留的投射物
+	_cleanup_all_projectiles()
+	# 清除战斗状态（不保存）
+	Global.reset_selection()
+	Global.reset_session_data()
+	# 清除存档槽位中的战斗状态
+	if Global.current_save_slot >= 0:
+		var slot_data = SaveManager.get_slot_data(Global.current_save_slot)
+		if not slot_data.is_empty():
+			# 清除战斗状态，但保留角色选择信息
+			slot_data.erase("battle_state")
+			slot_data["game_state"] = "character_selection"
+			SaveManager.save_game_progress(Global.current_save_slot, slot_data)
+	# 返回角色选择界面
+	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
+
+func _on_pause_codex() -> void:
+	"""打开图鉴"""
+	print("[Arena] 打开图鉴（待实现）")
+	# TODO: 实现图鉴界面
+
+func _on_pause_settings() -> void:
+	"""打开设置"""
+	print("[Arena] 打开设置（待实现）")
+	# TODO: 实现设置界面
+
+func _on_pause_return_to_menu() -> void:
+	"""返回主菜单 - 保存完整战斗状态"""
+	print("[Arena] 返回主菜单，保存完整战斗状态")
+	# 保存完整的战斗状态
+	_save_full_battle_state()
+	# 清理所有残留的投射物
+	_cleanup_all_projectiles()
+	# 重置全局状态（但不清除存档槽位）
+	Global.reset_selection()
+	Global.reset_session_data()
+	# 返回主菜单
+	get_tree().change_scene_to_file("res://scenes/ui/main_menu/main_menu_root.tscn")
+
+func _save_full_battle_state() -> void:
+	"""保存完整的战斗状态到存档"""
+	var slot_index: int = Global.current_save_slot
+	if slot_index < 0:
+		print("[Arena] 没有选择存档槽位，跳过保存")
+		return
+	
+	print("[Arena] 保存完整战斗状态到槽位 %d" % slot_index)
+	
+	# 保存当前角色状态
+	Global.save_current_player_state()
+	
+	# 构建完整的进度数据
+	var progress: Dictionary = _build_save_data()
+	
+	# 添加完整的战斗状态
+	progress["battle_state"] = BattleStateManager.save_battle_state()
+	progress["game_state"] = "in_battle"
+	progress["last_save_trigger"] = "return_to_menu"
+	progress["last_save_timestamp"] = int(Time.get_unix_time_from_system())
+	
+	SaveManager.save_game_progress(slot_index, progress)
+	print("[Arena] 完整战斗状态已保存")
+
+func _restore_battle_state() -> void:
+	"""恢复完整的战斗状态"""
+	print("[Arena] 开始恢复战斗状态...")
+	BattleStateManager.restore_battle_state(Global.pending_battle_state)
+	print("[Arena] 战斗状态恢复完成")
+
 func _show_exit_dialog() -> void:
 	"""显示退出确认对话框"""
 	if exit_dialog:
@@ -558,14 +723,17 @@ func _on_exit_confirmed() -> void:
 	_cleanup_all_projectiles()
 	# 保存当前进度到存档槽位
 	_save_progress_before_exit()
-	# 重置全局状态（包括武器商店购买记录），但保留 current_save_slot
-	var slot := Global.current_save_slot
+	# 重置全局状态（包括武器商店购买记录）
+	# 注意：重置 current_save_slot，让玩家回到主菜单而不是存档选择界面
 	Global.reset_selection()
 	Global.reset_session_data()
-	Global.current_save_slot = slot
-	# 返回到角色选择界面
+	Global.current_save_slot = -1  # 重置存档槽位
+	# 清除角色选择缓存，确保回到主菜单时不会自动加载
+	_clear_selection_cache()
+	_clear_weapon_cache()
+	# 返回到主菜单（而不是角色选择界面）
 	get_viewport().set_input_as_handled()
-	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
+	get_tree().change_scene_to_file("res://scenes/ui/main_menu/main_menu_root.tscn")
 
 func _on_exit_cancelled() -> void:
 	"""玩家取消退出"""
@@ -582,28 +750,112 @@ func _save_progress_before_exit() -> void:
 	# 保存当前角色状态
 	Global.save_current_player_state()
 	
-	# 构建进度数据
-	var progress: Dictionary = {
-		"current_wave": spawner.wave_index if spawner else 1,
-		"current_floor": 1,
-		"play_time_seconds": 0,
-	}
-	
-	# 保存已选角色及武器
-	var save_players: Array = []
-	for pid in Global.selected_player_ids:
-		var wtype: String = Global.selected_player_weapons.get(pid, "")
-		save_players.append({"player_id": pid, "weapon_type": wtype})
-	progress["selected_players"] = save_players
-	
-	if Global.selected_player_ids.size() > 0:
-		progress["leader_id"] = Global.selected_player_ids[0]
+	# 构建完整的进度数据
+	var progress: Dictionary = _build_save_data()
 	
 	SaveManager.save_game_progress(slot_index, progress)
 	print("[Arena] 进度已保存到槽位 %d" % slot_index)
 	
 	# 同步角色选择缓存和武器缓存，确保回到 SelectionPanel 时数据一致
 	_sync_selection_cache_from_global()
+
+func _build_save_data() -> Dictionary:
+	"""构建完整的存档数据
+	
+	Returns:
+		存档数据字典
+	"""
+	var data: Dictionary = {
+		# 基础进度
+		"current_wave": spawner.wave_index if spawner else 1,
+		"current_floor": 1,
+		"play_time_seconds": 0,  # TODO: 实现游戏时间统计
+		"game_state": "in_progress",
+		
+		# 角色数据
+		"selected_players": _save_player_data(),
+		"leader_id": Global.selected_player_ids[0] if Global.selected_player_ids.size() > 0 else "",
+		"current_player_index": Global.current_player_index,
+		
+		# 队伍状态
+		"player_states": Global.player_states.duplicate(true),
+		
+		# 金币和经验
+		"gold": DataManager.get_total_gold(),
+		"session_xp": Global.session_xp,
+		"session_kills": Global.session_kills,
+		"session_gold": Global.session_gold,
+		
+		# 羁绊数据
+		"bond_summary": BondManager.get_bond_summary(),
+		"bond_counts": BondManager.current_bond_counts.duplicate(true),
+		
+		# 装备数据
+		"equipment": _get_equipment_data(),
+		
+		# 仓库数据
+		"warehouse": _get_warehouse_data(),
+		
+		# 升级数据
+		"upgrades": DataManager.save_data.upgrades.duplicate(true),
+		
+		# 徽章数据
+		"emblems": EmblemManager.serialize(),
+		
+		# 修改器数据
+		"modifiers": ModifierManager.serialize(),
+	}
+	
+	return data
+
+func _get_equipment_data() -> Dictionary:
+	"""获取装备数据
+	
+	Returns:
+		装备数据字典
+	"""
+	var equipment_data: Dictionary = {}
+	for pid in Global.selected_player_ids:
+		var item_data = EquipmentManager.get_equipped_item_data(pid)
+		if not item_data.is_empty():
+			equipment_data[pid] = item_data
+	return equipment_data
+
+func _get_warehouse_data() -> Dictionary:
+	"""获取仓库数据
+	
+	Returns:
+		仓库数据字典
+	"""
+	return {
+		"items": WarehouseManager.get_all_items(),
+		"capacity": WarehouseManager.get_capacity()
+	}
+
+func _save_player_data() -> Array:
+	"""保存所有角色的数据
+	
+	Returns:
+		角色数据数组
+	"""
+	var players_data: Array = []
+	
+	for pid in Global.selected_player_ids:
+		var state = Global.get_player_state(pid)
+		var weapon_type = Global.selected_player_weapons.get(pid, "")
+		
+		players_data.append({
+			"player_id": pid,
+			"weapon_type": weapon_type,
+			"health": state.get("health", 100),
+			"max_health": state.get("max_health", 100),
+			"energy": state.get("energy", 100),
+			"max_energy": state.get("max_energy", 100),
+			"armor": state.get("armor", 0),
+			"is_dead": state.get("health", 100) <= 0,
+		})
+	
+	return players_data
 
 func _sync_selection_cache_from_global() -> void:
 	"""将当前 Global 的角色/武器数据写入 SelectionPanel 的缓存文件"""
@@ -637,6 +889,24 @@ func _sync_selection_cache_from_global() -> void:
 		wpn_file.close()
 		print("[Arena] 已同步武器选择缓存: %s" % str(weapon_cache))
 
+func _clear_selection_cache() -> void:
+	"""清除角色选择缓存文件"""
+	var cache_path := "user://player_selection_cache.json"
+	if FileAccess.file_exists(cache_path):
+		var dir := DirAccess.open("user://")
+		if dir:
+			dir.remove("player_selection_cache.json")
+			print("[Arena] 已清除角色选择缓存")
+
+func _clear_weapon_cache() -> void:
+	"""清除武器选择缓存文件"""
+	var weapon_cache_path := "user://player_weapon_cache.json"
+	if FileAccess.file_exists(weapon_cache_path):
+		var dir := DirAccess.open("user://")
+		if dir:
+			dir.remove("player_weapon_cache.json")
+			print("[Arena] 已清除武器选择缓存")
+
 # ============================================================================
 # 商店系统
 # ============================================================================
@@ -667,6 +937,9 @@ func _on_shop_next_wave_requested() -> void:
 	print("[Arena] 商店关闭，开始下一波")
 	SoundManager.play("shop_close")
 	SoundManager.play("wave_start")
+	
+	# 商店关闭时自动保存进度（Brotato 风格）
+	_auto_save_progress("shop_closed")
 	
 	# 恢复敌人生成
 	if spawner:

@@ -1,8 +1,8 @@
-[gd_scene load_steps=13 format=3 uid="uid://c8xvyb8804ik6x"]
+[gd_scene load_steps=11 format=3 uid="uid://bhbcysdhf8th2"]
 
 [ext_resource type="PackedScene" uid="uid://cyavyrbpj6jjb" path="res://scenes/unit/unit.tscn" id="1_xa7el"]
-[ext_resource type="Script" uid="uid://bixfa3sidiiko" path="res://scenes/unit/players/player_base.gd" id="2_base"]
-[ext_resource type="Texture2D" uid="uid://cproxhccob85g" path="res://assets/sprites/Players/Player_1.png" id="3_ht2l1"]
+[ext_resource type="Script" uid="uid://bixfa3sidiiko" path="res://scenes/unit/players/player_herder.gd" id="2_base"]
+[ext_resource type="Texture2D" uid="uid://byggcc877ibn7" path="res://assets/sprites/Players/Player_1.png" id="3_ht2l1"]
 [ext_resource type="Script" uid="uid://c0mirjaxbhe0q" path="res://scenes/unit/players/trail.gd" id="5_ht2l1"]
 [ext_resource type="Script" uid="uid://3xhc8o3yr61w" path="res://scenes/unit/players/weapon_container.gd" id="6_viu20"]
 [ext_resource type="Script" uid="uid://cyj3i1371tt7i" path="res://scenes/components/hitbox_component.gd" id="7_20xkg"]
@@ -21,9 +21,15 @@ radius = 32.01562
 radius = 30.016663
 
 [node name="PlayerGeneric" instance=ExtResource("1_xa7el")]
-script = ExtResource("2_base")
 collision_mask = 6
+script = ExtResource("2_base")
+fixed_segment_length = 600.0
+dash_base_damage = 10
+geometry_mask_color = Color(1, 0, 0, 0.6)
+explosion_radius = 200.0
+explosion_damage = 100
 player_id = ""
+dash_vfx_scene = null
 
 [node name="Trail" type="Line2D" parent="Visuals" index="0" node_paths=PackedStringArray("player")]
 unique_name_in_owner = true

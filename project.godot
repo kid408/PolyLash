@@ -36,6 +36,7 @@ ShopManager="*res://autoloads/shop_manager.gd"
 ShopAttributeManager="*res://autoloads/shop_attribute_manager.gd"
 AbilityManager="*res://autoloads/ability_manager.gd"
 WeaponConfigLoader="*res://autoloads/weapon_config_loader.gd"
+BattleStateManager="*res://autoloads/battle_state_manager.gd"
 DebugSwitcher="*res://scenes/arena/debug_switcher.gd"
 ItemTooltipHelper="*res://autoloads/item_tooltip_helper.gd"
 
