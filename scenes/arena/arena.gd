@@ -20,6 +20,8 @@ class_name Arena
 # 预加载结算界面和暂停菜单
 const GAME_OVER_SCENE = preload("res://scenes/ui/game_over/game_over_screen.tscn")
 const PAUSE_MENU_SCENE = preload("res://scenes/ui/pause_menu/pause_menu.tscn")
+const WAVE_REWARD_PANEL_SCENE = preload("res://scenes/ui/wave_reward/wave_reward_panel.tscn")
+const WILDCARD_PANEL_SCENE = preload("res://scenes/ui/wildcard/wildcard_panel.tscn")
 
 var current_chest: ChestSimple = null  # 保存当前打开的宝箱引用
 var game_over_screen: GameOverScreen = null  # 结算界面实例
@@ -965,7 +967,9 @@ func _init_wave_reward_system() -> void:
 	# 创建 WaveRewardPanel 并添加到 GameUI（CanvasLayer）
 	var game_ui = get_node_or_null("GameUI")
 	if game_ui:
-		wave_reward_panel = WaveRewardPanel.new()
+		wave_reward_panel = WAVE_REWARD_PANEL_SCENE.instantiate() as WaveRewardPanel
+		if wave_reward_panel == null:
+			wave_reward_panel = WaveRewardPanel.new()
 		wave_reward_panel.name = "WaveRewardPanel"
 		wave_reward_panel.wave_reward_system = wave_reward_system
 		wave_reward_panel.reward_chosen.connect(_on_wave_reward_chosen)
@@ -973,7 +977,9 @@ func _init_wave_reward_system() -> void:
 		print("[Arena] WaveRewardPanel 已添加到 GameUI")
 		
 		# 创建 WildcardPanel 并添加到 GameUI
-		wildcard_panel = WildcardPanel.new()
+		wildcard_panel = WILDCARD_PANEL_SCENE.instantiate() as WildcardPanel
+		if wildcard_panel == null:
+			wildcard_panel = WildcardPanel.new()
 		wildcard_panel.name = "WildcardPanel"
 		wildcard_panel.wildcard_assigned.connect(_on_wildcard_assigned)
 		game_ui.add_child(wildcard_panel)

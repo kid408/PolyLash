@@ -8,11 +8,15 @@
 
 config_version=5
 
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
 [application]
 
 config/name="PolyLash"
 run/main_scene="res://scenes/ui/main_menu/splash_screen.tscn"
-config/features=PackedStringArray("4.5", "Mobile")
+config/features=PackedStringArray("4.6", "Mobile")
 config/icon="uid://b02x7h4bntic6"
 
 [autoload]
@@ -45,6 +49,7 @@ ItemTooltipHelper="*res://autoloads/item_tooltip_helper.gd"
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [gui]
 
