@@ -34,10 +34,18 @@ func execute() -> void:
 		if skill_owner:
 			Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
 		return
+	if not skill_owner:
+		return
+
+	var damage_amp: float = get_e_damage_amp(0.28, 0.34)
+	var duration_amp: float = get_e_duration_amp(0.3)
+	var final_radius: float = touch_radius * (1.0 + (duration_amp - 1.0) * 0.3)
+	var final_damage: int = max(1, int(round(float(touch_damage) * damage_amp)))
+	var final_gold: int = max(1, int(round(float(gold_drop) * (1.0 + (damage_amp - 1.0) * 0.6))))
 
 	# 找到最近的敌人
 	var nearest_enemy: Node2D = null
-	var nearest_dist: float = touch_radius
+	var nearest_dist: float = final_radius
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if is_instance_valid(enemy):
@@ -49,12 +57,16 @@ func execute() -> void:
 	if nearest_enemy:
 		# 造成伤害
 		if nearest_enemy.has_node("HealthComponent"):
-			nearest_enemy.health_component.take_damage(touch_damage)
+			nearest_enemy.health_component.take_damage(final_damage)
 		elif nearest_enemy.has_method("take_damage"):
-			nearest_enemy.take_damage(touch_damage)
+			nearest_enemy.take_damage(final_damage)
+		if nearest_enemy.has_method("apply_status"):
+			nearest_enemy.apply_status("marked", 1.8 * duration_amp, 0.14)
+			if is_f_window_active():
+				nearest_enemy.apply_status("slow", 1.2 * duration_amp, 0.3)
 
 		# 掉落金币
-		Global.spawn_coin(nearest_enemy.global_position, gold_drop)
+		Global.spawn_coin(nearest_enemy.global_position, final_gold)
 
 		spawn_skill_vfx(nearest_enemy.global_position, Color(0.9, 0.7, 0.1, 0.8), 0.6)
 		Global.on_camera_shake.emit(6.0, 0.15)

@@ -28,6 +28,18 @@ var description: String = ""
 # 能量需求
 var energy_cost: float = 80.0  # 需要80%以上能量才能激活
 
+# QEF 联动参数（可选扩展列）
+var f_mode_id: String = ""
+var f_internal_cd: float = 1.0
+var f_q_line_amp: float = 1.0
+var f_q_closure_amp: float = 1.0
+var f_special_value_1: float = 0.0
+var f_special_value_2: float = 0.0
+var f_special_value_3: float = 0.0
+var f_bond_o_payload: String = ""
+var f_bond_m_payload: String = ""
+var f_bond_t_payload: String = ""
+
 # 爆炸效果参数（所有角色共享）
 # 可以在子类中覆盖这些值以实现不同角色的特色爆炸效果
 var explosion_radius: float = 250.0        # 爆炸半径（像素）- 推荐: 200-300
@@ -45,6 +57,9 @@ var original_modulate: Color = Color.WHITE
 # 武器爆炸效果缓存
 var original_weapon_stats: Dictionary = {}
 
+# F 运行时配置（提供给 Q 和羁绊系统读取）
+var f_runtime_profile: Dictionary = {}
+
 # 计时器
 var duration_timer: Timer = null
 
@@ -58,6 +73,12 @@ func _ready() -> void:
 	duration_timer.one_shot = true
 	duration_timer.timeout.connect(_on_duration_timeout)
 	add_child(duration_timer)
+
+func _exit_tree() -> void:
+	if is_active:
+		deactivate()
+	else:
+		_clear_runtime_profile()
 
 func initialize(config: Dictionary, player: Node) -> void:
 	"""初始化大招配置
@@ -82,6 +103,18 @@ func initialize(config: Dictionary, player: Node) -> void:
 		explosion_radius = config.get("explosion_radius", 250.0)
 	if config.has("explosion_damage_scale"):
 		explosion_damage_scale = config.get("explosion_damage_scale", 1.0)
+
+	# 解析 QEF 扩展字段（旧配置缺失时自动使用默认值）
+	f_mode_id = config.get("f_mode_id", "")
+	f_internal_cd = config.get("f_internal_cd", 1.0)
+	f_q_line_amp = config.get("f_q_line_amp", 1.0)
+	f_q_closure_amp = config.get("f_q_closure_amp", 1.0)
+	f_special_value_1 = config.get("f_special_value_1", 0.0)
+	f_special_value_2 = config.get("f_special_value_2", 0.0)
+	f_special_value_3 = config.get("f_special_value_3", 0.0)
+	f_bond_o_payload = config.get("f_bond_o_payload", "")
+	f_bond_m_payload = config.get("f_bond_m_payload", "")
+	f_bond_t_payload = config.get("f_bond_t_payload", "")
 	
 	# 解析颜色
 	var color_hex = config.get("visual_color_hex", "#FFFFFF")
@@ -158,12 +191,17 @@ func _activate() -> void:
 	
 	# 【核心功能】为所有武器添加爆炸效果
 	_apply_explosion_to_weapons()
+
+	# 发布 F 运行时配置（供 Q 和羁绊读取）
+	f_runtime_profile = _build_runtime_profile()
+	_publish_runtime_profile()
 	
 	# 启动计时器
 	duration_timer.start(duration)
 	
 	# 调用子类钩子（角色特色效果）
 	_on_ultimate_activated()
+	_publish_runtime_profile()
 	
 	# 发出信号
 	ultimate_activated.emit()
@@ -200,6 +238,9 @@ func deactivate() -> void:
 	
 	# 调用子类钩子（角色特色效果）
 	_on_ultimate_deactivated()
+
+	# 清理 F 运行时配置
+	_clear_runtime_profile()
 	
 	# 发出信号
 	ultimate_deactivated.emit()
@@ -466,6 +507,10 @@ func _on_ultimate_update(delta: float) -> void:
 	"""大招激活期间每帧调用（子类重写）"""
 	pass
 
+func on_q_path_executed(_is_closed: bool, _segment_count: int, _polygon_count: int) -> void:
+	"""Q 路径执行回调（默认空实现，子类可重写）"""
+	pass
+
 # ============================================================================
 # 工具函数
 # ============================================================================
@@ -489,6 +534,71 @@ func _parse_color(hex: String) -> Color:
 		return Color(r, g, b)
 	
 	return Color.WHITE
+
+func spawn_skill_vfx(pos: Vector2, color: Color = Color.WHITE, vfx_scale: float = 0.6) -> void:
+	"""在指定位置生成技能VFX（供 Ultimate 子类复用）"""
+	var explosion_scene: PackedScene = load("res://scenes/vfx/explosion_area.tscn") as PackedScene
+	if explosion_scene == null:
+		return
+	var tree: SceneTree = get_tree()
+	if tree == null or tree.current_scene == null:
+		return
+	var vfx_node: Node = explosion_scene.instantiate()
+	var vfx_2d: Node2D = vfx_node as Node2D
+	if vfx_2d == null:
+		return
+	vfx_2d.global_position = pos
+	vfx_2d.scale = Vector2(vfx_scale, vfx_scale)
+	vfx_2d.modulate = color
+	vfx_2d.z_index = 100
+	tree.current_scene.call_deferred("add_child", vfx_2d)
+	var timer: SceneTreeTimer = tree.create_timer(1.0)
+	timer.timeout.connect(Callable(self, "_on_skill_vfx_timeout").bind(weakref(vfx_2d)), CONNECT_ONE_SHOT)
+
+func _on_skill_vfx_timeout(vfx_ref: WeakRef) -> void:
+	var vfx_obj: Variant = vfx_ref.get_ref()
+	var vfx_node: Node = vfx_obj as Node
+	if vfx_node != null and is_instance_valid(vfx_node):
+		vfx_node.queue_free()
+
+func _build_runtime_profile() -> Dictionary:
+	"""Build runtime profile shared with Q skills and resonance layers."""
+	return {
+		"active": is_active,
+		"ult_id": ult_id,
+		"mode_id": f_mode_id,
+		"q_line_amp": f_q_line_amp,
+		"q_closure_amp": f_q_closure_amp,
+		"internal_cd": f_internal_cd,
+		"special_1": f_special_value_1,
+		"special_2": f_special_value_2,
+		"special_3": f_special_value_3,
+		"bond_o_payload": f_bond_o_payload,
+		"bond_m_payload": f_bond_m_payload,
+		"bond_t_payload": f_bond_t_payload,
+		"duration": duration,
+	}
+
+func update_runtime_profile(changes: Dictionary) -> void:
+	"""Merge runtime values and publish to player meta."""
+	if changes.is_empty():
+		return
+	for key in changes.keys():
+		f_runtime_profile[key] = changes[key]
+	_publish_runtime_profile()
+
+func _publish_runtime_profile() -> void:
+	if not is_instance_valid(player_ref):
+		return
+	if f_runtime_profile.is_empty():
+		return
+	f_runtime_profile["active"] = is_active
+	player_ref.set_meta("f_runtime_profile", f_runtime_profile.duplicate(true))
+
+func _clear_runtime_profile() -> void:
+	f_runtime_profile.clear()
+	if is_instance_valid(player_ref) and player_ref.has_meta("f_runtime_profile"):
+		player_ref.remove_meta("f_runtime_profile")
 
 func get_cooldown_progress() -> float:
 	"""获取冷却进度（0-1）

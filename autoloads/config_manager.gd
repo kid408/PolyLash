@@ -211,7 +211,7 @@ func load_skill_params_wide_format(path: String) -> Dictionary:
 	var direct_cols: Array[String] = [
 		"energy_cost", "cooldown", "fixed_segment_length", "dash_speed",
 		"energy_per_10px", "energy_threshold_distance", "energy_scale_multiplier",
-		"base_line_duration", "desc_q_line", "desc_q_circle", "desc_e"
+		"base_line_duration", "desc_q_line", "desc_q_circle", "desc_e", "tags"
 	]
 	
 	# 列名 -> 索引 映射

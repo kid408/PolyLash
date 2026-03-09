@@ -104,9 +104,6 @@ func open_chest() -> void:
 		else:
 			printerr("[Chest] 未找到打开动画: ", open_anim)
 	
-	# 暂停游戏
-	Global.game_paused = true
-	
 	# 发送信号
 	chest_opened.emit(self)
 	

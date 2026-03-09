@@ -1,37 +1,14 @@
-extends SkillDrawingBase
+﻿extends SkillDrawingBase
 class_name SkillExecutionerQ
 
-## ==============================================================================
-## 处刑Q技能 - 处刑区域与断头台
-## ==============================================================================
-## 
-## 功能说明:
-## - 画线：沿路径创建处刑区域（Debuff区域），对接触的敌人施加伤害放大（damage_amp）
-## - 画圈闭合：在闭合区域内创建断头台效果，对区域内敌人造成高额伤害
-## 
-## ==============================================================================
+var damage_amp_value: float = 0.45
+var damage_amp_duration: float = 4.5
+var guillotine_damage: int = 120
+var guillotine_duration: float = 1.2
+var line_bleed_damage: int = 16
+var line_tick_interval: float = 0.45
+var execute_fear_duration: float = 0.8
 
-# ==============================================================================
-# 处刑技能专属参数（从CSV加载）
-# ==============================================================================
-
-## 伤害放大比例（40%）
-var damage_amp_value: float = 0.4
-
-## 伤害放大持续时间
-var damage_amp_duration: float = 5.0
-
-## 断头台伤害
-var guillotine_damage: int = 100
-
-## 断头台持续时间
-var guillotine_duration: float = 1.0
-
-# ==============================================================================
-# 实现基类虚函数
-# ==============================================================================
-
-## 生成处刑区域效果（未闭合状态）- 对接触敌人施加 damage_amp debuff
 func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
 	SkillEffectManager.create_debuff_zone({
 		"start": start,
@@ -41,24 +18,33 @@ func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
 		"debuff_type": "damage_amp",
 		"debuff_value": damage_amp_value,
 		"debuff_duration": damage_amp_duration,
-		"tick_interval": 1.0,
-		"color": Color(0.6, 0.1, 0.1, 0.5)
+		"tick_interval": line_tick_interval,
+		"damage": line_bleed_damage,
+		"damage_interval": line_tick_interval,
+		"color": Color(0.62, 0.08, 0.08, 0.56)
 	})
 
-## 生成断头台效果（闭合状态）- 对区域内敌人造成高额伤害
 func _spawn_area_effect(polygon: PackedVector2Array) -> void:
 	SkillEffectManager.create_area_effect({
 		"polygon": polygon,
 		"damage": guillotine_damage,
-		"damage_interval": 0.5,
+		"damage_interval": 0.3,
 		"duration": guillotine_duration,
-		"color": Color(0.6, 0.1, 0.1, 0.6)
+		"color": Color(0.7, 0.1, 0.1, 0.62)
 	})
 
-## 获取规划线条颜色（暗红色）
-func _get_line_color() -> Color:
-	return Color(0.6, 0.1, 0.1, 1.0)
+	SkillEffectManager.create_debuff_zone({
+		"polygon": polygon,
+		"duration": guillotine_duration,
+		"debuff_type": "fear",
+		"debuff_value": 1.0,
+		"debuff_duration": execute_fear_duration,
+		"tick_interval": 0.65,
+		"color": Color(0.55, 0.08, 0.08, 0.28)
+	})
 
-## 获取闭合提示颜色
+func _get_line_color() -> Color:
+	return Color(0.62, 0.08, 0.08, 1.0)
+
 func _get_closure_color() -> Color:
 	return Color(0.5, 0.05, 0.05, 1.0)

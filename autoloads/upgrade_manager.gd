@@ -44,6 +44,14 @@ var attribute_levels: Dictionary = {}
 # 示例: {"max_health": 50.0, "base_speed": 30.0}
 var attribute_bonuses: Dictionary = {}
 
+# P0-FLW-06：升级白名单（仅保留已接通且可快速感知收益的属性）
+const EFFECTIVE_ATTRIBUTE_WHITELIST: Array[String] = [
+	"max_health",
+	"max_energy",
+	"energy_regen",
+	"base_speed",
+]
+
 # ============================================================================
 # 初始化
 # ============================================================================
@@ -65,9 +73,16 @@ func _initialize_attributes() -> void:
 	- 将每个属性的等级和加成初始化为0
 	"""
 	var all_attributes = ConfigManager.get_all_upgrade_attributes()
+	var skipped_count: int = 0
 	for attr_id in all_attributes.keys():
+		if not _is_effective_attribute(attr_id):
+			skipped_count += 1
+			continue
 		attribute_levels[attr_id] = 0
 		attribute_bonuses[attr_id] = 0.0
+	
+	if skipped_count > 0:
+		print("[UpgradeManager] 白名单过滤无效属性: %d 个" % skipped_count)
 
 # ============================================================================
 # 核心功能 - 属性升级
@@ -97,6 +112,10 @@ func apply_upgrade(attribute_id: String, chest_tier: int) -> Dictionary:
 	- 更新属性等级和累计加成
 	- 调用 _apply_to_player() 将加成应用到玩家对象
 	"""
+	if not _is_effective_attribute(attribute_id):
+		printerr("[UpgradeManager] 属性未在白名单中，拒绝应用: %s" % attribute_id)
+		return {}
+	
 	var attr_config = ConfigManager.get_upgrade_attribute(attribute_id)
 	if attr_config.is_empty():
 		printerr("[UpgradeManager] 错误: 未找到属性配置 ", attribute_id)
@@ -119,6 +138,9 @@ func apply_upgrade(attribute_id: String, chest_tier: int) -> Dictionary:
 	attribute_bonuses[attribute_id] = attribute_bonuses.get(attribute_id, 0.0) + upgrade_value
 	
 	print("[UpgradeManager] 升级属性: %s, 等级: %d, 加成: %s" % [attribute_id, attribute_levels[attribute_id], str(upgrade_value)])
+
+	# ARC-05: 升级统一写入局内状态缓存，确保切人前后一致
+	_apply_upgrade_to_all_player_states(attribute_id, upgrade_value, value_type)
 	
 	# 应用到玩家
 	_apply_to_player(attribute_id, upgrade_value, value_type)
@@ -312,18 +334,40 @@ func generate_random_attributes(count: int, chest_tier: int) -> Array[Dictionary
 	
 	# 筛选未达到最大等级的属性
 	for attr_id in all_attributes.keys():
+		if not _is_effective_attribute(attr_id):
+			continue
 		var attr_config = all_attributes[attr_id]
 		var current_level = attribute_levels.get(attr_id, 0)
 		var max_level = attr_config.get("max_level", 10)
 		if current_level < max_level:
 			available_attrs.append(attr_id)
 	
-	# 随机选择
-	available_attrs.shuffle()
+	# 导向权重（P0 阶段简化版）：基于角色当前状态与羁绊倾向做轻量推荐
+	var weighted_attrs: Array[Dictionary] = []
+	for attr_id in available_attrs:
+		var weight := _get_upgrade_weight(attr_id)
+		weighted_attrs.append({
+			"attribute_id": attr_id,
+			"weight": max(0.05, weight)
+		})
+
 	var selected: Array[Dictionary] = []
 	
-	for i in range(min(count, available_attrs.size())):
-		var attr_id = available_attrs[i]
+	for _i in range(min(count, weighted_attrs.size())):
+		var weights: Array[float] = []
+		for entry in weighted_attrs:
+			weights.append(float(entry.get("weight", 1.0)))
+
+		var picked_idx := _weighted_pick_index(weights)
+		if picked_idx < 0 or picked_idx >= weighted_attrs.size():
+			break
+
+		var picked_entry: Dictionary = weighted_attrs[picked_idx]
+		var attr_id := str(picked_entry.get("attribute_id", ""))
+		if attr_id.is_empty():
+			weighted_attrs.remove_at(picked_idx)
+			continue
+
 		var attr_config = all_attributes[attr_id]
 		var value_key = "tier%d_value" % chest_tier
 		var upgrade_value = attr_config.get(value_key, 0)
@@ -336,6 +380,8 @@ func generate_random_attributes(count: int, chest_tier: int) -> Array[Dictionary
 			"value_type": attr_config.get("value_type", "flat"),
 			"current_level": attribute_levels.get(attr_id, 0)
 		})
+
+		weighted_attrs.remove_at(picked_idx)
 	
 	return selected
 
@@ -408,3 +454,82 @@ func reset_all_attributes() -> void:
 	attribute_bonuses.clear()
 	_initialize_attributes()
 	print("[UpgradeManager] 所有属性已重置")
+
+func _is_effective_attribute(attribute_id: String) -> bool:
+	return EFFECTIVE_ATTRIBUTE_WHITELIST.has(attribute_id)
+
+func _get_upgrade_weight(attribute_id: String) -> float:
+	var weight: float = 1.0
+	var player = Global.player
+
+	if is_instance_valid(player):
+		var hp_cur: float = float(player.health_component.current_health) if "health_component" in player and player.health_component else 1.0
+		var hp_max: float = float(player.health_component.max_health) if "health_component" in player and player.health_component else 1.0
+		var hp_ratio: float = hp_cur / max(1.0, hp_max)
+		var energy_ratio: float = float(player.energy) / max(1.0, float(player.max_energy))
+
+		match attribute_id:
+			"max_health":
+				if hp_ratio < 0.7:
+					weight += 1.2
+			"max_energy":
+				if energy_ratio < 0.65:
+					weight += 1.0
+			"energy_regen":
+				if energy_ratio < 0.55:
+					weight += 1.2
+			"base_speed":
+				weight += 0.2
+
+	# 羁绊倾向轻量加权
+	if BondManager:
+		if BondManager.is_bond_active("colossus") and attribute_id == "max_health":
+			weight += 0.8
+		if BondManager.is_bond_active("inkborn") and (attribute_id == "max_energy" or attribute_id == "energy_regen"):
+			weight += 0.8
+		if BondManager.is_bond_active("nomad") and attribute_id == "base_speed":
+			weight += 0.8
+
+	# 对高等级项做轻微衰减，避免单项滚雪球
+	var level := int(attribute_levels.get(attribute_id, 0))
+	weight = weight / (1.0 + level * 0.18)
+	return max(0.05, weight)
+
+func _weighted_pick_index(weights: Array[float]) -> int:
+	if weights.is_empty():
+		return -1
+	var rng := RandomNumberGenerator.new()
+	var idx := rng.rand_weighted(weights)
+	if idx < 0:
+		return 0
+	return idx
+
+func _apply_upgrade_to_all_player_states(attribute_id: String, value: float, _value_type: String) -> void:
+	if Global == null:
+		return
+
+	for player_id in Global.selected_player_ids:
+		if not Global.player_states.has(player_id):
+			continue
+		var state: Dictionary = Global.player_states[player_id]
+
+		match attribute_id:
+			"max_health":
+				var old_max := float(state.get("max_health", 100.0))
+				var new_max := old_max + value
+				state["max_health"] = new_max
+				state["health"] = min(float(state.get("health", new_max)) + value, new_max)
+			"max_energy":
+				var old_energy_max := float(state.get("max_energy", 999.0))
+				var new_energy_max := old_energy_max + value
+				state["max_energy"] = new_energy_max
+				state["energy"] = min(float(state.get("energy", new_energy_max)) + value, new_energy_max)
+			"energy_regen":
+				state["energy_regen"] = float(state.get("energy_regen", 0.5)) + value
+			"base_speed":
+				state["base_speed"] = float(state.get("base_speed", 200.0)) + value
+				state["speed"] = float(state.get("speed", state.get("base_speed", 200.0))) + value
+			_:
+				pass
+
+		Global.player_states[player_id] = state

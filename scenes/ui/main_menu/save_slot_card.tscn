@@ -45,7 +45,7 @@ layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 22
-text = "SLOT 1"
+text = "存档 1"
 horizontal_alignment = 1
 
 [node name="StatusLabel" type="Label" parent="MarginContainer/VBox"]
@@ -86,11 +86,27 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 12
 
-[node name="LeaderIcon" type="TextureRect" parent="MarginContainer/VBox/InfoContainer/HBox"]
+[node name="TeamPortraits" type="HBoxContainer" parent="MarginContainer/VBox/InfoContainer/HBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(64, 64)
-stretch_mode = 5
+theme_override_constants/separation = 6
+
+[node name="Portrait1" type="TextureRect" parent="MarginContainer/VBox/InfoContainer/HBox/TeamPortraits"]
+layout_mode = 2
+custom_minimum_size = Vector2(40, 40)
 expand_mode = 1
+stretch_mode = 5
+
+[node name="Portrait2" type="TextureRect" parent="MarginContainer/VBox/InfoContainer/HBox/TeamPortraits"]
+layout_mode = 2
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Portrait3" type="TextureRect" parent="MarginContainer/VBox/InfoContainer/HBox/TeamPortraits"]
+layout_mode = 2
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
 
 [node name="InfoVBox" type="VBoxContainer" parent="MarginContainer/VBox/InfoContainer/HBox"]
 layout_mode = 2
@@ -105,8 +121,17 @@ theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 16
 text = "第1层 - 波次1"
 
+[node name="TeamLabel" type="Label" parent="MarginContainer/VBox/InfoContainer/HBox/InfoVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.78, 0.78, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 13
+text = "队伍"
+text_overrun_behavior = 3
+
 [node name="BondContainer" type="HBoxContainer" parent="MarginContainer/VBox/InfoContainer/HBox/InfoVBox"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
 [node name="TimeVBox" type="VBoxContainer" parent="MarginContainer/VBox/InfoContainer"]

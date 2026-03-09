@@ -6,11 +6,15 @@ class_name CharacterUpgradePanel
 # 新版UI：宽敞布局，显示具体数值和增量预览
 # ============================================================================
 
+# 信号
+signal close_requested
+
 # ============================================================================
 # 节点引用
 # ============================================================================
 
 @onready var back_button: Button = $MarginContainer/VBoxContainer/TopBar/BackButton
+@onready var title_label: Label = $MarginContainer/VBoxContainer/TopBar/Title
 @onready var gold_label: Label = $MarginContainer/VBoxContainer/TopBar/GoldContainer/GoldLabel
 @onready var gold_icon: TextureRect = $MarginContainer/VBoxContainer/TopBar/GoldContainer/GoldIcon
 @onready var character_cards_container: HBoxContainer = $MarginContainer/VBoxContainer/CardsContainer
@@ -21,8 +25,17 @@ var gold_texture: Texture2D = null
 # 武器商店开关
 var weapon_shop_enabled: bool = false
 
+# 运行模式
+var embedded_mode: bool = false
+var use_run_gold_currency: bool = false
+
 # 道具Tooltip面板
 var _item_tooltip: PanelContainer = null
+
+# 外部注入上下文（建议在 add_child 前调用）
+func configure_context(embedded: bool, use_run_gold: bool) -> void:
+	embedded_mode = embedded
+	use_run_gold_currency = use_run_gold
 
 # ============================================================================
 # 初始化
@@ -40,12 +53,24 @@ func _ready() -> void:
 	_item_tooltip = ItemTooltipHelper.create_tooltip_panel()
 	add_child(_item_tooltip)
 	
-	# 检查武器商店开关
+	# 检查武器商店开关（嵌入模式下禁用）
 	weapon_shop_enabled = int(ConfigManager.get_game_setting("enable_starting_weapon_shop", 0)) == 1
+	if embedded_mode:
+		weapon_shop_enabled = false
+		title_label.text = "角色强化（局内）"
+		back_button.text = "关闭"
 	
 	# 如果启用武器商店，生成随机武器
 	if weapon_shop_enabled:
 		DataManager.generate_random_weapons_for_players(Global.selected_player_ids)
+	
+	# 监听货币变化，保持顶部资源显示实时更新
+	if use_run_gold_currency:
+		if DataManager.has_signal("run_gold_changed"):
+			DataManager.run_gold_changed.connect(_on_run_gold_changed)
+	else:
+		if DataManager.has_signal("soul_shard_changed"):
+			DataManager.soul_shard_changed.connect(_on_soul_shard_changed)
 	
 	# 更新金币显示
 	_update_gold_display()
@@ -60,7 +85,10 @@ func _ready() -> void:
 # ============================================================================
 
 func _update_gold_display() -> void:
-	gold_label.text = str(DataManager.get_total_gold())
+	if use_run_gold_currency:
+		gold_label.text = str(DataManager.get_run_gold())
+	else:
+		gold_label.text = str(MetaProgressService.get_soul_shard())
 
 # ============================================================================
 # 角色卡片生成
@@ -265,7 +293,7 @@ func _create_attribute_row(player_id: String, upgrade_config: Dictionary) -> Con
 		buy_btn.text = ""  # 清空文字，使用子节点显示内容
 		
 		# 按钮样式
-		var can_afford = DataManager.can_upgrade(player_id, attr_name)
+		var can_afford = DataManager.can_upgrade(player_id, attr_name, use_run_gold_currency)
 		var btn_style = StyleBoxFlat.new()
 		btn_style.set_corner_radius_all(8)
 		
@@ -613,7 +641,7 @@ func _create_weapon_shop_section(player_id: String) -> Control:
 		buy_btn.custom_minimum_size = Vector2(100, 36)
 		buy_btn.text = ""
 		
-		var can_afford = DataManager.get_total_gold() >= price
+		var can_afford = MetaProgressService.get_soul_shard() >= price
 		var btn_style = StyleBoxFlat.new()
 		btn_style.set_corner_radius_all(8)
 		
@@ -671,8 +699,9 @@ func _on_weapon_purchase_pressed(player_id: String) -> void:
 		_update_gold_display()
 		_generate_character_cards()
 	else:
-		print("[CharacterUpgrade] 武器购买失败 - 金币不足或已购买")
+		print("[CharacterUpgrade] 武器购买失败 - %s不足或已购买" % ("金币" if use_run_gold_currency else "碎片"))
 		SoundManager.play("ui_error")
+		_show_operation_hint("%s不足或已购买" % ("金币" if use_run_gold_currency else "碎片"), Color(1.0, 0.45, 0.35))
 
 # ============================================================================
 # 升级按钮事件
@@ -681,20 +710,72 @@ func _on_weapon_purchase_pressed(player_id: String) -> void:
 func _on_upgrade_pressed(player_id: String, attr_name: String) -> void:
 	print("[CharacterUpgrade] 尝试升级: %s.%s" % [player_id, attr_name])
 	
-	if DataManager.do_upgrade(player_id, attr_name):
+	if DataManager.do_upgrade(player_id, attr_name, use_run_gold_currency):
 		print("[CharacterUpgrade] 升级成功!")
 		SoundManager.play("ui_purchase")
 		_update_gold_display()
 		_generate_character_cards()
 	else:
-		print("[CharacterUpgrade] 升级失败 - 金币不足或已满级")
+		var reason := _get_upgrade_fail_reason(player_id, attr_name)
+		print("[CharacterUpgrade] 升级失败 - %s" % reason)
 		SoundManager.play("ui_error")
+		_show_operation_hint(reason, Color(1.0, 0.45, 0.35))
+
+func _on_soul_shard_changed(_new_value: int) -> void:
+	_update_gold_display()
+
+func _on_run_gold_changed(_new_value: int) -> void:
+	_update_gold_display()
 
 # ============================================================================
 # 返回按钮
 # ============================================================================
 
 func _on_back_pressed() -> void:
-	print("[CharacterUpgrade] 返回角色选择")
+	print("[CharacterUpgrade] 关闭/返回")
 	SoundManager.play("ui_click")
+	if embedded_mode:
+		close_requested.emit()
+		queue_free()
+		return
 	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
+
+func _get_upgrade_fail_reason(player_id: String, attr_name: String) -> String:
+	var current_level := DataManager.get_upgrade_level(player_id, attr_name)
+	var max_level := DataManager.get_max_upgrade_level()
+	if current_level >= max_level:
+		return "已达到最大等级"
+
+	var cfg: Dictionary = DataManager.get_upgrade_config(attr_name)
+	if cfg.is_empty():
+		return "升级配置缺失"
+
+	var cost := int(cfg.get("cost", 0))
+	if use_run_gold_currency:
+		if DataManager.get_run_gold() < cost:
+			return "金币不足"
+	else:
+		if MetaProgressService.get_soul_shard() < cost:
+			return "碎片不足"
+
+	return "升级条件不满足"
+
+func _show_operation_hint(message: String, color: Color) -> void:
+	var hint = Label.new()
+	hint.text = message
+	hint.add_theme_font_size_override("font_size", 22)
+	hint.add_theme_color_override("font_color", color)
+	hint.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	hint.add_theme_constant_override("outline_size", 3)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.anchors_preset = Control.PRESET_CENTER_TOP
+	hint.position = Vector2(size.x / 2 - 180, 28)
+	hint.custom_minimum_size = Vector2(360, 40)
+	add_child(hint)
+
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(hint, "position:y", hint.position.y - 28, 0.9)
+	tween.tween_property(hint, "modulate:a", 0.0, 0.9)
+	tween.set_parallel(false)
+	tween.tween_callback(hint.queue_free)

@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://5vtmbe1drnif"
+
+[deps]
+
+files=["res://tmp_gd_usage_report_latest.status.translation", "res://tmp_gd_usage_report_latest.path.translation", "res://tmp_gd_usage_report_latest.class.translation", "res://tmp_gd_usage_report_latest.class.translation", "res://tmp_gd_usage_report_latest.sample.translation", "res://tmp_gd_usage_report_latest.sample.translation"]
+
+source_file="res://tmp_gd_usage_report_latest.csv"
+dest_files=["res://tmp_gd_usage_report_latest.status.translation", "res://tmp_gd_usage_report_latest.path.translation", "res://tmp_gd_usage_report_latest.class.translation", "res://tmp_gd_usage_report_latest.class.translation", "res://tmp_gd_usage_report_latest.sample.translation", "res://tmp_gd_usage_report_latest.sample.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

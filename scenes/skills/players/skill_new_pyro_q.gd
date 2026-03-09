@@ -1,61 +1,60 @@
-extends SkillDrawingBase
+﻿extends SkillDrawingBase
 class_name SkillNewPyroQ
 
-## ==============================================================================
-## 新火法Q技能 - 火墙与火海
-## ==============================================================================
-## 
-## 功能说明:
-## - 画线：沿路径创建 StaticBody2D 火墙，阻挡敌人移动并对接触者造成持续伤害
-## - 画圈闭合：在闭合区域内创建火海，对区域内敌人造成持续伤害（DOT）
-## 
-## ==============================================================================
-
-# ==============================================================================
-# 新火法技能专属参数（从CSV加载）
-# ==============================================================================
-
-## 火墙接触伤害
 var wall_contact_damage: int = 15
-
-## 火海伤害
 var fire_sea_damage: int = 40
-
-## 火海持续时间
 var fire_sea_duration: float = 5.0
+var scorch_damage_amp: float = 0.25
+var burn_dot_value: float = 10.0
+var burn_tick_interval: float = 0.5
+var flame_wall_width: float = 18.0
 
-# ==============================================================================
-# 实现基类虚函数
-# ==============================================================================
-
-## 生成火墙效果（未闭合状态）
 func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
 	SkillEffectManager.create_wall_effect({
 		"start": start,
 		"end": end,
-		"width": 16.0,
+		"width": flame_wall_width,
 		"duration": _get_line_duration(),
 		"block_enemies": true,
 		"block_bullets": false,
 		"contact_damage": wall_contact_damage,
-		"contact_interval": 0.5,
-		"color": Color(1.0, 0.4, 0.1, 0.8)
+		"contact_interval": 0.4,
+		"color": Color(1.0, 0.42, 0.1, 0.85)
 	})
 
-## 生成火海效果（闭合状态）
+	SkillEffectManager.create_debuff_zone({
+		"start": start,
+		"end": end,
+		"width": 20.0,
+		"duration": _get_line_duration(),
+		"debuff_type": "damage_amp",
+		"debuff_value": scorch_damage_amp,
+		"debuff_duration": 2.0,
+		"tick_interval": 0.4,
+		"color": Color(1.0, 0.5, 0.18, 0.32)
+	})
+
 func _spawn_area_effect(polygon: PackedVector2Array) -> void:
 	SkillEffectManager.create_area_effect({
 		"polygon": polygon,
 		"damage": fire_sea_damage,
-		"damage_interval": 0.5,
+		"damage_interval": 0.35,
 		"duration": fire_sea_duration,
-		"color": Color(1.0, 0.3, 0.0, 0.5)
+		"color": Color(1.0, 0.32, 0.0, 0.5)
 	})
 
-## 获取规划线条颜色（火焰橙红色）
-func _get_line_color() -> Color:
-	return Color(1.0, 0.4, 0.1, 1.0)
+	SkillEffectManager.create_debuff_zone({
+		"polygon": polygon,
+		"duration": fire_sea_duration,
+		"debuff_type": "poison",
+		"debuff_value": burn_dot_value,
+		"debuff_duration": 2.5,
+		"tick_interval": burn_tick_interval,
+		"color": Color(1.0, 0.45, 0.0, 0.26)
+	})
 
-## 获取闭合提示颜色
+func _get_line_color() -> Color:
+	return Color(1.0, 0.42, 0.1, 1.0)
+
 func _get_closure_color() -> Color:
 	return Color(1.0, 0.3, 0.0, 1.0)

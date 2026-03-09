@@ -87,6 +87,7 @@ var is_planning: bool = false
 
 ## 是否正在划线
 var is_drawing: bool = false
+var is_dashing: bool = false
 
 ## 上一个记录的点
 var last_point: Vector2 = Vector2.ZERO
@@ -118,17 +119,11 @@ var trapped_enemies: Array = []
 ## 收网对象
 var recall_objects: Array = []
 
-## 是否已显示能量不足提示（防止重复弹出）
-var has_shown_no_energy_hint: bool = false
-
 ## 收网伤害历史
 var hit_history: Dictionary = {}
 
 ## 当前蛛网计时器
 var current_web_timer: float = 0.0
-
-## 自动收网计时器
-var auto_recall_timer: Timer = null
 
 # ==============================================================================
 # 节点引用
@@ -147,21 +142,14 @@ var web_container: Node2D
 func _ready() -> void:
 	super._ready()
 	
-	# ✅ 创建蛛网容器，添加到场景根节点而不是玩家节点
-	# 这样切换角色时，蛛网容器不会被删除
+	# 创建蛛网容器
 	web_container = Node2D.new()
 	web_container.name = "WebContainer"
 	web_container.top_level = true
 	web_container.global_position = Vector2.ZERO
 	
-	# 添加到场景根节点
 	if skill_owner:
-		var scene_root = skill_owner.get_tree().current_scene
-		if scene_root:
-			scene_root.add_child(web_container)
-			print("[SkillWebWeave] web_container 已添加到场景根节点")
-		else:
-			print("[SkillWebWeave] ⚠️ 警告：无法找到场景根节点")
+		skill_owner.add_child(web_container)
 	
 	# 创建Line2D用于绘制规划路径
 	line_2d = Line2D.new()
@@ -170,202 +158,19 @@ func _ready() -> void:
 	line_2d.width = 4.0
 	
 	if skill_owner:
-		# ✅ 修复：确保Line2D添加到玩家节点，而不是skill_owner（可能是Area2D）
-		var player_node = skill_owner
-		if skill_owner is Area2D:
-			player_node = skill_owner.get_parent()
-		if player_node:
-			player_node.add_child(line_2d)
-			print("[SkillWebWeave] Line2D已添加到玩家节点: %s" % player_node.name)
-		else:
-			print("[SkillWebWeave] ⚠️ 警告：无法找到玩家节点，Line2D添加到skill_owner")
-			skill_owner.add_child(line_2d)
-	
-	# ✅ 创建自动收网计时器，添加到 web_container 而不是技能节点
-	# 这样切换角色时，Timer 不会被删除
-	auto_recall_timer = Timer.new()
-	auto_recall_timer.name = "AutoRecallTimer"
-	auto_recall_timer.one_shot = true
-	
-	# ✅ 使用 lambda 函数连接信号，避免依赖技能节点
-	# 捕获必要的引用（不捕获 owner，而是动态查找）
-	var container_ref = web_container
-	var fly_speed_val = recall_fly_speed
-	var damage_val = recall_damage
-	var execute_mult_val = recall_execute_mult
-	
-	auto_recall_timer.timeout.connect(func():
-		print("[SkillWebWeave] ★★★ Timer 超时回调被触发 ★★★")
-		print("[SkillWebWeave] container_ref 是否有效: %s" % is_instance_valid(container_ref))
-		
-		if not is_instance_valid(container_ref):
-			print("[SkillWebWeave] container 无效，退出")
-			return
-		
-		# ✅ 动态查找当前玩家
-		var target: Vector2
-		var current_player = container_ref.get_tree().get_first_node_in_group("player")
-		if is_instance_valid(current_player):
-			target = current_player.global_position
-			print("[SkillWebWeave] 找到当前玩家，位置: %s" % target)
-		else:
-			target = container_ref.global_position
-			print("[SkillWebWeave] 未找到玩家，使用 container 位置: %s" % target)
-		
-		print("[SkillWebWeave] 收网目标位置: %s" % target)
-		
-		# 计算收网时间
-		var recall_time = 1.0 / fly_speed_val
-		print("[SkillWebWeave] 收网时间: %.2f秒" % recall_time)
-		
-		# ✅ 收集线条数据（保存子节点的名称，而不是完整路径）
-		var line_data_array = []
-		var poly_names = []
-		
-		for child in container_ref.get_children():
-			if child is Line2D and child.name != "WebPlanningLine":
-				# 保存子节点名称（相对于 container）
-				line_data_array.append({
-					"p1": child.points[0],
-					"p2": child.points[1],
-					"name": NodePath(child.name)  # 转换为 NodePath
-				})
-			elif child is Polygon2D:
-				poly_names.append(NodePath(child.name))  # 转换为 NodePath
-		
-		print("[SkillWebWeave] 找到 %d 条线，%d 个多边形" % [line_data_array.size(), poly_names.size()])
-		
-		if line_data_array.is_empty():
-			print("[SkillWebWeave] 没有蛛网线条，跳过收网")
-			return
-		
-		# 淡出陷阱多边形
-		if not poly_names.is_empty():
-			var t = container_ref.create_tween()
-			for poly_name in poly_names:
-				var poly = container_ref.get_node_or_null(poly_name)
-				if is_instance_valid(poly):
-					t.parallel().tween_property(poly, "modulate:a", 0.0, 0.3)
-			t.tween_callback(func():
-				for poly_name in poly_names:
-					var poly = container_ref.get_node_or_null(poly_name)
-					if is_instance_valid(poly):
-						poly.queue_free()
-			)
-		
-		# ✅ 创建伤害检测用的数据结构
-		var hit_history_local = {}
-		
-		# ✅ 为每条线创建 Tween - 使用子节点名称动态查找
-		for line_data in line_data_array:
-			var line_name = line_data["name"]
-			var p1_start = line_data["p1"]
-			var p2_start = line_data["p2"]
-			
-			print("[SkillWebWeave] 处理线条: %s, p1=%s, p2=%s" % [line_name, p1_start, p2_start])
-			
-			# 创建 Tween
-			var tween = container_ref.create_tween()
-			tween.set_parallel(false)  # ✅ 改为串行，确保动画按顺序执行
-			
-			# 创建并行组：点1和点2同时移动，并在移动过程中检测碰撞
-			tween.set_parallel(true)
-			
-			# 动画：点1移动到目标
-			tween.tween_method(
-				func(val: Vector2):
-					var line = container_ref.get_node_or_null(line_name)
-					if is_instance_valid(line):
-						line.set_point_position(0, val),
-				p1_start,
-				target,
-				recall_time
-			)
-			
-			# 动画：点2移动到目标
-			tween.tween_method(
-				func(val: Vector2):
-					var line = container_ref.get_node_or_null(line_name)
-					if is_instance_valid(line):
-						line.set_point_position(1, val),
-				p2_start,
-				target,
-				recall_time
-			)
-			
-			# ✅ 添加碰撞检测：使用一个虚拟的进度值来触发碰撞检测
-			tween.tween_method(
-				func(progress: float):
-					# 计算当前线条的两个端点位置
-					var curr_p1 = p1_start.lerp(target, progress)
-					var curr_p2 = p2_start.lerp(target, progress)
-					
-					# 检测碰撞
-					var enemies = container_ref.get_tree().get_nodes_in_group("enemies")
-					for e in enemies:
-						if not is_instance_valid(e):
-							continue
-						if e in hit_history_local:
-							continue
-						
-						var close_p = Geometry2D.get_closest_point_to_segment(e.global_position, curr_p1, curr_p2)
-						if e.global_position.distance_to(close_p) < 40.0:
-							# 造成伤害
-							var dmg = damage_val
-							Global.spawn_floating_text(e.global_position, str(dmg), Color.WHITE)
-							if e.has_node("HealthComponent"):
-								e.health_component.take_damage(dmg)
-							hit_history_local[e] = true,
-				0.0,
-				0.95,  # 只检测到95%的进度
-				recall_time
-			)
-			
-			# ✅ 回到串行模式
-			tween.set_parallel(false)
-			
-			# 等待一半时间后开始淡出
-			tween.tween_interval(recall_time * 0.5)
-			
-			# 动画：淡出
-			tween.tween_method(
-				func(val: float):
-					var line = container_ref.get_node_or_null(line_name)
-					if is_instance_valid(line):
-						line.modulate.a = val,
-				1.0,
-				0.0,
-				recall_time * 0.5
-			)
-			
-			# ✅ 完成后删除 - 这个回调会在所有动画完成后执行
-			tween.tween_callback(func():
-				var line = container_ref.get_node_or_null(line_name)
-				if is_instance_valid(line):
-					print("[SkillWebWeave] 删除线条: %s" % line_name)
-					line.queue_free()
-			)
-		
-		print("[SkillWebWeave] 收网动画已启动，共 %d 条线" % line_data_array.size())
-	)
-	
-	web_container.add_child(auto_recall_timer)
-	print("[SkillWebWeave] 自动收网计时器已创建并添加到 web_container")
+		skill_owner.add_child(line_2d)
 
 func _process(delta: float) -> void:
 	super._process(delta)
-	
-	# 更新规划视觉
+
 	_update_planning_visuals()
-	
-	# 处理收网物理
 	_process_recall_physics(delta)
-	
-	# 编织阶段：检查是否手动触发收网
+
 	if skill_state == SkillState.WEAVE:
+		current_web_timer += delta
 		var manual_trigger = Input.is_action_just_pressed("skill_q")
-		
-		if manual_trigger:
+		var auto_trigger = current_web_timer >= auto_recall_delay
+		if manual_trigger or auto_trigger:
 			_start_recall()
 
 # ==============================================================================
@@ -384,19 +189,8 @@ func charge(delta: float) -> void:
 		# 检测鼠标左键按下 - 开始或继续划线
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			if not is_drawing:
-				# 开始划线 - 从鼠标位置开始
+				# 开始划线
 				is_drawing = true
-				var mouse_pos = skill_owner.get_global_mouse_position()
-				
-				# 清空之前的路径，重新从鼠标位置开始
-				path_points.clear()
-				path_segments.clear()
-				has_closure = false
-				accumulated_distance = 0.0
-				total_distance_drawn = 0.0
-				
-				path_points.append(mouse_pos)
-				last_point = mouse_pos
 			
 			# 获取鼠标位置
 			var mouse_pos = skill_owner.get_global_mouse_position()
@@ -442,11 +236,9 @@ func charge(delta: float) -> void:
 					# 更新状态
 					last_point = new_point
 				else:
-					# 能量不足 - 只弹一次提示
+					# 能量不足
 					is_drawing = false
-					if not has_shown_no_energy_hint:
-						has_shown_no_energy_hint = true
-						Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
+					Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
 					break
 		else:
 			# 鼠标左键松开
@@ -468,28 +260,28 @@ func release() -> void:
 
 ## 进入规划模式
 func _enter_planning_mode() -> void:
+	# 如果已有蛛网，先清理旧状态
+	if skill_state == SkillState.WEAVE:
+		_cleanup_webs()
+
 	is_planning = true
 	is_charging = true
 	is_drawing = false
+	is_dashing = false
 	accumulated_distance = 0.0
 	has_closure = false
 	total_distance_drawn = 0.0
-	has_shown_no_energy_hint = false  # 重置能量提示标志
 	skill_state = SkillState.PLANNING
 	
 	# 子弹时间
 	Engine.time_scale = 0.1
-	
-	# 如果已有蛛网，清理
-	if skill_state == SkillState.WEAVE:
-		_cleanup_webs()
 	
 	# 清空路径
 	path_points.clear()
 	path_segments.clear()
 	line_2d.clear_points()
 	
-	# 添加起点为鼠标位置（而不是角色位置）
+	# 添加起点
 	if skill_owner:
 		var start_pos = skill_owner.get_global_mouse_position()
 		path_points.append(start_pos)
@@ -552,7 +344,7 @@ func _clear_all_points() -> void:
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
 	
-	# 重置起点为鼠标位置（而不是角色位置）
+	# 重置起点
 	if skill_owner:
 		var start_pos = skill_owner.get_global_mouse_position()
 		path_points.append(start_pos)
@@ -614,6 +406,9 @@ func _update_planning_visuals() -> void:
 	else:
 		line_2d.default_color = web_color_open
 
+func _update_visuals() -> void:
+	_update_planning_visuals()
+
 # ==============================================================================
 # 蛛网部署
 # ==============================================================================
@@ -641,26 +436,14 @@ func _deploy_web() -> void:
 	for i in range(path_points.size() - 1):
 		_create_web_line(path_points[i], path_points[i + 1])
 	
-	# 只有闭合时才创建陷阱区域
-	if has_closure:
-		# 查找并创建闭合区域
-		var calculated_polygons = _find_closed_loops_in_path()
-		for poly in calculated_polygons:
-			_create_trap_polygon(poly)
+	# 查找并创建闭合区域
+	var calculated_polygons = _find_closed_loops_in_path()
+	for poly in calculated_polygons:
+		_create_trap_polygon(poly)
 	
 	# 清空路径
 	path_points.clear()
 	line_2d.clear_points()
-	
-	# ✅ 启动自动收网计时器
-	if is_instance_valid(auto_recall_timer):
-		auto_recall_timer.start(auto_recall_delay)
-		print("[SkillWebWeave] ★★★ 自动收网计时器已启动 ★★★")
-		print("[SkillWebWeave] 延迟时间: %.1f秒" % auto_recall_delay)
-		print("[SkillWebWeave] Timer 父节点: %s" % auto_recall_timer.get_parent().name)
-		print("[SkillWebWeave] web_container 父节点: %s" % (web_container.get_parent().name if web_container.get_parent() else "null"))
-	else:
-		print("[SkillWebWeave] ⚠️ 警告：auto_recall_timer 无效！")
 	
 	# 开始冷却
 	start_cooldown()
@@ -767,132 +550,13 @@ func _create_weaver_closure_mask(polygon: PackedVector2Array) -> void:
 # 收网阶段
 # ==============================================================================
 
-## 自动收网计时器超时回调
-func _on_auto_recall_timeout() -> void:
-	print("[SkillWebWeave] ★★★ 自动收网计时器超时，开始收网 ★★★")
-	print("[SkillWebWeave] 当前 skill_state: %s" % skill_state)
-	print("[SkillWebWeave] web_container 是否有效: %s" % is_instance_valid(web_container))
-	print("[SkillWebWeave] skill_owner 是否有效: %s" % is_instance_valid(skill_owner))
-	print("[SkillWebWeave] active_web_lines 数量: %d" % active_web_lines.size())
-	
-	# ✅ 直接在这里处理收网，不依赖其他函数
-	if active_web_lines.is_empty():
-		print("[SkillWebWeave] 没有蛛网线条，跳过收网")
-		return
-	
-	# 准备收网数据
-	var recall_data = []
-	for line in active_web_lines:
-		if is_instance_valid(line):
-			recall_data.append({
-				"line": line,
-				"p1": line.points[0],
-				"p2": line.points[1],
-				"progress": 0.0
-			})
-	
-	active_web_lines.clear()
-	print("[SkillWebWeave] 准备收网，线条数量: %d" % recall_data.size())
-	
-	# 淡出陷阱多边形
-	var t = create_tween()
-	for poly in active_trap_polygons:
-		if is_instance_valid(poly):
-			t.parallel().tween_property(poly, "modulate:a", 0.0, 0.3)
-	t.tween_callback(func():
-		for poly in active_trap_polygons:
-			if is_instance_valid(poly):
-				poly.queue_free()
-		active_trap_polygons.clear()
-	)
-	
-	# ✅ 使用 Tween 来处理收网动画
-	_start_recall_with_tween(recall_data)
-
-## 使用 Tween 处理收网
-func _start_recall_with_tween(recall_data: Array) -> void:
-	print("[SkillWebWeave] 开始使用 Tween 处理收网")
-	
-	# 确定目标位置
-	var target: Vector2
-	if is_instance_valid(skill_owner):
-		target = skill_owner.global_position
-	elif is_instance_valid(web_container):
-		target = web_container.global_position
-	else:
-		print("[SkillWebWeave] 无法确定收网目标，清理蛛网")
-		_cleanup_webs()
-		return
-	
-	print("[SkillWebWeave] 收网目标位置: %s" % target)
-	
-	# 计算收网时间
-	var recall_time = 1.0 / recall_fly_speed  # fly_speed=3.0 -> time=0.33秒
-	print("[SkillWebWeave] 收网时间: %.2f秒" % recall_time)
-	
-	# 为每条线创建 Tween
-	var hit_history_local = {}
-	var trapped_local = trapped_enemies.duplicate()
-	
-	for data in recall_data:
-		var line: Line2D = data["line"]
-		if not is_instance_valid(line):
-			continue
-		
-		var p1_start = data["p1"]
-		var p2_start = data["p2"]
-		
-		# 创建 Tween
-		var tween = create_tween()
-		tween.set_parallel(true)
-		
-		# 动画：点1移动到目标
-		tween.tween_method(
-			func(val: Vector2): line.set_point_position(0, val),
-			p1_start,
-			target,
-			recall_time
-		)
-		
-		# 动画：点2移动到目标
-		tween.tween_method(
-			func(val: Vector2): line.set_point_position(1, val),
-			p2_start,
-			target,
-			recall_time
-		)
-		
-		# 动画：淡出
-		tween.tween_property(line, "modulate:a", 0.0, recall_time * 0.5).set_delay(recall_time * 0.5)
-		
-		# 完成后删除
-		tween.tween_callback(func():
-			if is_instance_valid(line):
-				line.queue_free()
-		)
-	
-	# 设置一个总的完成回调
-	var final_tween = create_tween()
-	final_tween.tween_interval(recall_time)
-	final_tween.tween_callback(func():
-		print("[SkillWebWeave] 收网完成")
-		_cleanup_webs()
-	)
-
 ## 开始收网
 func _start_recall() -> void:
 	if skill_state != SkillState.WEAVE:
-		print("[SkillWebWeave] 当前状态不是WEAVE，无法收网: %s" % skill_state)
 		return
 	
-	print("[SkillWebWeave] 开始收网")
-	
-	# ✅ 停止自动收网计时器（如果还在运行）
-	if is_instance_valid(auto_recall_timer) and not auto_recall_timer.is_stopped():
-		auto_recall_timer.stop()
-		print("[SkillWebWeave] 停止自动收网计时器")
-	
 	skill_state = SkillState.RECALL
+	is_dashing = true
 	hit_history.clear()
 	recall_objects.clear()
 	
@@ -928,20 +592,11 @@ func _process_recall_physics(delta: float) -> void:
 		_cleanup_webs()
 		return
 	
-	# ✅ 修复：如果 skill_owner 无效，使用 web_container 的位置作为目标
-	var target: Vector2
-	if is_instance_valid(skill_owner):
-		target = skill_owner.global_position
-	elif is_instance_valid(web_container):
-		# 使用蛛网容器的位置（通常是场景中心）
-		target = web_container.global_position
-		print("[SkillWebWeave] skill_owner 无效，使用 web_container 位置作为收网目标: %s" % target)
-	else:
-		# 如果连容器都无效了，清理蛛网
-		print("[SkillWebWeave] skill_owner 和 web_container 都无效，清理蛛网")
+	if not skill_owner:
 		_cleanup_webs()
 		return
 	
+	var target = skill_owner.global_position
 	var all_finished = true
 	
 	for obj in recall_objects:
@@ -1009,13 +664,9 @@ func _apply_recall_damage(enemy: Node2D) -> void:
 
 ## 清理所有蛛网
 func _cleanup_webs() -> void:
-	# 清理蛛网容器中的所有子节点（但保留 Timer）
+	# 清理蛛网容器中的所有子节点
 	if is_instance_valid(web_container):
 		for child in web_container.get_children():
-			# ✅ 不要删除 Timer
-			if child == auto_recall_timer:
-				print("[SkillWebWeave] 保留 auto_recall_timer，不删除")
-				continue
 			child.queue_free()
 	
 	# 清空数组
@@ -1041,7 +692,7 @@ func _cleanup_webs() -> void:
 		is_planning = false
 	
 	skill_state = SkillState.IDLE
-	print("[SkillWebWeave] _cleanup_webs() 完成，skill_state 重置为 IDLE")
+	is_dashing = false
 
 # ==============================================================================
 # 辅助方法
@@ -1053,45 +704,15 @@ func can_move() -> bool:
 
 ## 清理资源
 func cleanup() -> void:
-	# 清理规划线
+	_cleanup_webs()
+	
+	# 清理Line2D
 	if is_instance_valid(line_2d):
 		line_2d.queue_free()
 	
-	# ✅ 只清理规划状态，不清理已部署的蛛网
-	# 这样切换角色时，已部署的蛛网会继续存在并按照自己的生命周期消失
-	print("[SkillWebWeave] 已部署的蛛网由自己的生命周期管理，无需手动清理")
-	
-	# 清空规划数据
-	path_points.clear()
-	path_segments.clear()
-	
-	# 重置规划状态
-	is_planning = false
-	is_drawing = false
-	has_shown_no_energy_hint = false
-	accumulated_distance = 0.0
-	total_distance_drawn = 0.0
-	
-	# 恢复时间流速
-	Engine.time_scale = 1.0
-	
-	# 如果在编织阶段，释放被困敌人
-	if skill_state == SkillState.WEAVE:
-		for ref in trapped_enemies:
-			var e = ref.get_ref()
-			if is_instance_valid(e):
-				e.modulate = Color.WHITE
-				if "can_move" in e:
-					e.can_move = true
-		trapped_enemies.clear()
-	
-	# ✅ 不要停止自动收网计时器
-	# 让它继续运行，这样切换角色后蛛网还能自动收回
-	print("[SkillWebWeave] 保留自动收网计时器，让蛛网按照自己的生命周期收回")
-	
-	# 如果在收网阶段，让收网继续进行
-	# 不要中断收网过程
-	print("[SkillWebWeave] cleanup() 完成，skill_state=%s" % skill_state)
+	# 清理蛛网容器
+	if is_instance_valid(web_container):
+		web_container.queue_free()
 
 ## 打印调试信息
 func print_debug_info() -> void:

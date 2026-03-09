@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://vuimamv6el40"
+
+[deps]
+
+files=["res://tmp_gd_unused_high_confidence.status.translation", "res://tmp_gd_unused_high_confidence.path.translation", "res://tmp_gd_unused_high_confidence.class.translation", "res://tmp_gd_unused_high_confidence.class.translation", "res://tmp_gd_unused_high_confidence.en.translation", "res://tmp_gd_unused_high_confidence.en.translation"]
+
+source_file="res://tmp_gd_unused_high_confidence.csv"
+dest_files=["res://tmp_gd_unused_high_confidence.status.translation", "res://tmp_gd_unused_high_confidence.path.translation", "res://tmp_gd_unused_high_confidence.class.translation", "res://tmp_gd_unused_high_confidence.class.translation", "res://tmp_gd_unused_high_confidence.en.translation", "res://tmp_gd_unused_high_confidence.en.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

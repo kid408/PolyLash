@@ -161,6 +161,14 @@ func create_new_save(slot_index: int, leader_id: String, selected_players: Array
 	"""在指定槽位创建新存档，返回是否成功"""
 	if slot_index < 0 or slot_index >= MAX_SLOTS:
 		return false
+	
+	var run_gold: int = 0
+	var soul_shard: int = 0
+	if DataManager:
+		if DataManager.has_method("get_run_gold"):
+			run_gold = DataManager.get_run_gold()
+		if DataManager.has_method("get_soul_shard"):
+			soul_shard = DataManager.get_soul_shard()
 
 	var data: Dictionary = {
 		"version": CURRENT_VERSION,
@@ -172,7 +180,9 @@ func create_new_save(slot_index: int, leader_id: String, selected_players: Array
 		"play_time_seconds": 0,
 		"last_played_timestamp": int(Time.get_unix_time_from_system()),
 		"bond_summary": [],
-		"gold": 0,
+		"gold": run_gold,  # 兼容旧字段
+		"run_gold": run_gold,
+		"soul_shard": soul_shard,
 		"upgrades": {},
 		"inventory": [],
 		"game_state": "in_progress",

@@ -1,18 +1,21 @@
 extends Node
 
 # ============================================================================
-# 数据管理器 - 负责金币和升级数据的持久化
+# 数据管理器 - 负责双货币和升级数据的持久化
 # ============================================================================
 
 # 信号
-signal gold_changed(new_gold: int)  # 金币变化信号
+signal gold_changed(new_gold: int)  # 兼容旧链路：等同 run_gold_changed
+signal run_gold_changed(new_gold: int)  # 局内金币变化
+signal soul_shard_changed(new_shard: int)  # 局外碎片变化
 
 const SAVE_PATH = "user://player_save.json"
 const SESSION_SAVE_PATH = "user://session_data.json"
 
 # 保存数据结构
 var save_data: Dictionary = {
-	"total_gold": 0,
+	"run_gold": 0,
+	"soul_shard": 0,
 	"upgrades": {}  # { "player_id": { "hp_level": 0, "max_energy_level": 0, ... } }
 }
 
@@ -30,7 +33,7 @@ func _ready() -> void:
 	# 检查局内会话存档并恢复
 	if has_session_data():
 		load_session_data()
-	print("[DataManager] 初始化完成，当前金币: %d" % save_data.total_gold)
+	print("[DataManager] 初始化完成，run_gold=%d, soul_shard=%d" % [get_run_gold(), get_soul_shard()])
 
 # ============================================================================
 # 配置加载
@@ -120,25 +123,65 @@ func _load_save_data() -> void:
 	var data = json.get_data()
 	if data is Dictionary:
 		save_data = data
-		# 确保必要字段存在
-		if not save_data.has("total_gold"):
-			save_data.total_gold = _get_default_gold()
-		if not save_data.has("upgrades"):
-			save_data.upgrades = {}
+		var migrated = _migrate_currency_fields()
+		if migrated:
+			save_game()
 	
-	print("[DataManager] 加载存档成功，金币: %d" % save_data.total_gold)
+	print("[DataManager] 加载存档成功，run_gold=%d, soul_shard=%d" % [get_run_gold(), get_soul_shard()])
 
 func _init_default_save() -> void:
 	"""初始化默认存档"""
 	save_data = {
-		"total_gold": _get_default_gold(),
+		"run_gold": 0,
+		"soul_shard": _get_default_soul_shard(),
 		"upgrades": {}
 	}
 	save_game()
 
 func _get_default_gold() -> int:
-	"""获取默认金币数"""
-	return int(ConfigManager.get_game_setting("default_gold", 1000))
+	"""兼容旧接口：默认金币值等同默认局外碎片"""
+	return _get_default_soul_shard()
+
+func _get_default_soul_shard() -> int:
+	"""获取默认局外碎片数"""
+	var default_shard = ConfigManager.get_game_setting("default_soul_shard", null)
+	if default_shard == null:
+		default_shard = ConfigManager.get_game_setting("default_gold", 1000)
+	return int(default_shard)
+
+func _migrate_currency_fields() -> bool:
+	"""兼容旧档：total_gold -> soul_shard，并补齐 run_gold 字段。"""
+	var migrated = false
+	
+	if save_data.has("total_gold") and not save_data.has("soul_shard"):
+		save_data["soul_shard"] = int(save_data.get("total_gold", _get_default_soul_shard()))
+		migrated = true
+	
+	if save_data.has("total_gold"):
+		save_data.erase("total_gold")
+		migrated = true
+	
+	if not save_data.has("run_gold"):
+		save_data["run_gold"] = 0
+		migrated = true
+	
+	if not save_data.has("soul_shard"):
+		save_data["soul_shard"] = _get_default_soul_shard()
+		migrated = true
+	
+	if not save_data.has("upgrades"):
+		save_data["upgrades"] = {}
+		migrated = true
+	
+	return migrated
+
+func _emit_run_gold_changed() -> void:
+	var current = get_run_gold()
+	run_gold_changed.emit(current)
+	gold_changed.emit(current)
+
+func _emit_soul_shard_changed() -> void:
+	soul_shard_changed.emit(get_soul_shard())
 
 func save_game() -> void:
 	"""保存游戏数据到本地"""
@@ -152,30 +195,158 @@ func save_game() -> void:
 	file.close()
 	#print("[DataManager] 存档保存成功")
 
+func serialize_progress_data() -> Dictionary:
+	"""导出可写入槽位存档的进度数据。"""
+	var upgrades = save_data.get("upgrades", {})
+	var upgrades_data: Dictionary = upgrades.duplicate(true) if upgrades is Dictionary else {}
+	return {
+		"gold": get_run_gold(),  # 兼容旧字段
+		"run_gold": get_run_gold(),
+		"soul_shard": get_soul_shard(),
+		"upgrades": upgrades_data
+	}
+
+func deserialize_progress_data(data: Dictionary, persist: bool = true) -> void:
+	"""从槽位数据恢复双货币和升级进度。"""
+	var game_state := str(data.get("game_state", "in_progress"))
+	var legacy_gold := int(data.get("gold", data.get("total_gold", 0)))
+	var run_gold := int(data.get("run_gold", legacy_gold if game_state == "in_battle" else 0))
+	save_data["run_gold"] = max(0, run_gold)
+
+	var fallback_shard := int(save_data.get("soul_shard", _get_default_soul_shard()))
+	var shard_value := int(data.get("soul_shard", data.get("total_gold", fallback_shard)))
+	save_data["soul_shard"] = max(0, shard_value)
+
+	var upgrades = data.get("upgrades", {})
+	save_data["upgrades"] = upgrades.duplicate(true) if upgrades is Dictionary else {}
+
+	_migrate_currency_fields()
+	if persist:
+		save_game()
+
+	_emit_run_gold_changed()
+	_emit_soul_shard_changed()
+
 # ============================================================================
-# 金币管理
+# 货币管理
 # ============================================================================
+
+func get_run_gold() -> int:
+	"""获取局内金币"""
+	return int(save_data.get("run_gold", 0))
+
+func set_run_gold(amount: int) -> void:
+	"""设置局内金币（最小为0）"""
+	save_data["run_gold"] = max(0, amount)
+	save_game()
+	_emit_run_gold_changed()
+
+func add_run_gold(amount: int) -> void:
+	"""增减局内金币（可传负数）"""
+	if amount == 0:
+		return
+	save_data["run_gold"] = max(0, get_run_gold() + amount)
+	save_game()
+	_emit_run_gold_changed()
+	print("[DataManager] 局内金币变化 %+d，当前: %d" % [amount, get_run_gold()])
+
+func spend_run_gold(amount: int) -> bool:
+	"""消费局内金币，返回是否成功"""
+	if amount <= 0:
+		return false
+	if get_run_gold() < amount:
+		return false
+	save_data["run_gold"] = get_run_gold() - amount
+	save_game()
+	_emit_run_gold_changed()
+	print("[DataManager] 消费局内金币 %d，剩余: %d" % [amount, get_run_gold()])
+	return true
+
+func reset_run_gold() -> void:
+	"""局结束后重置局内金币"""
+	save_data["run_gold"] = 0
+	save_game()
+	_emit_run_gold_changed()
+
+func get_soul_shard() -> int:
+	"""获取局外碎片"""
+	return int(save_data.get("soul_shard", 0))
+
+func set_soul_shard(amount: int) -> void:
+	"""设置局外碎片（最小为0）"""
+	save_data["soul_shard"] = max(0, amount)
+	save_game()
+	_emit_soul_shard_changed()
+
+func add_soul_shard(amount: int) -> void:
+	"""增减局外碎片（可传负数）"""
+	if amount == 0:
+		return
+	save_data["soul_shard"] = max(0, get_soul_shard() + amount)
+	save_game()
+	_emit_soul_shard_changed()
+	print("[DataManager] 局外碎片变化 %+d，当前: %d" % [amount, get_soul_shard()])
+
+func spend_soul_shard(amount: int) -> bool:
+	"""消费局外碎片，返回是否成功"""
+	if amount <= 0:
+		return false
+	if get_soul_shard() < amount:
+		return false
+	save_data["soul_shard"] = get_soul_shard() - amount
+	save_game()
+	_emit_soul_shard_changed()
+	print("[DataManager] 消费局外碎片 %d，剩余: %d" % [amount, get_soul_shard()])
+	return true
+
+func settle_run_to_soul_shard(run_income: int = -1) -> Dictionary:
+	"""结算局内收益，发放局外碎片并清空 run_gold。
+	
+	run_income < 0 时，默认按当前 run_gold 计算。
+	"""
+	var run_gold_before = get_run_gold()
+	var settle_base = run_income if run_income >= 0 else run_gold_before
+	settle_base = max(0, settle_base)
+	
+	var ratio = float(ConfigManager.get_game_setting("run_gold_to_soul_shard_ratio", 1.0))
+	var flat_bonus = int(ConfigManager.get_game_setting("run_gold_to_soul_shard_flat", 0))
+	var min_reward = int(ConfigManager.get_game_setting("run_settlement_min_shard", 0))
+	
+	var shard_gain = int(floor(float(settle_base) * ratio)) + flat_bonus
+	if settle_base > 0:
+		shard_gain = max(shard_gain, min_reward)
+	else:
+		shard_gain = 0
+	
+	if shard_gain > 0:
+		save_data["soul_shard"] = max(0, get_soul_shard() + shard_gain)
+	
+	save_data["run_gold"] = 0
+	save_game()
+	_emit_run_gold_changed()
+	if shard_gain > 0:
+		_emit_soul_shard_changed()
+	
+	var result = {
+		"run_gold_before": run_gold_before,
+		"settle_base": settle_base,
+		"soul_shard_gain": shard_gain,
+		"soul_shard_after": get_soul_shard()
+	}
+	print("[DataManager] 结算完成: %s" % str(result))
+	return result
 
 func get_total_gold() -> int:
-	"""获取当前金币总数"""
-	return save_data.total_gold
+	"""兼容旧接口：返回局内金币"""
+	return get_run_gold()
 
 func add_gold(amount: int) -> void:
-	"""增加金币（可以传负数来扣除）"""
-	save_data.total_gold += amount
-	save_game()
-	gold_changed.emit(save_data.total_gold)
-	print("[DataManager] 金币变化 %+d，当前: %d" % [amount, save_data.total_gold])
+	"""兼容旧接口：增减局内金币"""
+	add_run_gold(amount)
 
 func spend_gold(amount: int) -> bool:
-	"""消费金币，返回是否成功"""
-	if save_data.total_gold < amount:
-		return false
-	save_data.total_gold -= amount
-	save_game()
-	gold_changed.emit(save_data.total_gold)
-	print("[DataManager] 消费金币 %d，剩余: %d" % [amount, save_data.total_gold])
-	return true
+	"""兼容旧接口：消费局内金币"""
+	return spend_run_gold(amount)
 
 # ============================================================================
 # 升级管理
@@ -197,8 +368,11 @@ func set_upgrade_level(player_id: String, attribute_name: String, level: int) ->
 	save_data.upgrades[player_id][key] = level
 	save_game()
 
-func can_upgrade(player_id: String, attribute_name: String) -> bool:
-	"""检查是否可以升级"""
+func can_upgrade(player_id: String, attribute_name: String, use_run_gold: bool = false) -> bool:
+	"""检查是否可以升级。
+
+	use_run_gold=true 时消耗局内金币；否则消耗局外碎片。
+	"""
 	var current_level = get_upgrade_level(player_id, attribute_name)
 	if current_level >= max_upgrade_level:
 		return false
@@ -207,24 +381,38 @@ func can_upgrade(player_id: String, attribute_name: String) -> bool:
 	if config.is_empty():
 		return false
 	
-	return save_data.total_gold >= config.cost
+	if use_run_gold:
+		return get_run_gold() >= config.cost
+	return get_soul_shard() >= config.cost
 
-func do_upgrade(player_id: String, attribute_name: String) -> bool:
-	"""执行升级操作"""
-	if not can_upgrade(player_id, attribute_name):
+func do_upgrade(player_id: String, attribute_name: String, use_run_gold: bool = false) -> bool:
+	"""执行升级操作。
+
+	use_run_gold=true 时消耗局内金币；否则消耗局外碎片。
+	"""
+	if not can_upgrade(player_id, attribute_name, use_run_gold):
 		return false
 	
 	var config = get_upgrade_config(attribute_name)
 	var current_level = get_upgrade_level(player_id, attribute_name)
 	
-	# 扣除金币
-	if not spend_gold(config.cost):
-		return false
+	# 扣除货币（局内/局外）
+	if use_run_gold:
+		if not spend_run_gold(config.cost):
+			return false
+	else:
+		if not spend_soul_shard(config.cost):
+			return false
 	
 	# 增加等级
 	set_upgrade_level(player_id, attribute_name, current_level + 1)
 	
-	print("[DataManager] 升级成功: %s.%s -> Lv.%d" % [player_id, attribute_name, current_level + 1])
+	print("[DataManager] 升级成功: %s.%s -> Lv.%d (currency=%s)" % [
+		player_id,
+		attribute_name,
+		current_level + 1,
+		"run_gold" if use_run_gold else "soul_shard"
+	])
 	return true
 
 func get_upgrade_config(attribute_name: String) -> Dictionary:
@@ -259,7 +447,7 @@ func get_max_upgrade_level() -> int:
 # ============================================================================
 
 func reset_all_upgrades() -> void:
-	"""重置所有角色的升级等级（保留金币）"""
+	"""重置所有角色的升级等级（保留局外碎片）"""
 	save_data.upgrades = {}
 	save_game()
 	print("[DataManager] 已重置所有角色升级等级")
@@ -416,7 +604,7 @@ func purchase_starting_weapon(player_id: String) -> bool:
 		return false
 	
 	var price = int(ConfigManager.get_game_setting("starting_weapon_price", 100))
-	if not spend_gold(price):
+	if not spend_soul_shard(price):
 		return false
 	
 	purchased_weapons[player_id] = weapon_type

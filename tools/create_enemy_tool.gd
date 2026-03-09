@@ -56,8 +56,15 @@ const DEFAULT_CONFIG = {
 	"pool_radius": 60,
 	"pool_damage": 5,
 	"pool_damage_interval": 0.5,
-	"pool_lifetime": 8
+	"pool_lifetime": 8,
+
+	# 导演系统（enemy_config_v2）
+	"director_role": "runner",        # runner | elite | tank | ranged | swarm ...
+	"director_cost": 1.0,             # 导演预算消耗
+	"behavior_params": "{}"           # JSON 字符串
 }
+
+const ENEMY_CONFIG_V2_PATH := "res://config/enemy/enemy_config_v2.csv"
 
 # ==============================================================================
 # 主函数 - 在这里修改配置并运行
@@ -76,6 +83,8 @@ func _run() -> void:
 		"health": 350,                      # 生命值
 		"speed": 180,                       # 移动速度
 		"damage": 15,                       # 攻击力
+		"director_role": "runner",          # 导演职业（写入 enemy_config_v2.csv）
+		"director_cost": 1.0,               # 导演预算消耗（写入 enemy_config_v2.csv）
 		"attack_range": 50,                 # 攻击范围
 		"attack_cooldown": 1.0,             # 攻击冷却
 		"xp_value": 15,                     # 经验值
@@ -153,8 +162,13 @@ func create_enemy(config: Dictionary) -> bool:
 	if config.has("abilities") and config.abilities.size() > 0:
 		if not _add_abilities(enemy_id, config.abilities):
 			return false
-	
-	# 5. 创建资源文件（可选）
+
+	# 5. 写入导演配置 enemy_config_v2.csv（可选，默认开启）
+	if config.get("add_to_director_v2", true):
+		if not _add_to_enemy_config_v2(config):
+			return false
+
+	# 6. 创建资源文件（可选）
 	if config.get("create_resource", false):
 		_create_resource_file(config)
 	
@@ -303,8 +317,60 @@ func _add_abilities(enemy_id: String, abilities: Array) -> bool:
 	print("[CreateEnemyTool] 添加了 %d 个能力" % abilities.size())
 	return true
 
+func _add_to_enemy_config_v2(config: Dictionary) -> bool:
+	"""写入 enemy_config_v2.csv（导演预算出怪链路）"""
+	if not FileAccess.file_exists(ENEMY_CONFIG_V2_PATH):
+		print("[CreateEnemyTool] 警告: 未找到 %s，跳过导演配置写入" % ENEMY_CONFIG_V2_PATH)
+		return true
+
+	var enemy_id: String = str(config.get("enemy_id", "")).strip_edges()
+	if enemy_id.is_empty():
+		printerr("[CreateEnemyTool] 错误: enemy_id 为空，无法写入 enemy_config_v2.csv")
+		return false
+
+	if _id_exists_in_csv(ENEMY_CONFIG_V2_PATH, enemy_id):
+		print("[CreateEnemyTool] ⚠️ enemy_config_v2 已存在，跳过: %s" % enemy_id)
+		return true
+
+	var full_config = DEFAULT_CONFIG.duplicate()
+	full_config.merge(config, true)
+
+	var row = PackedStringArray([
+		enemy_id,
+		str(full_config.get("director_role", "runner")).to_lower(),
+		str(full_config.get("director_cost", 1.0)),
+		str(full_config.get("health", 100)),
+		str(full_config.get("speed", 160)),
+		str(full_config.get("damage", 15)),
+		str(full_config.get("behavior_params", "{}"))
+	])
+
+	return _append_csv_row(ENEMY_CONFIG_V2_PATH, row)
+
+func _id_exists_in_csv(file_path: String, target_id: String) -> bool:
+	if not FileAccess.file_exists(file_path):
+		return false
+	var file := FileAccess.open(file_path, FileAccess.READ)
+	if file == null:
+		return false
+	while not file.eof_reached():
+		var row := file.get_csv_line()
+		if row.is_empty():
+			continue
+		if str(row[0]).strip_edges() == target_id:
+			file.close()
+			return true
+	file.close()
+	return false
+
 func _append_to_csv(file_path: String, line: String) -> bool:
 	"""追加一行到CSV文件"""
+	var original := ""
+	var read_file := FileAccess.open(file_path, FileAccess.READ)
+	if read_file:
+		original = read_file.get_as_text()
+		read_file.close()
+
 	var file = FileAccess.open(file_path, FileAccess.READ_WRITE)
 	if not file:
 		printerr("[CreateEnemyTool] 错误: 无法打开文件 %s" % file_path)
@@ -312,9 +378,30 @@ func _append_to_csv(file_path: String, line: String) -> bool:
 	
 	# 移动到文件末尾
 	file.seek_end()
+	if original.length() > 0 and not original.ends_with("\n"):
+		file.store_string("\n")
 	file.store_line(line)
 	file.close()
 	
+	print("[CreateEnemyTool] 已添加到 %s" % file_path)
+	return true
+
+func _append_csv_row(file_path: String, row: PackedStringArray) -> bool:
+	var original := ""
+	var read_file := FileAccess.open(file_path, FileAccess.READ)
+	if read_file:
+		original = read_file.get_as_text()
+		read_file.close()
+
+	var file := FileAccess.open(file_path, FileAccess.READ_WRITE)
+	if file == null:
+		printerr("[CreateEnemyTool] 错误: 无法打开文件 %s" % file_path)
+		return false
+	file.seek_end()
+	if original.length() > 0 and not original.ends_with("\n"):
+		file.store_string("\n")
+	file.store_csv_line(row)
+	file.close()
 	print("[CreateEnemyTool] 已添加到 %s" % file_path)
 	return true
 
@@ -345,9 +432,12 @@ func _print_usage_guide(enemy_id: String) -> void:
 	print("\n3. 调整属性:")
 	print("   - 修改 config/enemy/enemy_config.csv")
 	print("   - 修改 config/enemy/enemy_visual.csv")
+	print("   - 修改 config/enemy/enemy_config_v2.csv（导演预算出怪）")
 	print("\n4. 添加能力:")
 	print("   - 编辑 config/enemy/enemy_abilities.csv")
 	print("   - 可用能力: poison_pool, shooting, charge")
+	print("\n5. 如需在导演系统波次中出现：")
+	print("   - 在 config/wave/wave_units_config_v2.csv 配置该 enemy_id")
 	print("────────────────────────────────────────────────────────────────────────────────")
 
 # ==============================================================================

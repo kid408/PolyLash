@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://cxsh4da5g4gfp"
+
+[deps]
+
+files=["res://tmp_q_impl_summary.q.translation", "res://tmp_q_impl_summary.line.translation", "res://tmp_q_impl_summary.area.translation", "res://tmp_q_impl_summary.line.translation", "res://tmp_q_impl_summary.area.translation", "res://tmp_q_impl_summary.line.translation", "res://tmp_q_impl_summary.area.translation", "res://tmp_q_impl_summary.line.translation", "res://tmp_q_impl_summary.area.translation", "res://tmp_q_impl_summary.key.translation"]
+
+source_file="res://tmp_q_impl_summary.csv"
+dest_files=["res://tmp_q_impl_summary.q.translation", "res://tmp_q_impl_summary.line.translation", "res://tmp_q_impl_summary.area.translation", "res://tmp_q_impl_summary.line.translation", "res://tmp_q_impl_summary.area.translation", "res://tmp_q_impl_summary.line.translation", "res://tmp_q_impl_summary.area.translation", "res://tmp_q_impl_summary.line.translation", "res://tmp_q_impl_summary.area.translation", "res://tmp_q_impl_summary.key.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

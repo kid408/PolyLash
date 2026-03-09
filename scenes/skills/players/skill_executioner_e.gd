@@ -1,71 +1,95 @@
 extends SkillBase
 class_name SkillExecutionerE
 
-## ==============================================================================
-## 处刑E技能 - 处决
-## ==============================================================================
-## 
-## 功能说明:
-## - 按E键处决范围内所有低血量敌人
-## - 敌人HP低于阈值（最大HP的百分比）时立即击杀（9999伤害）
-## - 显示 "EXECUTE!" 浮动文字
-## 
-## ==============================================================================
-
-# ==============================================================================
-# 技能参数（从CSV加载）
-# ==============================================================================
-
-## 处刑范围
 var execute_radius: float = 200.0
-
-## 处刑血量阈值（最大HP的百分比，0.2 = 20%）
 var execute_threshold: float = 0.2
 
-# ==============================================================================
-# 技能执行
-# ==============================================================================
-
-## 执行技能
 func execute() -> void:
 	if not consume_energy():
-		if skill_owner:
+		if is_instance_valid(skill_owner):
 			Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
 		return
+	if not is_instance_valid(skill_owner):
+		return
 
-	var executed_count: int = 0
-	var owner_pos: Vector2 = skill_owner.global_position
+	var damage_amp: float = get_e_damage_amp(0.22, 0.42)
+	var duration_amp: float = get_e_duration_amp(0.42)
+	var final_radius: float = execute_radius * (1.0 + (duration_amp - 1.0) * 0.30)
+	var threshold: float = clamp(execute_threshold * (1.0 + (0.2 if is_f_window_active() else 0.0)), 0.05, 0.52)
+	var fallback_damage: int = max(1, int(round(86.0 * damage_amp)))
 
-	var enemies = get_tree().get_nodes_in_group("enemies")
-	for enemy in enemies:
+	var execute_refs: Array = []
+	var marks: int = 0
+	for enemy in _get_enemies_in_radius(skill_owner.global_position, final_radius):
+		if _is_below_threshold(enemy, threshold):
+			_apply_damage(enemy, 9999)
+			Global.spawn_floating_text((enemy as Node2D).global_position, "EXECUTE!", Color(1.0, 0.2, 0.2))
+			execute_refs.append(weakref(enemy))
+		else:
+			_apply_damage(enemy, fallback_damage)
+			_apply_status(enemy, "marked", 1.6, 0.24, 1, 0.3)
+			marks += 1
+
+	if not execute_refs.is_empty():
+		var timer: SceneTreeTimer = get_tree().create_timer(0.18)
+		timer.timeout.connect(_on_guillotine_timeout.bind(skill_owner.global_position, final_radius * 0.65, int(round(float(fallback_damage) * 1.35))))
+		Global.spawn_floating_text(skill_owner.global_position, "GUILTY x%d" % execute_refs.size(), Color(1.0, 0.22, 0.22))
+	elif marks > 0:
+		Global.spawn_floating_text(skill_owner.global_position, "MARKED x%d" % marks, Color(1.0, 0.5, 0.4))
+	else:
+		Global.spawn_floating_text(skill_owner.global_position, "No Target!", Color(0.7, 0.7, 0.7))
+
+	Global.on_camera_shake.emit(9.4, 0.20)
+	start_cooldown()
+
+func _on_guillotine_timeout(center: Vector2, radius: float, damage: int) -> void:
+	var hit: int = 0
+	for enemy in _get_enemies_in_radius(center, radius):
+		if not (enemy.has_method("has_status") and enemy.has_status("marked")):
+			continue
+		_apply_damage(enemy, damage)
+		_apply_status(enemy, "slow", 1.0, 0.34, 1, 0.1)
+		hit += 1
+	if hit > 0 and is_instance_valid(skill_owner):
+		spawn_skill_vfx(center, Color(1.0, 0.24, 0.24, 0.82), 0.72)
+		Global.spawn_floating_text(skill_owner.global_position, "GUILLOTINE x%d" % hit, Color(1.0, 0.24, 0.24))
+
+func _is_below_threshold(enemy: Node, threshold: float) -> bool:
+	if not is_instance_valid(enemy):
+		return false
+	if not enemy.has_node("HealthComponent"):
+		return false
+	var hc: Node = enemy.get_node("HealthComponent")
+	if hc == null:
+		return false
+	var max_hp: float = float(hc.get("max_health"))
+	if max_hp <= 0.0:
+		return false
+	var current_hp: float = float(hc.get("current_health"))
+	return current_hp <= max_hp * max(0.0, threshold)
+
+func _get_enemies_in_radius(center: Vector2, radius: float) -> Array:
+	var result: Array = []
+	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(enemy):
 			continue
-		var dist = owner_pos.distance_to(enemy.global_position)
-		if dist > execute_radius:
+		if not (enemy is Node2D):
 			continue
+		var enemy_node: Node2D = enemy
+		if center.distance_to(enemy_node.global_position) <= radius:
+			result.append(enemy_node)
+	return result
 
-		# 检查敌人HP是否低于阈值
-		var current_hp: float = 0.0
-		var max_hp: float = 1.0
-		if enemy.has_node("HealthComponent"):
-			current_hp = enemy.health_component.current_health
-			max_hp = enemy.health_component.max_health
-		elif "hp" in enemy and "max_hp" in enemy:
-			current_hp = enemy.hp
-			max_hp = enemy.max_hp
+func _apply_damage(enemy: Node, amount: int) -> void:
+	if not is_instance_valid(enemy):
+		return
+	if enemy.has_node("HealthComponent"):
+		var hc: Node = enemy.get_node("HealthComponent")
+		if hc and hc.has_method("take_damage"):
+			hc.take_damage(max(1, amount))
 
-		if max_hp > 0 and current_hp <= max_hp * execute_threshold:
-			# 处决：造成9999伤害（即死）
-			if enemy.has_node("HealthComponent"):
-				enemy.health_component.take_damage(9999)
-			elif enemy.has_method("take_damage"):
-				enemy.take_damage(9999)
-			Global.spawn_floating_text(enemy.global_position, "EXECUTE!", Color(0.6, 0.1, 0.1))
-			executed_count += 1
-
-	if executed_count > 0:
-		Global.on_camera_shake.emit(10.0, 0.25)
-	else:
-		Global.spawn_floating_text(owner_pos, "No Target!", Color.GRAY)
-
-	start_cooldown()
+func _apply_status(enemy: Node, status_name: String, duration: float, value: float, stacks: int = 1, tick_interval: float = 0.6) -> void:
+	if not is_instance_valid(enemy):
+		return
+	if enemy.has_method("apply_status"):
+		enemy.apply_status(status_name, max(0.1, duration), value, max(1, stacks), max(0.05, tick_interval))

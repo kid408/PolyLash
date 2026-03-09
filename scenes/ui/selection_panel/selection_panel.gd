@@ -1,4 +1,4 @@
-extends Panel
+﻿extends Panel
 class_name SelectionPanel
 
 # ============================================================================
@@ -31,8 +31,8 @@ signal selection_confirmed(selected_data: Array[Dictionary])
 @onready var player_description: RichTextLabel = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/StatsScroll/PlayerDescription
 @onready var skill_description: RichTextLabel = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/SkillColumn/SkillDescription
 @onready var continue_button: Button = $MarginContainer/HBoxContainer/RightPanel/Continue
-@onready var upgrade_button: Button = $MarginContainer/HBoxContainer/RightPanel/UpgradeButton
-@onready var warehouse_button: Button = $MarginContainer/HBoxContainer/RightPanel/WarehouseButton
+@onready var upgrade_button: Button = get_node_or_null("MarginContainer/HBoxContainer/RightPanel/UpgradeButton") as Button
+@onready var warehouse_button: Button = get_node_or_null("MarginContainer/HBoxContainer/RightPanel/WarehouseButton") as Button
 @onready var exit_dialog: ExitConfirmDialog = $ExitConfirmDialog
 
 var player_button_template: Button = null
@@ -55,7 +55,7 @@ var preview_weapon_type: String = ""
 
 # 配置
 var players_per_row: int = 5
-var max_selected_players: int = 3
+var max_selected_players: int = 1
 
 # 角色按钮映射 {player_id: Button}
 var player_buttons: Dictionary = {}
@@ -80,7 +80,8 @@ const SELECTION_CACHE_PATH = "user://player_selection_cache.json"
 func _ready() -> void:
 	# 加载配置
 	players_per_row = int(ConfigManager.get_game_setting("selection_players_per_row", 5))
-	max_selected_players = int(ConfigManager.get_game_setting("max_selected_players", 3))
+	# 设计改造：开局仅允许选择1名角色，队伍扩编放到局内流程。
+	max_selected_players = 1
 	
 	# 加载武器选择缓存
 	_load_weapon_cache()
@@ -102,11 +103,13 @@ func _ready() -> void:
 	continue_button.pressed.connect(_on_continue_pressed)
 	continue_button.disabled = true
 	
-	# 连接强化按钮
-	upgrade_button.pressed.connect(_on_upgrade_pressed)
-	
-	# 连接仓库按钮
-	warehouse_button.pressed.connect(_on_warehouse_pressed)
+	# 局外关闭强化/仓库入口（统一改到局内流程）
+	if upgrade_button:
+		upgrade_button.visible = false
+		upgrade_button.disabled = true
+	if warehouse_button:
+		warehouse_button.visible = false
+		warehouse_button.disabled = true
 	
 	# 清空初始显示
 	_clear_player_info()
@@ -223,9 +226,14 @@ func _restore_selection_from_cache() -> void:
 	sorted_cache.sort_custom(func(a, b): return a.get("slot_index", 0) < b.get("slot_index", 0))
 	
 	for cached_data in sorted_cache:
+		if max_selected_players == 1 and not selected_players.is_empty():
+			break
+
 		var player_id = cached_data.get("player_id", "")
 		var weapon_type = cached_data.get("weapon_type", "")
 		var slot_index = cached_data.get("slot_index", -1)
+		if max_selected_players == 1:
+			slot_index = 0
 		
 		if player_id == "":
 			continue
@@ -875,6 +883,12 @@ func is_player_selected(player_id: String) -> bool:
 	return false
 
 func _add_player_to_selected(player_id: String, weapon_type: String) -> bool:
+	# 单角色模式：再次选择新角色时，直接替换原角色。
+	if max_selected_players == 1 and selected_players.size() >= 1:
+		if selected_players[0].player_id == player_id:
+			return false
+		_remove_player_from_selected(0)
+
 	# 检查是否已选满
 	if selected_players.size() >= max_selected_players:
 		print("[SelectionPanel] 已选满 %d 个角色" % max_selected_players)

@@ -90,7 +90,7 @@ func show_menu() -> void:
 
 	show()
 	is_visible_menu = true
-	get_tree().paused = true
+	PauseService.request_pause("pause_menu", get_tree())
 	SoundManager.play("ui_pause")
 
 func hide_menu() -> void:
@@ -99,7 +99,7 @@ func hide_menu() -> void:
 
 	hide()
 	is_visible_menu = false
-	get_tree().paused = false
+	PauseService.release_pause("pause_menu", get_tree())
 
 func _apply_responsive_layout() -> void:
 	var vp_size: Vector2 = get_viewport().get_visible_rect().size

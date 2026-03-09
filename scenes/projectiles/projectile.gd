@@ -19,6 +19,9 @@ var param3: String = ""  # 通用参数3（buff_duration/heal_range）
 var hit_enemies: Array = []  # 已击中的敌人列表（用于穿透）
 
 func _ready() -> void:
+	if not is_in_group("projectiles"):
+		add_to_group("projectiles")
+
 	# 【核心修复】创建一个自我销毁的计时器
 	# 这种方式最稳健，不管子弹飞哪去了，时间一到强制回收
 	get_tree().create_timer(life_time).timeout.connect(queue_free)

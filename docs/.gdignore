@@ -1,0 +1,2 @@
+# Exclude documentation tree from Godot resource import scanning.
+# Prevents non-game CSV/markdown assets under docs/ from being imported as resources.

@@ -35,10 +35,13 @@ func _ready() -> void:
 	ShopManager.shop_rerolled.connect(_on_shop_rerolled)
 	ShopManager.purchase_failed.connect(_on_purchase_failed)
 	
-	# 连接 DataManager 金币变化信号
-	if DataManager.has_signal("gold_changed"):
+	# 连接 DataManager 局内金币变化信号
+	if DataManager.has_signal("run_gold_changed"):
+		DataManager.run_gold_changed.connect(_on_gold_changed)
+		print("[ShopPanel] 已连接 DataManager.run_gold_changed 信号")
+	elif DataManager.has_signal("gold_changed"):
 		DataManager.gold_changed.connect(_on_gold_changed)
-		print("[ShopPanel] 已连接 DataManager.gold_changed 信号")
+		print("[ShopPanel] 已连接 DataManager.gold_changed 信号(兼容)")
 	else:
 		printerr("[ShopPanel] 错误: DataManager 没有 gold_changed 信号")
 	
@@ -70,8 +73,8 @@ func show_shop(wave_number: int) -> void:
 	visible = true
 	SoundManager.play("ui_panel_open")
 	
-	# 暂停游戏
-	get_tree().paused = true
+	# 暂停游戏（统一走 PauseService）
+	PauseService.request_pause("shop_panel", get_tree())
 
 func hide_shop() -> void:
 	"""隐藏商店"""
@@ -80,8 +83,8 @@ func hide_shop() -> void:
 	SoundManager.play("ui_panel_close")
 	visible = false
 	
-	# 恢复游戏
-	get_tree().paused = false
+	# 恢复游戏（由 PauseService 根据 source stack 决定）
+	PauseService.release_pause("shop_panel", get_tree())
 
 # ============================================================================
 # UI 更新
@@ -89,7 +92,7 @@ func hide_shop() -> void:
 
 func _update_gold_display() -> void:
 	"""更新金币显示"""
-	var gold = DataManager.get_total_gold()
+	var gold = RunStateService.get_run_gold()
 	print("[ShopPanel] 更新金币显示: gold=%d" % gold)
 	gold_label.text = "金币: %d" % gold
 	

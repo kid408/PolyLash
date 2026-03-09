@@ -5,6 +5,10 @@ enemy_death,res://assets/audio/pop_squish.wav,-10,0.9,1.4,0,,敌人死亡,0.0,0.
 enemy_charge_warning,res://assets/audio/combat/charge_warning.wav,-3,1.0,1.0,0.5,,冲锋预警,0.0,0.0,1
 enemy_charge,res://assets/audio/combat/charge.wav,0,0.9,1.1,0.3,,冲锋,0.0,0.0,1
 crit_hit,res://assets/audio/combat/crit_hit.wav,2,0.9,1.1,0.05,,暴击,0.0,0.0,1
+enemy_hit_light,res://assets/audio/EnemyHit.wav,-10,0.95,1.25,0.02,,轻击反馈,0.0,0.0,1
+enemy_hit_heavy,res://assets/audio/combat/crit_hit.wav,1,0.9,1.1,0.03,,重击反馈,0.0,0.0,1
+enemy_hit_elite,res://assets/audio/combat/crit_hit.wav,3,0.85,1.0,0.05,,精英受击反馈,0.0,0.0,1
+enemy_kill_elite,res://assets/audio/pop_squish.wav,-4,0.8,0.95,0.08,,精英击杀反馈,0.0,0.0,1
 loop_kill,res://assets/audio/magic_chord.wav,5,0.6,0.8,0,,闭环绞杀,0.0,0.0,1
 player_explosion,res://assets/audio/magical_explosion.wav,2,1.0,1.0,0.1,,爆炸,0.0,0.0,1
 debuff_burn,res://assets/audio/combat/debuff_burn.wav,-5,0.9,1.1,0.3,debuff,燃烧,0.0,0.0,1

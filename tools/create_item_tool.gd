@@ -20,6 +20,10 @@ extends EditorScript
 ##
 ## ==============================================================================
 
+# 注意：当前运行时主要读取 item_config.csv / emblem_config.csv。
+# item_effect_config.csv 目前仅保留兼容，不建议作为主配置来源。
+const ENABLE_LEGACY_ITEM_EFFECT_WRITE := false
+
 # ==============================================================================
 # 主函数
 # ==============================================================================
@@ -53,6 +57,7 @@ func _run() -> void:
 		"shop_price": 200,                   # 商店价格
 		"icon_path": "res://assets/sprites/Icons/origins/origin2.png",
 		"description": "示例圣物 生命+400 最大生命+20%",
+		"write_effect": false,               # 是否额外写入 item_effect_config.csv（兼容）
 
 		# ---------- emblem 类道具字段 ----------
 		# "artifact_type": "emblem",         # 护符类型: "emblem" | "relic"
@@ -119,9 +124,12 @@ func create_item(config: Dictionary) -> bool:
 
 	print("[CreateItemTool] ✅ 已写入 item_config.csv")
 
-	# 如果同时需要写入 item_effect_config.csv（Tier 2/3 道具）
+	# 可选兼容：写入 item_effect_config.csv（当前流程默认关闭）
 	if config.get("tier", 1) >= 2 and config.get("write_effect", false):
-		_write_item_effect(config)
+		if ENABLE_LEGACY_ITEM_EFFECT_WRITE:
+			_write_item_effect(config)
+		else:
+			print("[CreateItemTool] ⚠️ 已跳过 item_effect_config.csv（当前流程未启用该写入）")
 
 	return true
 
@@ -171,7 +179,7 @@ func _write_item_effect(config: Dictionary) -> void:
 	var line = ",".join(PackedStringArray([
 		str(config.get("item_id", "")),
 		str(config.get("item_name", "")),
-		str(config.get("tier", 2)),
+		str(config.get("type", "equipment")),
 		str(config.get("tier", 2)),
 		effect_type,
 		effect_target,
@@ -296,8 +304,10 @@ func _id_exists_in_csv(file_path: String, target_id: String) -> bool:
 	if not file:
 		return false
 	while not file.eof_reached():
-		var line = file.get_line().strip_edges()
-		if line.begins_with(target_id + ","):
+		var row = file.get_csv_line()
+		if row.is_empty():
+			continue
+		if str(row[0]).strip_edges() == target_id:
 			file.close()
 			return true
 	file.close()

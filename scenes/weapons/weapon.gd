@@ -179,8 +179,22 @@ func use_weapon() -> void:
 	calculate_spread()
 	
 	weapon_behavior.execute_attack()
-	cooldown_timer.wait_time = data.stats.cooldown
+	var cooldown: float = data.stats.cooldown
+	var owner_player: Node = _find_owner_player()
+	if is_instance_valid(owner_player) and owner_player.has_meta("buff_attack_speed_bonus"):
+		var attack_speed_bonus: float = float(owner_player.get_meta("buff_attack_speed_bonus"))
+		# 攻速正值=更快（冷却更短），负值=更慢（冷却更长）
+		cooldown *= max(0.08, 1.0 - attack_speed_bonus)
+	cooldown_timer.wait_time = cooldown
 	cooldown_timer.start()
+
+func _find_owner_player() -> Node:
+	var node: Node = self
+	while node:
+		if "player_id" in node and node.has_method("get_energy_percent"):
+			return node
+		node = node.get_parent()
+	return null
 
 func rotate_to_target() -> void:
 	if is_attacking:

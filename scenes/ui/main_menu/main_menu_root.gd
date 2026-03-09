@@ -1,4 +1,4 @@
-extends Control
+﻿extends Control
 
 @onready var title_screen: Control = $TitleScreen
 @onready var main_menu: Control = $MainMenu
@@ -199,9 +199,9 @@ func _on_save_slot_selected(slot_index: int) -> void:
 			DataManager.save_data.total_gold = DataManager._get_default_gold()
 			DataManager.save_data.upgrades = {}
 			DataManager.save_game()
-			# 清空装备和仓库，重新初始化默认道具
+			# 清空装备和仓库（局内仓库模式：开局为空）
 			EquipmentManager.clear_all_equipment()
-			WarehouseManager._init_default_items()
+			WarehouseManager.reset_for_new_run()
 			# 清除局内会话存档
 			DataManager.clear_session_data()
 			# 清除角色选择缓存，确保新游戏从空白开始

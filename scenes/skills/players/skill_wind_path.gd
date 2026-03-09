@@ -1,898 +1,148 @@
-extends SkillBase
+extends SkillDrawingBase
 class_name SkillWindPath
 
-## ==============================================================================
-## 御风者Q技能 - 风墙与暴风区域
-## ==============================================================================
-## 
-## 功能说明:
-## - 按住Q进入规划模式（子弹时间）
-## - **按住鼠标左键在屏幕上连续划线**
-##   - 以玩家坐标为起点
-##   - 鼠标移动时实时绘制线段
-##   - **每10像素消耗1点能量**
-##   - **检测线段交叉**
-##   - **如果形成封闭空间，线段变红色**
-## - 松开鼠标左键，划线结束
-## - 右键：清除所有路径并返还能量
-## - 松开Q：执行冲刺序列，沿路径生成风墙（物理吸附+伤害）
-## - 路径闭合时生成暴风区域（强力聚怪+伤害）
-## - 根据圈内敌人数量给予不同奖励
-## 
-## 使用方法:
-##   - 按住Q进入规划模式
-##   - 按住鼠标左键连续划线
-##   - 松开鼠标左键结束划线
-##   - 松开Q执行冲刺并生成风墙
-## 
-## ==============================================================================
-
-# ==============================================================================
-# 技能参数（从CSV加载）
-# ==============================================================================
-
-## 每10像素消耗的能量（基础值）
-var energy_per_10px: float = 1.0
-
-## 能量递增阈值距离（像素）
-var energy_threshold_distance: float = 1800.0
-
-## 能量递增系数
-var energy_scale_multiplier: float = 0.0006
-
-## 风墙吸附力度
+# Core parameters from config/player/skill_params_wide.csv (skill_wind_path).
 var wind_wall_pull_force: float = 350.0
-
-## 风墙伤害
 var wind_wall_damage: int = 15
-
-## 风墙持续时间
-var wind_wall_duration: float = 3.0
-
-## 风墙宽度
-var wind_wall_width: float = 24.0
-
-## 风墙效果半径
-var wind_wall_effect_radius: float = 120.0
-
-## 暴风区域伤害
 var storm_zone_damage: int = 30
-
-## 暴风区域吸附力度
+var wind_wall_duration: float = 3.0
+var wind_wall_width: float = 24.0
+var wind_wall_effect_radius: float = 120.0
 var storm_zone_pull_force: float = 400.0
-
-## 暴风区域持续时间
 var storm_zone_duration: float = 3.0
 
-## 冲刺速度
-var dash_speed: float = 1200.0
+# Extra tuning for new drawing framework implementation.
+var wind_cut_damage: int = 18
+var storm_slow_value: float = 0.36
 
-## 冲刺基础伤害
-var dash_base_damage: int = 10
-
-## 击退力度
-var dash_knockback: float = 2.0
-
-## 闭合判定阈值
-var close_threshold: float = 60.0
-
-## 每隔多少像素记录一个路径点
-const POINT_INTERVAL: float = 10.0
-
-# ==============================================================================
-# 运行时状态
-# ==============================================================================
-
-## 是否处于规划模式
-var is_planning: bool = false
-
-## 是否正在划线
-var is_drawing: bool = false
-
-## 上一个记录的点
-var last_point: Vector2 = Vector2.ZERO
-
-## 累计距离（用于判断是否达到10像素）
-var accumulated_distance: float = 0.0
-
-## 路径点列表（用于绘制和冲刺）
-var path_points: Array[Vector2] = []
-
-## 路径线段列表（用于交叉检测）
-var path_segments: Array[Dictionary] = []
-
-## 是否有封闭空间
-var has_closure: bool = false
-
-## 当前冲刺目标索引
-var current_target_index: int = 0
-
-## 路径历史（用于闭合检测）
-var path_history: Array[Vector2] = []
-
-## 已画的总距离（用于能量递增计算）
-var total_distance_drawn: float = 0.0
-
-## 是否正在冲刺
-var is_dashing: bool = false
-
-## 是否已显示能量不足提示（防止重复弹出）
-var has_shown_no_energy_hint: bool = false
-
-# ==============================================================================
-# 节点引用
-# ==============================================================================
-
-## 用于绘制规划路径的Line2D
-var line_2d: Line2D
-
-var collision: CollisionShape2D
-var dash_hitbox: Node
-var trail: Node
-var visuals: Node2D
-
-# ✅ 不再需要 spawned_effects 数组，效果由 SkillEffectManager 统一管理
-
-# ==============================================================================
-# 生命周期
-# ==============================================================================
-
-func _ready() -> void:
-	super._ready()
-	
-	if skill_owner:
-		# 创建Line2D用于绘制规划路径
-		line_2d = Line2D.new()
-		line_2d.name = "WindPlanningLine"
-		line_2d.width = 4.0
-		
-		# ✅ 修复：确保Line2D添加到玩家节点，而不是skill_owner（可能是Area2D）
-		var player_node = skill_owner
-		if skill_owner is Area2D:
-			player_node = skill_owner.get_parent()
-		if player_node:
-			player_node.add_child(line_2d)
-			print("[SkillWindPath] Line2D已添加到玩家节点: %s" % player_node.name)
-		else:
-			print("[SkillWindPath] ⚠️ 警告：无法找到玩家节点，Line2D添加到skill_owner")
-			skill_owner.add_child(line_2d)
-		
-		line_2d.top_level = true
-		line_2d.clear_points()
-		line_2d.default_color = Color(0.2, 1.5, 1.5, 1.0)  # 高亮青色
-		
-		# 获取节点引用
-		collision = skill_owner.get_node_or_null("CollisionShape2D")
-		dash_hitbox = skill_owner.get_node_or_null("DashHitbox")
-		trail = skill_owner.get_node_or_null("%Trail")
-		visuals = skill_owner.get_node_or_null("Visuals")
-		
-		# 从skill_owner读取参数
-		if "close_threshold" in skill_owner:
-			close_threshold = skill_owner.close_threshold
-		
-		if "dash_base_damage" in skill_owner:
-			dash_base_damage = skill_owner.dash_base_damage
-
-func _process(delta: float) -> void:
-	super._process(delta)
-	
-	# 强制维持子弹时间
-	if is_planning and Engine.time_scale > 0.2:
-		Engine.time_scale = 0.1
-	
-	# 处理冲刺移动
-	if is_dashing:
-		_process_dashing_movement(delta)
-	
-	# 每帧更新视觉效果
-	_update_visuals()
-
-# ==============================================================================
-# 技能执行
-# ==============================================================================
-
-## 蓄力技能（持续按住Q）
-func charge(delta: float) -> void:
-	if not is_planning:
-		_enter_planning_mode()
-	
-	if is_planning:
-		# 检测鼠标左键按下 - 开始或继续划线
-		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-			if not is_drawing:
-				# 开始划线 - 从鼠标位置开始
-				is_drawing = true
-				var mouse_pos = skill_owner.get_global_mouse_position()
-				
-				# 清空之前的路径，重新从鼠标位置开始
-				path_points.clear()
-				path_segments.clear()
-				has_closure = false
-				accumulated_distance = 0.0
-				total_distance_drawn = 0.0
-				
-				path_points.append(mouse_pos)
-				last_point = mouse_pos
-			
-			# 获取鼠标位置
-			var mouse_pos = skill_owner.get_global_mouse_position()
-			var distance = last_point.distance_to(mouse_pos)
-			
-			# 如果鼠标移动距离太小，跳过本帧
-			if distance < 1.0:
-				return
-			
-			# 计算需要添加多少个点
-			var points_to_add = int(distance / POINT_INTERVAL)
-			
-			# 沿着鼠标轨迹添加点
-			for i in range(points_to_add):
-				# 计算当前能量消耗（动态递增）
-				var current_energy_cost = _calculate_current_energy_cost()
-				
-				# 检查能量是否足够
-				if skill_owner.energy >= current_energy_cost:
-					# 消耗能量
-					skill_owner.consume_energy(current_energy_cost)
-					
-					# 更新总距离
-					total_distance_drawn += POINT_INTERVAL
-					
-					# 沿着 last_point 到 mouse_pos 的方向前进 POINT_INTERVAL
-					var direction = (mouse_pos - last_point).normalized()
-					var new_point = last_point + direction * POINT_INTERVAL
-					
-					# 添加路径点
-					path_points.append(new_point)
-					
-					# 创建线段
-					var segment = {
-						"start": last_point,
-						"end": new_point
-					}
-					path_segments.append(segment)
-					
-					# 检测线段交叉
-					_check_intersection_and_closure()
-					
-					# 更新状态
-					last_point = new_point
-				else:
-					# 能量不足 - 只弹一次提示
-					is_drawing = false
-					if not has_shown_no_energy_hint:
-						has_shown_no_energy_hint = true
-						Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
-					break
-		else:
-			# 鼠标左键松开
-			if is_drawing:
-				is_drawing = false
-		
-		# 右键：清除所有路径
-		if Input.is_action_just_pressed("click_right"):
-			_clear_all_points()
-
-## 释放技能（松开Q）
-func release() -> void:
-	if is_planning:
-		_exit_planning_mode_and_dash()
-
-# ==============================================================================
-# 规划模式
-# ==============================================================================
-
-## 进入规划模式
-func _enter_planning_mode() -> void:
-	is_planning = true
-	is_charging = true
-	is_drawing = false
-	accumulated_distance = 0.0
-	has_closure = false
-	total_distance_drawn = 0.0
-	has_shown_no_energy_hint = false  # 重置能量提示标志
-	
-	# 清空路径数据
-	path_points.clear()
-	path_segments.clear()
-	
-	# 设置起点为鼠标位置（而不是角色位置）
-	var start_pos = skill_owner.get_global_mouse_position()
-	path_points.append(start_pos)
-	last_point = start_pos
-	
-	Engine.time_scale = 0.1
-
-## 退出规划模式并开始冲刺
-func _exit_planning_mode_and_dash() -> void:
-	is_planning = false
-	is_charging = false
-	is_drawing = false
-	Engine.time_scale = 1.0
-	
-	if path_points.size() > 1:
-		# 在松开Q键时进行最终的闭合检测
-		_perform_final_closure_check()
-		
-		# 如果闭合，直接生成风暴区域，不沿线冲撞
-		if has_closure:
-			_check_and_trigger_intersection()
-			start_cooldown()
-		else:
-			# 未闭合，沿线生成风墙伤害效果
-			_spawn_wind_wall_damage()
-			start_cooldown()
-		_clear_all_points()
-	else:
-		_clear_all_points()
-
-## 执行最终的闭合检测（松开Q键时调用）
-func _perform_final_closure_check() -> void:
-	# 不管实时检测结果如何，都重新检查一次
-	# 重置标志
-	has_closure = false
-	
-	if path_segments.size() < 3:
-		return
-	
-	# 检查任意两条不相邻的线段是否相交
-	for i in range(path_segments.size()):
-		for j in range(i + 2, path_segments.size()):
-			var seg1 = path_segments[i]
-			var seg2 = path_segments[j]
-			
-			if _segments_intersect(seg1, seg2):
-				print("[SkillWindPath] >>> 检测到线段交叉！线段 %d 和 %d <<<" % [i, j])
-				has_closure = true
-				return
-	
-	# 检查距离闭合：终点是否接近起点或路径中的其他点
-	if path_points.size() >= 3:
-		var last_point = path_points[path_points.size() - 1]
-		
-		# 检查是否接近起点
-		if last_point.distance_to(path_points[0]) < close_threshold:
-			print("[SkillWindPath] >>> 检测到距离闭合（接近起点）<<<")
-			has_closure = true
-			return
-		
-		# 检查是否接近路径中的其他点（排除最后20个点）
-		var check_until = max(0, path_points.size() - 20)
-		for i in range(check_until):
-			if last_point.distance_to(path_points[i]) < close_threshold:
-				print("[SkillWindPath] >>> 检测到距离闭合（接近点 %d）<<<" % i)
-				has_closure = true
-				return
-
-## 检测线段交叉和封闭空间（实时检测，用于视觉反馈）
-func _check_intersection_and_closure() -> void:
-	# 如果已经检测到闭合，不再重复检测
-	if has_closure:
-		return
-	
-	# 需要至少3条线段才能形成闭合
-	if path_segments.size() < 3:
-		return
-	
-	# 检查最新线段是否与之前的线段相交（跳过相邻线段）
-	var latest_seg = path_segments[path_segments.size() - 1]
-	
-	# 只检查最新线段与之前的非相邻线段
-	for i in range(path_segments.size() - 2):
-		var old_seg = path_segments[i]
-		
-		if _segments_intersect(latest_seg, old_seg):
-			print("[SkillWindPath] >>> 实时检测到线段交叉！线段 %d 和最新线段 <<<" % i)
-			has_closure = true
-			return
-	
-	# 检查距离闭合：当前点是否接近起点（排除最近的点）
-	if path_points.size() >= 20:
-		var current_point = path_points[path_points.size() - 1]
-		if current_point.distance_to(path_points[0]) < close_threshold:
-			print("[SkillWindPath] >>> 实时检测到距离闭合（接近起点）<<<")
-			has_closure = true
-			return
-
-## 检测两条线段是否相交
-func _segments_intersect(seg1: Dictionary, seg2: Dictionary) -> bool:
-	var p1 = seg1["start"]
-	var p2 = seg1["end"]
-	var p3 = seg2["start"]
-	var p4 = seg2["end"]
-	
-	var intersection = Geometry2D.segment_intersects_segment(p1, p2, p3, p4)
-	return intersection != null
-
-## 清除所有路径点
-func _clear_all_points() -> void:
-	# 计算已消耗的总能量（需要积分计算）
-	var total_consumed_energy = _calculate_total_consumed_energy()
-	
-	# 返还能量
-	if skill_owner and total_consumed_energy > 0:
-		skill_owner.energy += total_consumed_energy
-		skill_owner.update_ui_signals()
-	
-	# 清空数据
-	path_points.clear()
-	path_segments.clear()
-	has_closure = false
-	accumulated_distance = 0.0
-	total_distance_drawn = 0.0
-	
-	# 重置起点为鼠标位置（而不是角色位置）
-	if skill_owner:
-		var start_pos = skill_owner.get_global_mouse_position()
-		path_points.append(start_pos)
-		last_point = start_pos
-
-## 计算当前能量消耗（动态递增）
-func _calculate_current_energy_cost() -> float:
-	if total_distance_drawn <= energy_threshold_distance:
-		# 基础阶段
-		return energy_per_10px
-	else:
-		# 递增阶段
-		var excess_distance = total_distance_drawn - energy_threshold_distance
-		var multiplier = 1.0 + excess_distance * energy_scale_multiplier
-		return energy_per_10px * multiplier
-
-## 计算已消耗的总能量（用于返还）
-func _calculate_total_consumed_energy() -> float:
-	var total = 0.0
-	var distance = 0.0
-	
-	# 从起点开始，每10像素计算一次
-	while distance < total_distance_drawn:
-		if distance <= energy_threshold_distance:
-			total += energy_per_10px
-		else:
-			var excess = distance - energy_threshold_distance
-			var multiplier = 1.0 + excess * energy_scale_multiplier
-			total += energy_per_10px * multiplier
-		
-		distance += POINT_INTERVAL
-	
-	return total
-
-## 更新规划路径的视觉效果（每帧调用）
-func _update_visuals() -> void:
-	line_2d.clear_points()
-	
-	if path_points.is_empty() and not is_planning:
-		return
-	
-	if not skill_owner:
-		return
-	
-	# 绘制已确认的路径点
-	for p in path_points:
-		line_2d.add_point(p)
-	
-	# 如果正在划线，添加到鼠标的预览线
-	if is_planning and is_drawing:
-		var mouse_pos = skill_owner.get_global_mouse_position()
-		line_2d.add_point(mouse_pos)
-	
-	# 颜色判断：根据封闭状态和能量递增设置颜色
-	if has_closure:
-		line_2d.default_color = Color(2.0, 0.1, 0.1, 1.0)  # 闭合提示（高亮红）
-	elif is_planning and skill_owner and skill_owner.energy < _calculate_current_energy_cost():
-		line_2d.default_color = Color(0.5, 0.5, 0.5, 0.5)
-	elif is_planning and total_distance_drawn > energy_threshold_distance:
-		# 超过阈值，颜色渐变提示（青色 -> 深青色）
-		var excess_ratio = (total_distance_drawn - energy_threshold_distance) / energy_threshold_distance
-		excess_ratio = clamp(excess_ratio, 0.0, 1.0)
-		var base_color = Color(0.2, 1.5, 1.5, 1.0)  # 高亮青
-		var warning_color = Color(0.1, 0.8, 1.2, 1.0)  # 深青色
-		line_2d.default_color = base_color.lerp(warning_color, excess_ratio * 0.5)
-	else:
-		line_2d.default_color = Color(0.2, 1.5, 1.5, 1.0)  # 正常规划（高亮青）
-
-# ==============================================================================
-# 冲刺执行
-# ==============================================================================
-
-## 开始冲刺序列
-func _start_dash_sequence() -> void:
-	if path_points.size() < 2 or not skill_owner:
-		return
-	
-	is_dashing = true
-	is_executing = true
-	current_target_index = 1
-	
-	# 清空历史路径
-	path_history.clear()
-	path_history.append(skill_owner.global_position)
-	
-	# 启动拖尾特效
-	if trail and trail.has_method("start_trail"):
-		trail.start_trail()
-	
-	# 设置视觉效果
-	if visuals:
-		visuals.modulate.a = 0.5
-	
-	# 禁用碰撞
-	if collision:
-		collision.set_deferred("disabled", true)
-	
-	# 启用冲刺伤害判定
-	if dash_hitbox:
-		dash_hitbox.set_deferred("monitorable", true)
-		dash_hitbox.set_deferred("monitoring", true)
-		
-		if dash_hitbox.has_method("setup"):
-			dash_hitbox.setup(dash_base_damage, false, dash_knockback, skill_owner)
-	
-	# 播放音效
-	SoundManager.play("player_dash")
-	
-	# 开始冷却
-	start_cooldown()
-
-## 处理冲刺移动
-func _process_dashing_movement(delta: float) -> void:
-	if not skill_owner or current_target_index >= path_points.size():
-		return
-	
-	# 恢复时间流速
-	Engine.time_scale = 1.0
-	
-	var target = path_points[current_target_index]
-	
-	# 向目标移动
-	skill_owner.position = skill_owner.position.move_toward(target, dash_speed * delta)
-	
-	# 检查是否到达目标
-	if skill_owner.position.distance_to(target) < 5.0:
-		_on_reach_target_point()
-
-## 到达目标点
-func _on_reach_target_point() -> void:
-	if not skill_owner:
-		return
-	
-	var previous_pos = path_history.back()
-	path_history.append(skill_owner.global_position)
-	
-	# 生成风墙
-	_spawn_wind_wall(previous_pos, skill_owner.global_position)
-	
-	# 不在这里检查闭合，等到整个路径完成后再一次性检测
-	# _check_and_trigger_intersection()
-	
-	# 继续下一个目标或结束
-	current_target_index += 1
-	if current_target_index >= path_points.size():
-		_end_dash_sequence()
-
-## 结束冲刺序列
-func _end_dash_sequence() -> void:
-	# 在整个路径完成后，一次性检测所有闭合区域
-	_check_and_trigger_intersection()
-	
-	is_dashing = false
-	is_executing = false
-	
-	# 清理线条
-	line_2d.clear_points()
-	path_points.clear()
-	path_segments.clear()
-	path_history.clear()
-	current_target_index = 0
-	has_closure = false
-	
-	# 停止拖尾特效
-	if trail and trail.has_method("stop"):
-		trail.stop()
-	
-	# 恢复视觉效果
-	if visuals:
-		visuals.modulate.a = 1.0
-	
-	# 恢复碰撞
-	if collision:
-		collision.set_deferred("disabled", false)
-	
-	# 禁用冲刺伤害判定
-	if dash_hitbox:
-		dash_hitbox.set_deferred("monitorable", false)
-		dash_hitbox.set_deferred("monitoring", false)
-
-# ==============================================================================
-# 风系技能生成
-# ==============================================================================
-
-## 生成风墙伤害效果（未闭合状态）
-func _spawn_wind_wall_damage() -> void:
-	if path_points.size() < 2:
-		return
-	
-	print("[SkillWindPath] >>> 生成风墙伤害效果（未闭合）<<<")
-	
-	# 沿路径生成风墙伤害效果
-	for i in range(path_points.size() - 1):
-		_spawn_wind_wall(path_points[i], path_points[i + 1])
-
-## 生成风墙
-func _spawn_wind_wall(start: Vector2, end: Vector2) -> void:
-	# ✅ 使用统一的效果管理器
+func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
+	var duration: float = max(_get_line_duration(), wind_wall_duration)
 	SkillEffectManager.create_line_effect({
 		"start": start,
 		"end": end,
 		"width": wind_wall_width,
 		"damage": wind_wall_damage,
-		"damage_interval": 0.5,
-		"duration": wind_wall_duration,
-		"color": Color(0.2, 1.5, 1.5, 0.8),
+		"damage_interval": 0.28,
+		"duration": duration,
+		"color": Color(0.24, 1.38, 1.45, 0.88),
 		"pull_to_line": true,
 		"pull_force": wind_wall_pull_force,
 		"pull_interval": 0.05
 	})
 
-## 创建风暴闭合遮罩 - 使用公共工具类
-func _create_wind_closure_mask(points: PackedVector2Array) -> void:
-	var polygons: Array[PackedVector2Array] = [points]
-	PolygonUtils.show_closure_masks(polygons, Color(0.3, 0.8, 1.0, 0.7), get_tree(), 0.6)
+	SkillEffectManager.create_debuff_zone({
+		"start": start,
+		"end": end,
+		"width": wind_wall_width + 8.0,
+		"duration": duration,
+		"debuff_type": "slow",
+		"debuff_value": storm_slow_value * 0.75,
+		"debuff_duration": 1.0,
+		"tick_interval": 0.35,
+		"color": Color(0.22, 1.1, 1.2, 0.2)
+	})
 
-# ==============================================================================
-# 闭环检测
-# ==============================================================================
+	_apply_wind_cut(start, end)
 
-## 查找所有闭合多边形（支持8字形等多区域）- 使用公共工具类
-func _find_all_closing_polygons() -> Array[PackedVector2Array]:
-	return PolygonUtils.find_all_closing_polygons(path_history, close_threshold)
-
-## 查找闭合多边形（保留兼容性）
-func _find_closing_polygon(points: Array[Vector2]) -> PackedVector2Array:
-	var polygons = PolygonUtils.find_all_closing_polygons(points, close_threshold)
-	if polygons.size() > 0:
-		return polygons[0]
-	return PackedVector2Array()
-
-## 检查并触发闭合（支持多区域）
-func _check_and_trigger_intersection() -> void:
-	# 直接检测所有闭合区域，不依赖 has_closure 标志
-	# 如果是冲刺结束时调用，使用 path_history；否则使用 path_points
-	var points_to_check = path_history if path_history.size() > 0 else path_points
-	var polygons = PolygonUtils.find_all_closing_polygons(points_to_check, close_threshold)
-	
-	if polygons.size() > 0:
-		print("[SkillWindPath] >>> 检测到 %d 个闭合区域 <<<" % polygons.size())
-		
-		# Camera shake（只触发一次）
-		Global.on_camera_shake.emit(10.0, 0.3)
-		
-		# 一次性显示所有遮罩（同步动画）
-		PolygonUtils.show_closure_masks(polygons, Color(0.3, 0.8, 1.0, 0.7), get_tree(), 0.6)
-		
-		# 为每个闭合区域生成风暴区（不再单独显示遮罩）
-		for polygon_points in polygons:
-			_spawn_storm_zone_no_mask(polygon_points)
-		
-		# 清空历史，避免重复触发
-		if path_history.size() > 0:
-			var last = path_history.back()
-			path_history.clear()
-			path_history.append(last)
-		
-		# 标记已处理
-		has_closure = false
-
-## 生成暴风区域（不显示遮罩，用于多区域同步显示）
-func _spawn_storm_zone_no_mask(points: PackedVector2Array) -> void:
-	if points.size() < 3:
+func _spawn_area_effect(polygon: PackedVector2Array) -> void:
+	if polygon.size() < 3:
 		return
-	
-	print("[SkillWindPath] >>> 触发暴风区域！多边形点数: %d <<<" % points.size())
-	
-	Global.spawn_floating_text(points[0], "STORM!", Color.CYAN)
-	
-	# ✅ 使用统一的效果管理器
+
+	var duration: float = max(2.8, storm_zone_duration)
 	SkillEffectManager.create_area_effect({
-		"polygon": points,
+		"polygon": polygon,
 		"damage": storm_zone_damage,
-		"damage_interval": 0.5,
-		"duration": storm_zone_duration,
-		"color": Color(0.2, 1.2, 1.2, 0.5),
+		"damage_interval": 0.32,
+		"duration": duration,
+		"color": Color(0.18, 1.1, 1.15, 0.5),
 		"pull_to_center": true,
 		"pull_force": storm_zone_pull_force,
-		"pull_interval": 0.05,
-		"z_index": 10,
-		"fade_in_duration": 0.2,
-		"fade_out_duration": 0.3
+		"pull_interval": 0.05
 	})
-	
-	# 画圈奖励（暂时禁用，因为需要 area 引用）
-	# TODO: 如果需要奖励系统，可以通过 effect_id 获取 area
-	# await get_tree().process_frame
-	# _apply_circle_rewards(area, points)
 
-# ==============================================================================
-# 回调函数
-# ==============================================================================
+	SkillEffectManager.create_debuff_zone({
+		"polygon": polygon,
+		"duration": duration,
+		"debuff_type": "slow",
+		"debuff_value": storm_slow_value,
+		"debuff_duration": 1.2,
+		"tick_interval": 0.35,
+		"color": Color(0.22, 1.0, 1.0, 0.22)
+	})
 
-## 风墙物理效果：将敌人吸附到线段上
-func _on_wind_wall_tick(area_ref: Area2D, start: Vector2, end: Vector2) -> void:
-	if not is_instance_valid(area_ref) or area_ref.is_queued_for_deletion():
-		return
-	
-	var targets = area_ref.get_overlapping_bodies() + area_ref.get_overlapping_areas()
-	var dt = 0.05
-	
-	for t in targets:
-		var enemy = null
-		if t.is_in_group("enemies"):
-			enemy = t
-		elif t.owner and t.owner.is_in_group("enemies"):
-			enemy = t.owner
-		
-		if is_instance_valid(enemy):
-			var closest_point = Geometry2D.get_closest_point_to_segment(enemy.global_position, start, end)
-			var dist = enemy.global_position.distance_to(closest_point)
-			
-			if dist > 5.0:
-				var dir = (closest_point - enemy.global_position).normalized()
-				enemy.global_position += dir * wind_wall_pull_force * dt
+	SkillEffectManager.create_debuff_zone({
+		"polygon": polygon,
+		"duration": duration,
+		"debuff_type": "marked",
+		"debuff_value": 0.14,
+		"debuff_duration": 1.0,
+		"tick_interval": 0.5,
+		"color": Color(0.26, 1.1, 1.15, 0.15)
+	})
 
-## 暴风区域物理效果：将敌人吸附到中心点
-func _on_storm_zone_tick(area_ref: Area2D, center: Vector2) -> void:
-	if not is_instance_valid(area_ref) or area_ref.is_queued_for_deletion():
-		return
-	
-	var targets = area_ref.get_overlapping_bodies() + area_ref.get_overlapping_areas()
-	var dt = 0.05
-	
-	for t in targets:
-		var enemy = null
-		if t.is_in_group("enemies"):
-			enemy = t
-		elif t.owner and t.owner.is_in_group("enemies"):
-			enemy = t.owner
-		
-		if is_instance_valid(enemy):
-			var dir = (center - enemy.global_position).normalized()
-			enemy.global_position += dir * storm_zone_pull_force * dt
+	_apply_storm_burst(polygon)
 
-## 伤害tick
-func _on_damage_tick(area_ref: Area2D, amount: int) -> void:
-	if not is_instance_valid(area_ref) or area_ref.is_queued_for_deletion():
-		return
-	
-	var targets = area_ref.get_overlapping_bodies() + area_ref.get_overlapping_areas()
-	for t in targets:
-		var enemy = null
-		if t.is_in_group("enemies"):
-			enemy = t
-		elif t.owner and t.owner.is_in_group("enemies"):
-			enemy = t.owner
-		
-		if enemy and enemy.has_node("HealthComponent"):
-			enemy.health_component.take_damage(amount)
+func _apply_wind_cut(start: Vector2, end: Vector2) -> void:
+	var cut_radius: float = max(20.0, wind_wall_effect_radius * 0.35)
+	var damage: int = max(1, int(round(float(wind_cut_damage) * 0.7)))
+	var enemies: Array = get_tree().get_nodes_in_group("enemies")
+	for enemy_obj: Variant in enemies:
+		if enemy_obj == null or not is_instance_valid(enemy_obj):
+			continue
+		if not (enemy_obj is Node2D):
+			continue
+		var enemy: Node2D = enemy_obj
+		var closest: Vector2 = Geometry2D.get_closest_point_to_segment(enemy.global_position, start, end)
+		if enemy.global_position.distance_to(closest) > cut_radius:
+			continue
+		if enemy.has_node("HealthComponent"):
+			var hc: Node = enemy.get_node("HealthComponent")
+			if hc != null and hc.has_method("take_damage"):
+				hc.call("take_damage", damage)
 
-## 对象过期
-func _on_object_expired(area_ref: Area2D, visual_ref: Node) -> void:
-	if is_instance_valid(area_ref):
-		# ✅ 不访问 spawned_effects，因为技能实例可能已被删除
-		# 效果已经添加到场景根目录，会自动清理
-		
-		if is_instance_valid(visual_ref):
-			var tween = area_ref.create_tween()
-			tween.tween_property(visual_ref, "modulate:a", 0.0, 0.3)
-			tween.tween_callback(func():
-				if is_instance_valid(area_ref):
-					area_ref.queue_free()
-			)
-		else:
-			area_ref.queue_free()
+func _apply_storm_burst(polygon: PackedVector2Array) -> void:
+	var center: Vector2 = _polygon_center(polygon)
+	var radius: float = _max_distance_to_center(polygon, center)
+	var damage: int = max(1, wind_cut_damage)
+	var hit_count: int = 0
+	var enemies: Array = get_tree().get_nodes_in_group("enemies")
+	for enemy_obj: Variant in enemies:
+		if enemy_obj == null or not is_instance_valid(enemy_obj):
+			continue
+		if not (enemy_obj is Node2D):
+			continue
+		var enemy: Node2D = enemy_obj
+		if enemy.global_position.distance_to(center) > radius:
+			continue
+		if not Geometry2D.is_point_in_polygon(enemy.global_position, polygon):
+			continue
+		if enemy.has_node("HealthComponent"):
+			var hc: Node = enemy.get_node("HealthComponent")
+			if hc != null and hc.has_method("take_damage"):
+				hc.call("take_damage", damage)
+		if enemy.has_method("apply_status"):
+			enemy.call("apply_status", "slow", 0.9, storm_slow_value * 0.8)
+		hit_count += 1
+	if hit_count > 0:
+		Global.spawn_floating_text(center, "WIND BURST", Color(0.55, 1.25, 1.35))
+		spawn_skill_vfx(center, Color(0.5, 1.2, 1.3, 0.85), 0.58)
 
-# ✅ 不再需要 _manage_wind_wall_lifecycle 函数，效果由 SkillEffectManager 统一管理
+func _polygon_center(polygon: PackedVector2Array) -> Vector2:
+	if polygon.is_empty():
+		return Vector2.ZERO
+	var center: Vector2 = Vector2.ZERO
+	for point: Vector2 in polygon:
+		center += point
+	return center / float(polygon.size())
 
-## 画圈奖励
-func _apply_circle_rewards(area_ref: Area2D, polygon: PackedVector2Array) -> void:
-	if not is_instance_valid(area_ref):
-		return
-	
-	# ✅ 检查 skill_owner 是否仍然有效
-	# 如果玩家已被删除（切换角色），则不应用奖励
-	if not is_instance_valid(skill_owner):
-		print("[SkillWindPath] 技能所有者已被删除，跳过圈奖励")
-		return
-	
-	# 计算圈内敌人数量
-	var enemies_in_circle = 0
-	var enemies = get_tree().get_nodes_in_group("enemies")
-	for enemy in enemies:
-		if is_instance_valid(enemy) and Geometry2D.is_point_in_polygon(enemy.global_position, polygon):
-			enemies_in_circle += 1
-	
-	if enemies_in_circle <= 0:
-		return
-	
-	# 显示击杀数量
-	Global.spawn_floating_text(skill_owner.global_position, "TRAPPED x%d" % enemies_in_circle, Color.CYAN)
-	
-	# 小圈奖励 (1-2个怪)
-	if enemies_in_circle >= 1 and enemies_in_circle <= 2:
-		var energy_refund = energy_cost * 0.8 * 2
-		if energy_refund > 0 and skill_owner.has_method("gain_energy"):
-			skill_owner.gain_energy(energy_refund)
-		Global.spawn_floating_text(skill_owner.global_position, "GOOD!", Color(0.5, 1.0, 0.5))
-	
-	# 大圈奖励 (10+个怪)
-	elif enemies_in_circle >= 10:
-		# 增加护甲
-		if "armor" in skill_owner and "max_armor" in skill_owner:
-			if skill_owner.armor < skill_owner.max_armor:
-				skill_owner.armor = min(skill_owner.armor + 3, skill_owner.max_armor)
-				if skill_owner.has_signal("armor_changed"):
-					skill_owner.armor_changed.emit(skill_owner.armor)
-		
-		# 恢复生命
-		if skill_owner.has_node("HealthComponent"):
-			var health_component = skill_owner.get_node("HealthComponent")
-			if health_component.current_health < health_component.max_health:
-				var heal_amount = 15
-				health_component.current_health = min(
-					health_component.current_health + heal_amount,
-					health_component.max_health
-				)
-				health_component.on_health_changed.emit(
-					health_component.current_health,
-					health_component.max_health
-				)
-				Global.spawn_floating_text(skill_owner.global_position, "+%d HP" % heal_amount, Color.GREEN)
-		
-		Global.spawn_floating_text(skill_owner.global_position, "DIVINE!", Color(2.0, 2.0, 0.0))
-		Global.on_camera_shake.emit(15.0, 0.3)
-	
-	# 中圈奖励 (3-9个怪)
-	else:
-		var energy_refund = energy_cost * 0.5 * 2
-		if energy_refund > 0 and skill_owner.has_method("gain_energy"):
-			skill_owner.gain_energy(energy_refund)
-		Global.spawn_floating_text(skill_owner.global_position, "PERFECT!", Color(1.0, 1.0, 0.0))
+func _max_distance_to_center(polygon: PackedVector2Array, center: Vector2) -> float:
+	var max_dist: float = 0.0
+	for point: Vector2 in polygon:
+		max_dist = max(max_dist, center.distance_to(point))
+	return max_dist
 
-## 清理资源
-func cleanup() -> void:
-	print("[SkillWindPath] ===== cleanup() 被调用 =====")
-	
-	# 清理规划线
-	if is_instance_valid(line_2d):
-		print("[SkillWindPath] Line2D有效，准备清理")
-		line_2d.queue_free()
-		print("[SkillWindPath] Line2D已调用queue_free()")
-	else:
-		print("[SkillWindPath] Line2D无效或已被删除")
-	
-	# ✅ 不再需要清理效果节点，效果由 SkillEffectManager 统一管理
-	# 效果会按照自己的生命周期自动消失
-	print("[SkillWindPath] 效果由 SkillEffectManager 管理，无需手动清理")
-	
-	# 重置状态
-	is_planning = false
-	is_dashing = false
-	is_drawing = false
-	has_shown_no_energy_hint = false
-	path_points.clear()
-	path_segments.clear()
-	path_history.clear()
-	current_target_index = 0
-	has_closure = false
-	accumulated_distance = 0.0
-	total_distance_drawn = 0.0
-	Engine.time_scale = 1.0
-	
-	# 恢复玩家状态（如果在冲刺中切换）
-	if skill_owner:
-		if collision:
-			collision.set_deferred("disabled", false)
-		if dash_hitbox:
-			dash_hitbox.set_deferred("monitorable", false)
-			dash_hitbox.set_deferred("monitoring", false)
-	
-	print("[SkillWindPath] ===== cleanup() 结束 =====")
+func _get_line_color() -> Color:
+	return Color(0.28, 1.4, 1.5, 1.0)
+
+func _get_closure_color() -> Color:
+	return Color(0.6, 1.25, 1.3, 1.0)

@@ -23,7 +23,8 @@ var visual_line: Line2D
 
 # ✅ 捕获的参数（不依赖 player_ref）
 var saw_rotation_speed: float = 25.0
-var saw_push_radius: float = 80.0
+var saw_push_radius: float = 120.0
+var saw_push_force_value: float = 1000.0
 var saw_damage_tick: int = 3
 var saw_damage_open: int = 1
 var stake_impact_damage: int = 20
@@ -34,7 +35,14 @@ var saw_max_distance: float = 900.0
 var saw_fly_speed: float = 1100.0
 var captured_chain_radius: float = 250.0
 
-func setup(_points: Array[Vector2], _closed: bool, _dir: Vector2, _player: Node2D, _max_distance: float = 900.0):
+func setup(
+	_points: Array[Vector2],
+	_closed: bool,
+	_dir: Vector2,
+	_player: Node2D,
+	_max_distance: float = 900.0,
+	_chain_radius_override: float = -1.0
+):
 	shape_points = _points.duplicate()
 	is_closed = _closed
 	fly_dir = _dir
@@ -49,15 +57,26 @@ func setup(_points: Array[Vector2], _closed: bool, _dir: Vector2, _player: Node2
 	
 	# ✅ 捕获所有参数，避免运行时依赖 player_ref
 	saw_rotation_speed = _player.saw_rotation_speed if "saw_rotation_speed" in _player else 25.0
-	saw_push_radius = _player.saw_push_radius if "saw_push_radius" in _player else 80.0
+	if "saw_push_radius" in _player:
+		saw_push_radius = float(_player.saw_push_radius)
+	elif "saw_hit_radius" in _player:
+		saw_push_radius = max(120.0, float(_player.saw_hit_radius) * 1.5)
+	elif "saw_push_force" in _player:
+		saw_push_radius = clamp(float(_player.saw_push_force) * 0.12, 100.0, 220.0)
+	else:
+		saw_push_radius = 120.0
 	saw_damage_tick = _player.saw_damage_tick if "saw_damage_tick" in _player else 3
 	saw_damage_open = _player.saw_damage_open if "saw_damage_open" in _player else 1
+	saw_push_force_value = _player.saw_push_force if "saw_push_force" in _player else 1000.0
 	stake_impact_damage = _player.stake_impact_damage if "stake_impact_damage" in _player else 20
 	chain_color = _player.chain_color if "chain_color" in _player else Color(0.8, 0.2, 0.2, 0.8)
 	saw_hit_radius = _player.saw_hit_radius if "saw_hit_radius" in _player else 80.0
 	dismember_damage = _player.dismember_damage if "dismember_damage" in _player else 200
 	saw_fly_speed = _player.saw_fly_speed if "saw_fly_speed" in _player else 1100.0
-	captured_chain_radius = _player.chain_radius if "chain_radius" in _player else 250.0
+	if _chain_radius_override > 0.0:
+		captured_chain_radius = _chain_radius_override
+	else:
+		captured_chain_radius = _player.chain_radius if "chain_radius" in _player else 250.0
 	
 	# 计算目标位置（飞行终点）
 	var max_distance = _max_distance
@@ -68,7 +87,10 @@ func setup(_points: Array[Vector2], _closed: bool, _dir: Vector2, _player: Node2
 	print("[SawProjectile] ★★★ 飞行距离参数: %.0f ★★★" % _max_distance)
 	print("[SawProjectile] ★★★ 最终使用距离: %.0f ★★★" % max_distance)
 	
-	target_pos = shape_points[0] + fly_dir * max_distance
+	var launch_origin: Vector2 = global_position
+	if launch_origin == Vector2.ZERO and is_instance_valid(player_ref):
+		launch_origin = player_ref.global_position
+	target_pos = launch_origin + fly_dir * max_distance
 	
 	print("[SawProjectile] 起点: %s" % shape_points[0])
 	print("[SawProjectile] 目标位置: %s (距离: %.0f)" % [target_pos, max_distance])
@@ -250,7 +272,7 @@ func _push_enemies_like_blade(old_pos: Vector2, new_pos: Vector2, delta: float) 
 			var push_dir = fly_dir
 			
 			# 强力推动敌人（持续推动，不是瞬间击退）
-			var push_strength = speed * 2.0  # 增大推力
+			var push_strength = max(speed * 1.2, saw_push_force_value)
 			var push_vec = push_dir * push_strength * delta
 			e.global_position += push_vec
 			
@@ -321,7 +343,7 @@ func _land() -> void:
 			print("[SawProjectile] 敌人 %s 距离: %.0f (链条半径: %.0f)" % [e.name, dist, chain_radius])
 			
 			# 使用更大的范围检测（chain_radius）
-			if dist < chain_radius:
+			if dist < chain_radius * 1.2:
 				print("[SawProjectile] ✅ 敌人 %s 在范围内，链接" % e.name)
 				_chain_enemy(e)
 			# 或者检查是否在线段范围内
@@ -355,7 +377,7 @@ func _land() -> void:
 		print("[SawProjectile] 敌人 %s 距离: %.0f (链条半径: %.0f)" % [e.name, dist, chain_radius])
 		
 		# 使用更大的范围检测（chain_radius）
-		if dist < chain_radius:
+		if dist < chain_radius * 1.2:
 			print("[SawProjectile] ✅ 敌人 %s 在范围内，链接" % e.name)
 			_chain_enemy(e)
 		# 或者检查是否在闭合区域内
@@ -413,7 +435,7 @@ func _process_chaining(delta: float) -> void:
 			
 			# 如果未链接且在范围内，添加链接
 			if not already_chained:
-				if global_position.distance_to(e.global_position) < chain_radius or _is_enemy_inside(e):
+				if global_position.distance_to(e.global_position) < chain_radius * 1.2 or _is_enemy_inside(e):
 					print("[SawProjectile] 新敌人进入范围: %s" % e.name)
 					_chain_enemy(e)
 		
@@ -461,7 +483,7 @@ func _process_chaining(delta: float) -> void:
 			
 			# 如果未链接且在范围内，添加链接
 			if not already_chained:
-				if global_position.distance_to(e.global_position) < chain_radius or _is_enemy_inside(e):
+				if global_position.distance_to(e.global_position) < chain_radius * 1.2 or _is_enemy_inside(e):
 					print("[SawProjectile] 新敌人进入范围: %s" % e.name)
 					_chain_enemy(e)
 		

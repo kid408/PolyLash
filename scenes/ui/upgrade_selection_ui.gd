@@ -9,6 +9,7 @@ signal upgrade_selected(attribute_id: String)
 
 var available_upgrades: Array[Dictionary] = []
 var chest_tier: int = 1
+const PAUSE_SOURCE := "upgrade_selection_ui"
 
 @onready var panel: Panel = $Panel
 @onready var title_label: Label = $Panel/TitleLabel
@@ -37,7 +38,7 @@ func _process(_delta: float) -> void:
 	elif Input.is_key_pressed(KEY_3):
 		_on_option_selected(2)
 
-func show_upgrades(tier: int) -> void:
+func show_upgrades(tier: int, title_override: String = "") -> void:
 	print("[UpgradeSelectionUI] show_upgrades called with tier: %d" % tier)
 	chest_tier = tier
 	
@@ -52,7 +53,7 @@ func show_upgrades(tier: int) -> void:
 		return
 	
 	# 更新UI
-	title_label.text = "选择升级 (等级 %d 宝箱)" % tier
+	title_label.text = title_override if not title_override.is_empty() else "选择升级 (等级 %d 宝箱)" % tier
 	
 	_update_button(option1_button, 0)
 	_update_button(option2_button, 1)
@@ -60,7 +61,7 @@ func show_upgrades(tier: int) -> void:
 	
 	# 显示UI
 	visible = true
-	Global.game_paused = true
+	PauseService.request_pause(PAUSE_SOURCE, get_tree())
 	SoundManager.play("ui_panel_open")
 	
 	print("[UpgradeSelectionUI] UI shown, game paused")
@@ -116,5 +117,5 @@ func _on_option_selected(index: int) -> void:
 func hide_ui() -> void:
 	SoundManager.play("ui_panel_close")
 	visible = false
-	Global.game_paused = false
+	PauseService.release_pause(PAUSE_SOURCE, get_tree())
 	available_upgrades.clear()

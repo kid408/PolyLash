@@ -1,0 +1,253 @@
+extends Control
+
+@onready var title_screen: Control = $TitleScreen
+@onready var main_menu: Control = $MainMenu
+@onready var save_slot_panel: Control = $SaveSlotPanel
+@onready var compendium_screen: Control = $CompendiumScreen
+@onready var settings_panel: CanvasLayer = $SettingsPanel
+@onready var credits_screen: Control = $CreditsScreen
+@onready var confirm_dialog: ConfirmDialog = $ConfirmDialog
+
+var current_screen: Control = null
+var _is_transitioning: bool = false
+
+func _ready() -> void:
+	_hide_all()
+	# 璺宠繃鏍囬鐣岄潰锛岀洿鎺ユ樉绀轰富鑿滃崟
+	_show_screen(main_menu)
+	# 杩炴帴涓昏彍鍗曞姩浣滀俊鍙?
+	if main_menu.has_signal("menu_action"):
+		main_menu.menu_action.connect(_on_menu_action)
+	# 杩炴帴瀛樻。妲戒綅闈㈡澘淇″彿
+	if save_slot_panel.has_signal("slot_selected"):
+		save_slot_panel.slot_selected.connect(_on_save_slot_selected)
+	if save_slot_panel.has_signal("back_pressed"):
+		save_slot_panel.back_pressed.connect(_on_save_slot_back)
+	# 杩炴帴璁剧疆闈㈡澘鍏抽棴淇″彿
+	if settings_panel.has_signal("closed"):
+		settings_panel.closed.connect(_on_settings_closed)
+	# 杩炴帴鍥鹃壌鐣岄潰杩斿洖淇″彿
+	if compendium_screen.has_signal("back_pressed"):
+		compendium_screen.back_pressed.connect(_on_compendium_back)
+	# 杩炴帴鑷磋阿鐣岄潰杩斿洖淇″彿
+	if credits_screen.has_signal("back_pressed"):
+		credits_screen.back_pressed.connect(_on_credits_back)
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		# 纭瀵硅瘽妗嗗彲瑙佹椂锛岀敱 ConfirmDialog 鑷韩澶勭悊 ESC
+		if confirm_dialog.is_visible_dialog:
+			return
+		# 涓昏彍鍗曠晫闈㈡寜 ESC锛氬脊鍑洪€€鍑烘父鎴忕‘璁ゆ
+		if current_screen == main_menu:
+			confirm_dialog.show_dialog("纭閫€鍑烘父鎴忥紵", func(): get_tree().quit())
+			get_viewport().set_input_as_handled()
+			return
+		# 瀛愮晫闈㈡寜 ESC锛氳繑鍥炰富鑿滃崟
+		if current_screen != null and current_screen != title_screen:
+			if settings_panel.is_visible_panel:
+				close_settings()
+			else:
+				go_to_main_menu()
+			get_viewport().set_input_as_handled()
+
+func switch_to(screen: Control, transition: String = "fade") -> void:
+	if _is_transitioning or screen == current_screen:
+		return
+	_is_transitioning = true
+
+	var old_screen = current_screen
+	var tween = create_tween()
+
+	match transition:
+		"slide":
+			# Slide current screen left, new screen from right
+			if old_screen:
+				screen.position.x = get_viewport_rect().size.x
+				screen.modulate.a = 1.0
+				screen.visible = true
+				tween.set_parallel(true)
+				tween.tween_property(old_screen, "position:x", -get_viewport_rect().size.x, 0.3).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
+				tween.tween_property(screen, "position:x", 0.0, 0.3).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
+				tween.set_parallel(false)
+				tween.tween_callback(func():
+					old_screen.visible = false
+					old_screen.position.x = 0.0
+				)
+			else:
+				screen.modulate.a = 1.0
+				screen.visible = true
+		_:
+			# Default: fade transition
+			if old_screen:
+				tween.tween_property(old_screen, "modulate:a", 0.0, 0.15)
+				tween.tween_callback(func(): old_screen.visible = false)
+			screen.modulate.a = 0.0
+			screen.visible = true
+			tween.tween_property(screen, "modulate:a", 1.0, 0.15)
+
+	tween.tween_callback(func(): _is_transitioning = false)
+	current_screen = screen
+
+func _show_screen(screen: Control) -> void:
+	screen.modulate.a = 1.0
+	screen.visible = true
+	current_screen = screen
+
+func _hide_all() -> void:
+	for child in get_children():
+		if child is Control and child.name != "Background":
+			child.visible = false
+			child.modulate.a = 1.0
+
+# --- Navigation methods ---
+
+func go_to_main_menu() -> void:
+	switch_to(main_menu, "fade")
+
+func go_to_save_slots(mode: String) -> void:
+	if save_slot_panel.has_method("setup"):
+		save_slot_panel.setup(mode)
+	switch_to(save_slot_panel, "slide")
+
+func go_to_compendium() -> void:
+	switch_to(compendium_screen, "slide")
+
+func go_to_credits() -> void:
+	switch_to(credits_screen, "slide")
+
+func open_settings() -> void:
+	# 璁剧疆闈㈡澘鏄?CanvasLayer 寮圭獥锛岀洿鎺ヨ皟鐢?show_panel
+	if settings_panel.has_method("show_panel"):
+		settings_panel.show_panel()
+	else:
+		settings_panel.show()
+
+func close_settings() -> void:
+	if settings_panel.has_method("_on_close"):
+		settings_panel._on_close()
+	else:
+		settings_panel.hide()
+
+# --- Title Screen transition ---
+
+func _on_title_any_key_pressed() -> void:
+	if _is_transitioning:
+		return
+	_is_transitioning = true
+	# 鎾斁鏍囬鐣岄潰杩囨浮鍔ㄧ敾锛圠ogo涓婄Щ缂╁皬锛?
+	if title_screen.has_method("play_transition_out"):
+		await title_screen.play_transition_out()
+	# 杩囨浮瀹屾垚鍚庡垏鎹㈠埌涓昏彍鍗?
+	title_screen.visible = false
+	_is_transitioning = false
+	_show_screen(main_menu)
+
+# --- 涓昏彍鍗曞姩浣滃鐞?---
+
+func _on_menu_action(action: String) -> void:
+	match action:
+		"continue":
+			# 鍔犺浇鏈€杩戝瓨妗ｅ苟璺宠浆娓告垙鍦烘櫙
+			var slot_index := SaveManager.get_most_recent_slot()
+			if slot_index >= 0:
+				var data := SaveFacade.load_slot_and_apply(slot_index)
+				if not data.is_empty():
+					_route_to_scene_by_game_state(data)
+				else:
+					print("[MainMenuRoot] CONTINUE: 妲戒綅 %d 鏁版嵁涓虹┖" % slot_index)
+			else:
+				print("[MainMenuRoot] CONTINUE: 娌℃湁鍙敤瀛樻。")
+		"new_game":
+			go_to_save_slots("new_game")
+		"load_game":
+			go_to_save_slots("load")
+		"compendium":
+			go_to_compendium()
+		"settings":
+			open_settings()
+		"credits":
+			go_to_credits()
+		"quit":
+			# 鏄剧ず閫€鍑虹‘璁ゅ璇濇
+			confirm_dialog.show_dialog("纭閫€鍑烘父鎴忥紵", func(): get_tree().quit())
+
+# --- 瀛樻。妲戒綅闈㈡澘澶勭悊 ---
+
+func _on_save_slot_selected(slot_index: int) -> void:
+	match save_slot_panel.mode:
+		"new_game":
+			# 新游戏：重置进度并跳转角色选择
+			print("[MainMenuRoot] NEW GAME: 閫夋嫨妲戒綅 %d锛岃烦杞鑹查€夋嫨" % slot_index)
+			Global.current_save_slot = slot_index
+			Global.reset_selection()
+			Global.reset_session_data()
+			# 重置局内货币与局外货币
+			RunStateService.set_run_gold(0)
+			MetaProgressService.set_soul_shard(DataManager._get_default_soul_shard())
+			DataManager.save_data.upgrades = {}
+			DataManager.save_game()
+			# 清空装备和仓库
+			EquipmentManager.clear_all_equipment()
+			WarehouseManager.reset_for_new_run()
+			# 清空局内会话存档
+			DataManager.clear_session_data()
+			# 清空角色/武器选择缓存
+			_clear_selection_cache()
+			_clear_weapon_cache()
+			get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
+		"load":
+			# 读取存档并恢复运行时状态
+			var data := SaveFacade.load_slot_and_apply(slot_index)
+			if data.is_empty():
+				print("[MainMenuRoot] LOAD: 妲戒綅 %d 鏁版嵁涓虹┖" % slot_index)
+				return
+			print("[MainMenuRoot] LOAD: 鍔犺浇妲戒綅 %d" % slot_index)
+			_route_to_scene_by_game_state(data)
+
+func _on_save_slot_back() -> void:
+	go_to_main_menu()
+
+func _on_settings_closed() -> void:
+	# 璁剧疆闈㈡澘鍏抽棴鍚庢棤闇€棰濆鎿嶄綔锛岄潰鏉胯嚜琛岄殣钘?
+	pass
+
+func _on_compendium_back() -> void:
+	go_to_main_menu()
+
+func _on_credits_back() -> void:
+	go_to_main_menu()
+
+# --- 瀛樻。鏁版嵁鎭㈠鍒?Global ---
+
+func _clear_selection_cache() -> void:
+	# 清理角色选择缓存
+	SaveFacade.clear_selection_cache_files()
+	print("[MainMenuRoot] cleared selection cache")
+
+func _clear_weapon_cache() -> void:
+	# 清理武器缓存
+	SaveFacade.clear_selection_cache_files()
+	print("[MainMenuRoot] cleared weapon cache")
+
+func _sync_selection_cache_from_global() -> void:
+	# 将运行时角色/武器同步到选择界面缓存
+	SaveFacade.sync_selection_cache_from_runtime()
+	print("[MainMenuRoot] synced selection cache")
+
+func _restore_global_from_save(data: Dictionary) -> void:
+	# 从存档恢复运行时状态
+	SaveFacade.apply_save_data_to_runtime(data)
+	print("[MainMenuRoot] restore global: players=%s weapons=%s wave=%d" % [
+		str(Global.selected_player_ids),
+		str(Global.selected_player_weapons),
+		int(data.get("current_wave", 1))
+	])
+
+func _route_to_scene_by_game_state(data: Dictionary) -> void:
+	# 根据存档状态进入对应场景
+	var game_state = str(data.get("game_state", "in_progress"))
+	if game_state == "character_selection":
+		get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
+	else:
+		get_tree().change_scene_to_file("res://scenes/arena/arena.tscn")

@@ -1,77 +1,107 @@
 extends SkillDrawingBase
 class_name SkillFirePathRefactored
 
-## ==============================================================================
-## 烈焰者Q技能 - 火线与火海（重构版）
-## ==============================================================================
-## 
-## 功能说明:
-## - 继承SkillDrawingBase，复用能量消耗和划线逻辑
-## - 只需实现火焰特效的生成逻辑
-## - 能量消耗、闭合检测等由基类统一管理
-## 
-## ==============================================================================
+var fire_line_damage: int = 34
+var fire_line_duration: float = 6.0
+var fire_line_width: float = 30.0
+var afterburn_damage: int = 14
+var afterburn_interval: float = 0.45
+var fire_sea_damage: int = 62
+var fire_sea_duration: float = 6.2
+var inferno_pulse_damage: int = 42
+var inferno_pulse_interval: float = 0.9
+var scorch_damage_amp: float = 0.22
 
-# ==============================================================================
-# 火焰技能专属参数（从CSV加载）
-# ==============================================================================
-
-## 火线伤害
-var fire_line_damage: int = 20
-
-## 火线持续时间
-var fire_line_duration: float = 5.0
-
-## 火线宽度
-var fire_line_width: float = 24.0
-
-## 火海伤害
-var fire_sea_damage: int = 40
-
-## 火海持续时间
-var fire_sea_duration: float = 5.0
-
-# ==============================================================================
-# 实现基类虚函数
-# ==============================================================================
-
-## 生成火线效果（未闭合状态）
 func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
-	SkillEffectManager.create_line_effect({
+	var duration: float = float(max(fire_line_duration, _get_line_duration()))
+	SkillEffectManager.create_wall_effect({
 		"start": start,
 		"end": end,
 		"width": fire_line_width,
-		"damage": fire_line_damage,
-		"damage_interval": 0.5,
-		"duration": fire_line_duration,
-		"color": Color(2.0, 1.2, 0.4, 0.9)
+		"duration": duration,
+		"block_enemies": true,
+		"block_bullets": false,
+		"contact_damage": fire_line_damage,
+		"contact_interval": 0.22,
+		"color": Color(1.25, 0.52, 0.12, 0.9)
 	})
 
-## 生成火海效果（闭合状态）
+	SkillEffectManager.create_debuff_zone({
+		"start": start,
+		"end": end,
+		"width": fire_line_width + 6.0,
+		"duration": duration,
+		"debuff_type": "poison",
+		"debuff_value": float(afterburn_damage),
+		"debuff_duration": 2.0,
+		"tick_interval": afterburn_interval,
+		"color": Color(1.0, 0.45, 0.08, 0.32)
+	})
+
+	SkillEffectManager.create_debuff_zone({
+		"start": start,
+		"end": end,
+		"width": fire_line_width,
+		"duration": duration,
+		"debuff_type": "damage_amp",
+		"debuff_value": scorch_damage_amp * 0.45,
+		"debuff_duration": 1.2,
+		"tick_interval": 0.35,
+		"color": Color(1.0, 0.6, 0.18, 0.2)
+	})
+
 func _spawn_area_effect(polygon: PackedVector2Array) -> void:
 	if polygon.size() < 3:
 		return
-	
-	print("[SkillFirePath] 触发火海！多边形点数: %d" % polygon.size())
-	
-	Global.spawn_floating_text(polygon[0], "INFERNO!", Color(2.0, 1.0, 0.0))
-	Global.on_camera_shake.emit(15.0, 0.4)
-	
+
+	var duration: float = float(max(fire_sea_duration, _get_line_duration() + 1.0))
 	SkillEffectManager.create_area_effect({
 		"polygon": polygon,
 		"damage": fire_sea_damage,
 		"damage_interval": 0.3,
-		"duration": fire_sea_duration,
-		"color": Color(1.5, 0.7, 0.2, 0.6),
-		"z_index": 10,
-		"fade_in_duration": 0.2,
-		"fade_out_duration": 0.3
+		"duration": duration,
+		"color": Color(1.25, 0.35, 0.05, 0.58),
+		"z_index": 12
 	})
 
-## 获取规划线条颜色（火焰金橙色）
-func _get_line_color() -> Color:
-	return Color(2.0, 1.0, 0.3, 1.0)
+	SkillEffectManager.create_debuff_zone({
+		"polygon": polygon,
+		"duration": duration,
+		"debuff_type": "damage_amp",
+		"debuff_value": scorch_damage_amp,
+		"debuff_duration": 1.8,
+		"tick_interval": 0.45,
+		"color": Color(1.0, 0.52, 0.12, 0.24)
+	})
 
-## 获取闭合提示颜色（火焰红色）
+	_pulse_area(polygon, inferno_pulse_damage, "INFERNO!")
+	if inferno_pulse_interval > 0.0:
+		var delayed_damage := int(round(float(inferno_pulse_damage) * 0.7))
+		get_tree().create_timer(min(inferno_pulse_interval, 1.2)).timeout.connect(func() -> void:
+			_pulse_area(polygon, delayed_damage, "BURN!")
+		)
+
+func _pulse_area(polygon: PackedVector2Array, damage: int, text: String) -> void:
+	var hit_count := 0
+	var enemies := get_tree().get_nodes_in_group("enemies")
+	for enemy in enemies:
+		if not is_instance_valid(enemy):
+			continue
+		if not enemy.has_node("HealthComponent"):
+			continue
+		if not Geometry2D.is_point_in_polygon(enemy.global_position, polygon):
+			continue
+
+		var health_component = enemy.get_node("HealthComponent")
+		health_component.take_damage(max(1, damage))
+		Global.spawn_floating_text(enemy.global_position, text, Color(1.35, 0.55, 0.18))
+		hit_count += 1
+
+	if hit_count > 0:
+		Global.on_camera_shake.emit(6.0 + float(hit_count), 0.14)
+
+func _get_line_color() -> Color:
+	return Color(1.25, 0.52, 0.12, 1.0)
+
 func _get_closure_color() -> Color:
-	return Color(2.0, 0.1, 0.1, 1.0)
+	return Color(1.55, 0.25, 0.06, 1.0)

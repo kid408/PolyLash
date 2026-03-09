@@ -8,7 +8,7 @@ shielded_enemy,res://assets/sprites/Enemies/Enemy_4.png,1,1,0.5,0.8,1,1,0,0,0,20
 spiked_enemy,res://assets/sprites/Enemies/Enemy_5.png,1,1,1,0.2,0.2,1,0,0,0,20,40,40,1,1,1,1
 mine_layer_enemy,res://assets/sprites/Enemies/Enemy_2.png,1,1,1,1,1,1,0,0,0,20,40,40,1,0.5,1,0.5
 tank_enemy,res://assets/sprites/Enemies/Enemy_3.png,1.5,1.5,1,1,1,1,0,0,0,30,60,60,0.8,1,1,1
-boss_enemy,res://assets/sprites/Enemies/Boss_1.png,2,2,1,1,1,1,0,0,0,40,80,80,1,1,1,1
+boss_enemy,res://assets/sprites/Enemies/Enemy_7.png,2,2,1,1,1,1,0,0,0,40,80,80,1,1,1,1
 enemy_glutton,res://assets/sprites/Enemies/Enemy_Glutton_01.png,1,1,1,0.8,0.2,1,0,0,0,20,40,40,1,1,1,1
 saw_enemy,res://assets/sprites/Enemies/Enemy_6.png,1.0,1.0,1.0,1.0,1.0,1.0,0,0.0,0.0,20.0,40.0,40.0,1.0,1.0,1.0,1.0
 steel_enemy,res://assets/sprites/Enemies/Enemy_7.png,1.0,1.0,1.0,1.0,1.0,1.0,0,0.0,0.0,20.0,40.0,40.0,1.0,1.0,1.0,1.0

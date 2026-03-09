@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://exit_confirm_dialog"]
 
-[ext_resource type="Script" uid="uid://exit_confirm_dialog_script" path="res://scenes/ui/exit_confirm_dialog.gd" id="1_script"]
+[ext_resource type="Script" path="res://scenes/ui/exit_confirm_dialog.gd" id="1_script"]
 
 [node name="ExitConfirmDialog" type="CanvasLayer"]
 script = ExtResource("1_script")

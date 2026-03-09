@@ -18,13 +18,6 @@ extends Node
 # ============================================================================
 
 # ============================================================================
-# 配置路径
-# ============================================================================
-
-const ATTRIBUTE_CONFIG_PATH = "res://config/wave/shop_attribute_config.csv"
-const WAVE_CONFIG_PATH = "res://config/wave/shop_wave_config.csv"
-
-# ============================================================================
 # 数据结构
 # ============================================================================
 
@@ -51,84 +44,14 @@ func _ready() -> void:
 # ============================================================================
 
 func _load_attribute_configs() -> void:
-	"""加载属性配置"""
-	if not FileAccess.file_exists(ATTRIBUTE_CONFIG_PATH):
-		printerr("[ShopAttributeManager] 错误: 找不到属性配置: %s" % ATTRIBUTE_CONFIG_PATH)
-		return
-	
-	var file = FileAccess.open(ATTRIBUTE_CONFIG_PATH, FileAccess.READ)
-	if not file:
-		printerr("[ShopAttributeManager] 错误: 无法打开属性配置文件")
-		return
-	
-	# 跳过表头和说明行
-	file.get_csv_line()
-	file.get_csv_line()
-	
-	while not file.eof_reached():
-		var line = file.get_csv_line()
-		if line.size() < 12:
-			continue
-		
-		var attr_id = line[0]
-		if attr_id == "" or attr_id == "-1":
-			continue
-		
-		attribute_configs[attr_id] = {
-			"attribute_id": attr_id,
-			"display_name": line[1],
-			"attribute_type": line[2],
-			"effect_target": line[3],
-			"target_tags": line[4].split(",") if line[4] != "" else [],
-			"base_value": float(line[5]),
-			"value_type": line[6],
-			"base_price": int(line[7]),
-			"price_scaling": float(line[8]),
-			"shop_weight": int(line[9]),
-			"min_wave": int(line[10]),
-			"max_wave": int(line[11]),
-			"is_positive": int(line[12]) == 1
-		}
-	
-	file.close()
-	print("[ShopAttributeManager] 加载了 %d 个属性配置" % attribute_configs.size())
+	"""通过 ConfigRepository 加载属性配置（含 Schema 校验）。"""
+	attribute_configs = ConfigRepository.load_shop_attribute_configs()
+	print("[ShopAttributeManager] 通过 ConfigRepository 加载了 %d 个属性配置" % attribute_configs.size())
 
 func _load_wave_configs() -> void:
-	"""加载波次配置"""
-	if not FileAccess.file_exists(WAVE_CONFIG_PATH):
-		printerr("[ShopAttributeManager] 错误: 找不到波次配置: %s" % WAVE_CONFIG_PATH)
-		return
-	
-	var file = FileAccess.open(WAVE_CONFIG_PATH, FileAccess.READ)
-	if not file:
-		printerr("[ShopAttributeManager] 错误: 无法打开波次配置文件")
-		return
-	
-	# 跳过表头和说明行
-	file.get_csv_line()
-	file.get_csv_line()
-	
-	while not file.eof_reached():
-		var line = file.get_csv_line()
-		if line.size() < 8:
-			continue
-		
-		if line[0] == "" or line[0] == "-1":
-			continue
-		
-		wave_configs.append({
-			"wave_range_start": int(line[0]),
-			"wave_range_end": int(line[1]),
-			"item_count": int(line[2]),
-			"reroll_cost": int(line[3]),
-			"positive_weight": int(line[4]),
-			"negative_weight": int(line[5]),
-			"allow_duplicates": int(line[6]) == 1,
-			"price_multiplier": float(line[7])
-		})
-	
-	file.close()
-	print("[ShopAttributeManager] 加载了 %d 个波次配置" % wave_configs.size())
+	"""通过 ConfigRepository 加载波次配置（含 Schema 校验）。"""
+	wave_configs = ConfigRepository.load_shop_wave_configs()
+	print("[ShopAttributeManager] 通过 ConfigRepository 加载了 %d 个波次配置" % wave_configs.size())
 
 # ============================================================================
 # 商店生成

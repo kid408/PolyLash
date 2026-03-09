@@ -92,6 +92,11 @@ func _play_upgrade_feedback(bond_id: String, new_level: int) -> void:
 	if SoundManager:
 		SoundManager.play("bond_trigger_generic")
 
+	# 4. Lv3 质变额外反馈（专属音画）
+	if new_level >= 3:
+		_show_floating_text("%s 共鸣觉醒!" % display_name, Color(1.2, 1.7, 2.0))
+		Global.on_camera_shake.emit(11.0, 0.20)
+
 func _play_downgrade_feedback(bond_id: String, new_level: int) -> void:
 	"""降级反馈：图标缩小 + 降级提示"""
 	# 1. 图标缩小动画
@@ -371,6 +376,12 @@ func _translate_mechanic(mechanic: String) -> String:
 		"draw_damage_mult": return "画图伤害提升"
 		"draw_explode": return "图形爆炸"
 		"speed_to_dmg_ratio": return "速度转伤害"
+		"bench_cd_reduce": return "后台冷却加速"
+		"mirror_draw": return "镜像作画"
+		"ink_inherit": return "图形继承"
+		"switch_reset": return "切换重置"
+		"soul_attach": return "灵魂附着"
+		"dual_order": return "双重指令"
 		_: return mechanic
 
 func _get_required_count(bond_id: String, level: int) -> int:

@@ -2,234 +2,134 @@
 extends EditorScript
 
 # ============================================================================
-# 双商店系统快速设置工具
+# 商店/奖励流程快速校准工具（兼容旧文件名 setup_dual_shop.gd）
 # ============================================================================
 #
-# 使用方法：
-# 1. 在Godot编辑器中打开此脚本
-# 2. 点击 File -> Run
-# 3. 按照提示完成设置
-#
-# 功能：
-# - 检查系统完整性
-# - 自动添加自动加载配置
-# - 生成示例场景代码
-#
+# 说明：
+# - 该脚本不再做“旧双商店流程”迁移。
+# - 当前项目以 BattleFlowController + RewardFlowService + ShopFlowService 为主流程。
+# - 本工具负责检查依赖并生成最新集成示例。
 # ============================================================================
+
+const REQUIRED_FILES := {
+	"流程编排控制器": "res://scenes/arena/battle_flow_controller.gd",
+	"奖励流程服务": "res://scenes/arena/services/reward_flow_service.gd",
+	"商店流程服务": "res://scenes/arena/services/shop_flow_service.gd",
+	"波次奖励系统": "res://scenes/arena/wave_reward_system.gd",
+	"波次奖励面板": "res://scenes/ui/wave_reward/wave_reward_panel.gd",
+	"商店面板": "res://scenes/ui/shop_panel/shop_panel.gd",
+	"商店管理器": "res://autoloads/shop_manager.gd",
+	"属性商店管理器": "res://autoloads/shop_attribute_manager.gd"
+}
+
+const REQUIRED_CONFIGS := {
+	"物品商店配置": "res://config/item/shop_item_config.csv",
+	"属性商店配置": "res://config/wave/shop_attribute_config.csv",
+	"属性商店波次配置": "res://config/wave/shop_wave_config.csv"
+}
 
 func _run() -> void:
-	print("\n" + "=".repeat(60))
-	print("双商店系统快速设置")
-	print("=".repeat(60) + "\n")
-	
-	var all_ok = true
-	
-	# 步骤1：检查文件
-	print("【步骤1】检查必需文件...")
-	if not _check_files():
-		all_ok = false
-	
-	# 步骤2：检查自动加载
-	print("\n【步骤2】检查自动加载配置...")
-	if not _check_autoload():
-		all_ok = false
-		_add_autoload()
-	
-	# 步骤3：生成示例代码
-	print("\n【步骤3】生成集成示例...")
-	_generate_examples()
-	
-	# 总结
-	print("\n" + "=".repeat(60))
-	if all_ok:
-		print("✅ 双商店系统已就绪！")
-		print("\n下一步：")
-		print("1. 创建 attribute_shop_panel.tscn 场景")
-		print("2. 参考 _integration_example.gd 集成到游戏流程")
-		print("3. 查看 DUAL_SHOP_SYSTEM_GUIDE.md 了解详情")
+	print("\n" + "=".repeat(72))
+	print("商店/奖励流程快速校准")
+	print("=".repeat(72) + "\n")
+
+	var ok := true
+	ok = _check_files() and ok
+	ok = _check_configs() and ok
+	ok = _check_autoload() and ok
+
+	print("\n【4/4】生成最新流程示例")
+	_generate_battle_flow_example()
+
+	print("\n" + "=".repeat(72))
+	if ok:
+		print("✅ 校准完成：流程依赖齐全，示例已生成")
 	else:
-		print("⚠️  设置未完全完成，请检查上述错误")
-	print("=".repeat(60) + "\n")
+		print("⚠️ 校准完成：示例已生成，但存在缺失项，请先修复")
+	print("=".repeat(72) + "\n")
 
 func _check_files() -> bool:
-	"""检查必需文件"""
-	var required_files = {
-		"物品商店管理器": "res://autoloads/shop_manager.gd",
-		"属性商店管理器": "res://autoloads/shop_attribute_manager.gd",
-		"物品配置": "res://config/item/shop_item_config.csv",
-		"属性配置": "res://config/wave/shop_attribute_config.csv",
-		"波次配置": "res://config/wave/shop_wave_config.csv",
-		"物品商店UI": "res://scenes/ui/shop_panel/shop_panel.gd",
-		"属性商店UI": "res://scenes/ui/shop_panel/attribute_shop_panel.gd"
-	}
-	
-	var all_exist = true
-	
-	for name in required_files.keys():
-		var path = required_files[name]
+	print("【1/4】关键脚本检查")
+	var all_ok := true
+	for display_name in REQUIRED_FILES.keys():
+		var path := REQUIRED_FILES[display_name]
 		if FileAccess.file_exists(path):
-			print("  ✅ %s: %s" % [name, path])
+			print("  ✅ %s: %s" % [display_name, path])
 		else:
-			print("  ❌ %s 不存在: %s" % [name, path])
-			all_exist = false
-	
-	return all_exist
+			print("  ❌ %s 缺失: %s" % [display_name, path])
+			all_ok = false
+	return all_ok
+
+func _check_configs() -> bool:
+	print("\n【2/4】关键配置检查")
+	var all_ok := true
+	for display_name in REQUIRED_CONFIGS.keys():
+		var path := REQUIRED_CONFIGS[display_name]
+		if FileAccess.file_exists(path):
+			print("  ✅ %s: %s" % [display_name, path])
+		else:
+			print("  ❌ %s 缺失: %s" % [display_name, path])
+			all_ok = false
+	return all_ok
 
 func _check_autoload() -> bool:
-	"""检查自动加载配置"""
-	var autoloads = ProjectSettings.get_setting("autoload", {})
-	
-	var required_autoloads = {
+	print("\n【3/4】Autoload 检查")
+	var all_ok := true
+	var autoloads := ProjectSettings.get_setting("autoload", {})
+	var autoload_text := str(autoloads)
+
+	var required_autoloads := {
 		"ShopManager": "res://autoloads/shop_manager.gd",
 		"ShopAttributeManager": "res://autoloads/shop_attribute_manager.gd"
 	}
-	
-	var all_registered = true
-	
+
 	for name in required_autoloads.keys():
-		var path = required_autoloads[name]
-		var autoload_str = str(autoloads)
-		
-		if name in autoload_str:
+		var path := required_autoloads[name]
+		var has_name := name in autoload_text
+		var has_path := path in autoload_text
+		if has_name and has_path:
 			print("  ✅ %s 已注册" % name)
 		else:
-			print("  ⚠️  %s 未注册" % name)
-			all_registered = false
-	
-	return all_registered
+			print("  ❌ %s 未正确注册（期望: %s）" % [name, path])
+			all_ok = false
 
-func _add_autoload() -> void:
-	"""添加自动加载配置"""
-	print("\n  尝试添加 ShopAttributeManager 到自动加载...")
-	
-	# 注意：EditorScript 无法直接修改 ProjectSettings
-	# 需要手动添加或使用 EditorPlugin
-	
-	print("  ℹ️  请手动添加以下配置到 project.godot:")
-	print("  ")
-	print("  [autoload]")
-	print("  ShopAttributeManager=\"*res://autoloads/shop_attribute_manager.gd\"")
-	print("  ")
-	print("  或在编辑器中：")
-	print("  项目 -> 项目设置 -> 自动加载")
-	print("  路径: res://autoloads/shop_attribute_manager.gd")
-	print("  节点名称: ShopAttributeManager")
-	print("  勾选: 启用")
+	return all_ok
 
-func _generate_examples() -> void:
-	"""生成集成示例代码"""
-	
-	# 示例1：同时显示两个商店
-	var example1 = """# ============================================================================
-# 集成示例1：同时显示两个商店
+func _generate_battle_flow_example() -> void:
+	var example := """# ============================================================================
+# BattleFlowController 集成示例（当前流程）
+# 适用：ArenaCore 或同类关卡控制脚本
 # ============================================================================
 
-extends Node
+var _battle_flow: BattleFlowController = BattleFlowController.new()
 
-@onready var shop_panel = $ShopPanel
-@onready var attribute_shop_panel = $AttributeShopPanel
+func _setup_flow() -> void:
+	_battle_flow.setup(spawner, shop_panel, wave_reward_system, wave_reward_panel)
 
-func _on_wave_completed(wave_number: int):
-	\"\"\"波次完成，显示商店\"\"\"
-	
-	# 显示物品商店
-	shop_panel.show_shop(wave_number + 1)
-	
-	# 显示属性商店
-	attribute_shop_panel.show_shop(wave_number + 1)
-	
-	# 等待玩家关闭商店
-	await shop_panel.next_wave_requested
-	
-	# 开始下一波
-	_start_next_wave()
+func _on_wave_completed(wave_number: int) -> void:
+	# 返回 true 代表进入奖励/商店流程；false 可按需求直接开下一波
+	var handled := _battle_flow.on_wave_completed(wave_number)
+	if not handled:
+		_start_next_wave()
 
-func _start_next_wave():
-	\"\"\"开始下一波\"\"\"
-	print("开始下一波")
-	# 你的波次开始逻辑...
+func _on_wave_reward_chosen(reward_data: Dictionary) -> void:
+	var keep_shop := _battle_flow.on_wave_reward_chosen(reward_data)
+	if not keep_shop:
+		_start_next_wave()
+
+func _on_shop_next_wave_requested(slot_index: int, wave_number: int) -> void:
+	var started := _battle_flow.on_shop_next_wave_requested(slot_index, wave_number)
+	if not started:
+		push_warning("shop next wave request failed")
 """
-	
-	# 示例2：交替显示
-	var example2 = """# ============================================================================
-# 集成示例2：根据波次交替显示
-# ============================================================================
 
-extends Node
-
-@onready var shop_panel = $ShopPanel
-@onready var attribute_shop_panel = $AttributeShopPanel
-
-func _on_wave_completed(wave_number: int):
-	\"\"\"波次完成，显示商店\"\"\"
-	
-	if wave_number % 2 == 1:
-		# 奇数波：物品商店
-		print("显示物品商店")
-		shop_panel.show_shop(wave_number + 1)
-		await shop_panel.next_wave_requested
-	else:
-		# 偶数波：属性商店
-		print("显示属性商店")
-		attribute_shop_panel.show_shop(wave_number + 1)
-		await attribute_shop_panel.shop_closed
-	
-	# 开始下一波
-	_start_next_wave()
-
-func _start_next_wave():
-	\"\"\"开始下一波\"\"\"
-	print("开始下一波")
-	# 你的波次开始逻辑...
-"""
-	
-	# 示例3：先后显示
-	var example3 = """# ============================================================================
-# 集成示例3：先后显示两个商店
-# ============================================================================
-
-extends Node
-
-@onready var shop_panel = $ShopPanel
-@onready var attribute_shop_panel = $AttributeShopPanel
-
-func _on_wave_completed(wave_number: int):
-	\"\"\"波次完成，显示商店\"\"\"
-	
-	# 先显示物品商店
-	print("显示物品商店")
-	shop_panel.show_shop(wave_number + 1)
-	await shop_panel.next_wave_requested
-	
-	# 再显示属性商店
-	print("显示属性商店")
-	attribute_shop_panel.show_shop(wave_number + 1)
-	await attribute_shop_panel.shop_closed
-	
-	# 开始下一波
-	_start_next_wave()
-
-func _start_next_wave():
-	\"\"\"开始下一波\"\"\"
-	print("开始下一波")
-	# 你的波次开始逻辑...
-"""
-	
-	# 保存示例文件
-	_save_example("res://tools/_integration_example_1_simultaneous.gd", example1)
-	_save_example("res://tools/_integration_example_2_alternate.gd", example2)
-	_save_example("res://tools/_integration_example_3_sequential.gd", example3)
-	
-	print("  ✅ 已生成3个集成示例:")
-	print("     - tools/_integration_example_1_simultaneous.gd (同时显示)")
-	print("     - tools/_integration_example_2_alternate.gd (交替显示)")
-	print("     - tools/_integration_example_3_sequential.gd (先后显示)")
+	_save_example("res://tools/_battle_flow_integration_example.gd", example)
+	print("  ✅ 已生成: tools/_battle_flow_integration_example.gd")
 
 func _save_example(path: String, content: String) -> void:
-	"""保存示例文件"""
-	var file = FileAccess.open(path, FileAccess.WRITE)
-	if file:
-		file.store_string(content)
-		file.close()
-	else:
-		printerr("  ❌ 无法保存示例文件: %s" % path)
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		printerr("  ❌ 写入失败: %s" % path)
+		return
+	file.store_string(content)
+	file.close()

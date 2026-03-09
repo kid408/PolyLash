@@ -1,128 +1,131 @@
-extends SkillBase
+﻿extends SkillBase
 class_name SkillDrawingBase
 
 ## ==============================================================================
-## 画线技能基类 - 所有画线技能的中间基类
+
 ## ==============================================================================
 ## 
-## 功能说明:
-## - 统一管理画线技能的能量消耗逻辑（动态递增）
-## - 统一管理规划模式、划线检测、闭合检测
-## - 子类只需实现具体的视觉效果和执行逻辑
+## 鍔熻兘璇存槑:
+
+
+## - 瀛愮被鍙渶瀹炵幇鍏蜂綋鐨勮瑙夋晥鏋滃拰鎵ц閫昏緫
 ## 
-## 使用方法:
-##   1. 继承SkillDrawingBase（而不是SkillBase）
-##   2. 实现 _spawn_line_effect() 和 _spawn_area_effect()
-##   3. 可选：重写 _get_line_color() 自定义线条颜色
+## 浣跨敤鏂规硶:
+
+
+
 ## 
 ## ==============================================================================
 
 # ==============================================================================
-# 画线技能通用参数（从CSV加载）
+
 # ==============================================================================
 
-## 每10像素消耗的能量（基础值）
+# 字段定义
 var energy_per_10px: float = 1.0
 
-## 能量递增阈值距离（像素）
+# 字段定义
 var energy_threshold_distance: float = 1800.0
 
-## 能量递增系数
+## 鑳介噺閫掑绯绘暟
 var energy_scale_multiplier: float = 0.0005
 
-## 闭合判定阈值
+# 字段定义
 var close_threshold: float = 60.0
 
-## 每隔多少像素记录一个路径点
+# 字段定义
 const POINT_INTERVAL: float = 10.0
 
-## 线条持续时间（基础值，可被羁绊加成）
+# 字段定义
 var base_line_duration: float = 5.0
 
 # ==============================================================================
-# 画线技能运行时状态
+# 閻㈣崵鍤庨幎鈧懗鍊熺箥鐞涘本妞傞悩鑸碘偓?
 # ==============================================================================
 
-## 是否处于规划模式
+# 字段定义
 var is_planning: bool = false
 
-## 是否正在划线
+## 鏄惁姝ｅ湪鍒掔嚎
 var is_drawing: bool = false
 
-## 上一个记录的点
+# 字段定义
 var last_point: Vector2 = Vector2.ZERO
 
-## P1-4: 上一次生成金币的位置（用于金币轨迹）
+# 字段定义
 var last_gold_spawn_pos: Vector2 = Vector2.ZERO
 
-## P1-4: 金币生成距离阈值（像素）
+# 字段定义
 const GOLD_SPAWN_DISTANCE: float = 100.0
 
-## 累计距离（用于判断是否达到10像素）
+# 字段定义
 var accumulated_distance: float = 0.0
 
-## 路径点列表（用于绘制和执行）
+# 字段定义
 var path_points: Array[Vector2] = []
 
-## 路径线段列表（用于交叉检测）
+## 璺緞绾挎鍒楄〃锛堢敤浜庝氦鍙夋娴嬶級
 var path_segments: Array[Dictionary] = []
 
-## 是否有封闭空间
+## death_brush 鑺傛祦璁℃椂鍣紙閬垮厤姣忓抚楂橀鎵弿锛?
+var _death_brush_tick_cooldown: float = 0.0
+
+# 字段定义
 var has_closure: bool = false
 
-## 已画的总距离（用于能量递增计算）
+# 字段定义
 var total_distance_drawn: float = 0.0
 
-## 是否已显示能量不足提示（防止重复弹出）
+# 字段定义
 var has_shown_no_energy_hint: bool = false
 
-## 用于绘制规划路径的Line2D
+# 字段定义
 var line_2d: Line2D
 
 # ==============================================================================
-# 虚函数接口（子类必须实现）
+
 # ==============================================================================
 
-## 生成线段效果（未闭合状态）
-## @param start: 线段起点
-## @param end: 线段终点
-func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
-	push_warning("[SkillDrawingBase] _spawn_line_effect() 未实现: %s" % skill_id)
 
-## P2-2: 为线段添加反伤墙效果（筑墙者 Lv.2）
-## @param line_area: 线段的Area2D节点
+## @param start: 绾挎璧风偣
+# 函数：_spawn_line_effect
+func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
+	push_warning("[SkillDrawingBase] _spawn_line_effect() 閺堫亜鐤勯悳? %s" % skill_id)
+
+
+## @param line_area: 绾挎鐨凙rea2D鑺傜偣
 func _add_thorns_wall_effect(line_area: Area2D) -> void:
-	"""为线段添加反伤效果"""
+	"""Add thorns-wall effect hook for line segments."""
 	if not BondManager.has_mechanic("thorns_wall"):
 		return
 	
 	if not is_instance_valid(skill_owner):
 		return
 	
-	# 获取玩家攻击力
+	# 字段定义
 	var player_damage = skill_owner.damage if "damage" in skill_owner else 10.0
-	var thorns_damage = player_damage * 0.3  # 反伤30%攻击力
+	var thorns_damage = player_damage * 0.3
 	
-	print("[%s] [P2-2] 反伤墙激活: 伤害=%.0f (玩家攻击力的30%%)" % [skill_id, thorns_damage])
+	print("[%s] [P2-2] 閸欏秳婵€婢ф瑦绺哄ú? 娴笺倕顔?%.0f (閻溾晛顔嶉弨璇插毊閸旀稓娈?0%%)" % [skill_id, thorns_damage])
 	
-	# 连接碰撞信号
+	# 条件判断
 	if not line_area.body_entered.is_connected(_on_thorns_wall_hit):
 		line_area.body_entered.connect(_on_thorns_wall_hit.bind(thorns_damage))
 	if not line_area.area_entered.is_connected(_on_thorns_wall_area_hit):
 		line_area.area_entered.connect(_on_thorns_wall_area_hit.bind(thorns_damage))
 	SoundManager.play("bond_thorns_wall")
 
-## P2-2: 反伤墙碰撞处理（Body）
+# 函数：_on_thorns_wall_hit
 func _on_thorns_wall_hit(body: Node2D, thorns_damage: float) -> void:
 	if body.is_in_group("enemies"):
 		_apply_thorns_damage(body, thorns_damage)
 
-## P2-2: 反伤墙碰撞处理（Area）
+# 函数：_on_thorns_wall_area_hit
 func _on_thorns_wall_area_hit(area: Area2D, thorns_damage: float) -> void:
 	if area.owner and area.owner.is_in_group("enemies"):
 		_apply_thorns_damage(area.owner, thorns_damage)
 
-## P2-2: 应用反伤伤害
+## P2-2: 搴旂敤鍙嶄激浼ゅ
 func _apply_thorns_damage(enemy: Node2D, thorns_damage: float) -> void:
 	if not is_instance_valid(enemy):
 		return
@@ -130,79 +133,71 @@ func _apply_thorns_damage(enemy: Node2D, thorns_damage: float) -> void:
 	if enemy.has_node("HealthComponent"):
 		enemy.get_node("HealthComponent").take_damage(int(thorns_damage))
 		Global.spawn_floating_text(enemy.global_position, "THORNS!", Color(0.8, 0.4, 0.0))
-		print("[%s] [P2-2] 反伤墙触发: 对 %s 造成 %.0f 伤害" % [skill_id, enemy.name, thorns_damage])
+		print("[%s] [P2-2] 反伤命中: %s, damage=%.0f" % [skill_id, enemy.name, thorns_damage])
 
-## 生成区域效果（闭合状态）
-## @param polygon: 闭合多边形的点集
+## 鐢熸垚鍖哄煙鏁堟灉锛堥棴鍚堢姸鎬侊級
+# 函数：_spawn_area_effect
 func _spawn_area_effect(polygon: PackedVector2Array) -> void:
-	push_warning("[SkillDrawingBase] _spawn_area_effect() 未实现: %s" % skill_id)
+	push_warning("[SkillDrawingBase] _spawn_area_effect() not implemented for %s" % skill_id)
 
-## P4-2: 检查并应用图形继承加成（突击型 Lv.2）
-## @param base_damage: 基础伤害
-## @return: 应用加成后的伤害
-func _apply_ink_inherit_bonus(base_damage: float) -> float:
-	"""检查是否有图形继承羁绊，应用额外伤害
-	
-	Args:
-		base_damage: 基础伤害
-	
-	Returns:
-		应用加成后的伤害
-	"""
+
+## @return: 搴旂敤鍔犳垚鍚庣殑浼ゅ
+func _apply_ink_inherit_bonus(base_damage: float, show_feedback: bool = true) -> float:
+	# 应用图形继承羁绊带来的额外伤害，返回最终伤害。
 	if not BondManager.has_mechanic("ink_inherit"):
 		return base_damage
 	
-	# 获取加成倍率
+	# 字段定义
 	var bonus_multiplier = BondManager.get_mechanic_value("ink_inherit")
 	if bonus_multiplier <= 0:
 		return base_damage
 	
-	# 检查当前技能所有者是否是切换后的新角色
-	# 简化实现：只要有图形继承羁绊，就应用加成
+	# 字段定义
+	# 字段定义
 	var final_damage = base_damage * (1.0 + bonus_multiplier)
 	
-	print("[%s] [P4-2] 图形继承加成: %.0f -> %.0f (+%.0f%%)" % [
-		skill_id,
-		base_damage,
-		final_damage,
-		bonus_multiplier * 100
-	])
-	
-	# 视觉反馈
-	if is_instance_valid(skill_owner):
-		Global.spawn_floating_text(skill_owner.global_position, "INK INHERIT!", Color(0.5, 1.5, 2.0))
+	if show_feedback:
+		print("[%s] [P4-2] 閸ユ儳鑸扮紒褎澹欓崝鐘冲灇: %.0f -> %.0f (+%.0f%%)" % [
+			skill_id,
+			base_damage,
+			final_damage,
+			bonus_multiplier * 100
+		])
+		# 瑙嗚鍙嶉
+		if is_instance_valid(skill_owner):
+			Global.spawn_floating_text(skill_owner.global_position, "INK INHERIT!", Color(0.5, 1.5, 2.0))
 	
 	return final_damage
 
-## P2-4: 为闭合区域添加诅咒叠加效果（咒术师 Lv.2）
-## @param area: 区域效果的 Area2D 节点
-## @param polygon: 闭合多边形的点集
+# 函数：_add_curse_stacking_effect
+# 函数：_add_curse_stacking_effect
+# 函数：_add_curse_stacking_effect
 func _add_curse_stacking_effect(area: Area2D, polygon: PackedVector2Array) -> void:
-	"""为闭合区域添加诅咒叠加效果"""
+	"""Add curse stacking effect for closed areas."""
 	if not BondManager.has_mechanic("curse_stack"):
 		return
 	
 	if not is_instance_valid(area):
 		return
 	
-	print("[%s] [P2-4] 诅咒叠加激活" % skill_id)
+	print("[%s] [P2-4] curse stacking activated" % skill_id)
 	
-	# 创建诅咒计时器（每秒触发一次）
+	# 鍒涘缓璇呭拻璁℃椂鍣紙姣忕瑙﹀彂涓拷娆★級
 	var curse_timer = Timer.new()
 	curse_timer.name = "CurseStackTimer"
 	curse_timer.wait_time = 1.0
 	curse_timer.one_shot = false
 	area.add_child(curse_timer)
 	
-	# 诅咒伤害值（每层每秒造成的伤害）
-	var curse_damage_per_stack = 2.0  # 可以从配置读取
+	# 璇呭拻浼ゅ鍊硷紙姣忓眰姣忕閫犳垚鐨勪激瀹筹級
+	var curse_damage_per_stack = 2.0
 	
 	curse_timer.timeout.connect(func():
 		if not is_instance_valid(area) or area.is_queued_for_deletion():
 			curse_timer.stop()
 			return
 		
-		# 检测所有在区域内的敌人
+		# 妫拷娴嬫墍鏈夊湪鍖哄煙鍐呯殑鏁屼汉
 		var enemies = area.get_overlapping_bodies() + area.get_overlapping_areas()
 		
 		for target in enemies:
@@ -214,60 +209,93 @@ func _add_curse_stacking_effect(area: Area2D, polygon: PackedVector2Array) -> vo
 				enemy = target.owner
 			
 			if is_instance_valid(enemy) and enemy.has_method("apply_status"):
-				# 应用诅咒状态（持续5秒，每秒叠加1层）
-				# P2-3: apply_status 内部会自动检查 debuff_duration 并延长持续时间
+
+
 				enemy.apply_status("curse", 5.0, curse_damage_per_stack, 1, 1.0)
-				print("[%s] [P2-4] 对 %s 叠加诅咒" % [skill_id, enemy.name])
+				print("[%s] [P2-4] 鐎?%s 閸欑姴濮炵拠鍛嫽" % [skill_id, enemy.name])
 	)
 	
 	curse_timer.start()
-	print("[%s] [P2-4] 诅咒计时器已启动" % skill_id)
+	print("[%s] [P2-4] 鐠囧懎鎷荤拋鈩冩閸ｃ劌鍑￠崥顖氬З" % skill_id)
 
-## 获取规划线条颜色（子类可重写以自定义颜色）
-## @return: 线条颜色
+
+## @return: 绾挎潯棰滆壊
 func _get_line_color() -> Color:
-	# 默认白色，子类可重写
+	# 榛樿鐧借壊锛屽瓙绫诲彲閲嶅啓
 	return Color.WHITE
 
-## 获取闭合提示颜色（子类可重写）
-## @return: 闭合时的线条颜色
+# 函数：_get_closure_color
+# 函数：_get_closure_color
 func _get_closure_color() -> Color:
-	# 默认红色
+	# 姒涙顓荤痪銏ｅ
 	return Color(2.0, 0.1, 0.1, 1.0)
 
 # ==============================================================================
-# P0 核心画图机制 - 羁绊系统集成
+
 # ==============================================================================
 
-## P0-1: 计算闭合图形伤害（应用爆破师羁绊加成）
-## @param base_damage: 基础伤害值
-## @return: 应用加成后的伤害值
-func _calculate_closed_shape_damage(base_damage: float) -> float:
+func _calculate_closed_shape_damage(base_damage: float, show_log: bool = true) -> float:
 	var final_damage = base_damage
 	
-	# 检查爆破师羁绊 - 闭合图形伤害加成
+	# 条件判断
 	if BondManager.has_mechanic("closed_shape_dmg"):
 		var bonus = BondManager.get_mechanic_value("closed_shape_dmg")
 		final_damage *= (1.0 + bonus)
-		print("[%s] [P0-1] 闭合图形伤害加成: %.0f -> %.0f (+%.0f%%)" % [
-			skill_id, 
-			base_damage, 
-			final_damage, 
-			bonus * 100
-		])
+		if show_log:
+			print("[%s] [P0-1] 闭合伤害加成: %.0f -> %.0f (+%.0f%%)" % [
+				skill_id, 
+				base_damage, 
+				final_damage, 
+				bonus * 100
+			])
 	
 	return final_damage
 
-## P0-2: 获取线条持续时间（应用筑墙者羁绊加成）
-## @return: 应用加成后的持续时间（秒）
+func _get_runtime_effect_damage_multiplier(is_closed_path: bool) -> float:
+	var multiplier: float = 1.0
+	multiplier *= _get_ultimate_runtime_damage_amp(is_closed_path)
+	if is_closed_path:
+		multiplier = _calculate_closed_shape_damage(multiplier, false)
+	multiplier = _apply_ink_inherit_bonus(multiplier, false)
+	return max(0.0, multiplier)
+
+func _get_ultimate_runtime_damage_amp(is_closed_path: bool) -> float:
+	if not is_instance_valid(skill_owner):
+		return 1.0
+	if not skill_owner.has_meta("f_runtime_profile"):
+		return 1.0
+
+	var profile_data: Variant = skill_owner.get_meta("f_runtime_profile")
+	if not (profile_data is Dictionary):
+		return 1.0
+
+	var profile: Dictionary = profile_data
+	if not bool(profile.get("active", false)):
+		return 1.0
+
+	var key := "q_closure_amp" if is_closed_path else "q_line_amp"
+	var amp := float(profile.get(key, 1.0))
+	return max(0.1, amp)
+
+func _push_runtime_effect_damage_multiplier(is_closed_path: bool) -> void:
+	var multiplier: float = _get_runtime_effect_damage_multiplier(is_closed_path)
+	if SkillEffectManager and SkillEffectManager.has_method("push_damage_multiplier"):
+		SkillEffectManager.push_damage_multiplier(multiplier)
+
+func _pop_runtime_effect_damage_multiplier() -> void:
+	if SkillEffectManager and SkillEffectManager.has_method("pop_damage_multiplier"):
+		SkillEffectManager.pop_damage_multiplier()
+
+# 函数：_get_line_duration
+# 函数：_get_line_duration
 func _get_line_duration() -> float:
 	var duration = base_line_duration
 	
-	# 检查筑墙者羁绊 - 线条持续时间延长
+	# 条件判断
 	if BondManager.has_mechanic("line_duration"):
 		var bonus = BondManager.get_mechanic_value("line_duration")
 		duration += bonus
-		print("[%s] [P0-2] 线条持续时间延长: %.1f秒 -> %.1f秒 (+%.1f秒)" % [
+		print("[%s] [P0-2] 线段持续加成: %.1fs -> %.1fs (+%.1fs)" % [
 			skill_id,
 			base_line_duration,
 			duration,
@@ -276,18 +304,18 @@ func _get_line_duration() -> float:
 	
 	return duration
 
-## P0-3: 获取闭合容错距离（应用几何学家羁绊加成）
-## @return: 应用加成后的容错距离（像素）
+
+## @return: 搴旂敤鍔犳垚鍚庣殑瀹归敊璺濈锛堝儚绱狅級
 func _get_closure_tolerance() -> float:
 	var tolerance = close_threshold
 	
-	# 检查几何学家羁绊 - 图形闭合容错率提升
+	# 条件判断
 	if BondManager.has_mechanic("shape_tolerance"):
 		var level = BondManager.get_mechanic_value("shape_tolerance")
-		# 每级增加15像素容错
+		# 姣忕骇澧炲姞15鍍忕礌瀹归敊
 		var bonus = level * 15.0
 		tolerance += bonus
-		print("[%s] [P0-3] 闭合容错提升: %.0f像素 -> %.0f像素 (+%.0f像素)" % [
+		print("[%s] [P0-3] 闭合容差加成: %.0fpx -> %.0fpx (+%.0fpx)" % [
 			skill_id,
 			close_threshold,
 			tolerance,
@@ -296,9 +324,9 @@ func _get_closure_tolerance() -> float:
 	
 	return tolerance
 
-## P1-3: 应用速度转伤害加成（风行者羁绊）
-## @param base_damage: 基础伤害值
-## @return: 应用速度加成后的伤害值
+
+## @param base_damage: 閸╄櫣顢呮导銈咁唺閸?
+# 函数：_apply_speed_damage_bonus
 func _apply_speed_damage_bonus(base_damage: float) -> float:
 	if not skill_owner or not skill_owner.has_method("get_speed_damage_bonus"):
 		return base_damage
@@ -309,7 +337,7 @@ func _apply_speed_damage_bonus(base_damage: float) -> float:
 	
 	var final_damage = base_damage * (1.0 + speed_bonus)
 	
-	print("[%s] [P1-3] 速度转伤害应用: %.0f -> %.0f (+%.1f%%)" % [
+	print("[%s] [P1-3] 闁喎瀹虫潪顑挎縺鐎瑰啿绨查悽? %.0f -> %.0f (+%.1f%%)" % [
 		skill_id,
 		base_damage,
 		final_damage,
@@ -318,66 +346,66 @@ func _apply_speed_damage_bonus(base_damage: float) -> float:
 	
 	return final_damage
 
-## P1-4: 检查并生成金币轨迹（炼金术士羁绊）
-## @param current_pos: 当前位置
+
+## @param current_pos: 褰撳墠浣嶇疆
 func _check_and_spawn_gold_trail(current_pos: Vector2) -> void:
-	# 检查炼金术士羁绊 - 金币轨迹
+	# 条件判断
 	if not BondManager.has_mechanic("gold_trail"):
 		return
 	
-	# 检查距离阈值（防止生成过多金币）
+	# 字段定义
 	var distance_from_last = current_pos.distance_to(last_gold_spawn_pos)
 	if distance_from_last < GOLD_SPAWN_DISTANCE:
 		return
 	
-	# 生成金币
+	# 鐢熸垚閲戝竵
 	var gold_amount = int(BondManager.get_mechanic_value("gold_trail"))
 	if gold_amount <= 0:
-		gold_amount = 1  # 默认1金币
+		gold_amount = 1  # 榛樿1閲戝竵
 	
-	# 生成金币实体
+	# 鐢熸垚閲戝竵瀹炰綋
 	Global.spawn_coin(current_pos, gold_amount)
 	SoundManager.play("bond_gold_trail")
-	print("[%s] [P1-4] 金币轨迹触发: 生成%d金币 at (%.0f, %.0f)" % [
+	print("[%s] [P1-4] 闁叉垵绔垫潪銊ㄦ姉鐟欙箑褰? 閻㈢喐鍨?d闁叉垵绔?at (%.0f, %.0f)" % [
 		skill_id,
 		gold_amount,
 		current_pos.x,
 		current_pos.y
 	])
-	# 视觉反馈
+	# 瑙嗚鍙嶉
 	Global.spawn_floating_text(current_pos, "GOLD!", Color.GOLD)
 	
-	# 更新上次生成位置
+
 	last_gold_spawn_pos = current_pos
 
 # ==============================================================================
-# P3 高级机制 - 终极天赋
+
 # ==============================================================================
 
-## P3-1: 连锁反应（爆破师 Lv.3）
-## @param polygon: 闭合多边形
-## @param main_damage: 主爆炸伤害
+# 函数：_trigger_chain_reaction
+# 函数：_trigger_chain_reaction
+# 函数：_trigger_chain_reaction
 func _trigger_chain_reaction(polygon: PackedVector2Array, main_damage: int) -> void:
-	"""对区域外的所有敌人造成连锁爆炸伤害"""
+	"""对区域外敌人触发链式伤害。"""
 	if not BondManager.has_mechanic("chain_reaction"):
 		return
 	
-	# 获取所有敌人
+	# 字段定义
 	var all_enemies = get_tree().get_nodes_in_group("enemies")
 	if all_enemies.is_empty():
 		return
 	
-	# 筛选区域外的敌人
+	# 字段定义
 	var outside_enemies = []
 	for enemy in all_enemies:
 		if not is_instance_valid(enemy):
 			continue
 		
-		# 检查敌人是否在多边形内
+		# 条件判断
 		if not Geometry2D.is_point_in_polygon(enemy.global_position, polygon):
 			outside_enemies.append(enemy)
 	
-	# 性能保护：限制最大数量
+	# 字段定义
 	const MAX_CHAIN_TARGETS = 50
 	if outside_enemies.size() > MAX_CHAIN_TARGETS:
 		outside_enemies.shuffle()
@@ -386,34 +414,34 @@ func _trigger_chain_reaction(polygon: PackedVector2Array, main_damage: int) -> v
 	if outside_enemies.is_empty():
 		return
 	
-	# 计算连锁伤害（主爆炸的30%）
+	# 字段定义
 	var chain_damage = int(main_damage * 0.3)
 	
-	print("[%s] [P3-1] 连锁反应触发，波及 %d 个敌人，伤害=%d" % [
+	print("[%s] [P3-1] 链式反应触发: 目标=%d, 伤害=%d" % [
 		skill_id,
 		outside_enemies.size(),
 		chain_damage
 	])
 	SoundManager.play("bond_chain_reaction")
 	
-	# 对每个敌人造成伤害并播放特效
+	# 鐎佃鐦℃稉顏呮櫕娴滄椽鈧姵鍨氭导銈咁唺楠炶埖鎸遍弨鍓у閺?
 	for enemy in outside_enemies:
 		if not is_instance_valid(enemy):
 			continue
 		
-		# 造成伤害
+		# 閫犳垚浼ゅ
 		if enemy.has_node("HealthComponent"):
 			enemy.get_node("HealthComponent").take_damage(chain_damage)
 		
-		# 视觉反馈：小爆炸特效
+		# 瑙嗚鍙嶉锛氬皬鐖嗙偢鐗规晥
 		Global.spawn_floating_text(enemy.global_position, "CHAIN!", Color(2.0, 0.8, 0.0))
 		
-		# 生成小爆炸特效（使用默认爆炸）
+
 		_spawn_mini_explosion(enemy.global_position)
 
-## P3-1: 生成小爆炸特效
+# 函数：_spawn_mini_explosion
 func _spawn_mini_explosion(pos: Vector2) -> void:
-	"""在指定位置生成小爆炸特效"""
+	"""在指定位置生成小爆炸特效。"""
 	const DEFAULT_EXPLOSION = preload("uid://dvfjoyutjx5jf")
 	
 	if not DEFAULT_EXPLOSION:
@@ -421,12 +449,12 @@ func _spawn_mini_explosion(pos: Vector2) -> void:
 	
 	var vfx = DEFAULT_EXPLOSION.instantiate()
 	vfx.global_position = pos
-	vfx.scale = Vector2(0.5, 0.5)  # 缩小到50%
+	vfx.scale = Vector2(0.5, 0.5)
 	vfx.z_index = 100
 	
 	get_tree().current_scene.call_deferred("add_child", vfx)
 	
-	# 自动清理 - 使用 weakref 避免 lambda capture freed 错误
+	# 鑷姩娓呯悊 - 浣跨敤 weakref 閬垮厤 lambda capture freed 閿欒
 	var vfx_ref = weakref(vfx)
 	var cleanup_timer = get_tree().create_timer(1.0)
 	cleanup_timer.timeout.connect(func():
@@ -435,89 +463,89 @@ func _spawn_mini_explosion(pos: Vector2) -> void:
 			v.queue_free()
 	)
 
-## P3-2: 永久牢笼（筑墙者 Lv.3）
-## @param area: 区域效果节点
-## @param polygon: 闭合多边形
+## P3-2: 濮橀晲绠欓悧銏㈩儣閿涘牏鐡氭晶娆掆偓?Lv.3閿?
+## @param area: 鍖哄煙鏁堟灉鑺傜偣
+# 函数：_apply_permanent_cage
 func _apply_permanent_cage(area: Area2D, polygon: PackedVector2Array) -> void:
-	"""将闭合区域转换为永久牢笼（阻挡敌人移动）"""
+	"""灏嗛棴鍚堝尯鍩熻浆鎹负姘镐箙鐗㈢锛堥樆鎸℃晫浜虹Щ鍔級"""
 	if not BondManager.has_mechanic("permanent_cage"):
 		return
 	
 	if not is_instance_valid(area):
 		return
 	
-	print("[%s] [P3-2] 永久牢笼激活" % skill_id)
+	print("[%s] [P3-2] permanent cage activated" % skill_id)
 	SoundManager.play("bond_permanent_cage")
 	
-	# 视觉反馈
+	# 瑙嗚鍙嶉
 	var center = _calculate_polygon_center(polygon)
 	Global.spawn_floating_text(center, "CAGE!", Color(0.5, 0.5, 1.0))
 	
-	# 创建物理墙体（StaticBody2D）
+	# 字段定义
 	var cage = StaticBody2D.new()
 	cage.name = "PermanentCage"
-	cage.collision_layer = 4  # 独立碰撞层
-	cage.collision_mask = 1 | 2  # 检测 Layer1(Player/Enemy默认) + Layer2(Enemy标记)
+	cage.collision_layer = 4  # 閻欘剛鐝涚喊鐗堟寬鐏?
+	cage.collision_mask = 1 | 2
 	
-	# 添加碰撞形状
+	# 娣诲姞纰版挒褰㈢姸
 	var col = CollisionPolygon2D.new()
 	col.polygon = polygon
-	col.build_mode = CollisionPolygon2D.BUILD_SEGMENTS  # 只有边界，不是实心
+	col.build_mode = CollisionPolygon2D.BUILD_SEGMENTS
 	cage.add_child(col)
 	
-	# 视觉效果：半透明墙体
+	# 瑙嗚鏁堟灉锛氬崐閫忔槑澧欎綋
 	var vis = Line2D.new()
 	for p in polygon:
 		vis.add_point(p)
-	vis.add_point(polygon[0])  # 闭合线条
+	vis.add_point(polygon[0])
 	vis.width = 8.0
 	vis.default_color = Color(0.5, 0.5, 1.0, 0.6)
 	vis.z_index = 5
 	cage.add_child(vis)
 	
-	# 添加到场景
+
 	get_tree().current_scene.add_child(cage)
 	
-	# 牢笼管理：限制数量或时间
+	# 鐗㈢绠＄悊锛氶檺鍒舵暟閲忔垨鏃堕棿
 	_manage_cage_lifecycle(cage)
 	
-	print("[%s] [P3-2] 牢笼已生成，位置: (%.0f, %.0f)" % [
+	print("[%s] [P3-2] 閻椼垻顑楀鑼晸閹存劧绱濇担宥囩枂: (%.0f, %.0f)" % [
 		skill_id,
 		polygon[0].x,
 		polygon[0].y
 	])
 
-## P3-2: 管理牢笼生命周期
+## P3-2: 绠＄悊鐗㈢鐢熷懡鍛ㄦ湡
 func _manage_cage_lifecycle(cage: StaticBody2D) -> void:
-	"""管理牢笼的生命周期（时间限制或数量限制）"""
+	"""管理牢笼生命周期（时间或数量上限）。"""
 	const MAX_CAGES = 5
-	const CAGE_LIFETIME = 15.0  # 15秒后自动消失
+	const CAGE_LIFETIME = 15.0
 	
-	# 获取或创建牢笼列表
+	# 条件判断
 	if not get_tree().current_scene.has_meta("active_cages"):
 		get_tree().current_scene.set_meta("active_cages", [])
 	
 	var active_cages: Array = get_tree().current_scene.get_meta("active_cages")
 	
-	# 清理无效牢笼
+	# 娓呯悊鏃犳晥鐗㈢
 	var valid_cages = []
 	for c in active_cages:
 		if is_instance_valid(c):
 			valid_cages.append(c)
 	active_cages = valid_cages
 	
-	# 如果超过数量限制，移除最早的牢笼
+	# 濡傛灉瓒呰繃鏁伴噺闄愬埗锛岀Щ闄ゆ渶鏃╃殑鐗㈢
 	if active_cages.size() >= MAX_CAGES:
 		var oldest_cage = active_cages[0]
 		if is_instance_valid(oldest_cage):
 			_remove_cage(oldest_cage)
 		active_cages.remove_at(0)
 	
-	# 添加新牢笼
+
 	active_cages.append(cage)
 	get_tree().current_scene.set_meta("active_cages", active_cages)
 	
-	# 设置生命周期定时器
+	# 字段定义
 	var lifetime_timer = Timer.new()
 	lifetime_timer.wait_time = CAGE_LIFETIME
 	lifetime_timer.one_shot = true
@@ -527,7 +555,7 @@ func _manage_cage_lifecycle(cage: StaticBody2D) -> void:
 	lifetime_timer.timeout.connect(func():
 		var c = cage_ref.get_ref()
 		if c and is_instance_valid(c):
-			# 淡出动画
+			# 娣″嚭鍔ㄧ敾
 			var vis = c.get_node_or_null("Line2D")
 			if is_instance_valid(vis):
 				var tween = c.create_tween()
@@ -542,13 +570,13 @@ func _manage_cage_lifecycle(cage: StaticBody2D) -> void:
 	
 	lifetime_timer.start()
 
-## P3-2: 移除牢笼
+## P3-2: 绉婚櫎鐗㈢
 func _remove_cage(cage: StaticBody2D) -> void:
-	"""移除牢笼（带淡出动画）"""
+	"""Remove cage with a fade-out transition."""
 	if not is_instance_valid(cage):
 		return
 	
-	# 淡出动画
+	# 娣″嚭鍔ㄧ敾
 	var vis = cage.get_node_or_null("Line2D")
 	if is_instance_valid(vis):
 		var tween = cage.create_tween()
@@ -560,27 +588,27 @@ func _remove_cage(cage: StaticBody2D) -> void:
 	else:
 		cage.queue_free()
 
-## P3-3: 小图形暴击（几何学家 Lv.2）
-## @param polygon: 闭合多边形
-## @param base_damage: 基础伤害
-## @return: 应用暴击后的伤害
+
+
+## @param base_damage: 鍩虹浼ゅ
+## @return: 搴旂敤鏆村嚮鍚庣殑浼ゅ
 func _apply_small_shape_crit(polygon: PackedVector2Array, base_damage: float) -> float:
-	"""检查图形面积，小图形触发暴击"""
+	"""Check polygon area and trigger small-shape critical."""
 	if not BondManager.has_mechanic("small_shape_crit"):
 		return base_damage
 	
-	# 计算多边形面积（鞋带公式 Shoelace Formula）
+	# 字段定义
 	var area = _calculate_polygon_area(polygon)
 	
-	# 面积阈值（像素平方）
+	# 字段定义
 	const AREA_THRESHOLD = 15000.0
 	
-	# 检查是否触发暴击
+	# 条件判断
 	if area < AREA_THRESHOLD:
 		var crit_damage = base_damage * 2.0
 		SoundManager.play("bond_small_shape_crit")
 		
-		print("[%s] [P3-3] 图形面积: %.2f (阈值: %.2f) -> 暴击触发! 伤害: %.0f -> %.0f" % [
+		print("[%s] [P3-3] 小图形暴击: area=%.2f (threshold=%.2f), damage %.0f -> %.0f" % [
 			skill_id,
 			area,
 			AREA_THRESHOLD,
@@ -588,23 +616,23 @@ func _apply_small_shape_crit(polygon: PackedVector2Array, base_damage: float) ->
 			crit_damage
 		])
 		
-		# 视觉反馈
+		# 瑙嗚鍙嶉
 		var center = _calculate_polygon_center(polygon)
 		Global.spawn_floating_text(center, "CRITICAL!", Color(2.0, 2.0, 0.0))
 		Global.on_camera_shake.emit(10.0, 0.2)
 		
 		return crit_damage
 	else:
-		print("[%s] [P3-3] 图形面积: %.2f (阈值: %.2f) -> 未触发暴击" % [
+		print("[%s] [P3-3] area=%.2f (threshold=%.2f) -> no critical" % [
 			skill_id,
 			area,
 			AREA_THRESHOLD
 		])
 		return base_damage
 
-## P3-3: 计算多边形面积（鞋带公式）
+# 函数：_calculate_polygon_area
 func _calculate_polygon_area(polygon: PackedVector2Array) -> float:
-	"""使用鞋带公式计算多边形面积"""
+	"""Compute polygon area with shoelace formula."""
 	if polygon.size() < 3:
 		return 0.0
 	
@@ -618,9 +646,9 @@ func _calculate_polygon_area(polygon: PackedVector2Array) -> float:
 	
 	return abs(area) / 2.0
 
-## P3-3: 计算多边形中心点
+# 函数：_calculate_polygon_center
 func _calculate_polygon_center(polygon: PackedVector2Array) -> Vector2:
-	"""计算多边形的几何中心"""
+	"""计算多边形几何中心。"""
 	if polygon.is_empty():
 		return Vector2.ZERO
 	
@@ -630,21 +658,21 @@ func _calculate_polygon_center(polygon: PackedVector2Array) -> Vector2:
 	return center / polygon.size()
 
 # ==============================================================================
-# 生命周期
+# 鐢熷懡鍛ㄦ湡
 # ==============================================================================
 
 func _ready() -> void:
 	super._ready()
 	
-	print("[SkillDrawingBase] _ready() 技能: %s, skill_owner: %s" % [skill_id, skill_owner])
+	print("[SkillDrawingBase] _ready(): %s, skill_owner=%s" % [skill_id, skill_owner])
 	
 	if skill_owner:
-		# 创建Line2D用于绘制规划路径
+
 		line_2d = Line2D.new()
 		line_2d.name = "DrawingPlanningLine"
 		line_2d.width = 4.0
 		
-		# 确保Line2D添加到玩家节点
+		# 字段定义
 		var player_node = skill_owner
 		if skill_owner is Area2D:
 			player_node = skill_owner.get_parent()
@@ -656,55 +684,56 @@ func _ready() -> void:
 		line_2d.top_level = true
 		line_2d.clear_points()
 		line_2d.default_color = _get_line_color()
-		print("[SkillDrawingBase] ✅ Line2D 创建成功: %s" % skill_id)
+		print("[SkillDrawingBase] Line2D 创建成功: %s" % skill_id)
 	else:
-		print("[SkillDrawingBase] ⚠️ skill_owner 为空，无法创建 Line2D: %s" % skill_id)
+		print("[SkillDrawingBase] warning: skill_owner 为空，无法创建 Line2D: %s" % skill_id)
 
 func _process(delta: float) -> void:
 	super._process(delta)
+	if _death_brush_tick_cooldown > 0.0:
+		_death_brush_tick_cooldown = max(0.0, _death_brush_tick_cooldown - delta)
 	
-	# 强制维持子弹时间
+	# 条件判断
 	if is_planning and Engine.time_scale > 0.2:
 		Engine.time_scale = 0.1
 	
-	# 每帧更新视觉效果
+
 	_update_visuals()
 
 # ==============================================================================
-# 技能执行（统一接口）
+
 # ==============================================================================
 
-## 蓄力技能（持续按住Q）
+# 函数：charge
 func charge(delta: float) -> void:
 	if not is_planning:
 		_enter_planning_mode()
 	
 	if is_planning:
-		# 检测鼠标左键按下 - 开始或继续划线
+		# 条件判断
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			if not is_drawing:
 				_start_drawing()
 			
 			_continue_drawing()
 		else:
-			# 鼠标左键松开
+			# 榧犳爣宸﹂敭鏉惧紑
 			if is_drawing:
 				is_drawing = false
 		
-		# 右键：清除所有路径
 		if Input.is_action_just_pressed("click_right"):
-			_clear_all_points()
+			_clear_all_points(false)
 
-## 释放技能（松开Q）
+# 函数：release
 func release() -> void:
 	if is_planning:
 		_exit_planning_mode_and_execute()
 
 # ==============================================================================
-# 规划模式管理
+# 瑙勫垝妯″紡绠＄悊
 # ==============================================================================
 
-## 进入规划模式
+# 函数：_enter_planning_mode
 func _enter_planning_mode() -> void:
 	is_planning = true
 	is_charging = true
@@ -714,83 +743,101 @@ func _enter_planning_mode() -> void:
 	total_distance_drawn = 0.0
 	has_shown_no_energy_hint = false
 	
-	# 清空路径数据
+	# 娓呯┖璺緞鏁版嵁
 	path_points.clear()
 	path_segments.clear()
 	
-	# 设置起点为鼠标位置
+	# 字段定义
 	var start_pos = skill_owner.get_global_mouse_position()
 	path_points.append(start_pos)
 	last_point = start_pos
 	
-	print("[%s] ===== 进入规划模式 ===== 起点: %s, line_2d有效: %s" % [skill_id, start_pos, is_instance_valid(line_2d)])
+	print("[%s] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? %s, line_2d閺堝鏅? %s" % [skill_id, start_pos, is_instance_valid(line_2d)])
 	
 	SoundManager.play("skill_q_planning")
 	Engine.time_scale = 0.1
 
-## 退出规划模式并执行技能
+# 函数：_exit_planning_mode_and_execute
 func _exit_planning_mode_and_execute() -> void:
 	is_planning = false
 	is_charging = false
 	is_drawing = false
 	Engine.time_scale = 1.0
 	
-	print("[%s] ===== 退出规划模式 ===== 路径点数: %d, 闭合: %s" % [skill_id, path_points.size(), has_closure])
+	print("[%s] ===== 退出规划模式 ===== 点数: %d, 闭合: %s" % [skill_id, path_points.size(), has_closure])
 	
 	if path_points.size() > 1:
-		# 最终闭合检测
 		_perform_final_closure_check()
 		
-		print("[%s] 最终闭合检测结果: %s" % [skill_id, has_closure])
+		print("[%s] 最终闭合判定: %s" % [skill_id, has_closure])
 		
-		# 根据闭合状态生成效果
+		# 条件判断
 		if has_closure:
 			_execute_closed_path()
 		else:
 			_execute_open_path()
 		
+		_cache_draw_snapshot()
+		
 		start_cooldown()
-		_clear_all_points()
+		_clear_all_points(false)
 	else:
-		print("[%s] 路径点不足，跳过执行" % skill_id)
-		_clear_all_points()
+		print("[%s] 鐠侯垰绶為悙閫涚瑝鐡掔绱濈捄瀹犵箖閹笛嗩攽" % skill_id)
+		_clear_all_points(false)
 
-## 执行闭合路径
+func cancel_planning_state(refund_energy: bool = false) -> void:
+	is_planning = false
+	is_charging = false
+	is_drawing = false
+	Engine.time_scale = 1.0
+	if is_instance_valid(line_2d):
+		line_2d.clear_points()
+	_clear_all_points(refund_energy)
+
+# 函数：_execute_closed_path
 func _execute_closed_path() -> void:
-	# 播放角色专属 Q 闭合音效
+	# 条件判断
 	if skill_owner and "player_id" in skill_owner:
 		SoundManager.play_character_q_closure(skill_owner.player_id)
 	else:
 		SoundManager.play("skill_q_closure_generic")
 	
-	# P0-3: 使用羁绊加成后的容错距离
+	# P0-3: 浣跨敤缇佺粖鍔犳垚鍚庣殑瀹归敊璺濈
 	var tolerance = _get_closure_tolerance()
 	var polygons = PolygonUtils.find_all_closing_polygons(path_points, tolerance)
 	
 	if polygons.size() > 0:
-		print("[%s] 检测到 %d 个闭合区域" % [skill_id, polygons.size()])
+		print("[%s] detected %d closed polygons" % [skill_id, polygons.size()])
 		
-		# 显示闭合遮罩（统一动画）
+		# 字段定义
 		var mask_color = _get_closure_color()
 		mask_color.a = 0.7
 		PolygonUtils.show_closure_masks(polygons, mask_color, get_tree(), 0.6)
 		
-		# 为每个闭合区域生成效果
 		for polygon in polygons:
-			# 子类实现具体效果
+			# 瀛愮被瀹炵幇鍏蜂綋鏁堟灉
+			_push_runtime_effect_damage_multiplier(true)
 			_spawn_area_effect(polygon)
+			_pop_runtime_effect_damage_multiplier()
+			_apply_polygon_effect(polygon)
 
-## 执行开放路径
+			var main_damage: int = _estimate_closed_shape_damage(polygon)
+			_trigger_secondary_explode(polygon, main_damage)
+			_trigger_chain_reaction(polygon, main_damage)
+		
+		_notify_ultimate_path_executed(true, path_points.size(), polygons.size())
+
+## 閹笛嗩攽瀵偓閺€鎹愮熅瀵?
 func _execute_open_path() -> void:
 	if path_points.size() < 2:
-		print("[%s] 路径点不足，跳过开放路径" % skill_id)
+		print("[%s] path too short, skip open-path execution" % skill_id)
 		return
 	
 	SoundManager.play("skill_q_open_execute")
 	
-	# 将密集的小路径点合并为较长的线段（每段约 80-120px）
-	# 这样墙体更宽、更容易阻挡敌人，同时减少节点数量
-	const MERGE_DISTANCE: float = 100.0  # 每段目标长度
+	# 字段定义
+	# 字段定义
+	const MERGE_DISTANCE: float = 100.0  # 姣忔鐩爣闀垮害
 	
 	var merged_segments: Array[Dictionary] = []
 	var seg_start: Vector2 = path_points[0]
@@ -805,24 +852,107 @@ func _execute_open_path() -> void:
 			seg_start = path_points[i]
 			accumulated = 0.0
 	
-	print("[%s] 生成开放路径效果，原始点数: %d, 合并线段数: %d" % [skill_id, path_points.size(), merged_segments.size()])
+	print("[%s] 閻㈢喐鍨氬鈧弨鎹愮熅瀵板嫭鏅ラ弸婊愮礉閸樼喎顫愰悙瑙勬殶: %d, 閸氬牆鑻熺痪鎸庮唽閺? %d" % [skill_id, path_points.size(), merged_segments.size()])
+	var line_duration: float = _get_line_duration()
 	
 	for seg in merged_segments:
+		_push_runtime_effect_damage_multiplier(false)
 		_spawn_line_effect(seg["start"], seg["end"])
+		_pop_runtime_effect_damage_multiplier()
+		_spawn_thorns_wall_trigger(seg["start"], seg["end"], line_duration)
 	
-	print("[%s] 开放路径效果生成完毕" % skill_id)
+	print("[%s] open-path effects spawned" % skill_id)
+	_notify_ultimate_path_executed(false, merged_segments.size(), 0)
+
+func _notify_ultimate_path_executed(is_closed: bool, segment_count: int, polygon_count: int) -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	if not skill_owner.has_method("notify_q_path_executed"):
+		return
+	skill_owner.notify_q_path_executed(is_closed, segment_count, polygon_count)
+
+func _spawn_thorns_wall_trigger(start: Vector2, end_pos: Vector2, duration: float) -> void:
+	if not BondManager.has_mechanic("thorns_wall"):
+		return
+	var tree: SceneTree = get_tree()
+	if not tree or not tree.current_scene:
+		return
+
+	var seg: Vector2 = end_pos - start
+	var length: float = seg.length()
+	if length <= 1.0:
+		return
+
+	var line_area := Area2D.new()
+	line_area.collision_layer = 0
+	line_area.collision_mask = 1 | 2
+	line_area.monitorable = false
+	line_area.monitoring = true
+	line_area.global_position = start
+
+	var col := CollisionShape2D.new()
+	var shape := RectangleShape2D.new()
+	shape.size = Vector2(length, 24.0)
+	col.shape = shape
+	col.position = Vector2(length / 2.0, 0.0)
+	col.rotation = seg.angle()
+	line_area.add_child(col)
+
+	tree.current_scene.add_child(line_area)
+	_add_thorns_wall_effect(line_area)
+
+	var area_ref: WeakRef = weakref(line_area)
+	tree.create_timer(max(0.1, duration)).timeout.connect(func() -> void:
+		var area_obj: Object = area_ref.get_ref()
+		if area_obj and is_instance_valid(area_obj):
+			var area_node: Node = area_obj as Node
+			if area_node:
+				area_node.queue_free()
+	)
+
+func _estimate_closed_shape_damage(polygon: PackedVector2Array) -> int:
+	var base_damage: float = 20.0
+	if is_instance_valid(skill_owner) and ("damage" in skill_owner):
+		base_damage = float(skill_owner.damage)
+	var final_damage: float = _calculate_closed_shape_damage(base_damage, false)
+	final_damage = _apply_ink_inherit_bonus(final_damage, false)
+	final_damage = _apply_small_shape_crit(polygon, final_damage)
+	return max(1, int(round(final_damage)))
+
+func _trigger_secondary_explode(polygon: PackedVector2Array, main_damage: int) -> void:
+	if not BondManager.has_mechanic("secondary_explode"):
+		return
+	if polygon.size() < 3:
+		return
+
+	var ratio: float = max(0.1, float(BondManager.get_mechanic_value("secondary_explode")))
+	var splash_damage: int = max(1, int(round(float(main_damage) * 0.35 * ratio)))
+	var hit_count: int = 0
+	var enemies: Array = get_tree().get_nodes_in_group("enemies")
+
+	for enemy in enemies:
+		if not is_instance_valid(enemy) or not enemy.has_node("HealthComponent"):
+			continue
+		if not Geometry2D.is_point_in_polygon(enemy.global_position, polygon):
+			continue
+		var hc: Variant = enemy.get_node("HealthComponent")
+		hc.take_damage(splash_damage)
+		Global.spawn_floating_text(enemy.global_position, "SECOND!", Color(2.0, 1.1, 0.2))
+		hit_count += 1
+
+	if hit_count > 0:
+		SoundManager.play("bond_trigger_generic")
 
 # ==============================================================================
-# 划线逻辑
+# 鍒掔嚎閫昏緫
 # ==============================================================================
 
-## 开始划线
+## 瀵偓婵鍨濈痪?
 func _start_drawing() -> void:
 	is_drawing = true
 	SoundManager.play("skill_q_draw_start")
 	var mouse_pos = skill_owner.get_global_mouse_position()
 	
-	# 清空之前的路径，重新从鼠标位置开始
 	path_points.clear()
 	path_segments.clear()
 	has_closure = false
@@ -833,58 +963,59 @@ func _start_drawing() -> void:
 	last_point = mouse_pos
 	has_shown_no_energy_hint = false
 	
-	# P1-4: 重置金币生成位置
+	# P1-4: 閲嶇疆閲戝竵鐢熸垚浣嶇疆
 	last_gold_spawn_pos = mouse_pos
 
-## 继续划线
+# 函数：_continue_drawing
 func _continue_drawing() -> void:
 	var mouse_pos = skill_owner.get_global_mouse_position()
 	var distance = last_point.distance_to(mouse_pos)
 	
-	# 如果鼠标移动距离太小，跳过本帧
+	# 条件判断
 	if distance < 1.0:
 		return
 	
-	# 计算需要添加多少个点
+	# 字段定义
 	var points_to_add = int(distance / POINT_INTERVAL)
 	
-	# 沿着鼠标轨迹添加点
+	# 循环处理
 	for i in range(points_to_add):
-		# 计算当前能量消耗（动态递增）
+		# 字段定义
 		var current_energy_cost = _calculate_current_energy_cost()
 		
-		# 检查能量是否足够
+		# 条件判断
 		if skill_owner.energy >= current_energy_cost:
-			# 消耗能量
+
 			skill_owner.consume_energy(current_energy_cost)
 			
-			# 更新总距离
+
 			total_distance_drawn += POINT_INTERVAL
 			
-			# 沿着方向前进
+			# 娌跨潃鏂瑰悜鍓嶈繘
 			var direction = (mouse_pos - last_point).normalized()
 			var new_point = last_point + direction * POINT_INTERVAL
 			
-			# 添加路径点
+
 			path_points.append(new_point)
 			
-			# 创建线段
+			# 鍒涘缓绾挎
 			var segment = {
 				"start": last_point,
 				"end": new_point
 			}
 			path_segments.append(segment)
 			
-			# 检测线段交叉
+
 			_check_intersection_and_closure()
 			
-			# P1-4: 金币轨迹机制
+			# P1-4: 閲戝竵杞ㄨ抗鏈哄埗
 			_check_and_spawn_gold_trail(new_point)
 			
-			# 更新状态
+			_apply_death_brush_segment(last_point, new_point)
+			
 			last_point = new_point
 		else:
-			# 能量不足
+			# 鑳介噺涓嶈冻
 			is_drawing = false
 			SoundManager.play("skill_q_energy_depleted")
 			if not has_shown_no_energy_hint:
@@ -892,27 +1023,106 @@ func _continue_drawing() -> void:
 				Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
 			break
 
-# ==============================================================================
-# 能量消耗计算（核心逻辑）
+func _cache_draw_snapshot() -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	if not ("player_id" in skill_owner):
+		return
+	Global.cache_recent_draw_path(skill_owner.player_id, path_points, has_closure)
+
+func _apply_death_brush_segment(seg_start: Vector2, seg_end: Vector2) -> void:
+	if not BondManager.has_mechanic("death_brush"):
+		return
+	if _death_brush_tick_cooldown > 0.0:
+		return
+
+	var damage_ratio: float = max(0.0, float(BondManager.get_mechanic_value("death_brush")))
+	if damage_ratio <= 0.0:
+		return
+
+	_death_brush_tick_cooldown = 0.35
+	var enemies = get_tree().get_nodes_in_group("enemies")
+	var hit_count := 0
+
+	for enemy in enemies:
+		if not is_instance_valid(enemy) or not enemy.has_node("HealthComponent"):
+			continue
+
+		var enemy_pos: Vector2 = enemy.global_position
+		var closest := Geometry2D.get_closest_point_to_segment(enemy_pos, seg_start, seg_end)
+		if enemy_pos.distance_to(closest) > 28.0:
+			continue
+
+		var health_comp = enemy.get_node("HealthComponent")
+		var max_hp := float(health_comp.max_health)
+		var damage := int(round(max_hp * damage_ratio))
+
+		# Boss/楂樿鍗曚綅涓婇檺锛岄伩鍏嶅紓甯哥鏉拷
+		if max_hp >= 1200.0:
+			damage = min(damage, 120)
+		else:
+			damage = min(damage, 90)
+
+		if damage <= 0:
+			continue
+
+		health_comp.take_damage(damage)
+		Global.spawn_floating_text(enemy_pos, "DEATH BRUSH!", Color(1.6, 0.4, 1.2))
+		hit_count += 1
+
+	if hit_count > 0:
+		SoundManager.play("bond_trigger_generic")
+
+func _apply_polygon_effect(polygon: PackedVector2Array) -> void:
+	if not BondManager.has_mechanic("polygon_effect"):
+		return
+	if polygon.size() < 3:
+		return
+
+	var sides := polygon.size()
+	var enemies = get_tree().get_nodes_in_group("enemies")
+	var applied := 0
+
+	for enemy in enemies:
+		if not is_instance_valid(enemy) or not enemy.has_method("apply_status"):
+			continue
+		if not Geometry2D.is_point_in_polygon(enemy.global_position, polygon):
+			continue
+
+		if sides <= 4:
+			enemy.apply_status("poison", 4.0, 3.0, 2, 1.0)
+		elif sides == 5:
+			enemy.apply_status("stun", 1.2, 0.0, 1, 1.0)
+		else:
+			enemy.apply_status("freeze", 0.9, 0.0, 1, 1.0)
+		applied += 1
+
+	if applied > 0:
+		var center := _calculate_polygon_center(polygon)
+		Global.spawn_floating_text(center, "POLYGON x%d" % sides, Color(0.9, 1.3, 2.0))
+		SoundManager.play("bond_trigger_generic")
+
 # ==============================================================================
 
-## 计算当前能量消耗（动态递增）
+# ==============================================================================
+
+# 函数：_calculate_current_energy_cost
 func _calculate_current_energy_cost() -> float:
 	if total_distance_drawn <= energy_threshold_distance:
-		# 基础阶段
+		# 鍩虹闃舵
 		return energy_per_10px
 	else:
-		# 递增阶段
+		# 閫掑闃舵
 		var excess_distance = total_distance_drawn - energy_threshold_distance
 		var multiplier = 1.0 + excess_distance * energy_scale_multiplier
 		return energy_per_10px * multiplier
 
-## 计算已消耗的总能量（用于返还）
+# 函数：_calculate_total_consumed_energy
 func _calculate_total_consumed_energy() -> float:
 	var total = 0.0
 	var distance = 0.0
 	
-	# 从起点开始，每10像素计算一次
+	# 循环处理
 	while distance < total_distance_drawn:
 		if distance <= energy_threshold_distance:
 			total += energy_per_10px
@@ -926,20 +1136,20 @@ func _calculate_total_consumed_energy() -> float:
 	return total
 
 # ==============================================================================
-# 闭合检测
+
 # ==============================================================================
 
-## 执行最终的闭合检测（松开Q键时调用）
+# 函数：_perform_final_closure_check
 func _perform_final_closure_check() -> void:
 	has_closure = false
 	
 	if path_segments.size() < 3:
 		return
 	
-	# P0-3: 使用羁绊加成后的容错距离
+	# P0-3: 浣跨敤缇佺粖鍔犳垚鍚庣殑瀹归敊璺濈
 	var tolerance = _get_closure_tolerance()
 	
-	# 检查任意两条不相邻的线段是否相交
+	# 循环处理
 	for i in range(path_segments.size()):
 		for j in range(i + 2, path_segments.size()):
 			var seg1 = path_segments[i]
@@ -949,23 +1159,23 @@ func _perform_final_closure_check() -> void:
 				has_closure = true
 				return
 	
-	# 检查距离闭合
+	# 条件判断
 	if path_points.size() >= 3:
 		var last_point_pos = path_points[path_points.size() - 1]
 		
-		# 检查是否接近起点（使用羁绊加成后的容错距离）
+		# 条件判断
 		if last_point_pos.distance_to(path_points[0]) < tolerance:
 			has_closure = true
 			return
 		
-		# 检查是否接近路径中的其他点（使用羁绊加成后的容错距离）
+		# 字段定义
 		var check_until = max(0, path_points.size() - 20)
 		for i in range(check_until):
 			if last_point_pos.distance_to(path_points[i]) < tolerance:
 				has_closure = true
 				return
 
-## 检测线段交叉和封闭空间（实时检测，用于视觉反馈）
+# 函数：_check_intersection_and_closure
 func _check_intersection_and_closure() -> void:
 	if has_closure:
 		return
@@ -973,10 +1183,10 @@ func _check_intersection_and_closure() -> void:
 	if path_segments.size() < 3:
 		return
 	
-	# P0-3: 使用羁绊加成后的容错距离
+	# P0-3: 浣跨敤缇佺粖鍔犳垚鍚庣殑瀹归敊璺濈
 	var tolerance = _get_closure_tolerance()
 	
-	# 检查最新线段是否与之前的线段相交
+	# 字段定义
 	var latest_seg = path_segments[path_segments.size() - 1]
 	
 	for i in range(path_segments.size() - 2):
@@ -987,7 +1197,7 @@ func _check_intersection_and_closure() -> void:
 			SoundManager.play("skill_q_closure_detected")
 			return
 	
-	# 检查距离闭合（使用羁绊加成后的容错距离）
+	# 条件判断
 	if path_points.size() >= 20:
 		var current_point = path_points[path_points.size() - 1]
 		if current_point.distance_to(path_points[0]) < tolerance:
@@ -995,7 +1205,7 @@ func _check_intersection_and_closure() -> void:
 			SoundManager.play("skill_q_closure_detected")
 			return
 
-## 检测两条线段是否相交
+# 函数：_segments_intersect
 func _segments_intersect(seg1: Dictionary, seg2: Dictionary) -> bool:
 	var p1 = seg1["start"]
 	var p2 = seg1["end"]
@@ -1006,37 +1216,36 @@ func _segments_intersect(seg1: Dictionary, seg2: Dictionary) -> bool:
 	return intersection != null
 
 # ==============================================================================
-# 路径管理
+# 璺緞绠＄悊
 # ==============================================================================
 
-## 清除所有路径点
-func _clear_all_points() -> void:
-	# 计算已消耗的总能量
-	var total_consumed_energy = _calculate_total_consumed_energy()
+## 娓呴櫎鎵拷鏈夎矾寰勭偣
+func _clear_all_points(refund_energy: bool = false) -> void:
+	# 条件判断
+	if refund_energy:
+		var total_consumed_energy = _calculate_total_consumed_energy()
+		if skill_owner and total_consumed_energy > 0:
+			skill_owner.energy += total_consumed_energy
+			skill_owner.update_ui_signals()
 	
-	# 返还能量
-	if skill_owner and total_consumed_energy > 0:
-		skill_owner.energy += total_consumed_energy
-		skill_owner.update_ui_signals()
-	
-	# 清空数据
+	# 娓呯┖鏁版嵁
 	path_points.clear()
 	path_segments.clear()
 	has_closure = false
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
 	
-	# 重置起点为鼠标位置
+	# 条件判断
 	if skill_owner:
 		var start_pos = skill_owner.get_global_mouse_position()
 		path_points.append(start_pos)
 		last_point = start_pos
 
 # ==============================================================================
-# 视觉效果
+# 瑙嗚鏁堟灉
 # ==============================================================================
 
-## 更新规划路径的视觉效果（每帧调用）
+# 函数：_update_visuals
 func _update_visuals() -> void:
 	if not is_instance_valid(line_2d):
 		return
@@ -1049,26 +1258,26 @@ func _update_visuals() -> void:
 	if not skill_owner:
 		return
 	
-	# 绘制已确认的路径点
+	# 循环处理
 	for p in path_points:
 		line_2d.add_point(p)
 	
-	# 如果正在划线，添加到鼠标的预览线
+	# 濡傛灉姝ｅ湪鍒掔嚎锛屾坊鍔犲埌榧犳爣鐨勯瑙堢嚎
 	if is_planning and is_drawing:
 		var mouse_pos = skill_owner.get_global_mouse_position()
 		line_2d.add_point(mouse_pos)
 	
-	# 颜色判断
+	# 棰滆壊鍒ゆ柇
 	var final_color = _get_line_color()
 	
 	if has_closure:
-		# 闭合提示
+
 		final_color = _get_closure_color()
 	elif is_planning and skill_owner and skill_owner.energy < _calculate_current_energy_cost():
-		# 能量不足
+		# 鑳介噺涓嶈冻
 		final_color = Color(0.5, 0.5, 0.5, 0.5)
 	elif is_planning and total_distance_drawn > energy_threshold_distance:
-		# 超过阈值，颜色渐变提示
+		# 字段定义
 		var excess_ratio = (total_distance_drawn - energy_threshold_distance) / energy_threshold_distance
 		excess_ratio = clamp(excess_ratio, 0.0, 1.0)
 		var base_color = _get_line_color()
@@ -1078,18 +1287,18 @@ func _update_visuals() -> void:
 	line_2d.default_color = final_color
 
 # ==============================================================================
-# 清理
+# 娓呯悊
 # ==============================================================================
 
-## 清理资源
+## 娓呯悊璧勬簮
 func cleanup() -> void:
-	print("[%s] cleanup() 被调用" % skill_id)
+	print("[%s] cleanup() called" % skill_id)
 	
-	# 清理规划线
+	# 条件判断
 	if is_instance_valid(line_2d):
 		line_2d.queue_free()
 	
-	# 重置状态
+	# 闁插秶鐤嗛悩鑸碘偓?
 	is_planning = false
 	is_drawing = false
 	has_shown_no_energy_hint = false
@@ -1100,4 +1309,4 @@ func cleanup() -> void:
 	has_closure = false
 	Engine.time_scale = 1.0
 	
-	print("[%s] cleanup() 结束" % skill_id)
+	print("[%s] cleanup() finished" % skill_id)

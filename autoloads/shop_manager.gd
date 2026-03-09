@@ -1,247 +1,127 @@
 extends Node
 
-# ============================================================================
-# 商店管理器 - 波次间商店系统
-# ============================================================================
-#
-# 功能说明:
-# - 管理波次间商店的物品生成和购买
-# - 从 shop_item_config.csv 加载商店物品配置
-# - 支持权重随机抽取
-# - 支持刷新（Reroll）功能
-#
-# 使用方法:
-#   ShopManager.generate_shop_items(3)  # 生成3个商品
-#   ShopManager.purchase_item(0)        # 购买第一个商品
-#   ShopManager.reroll_shop()           # 刷新商店
-#
-# ============================================================================
+# 商店管理器（局内）
+# - 刷新徽章/装备
+# - 装备购买后进入仓库
+# - 消耗品保留兼容（仅作为兜底）
 
-# ============================================================================
-# 信号
-# ============================================================================
+signal shop_items_generated(items: Array)
+signal item_purchased(item_id: String, index: int)
+signal shop_rerolled()
+signal purchase_failed(reason: String)
 
-signal shop_items_generated(items: Array)  # 商店物品生成完成
-signal item_purchased(item_id: String, index: int)  # 物品购买成功
-signal shop_rerolled()  # 商店刷新完成
-signal purchase_failed(reason: String)  # 购买失败
+const REROLL_COST: int = 20
+const EMBLEM_SPAWN_CHANCE: float = 0.25
 
-# ============================================================================
-# 配置
-# ============================================================================
-
-const SHOP_CSV_PATH = "res://config/item/shop_item_config.csv"
-const REROLL_COST = 50  # 刷新商店的金币消耗
-const EMBLEM_SPAWN_CHANCE: float = 0.25  # 25% 概率刷出徽章
-
-# ============================================================================
-# 数据结构
-# ============================================================================
-
-# 商店物品配置 {item_id: {effects: [], price: int, weight: int, ...}}
+# 旧版消耗品配置（作为兜底）
 var shop_item_configs: Dictionary = {}
 
-# 当前商店物品列表 [{item_id, effects, price, icon_path, ...}]
+# [{item_id, item_name, item_type, price, icon_path, effects, ...}]
 var current_shop_items: Array = []
-
-# 已购买的物品索引（用于UI状态）
-var purchased_indices: Array = []
-
-# ============================================================================
-# 初始化
-# ============================================================================
+var purchased_indices: Array[int] = []
 
 func _ready() -> void:
 	_load_shop_configs()
-	print("[ShopManager] 初始化完成，加载了 %d 个商店物品配置" % shop_item_configs.size())
-
-# ============================================================================
-# 配置加载
-# ============================================================================
+	print("[ShopManager] 初始化完成，加载了 %d 个商店配置项" % shop_item_configs.size())
 
 func _load_shop_configs() -> void:
-	"""从 CSV 加载商店物品配置"""
-	if not FileAccess.file_exists(SHOP_CSV_PATH):
-		printerr("[ShopManager] 错误: 找不到商店配置文件: %s" % SHOP_CSV_PATH)
-		return
-	
-	var file = FileAccess.open(SHOP_CSV_PATH, FileAccess.READ)
-	if not file:
-		printerr("[ShopManager] 错误: 无法打开商店配置文件")
-		return
-	
-	# 跳过表头
-	file.get_csv_line()
-	# 跳过说明行
-	file.get_csv_line()
-	
-	var line_count = 0
-	while not file.eof_reached():
-		var line = file.get_csv_line()
-		if line.size() < 13:
-			continue
-		
-		var item_id = line[0]
-		var item_name = line[1]
-		var item_type = line[2]
-		var item_tier = int(line[3])
-		var effect_type = line[4]
-		var effect_target = line[5]
-		var target_tags_str = line[6]
-		var effect_value = float(line[7])
-		var icon_path = line[8]
-		var description = line[9]
-		var price = int(line[10])
-		var shop_weight = int(line[11])
-		var is_trade_off = int(line[12])
-		
-		if item_id == "" or item_id == "-1":
-			continue
-		
-		# 解析标签
-		var target_tags = []
-		if target_tags_str != "":
-			target_tags = target_tags_str.split(",")
-		
-		# 初始化物品配置
-		if not shop_item_configs.has(item_id):
-			shop_item_configs[item_id] = {
-				"item_id": item_id,
-				"item_name": item_name,
-				"item_type": item_type,
-				"item_tier": item_tier,
-				"icon_path": icon_path,
-				"price": price,
-				"shop_weight": shop_weight,
-				"effects": []
-			}
-		
-		# 添加效果
-		shop_item_configs[item_id].effects.append({
-			"effect_type": effect_type,
-			"effect_target": effect_target,
-			"target_tags": target_tags,
-			"effect_value": effect_value,
-			"description": description,
-			"is_trade_off": is_trade_off == 1
-		})
-		
-		line_count += 1
-	
-	file.close()
-	print("[ShopManager] 加载了 %d 行商店配置数据" % line_count)
-
-# ============================================================================
-# 商店生成
-# ============================================================================
+	shop_item_configs = ConfigRepository.load_shop_item_configs()
+	var line_count: int = 0
+	for item_id_variant in shop_item_configs.keys():
+		var item_id: String = str(item_id_variant)
+		var cfg: Dictionary = shop_item_configs[item_id]
+		line_count += cfg.get("effects", []).size()
+	print("[ShopManager] 通过 ConfigRepository 加载了 %d 行商店配置数据" % line_count)
 
 func generate_shop_items(count: int = 3) -> void:
-	"""生成商店物品（支持徽章 + 装备混合，带去重池）
-	
-	Args:
-		count: 生成的物品数量（默认3个）
-	"""
-	print("[ShopManager] 生成 %d 个商店物品..." % count)
-	
 	current_shop_items.clear()
 	purchased_indices.clear()
-	
-	var used_ids: Array[String] = []  # 去重池
-	
-	for i in range(count):
-		var item: Dictionary
+
+	var used_ids: Array[String] = []
+	for _i in range(count):
+		var item: Dictionary = {}
 		if randf() < EMBLEM_SPAWN_CHANCE:
 			item = _generate_emblem_item(used_ids)
 		else:
 			item = _generate_equipment_item(used_ids)
-		
-		if not item.is_empty():
-			used_ids.append(item.get("item_id", ""))
-			current_shop_items.append(item)
-	
+
+		# 极端情况下兜底到旧消耗品池
+		if item.is_empty():
+			item = _generate_consumable_item(used_ids)
+
+		if item.is_empty():
+			continue
+
+		var item_id: String = str(item.get("item_id", ""))
+		if item_id.is_empty():
+			continue
+
+		used_ids.append(item_id)
+		current_shop_items.append(item)
+
 	print("[ShopManager] 商店物品生成完成: %s" % str(_get_item_ids()))
 	shop_items_generated.emit(current_shop_items)
 
 func _get_item_ids() -> Array:
-	"""获取当前商店物品的ID列表（用于调试）"""
-	var ids = []
-	for item in current_shop_items:
-		ids.append(item.get("item_id", "unknown"))
+	var ids: Array = []
+	for item_variant in current_shop_items:
+		var item: Dictionary = item_variant
+		ids.append(str(item.get("item_id", "unknown")))
 	return ids
 
-# ============================================================================
-# 徽章商品生成（Task 7.1 + 7.2）
-# ============================================================================
-
 func _generate_emblem_item(used_ids: Array[String]) -> Dictionary:
-	"""生成一个徽章商品（智能权重选择，带去重）
-	
-	从 emblem_config.csv 中选择一个徽章，排除：
-	- 已在去重池中的徽章
-	- 已持有的唯一遗物
-	- 万能鬼牌（仅从 Boss/隐藏房间获得）
-	
-	Args:
-		used_ids: 去重池，已使用的 item_id 列表
-	
-	Returns:
-		商品字典，失败时返回空字典
-	"""
-	var all_configs = ConfigManager.get_all_emblem_configs()
+	var all_configs: Dictionary = ConfigManager.get_all_emblem_configs()
 	if all_configs.is_empty():
-		return _generate_equipment_item(used_ids)  # 回退到装备
-	
-	# 构建候选池：排除去重池、已持有唯一遗物、万能鬼牌
+		return _generate_equipment_item(used_ids)
+
 	var candidates: Array[Dictionary] = []
-	for emblem_id in all_configs.keys():
-		# 排除万能鬼牌（仅从 Boss/隐藏房间获得）
-		if str(emblem_id) == "emblem_wildcard":
+	for emblem_id_variant in all_configs.keys():
+		var emblem_id: String = str(emblem_id_variant)
+		if emblem_id == "emblem_wildcard":
 			continue
-		# 排除去重池中的
-		if str(emblem_id) in used_ids:
+		if emblem_id in used_ids:
 			continue
-		# 排除已持有的唯一遗物
-		var config = all_configs[emblem_id]
-		if str(config.get("is_unique", "0")) == "1" and EmblemManager.has_unique_relic(str(emblem_id)):
+
+		var config: Dictionary = all_configs[emblem_id]
+		var is_unique: bool = str(config.get("is_unique", "0")) == "1"
+		if is_unique and EmblemManager.has_unique_relic(emblem_id):
 			continue
+
 		candidates.append(config)
-	
+
 	if candidates.is_empty():
-		return _generate_equipment_item(used_ids)  # 候选池耗尽，回退到装备
-	
-	# 使用智能权重选择
-	var weights = _get_smart_emblem_weights()
+		return _generate_equipment_item(used_ids)
+
+	var weights: Dictionary = _get_smart_emblem_weights()
 	var weighted_candidates: Array[Dictionary] = []
 	var total_weight: float = 0.0
-	
+
 	for config in candidates:
-		var emblem_id = str(config.get("emblem_id", ""))
-		var bond_tag = str(config.get("bond_tag", ""))
-		var weight: float = weights.get(bond_tag, 1.0)
-		# 遗物使用固定权重
+		var emblem_id: String = str(config.get("emblem_id", ""))
+		var bond_tag: String = str(config.get("bond_tag", ""))
+		var weight: float = float(weights.get(bond_tag, 1.0))
 		if str(config.get("artifact_type", "")) == "relic":
 			weight = 1.0
 		weighted_candidates.append({"config": config, "weight": weight})
 		total_weight += weight
-	
-	if total_weight <= 0:
+
+	if total_weight <= 0.0:
 		return _generate_equipment_item(used_ids)
-	
-	# 加权随机选择
-	var roll = randf() * total_weight
+
+	var roll: float = randf() * total_weight
 	var cumulative: float = 0.0
-	var selected_config: Dictionary = weighted_candidates[0].config
-	
-	for entry in weighted_candidates:
-		cumulative += entry.weight
+	var selected_config: Dictionary = weighted_candidates[0].get("config", {})
+
+	for entry_variant in weighted_candidates:
+		var entry: Dictionary = entry_variant
+		cumulative += float(entry.get("weight", 0.0))
 		if roll <= cumulative:
-			selected_config = entry.config
+			selected_config = entry.get("config", {})
 			break
-	
-	# 构建商品字典
-	var emblem_id = str(selected_config.get("emblem_id", ""))
+
+	var selected_id: String = str(selected_config.get("emblem_id", ""))
 	return {
-		"item_id": emblem_id,
+		"item_id": selected_id,
 		"item_name": str(selected_config.get("display_name", "")),
 		"item_type": "emblem",
 		"item_tier": 0,
@@ -256,313 +136,278 @@ func _generate_emblem_item(used_ids: Array[String]) -> Dictionary:
 	}
 
 func _generate_equipment_item(used_ids: Array[String]) -> Dictionary:
-	"""生成一个装备/消耗品商品（带去重）
-	
-	从 shop_item_config.csv 中选择，排除去重池中的物品。
-	
-	Args:
-		used_ids: 去重池，已使用的 item_id 列表
-	
-	Returns:
-		商品字典，失败时返回空字典
-	"""
+	var blocked_ids: Dictionary = _collect_blocked_equipment_ids(used_ids)
+	var weighted_pool: Array[Dictionary] = []
+	var total_weight: int = 0
+
+	for item_id_variant in ConfigManager.item_configs_new.keys():
+		var item_id: String = str(item_id_variant)
+		var cfg_variant: Variant = ConfigManager.item_configs_new[item_id]
+		if not (cfg_variant is Dictionary):
+			continue
+		var cfg: Dictionary = cfg_variant
+
+		if str(cfg.get("type", "")) != "equipment":
+			continue
+		if blocked_ids.has(item_id):
+			continue
+
+		var tier: int = int(cfg.get("tier", 1))
+		if tier <= 0:
+			continue
+
+		var weight: int = _resolve_equipment_weight(tier)
+		if weight <= 0:
+			continue
+
+		var display_name: String = str(cfg.get("name", item_id))
+		var description: String = str(cfg.get("description", ""))
+		var effects: Array = []
+		if not description.is_empty():
+			effects.append({
+				"description": description,
+				"is_trade_off": false
+			})
+
+		var item: Dictionary = {
+			"item_id": item_id,
+			"item_name": display_name,
+			"item_type": "equipment",
+			"item_tier": tier,
+			"icon_path": str(cfg.get("icon_path", "")),
+			"price": _resolve_equipment_price(cfg, tier),
+			"shop_weight": weight,
+			"effects": effects,
+			"description": description
+		}
+
+		weighted_pool.append({"item": item, "weight": weight})
+		total_weight += weight
+
+	if weighted_pool.is_empty() or total_weight <= 0:
+		return {}
+
+	var roll: int = randi() % total_weight
+	var cumulative: int = 0
+	for entry_variant in weighted_pool:
+		var entry: Dictionary = entry_variant
+		cumulative += int(entry.get("weight", 0))
+		if roll < cumulative:
+			return entry.get("item", {})
+
+	return weighted_pool[weighted_pool.size() - 1].get("item", {})
+
+func _collect_blocked_equipment_ids(used_ids: Array[String]) -> Dictionary:
+	var blocked: Dictionary = {}
+
+	for item_id in used_ids:
+		blocked[item_id] = true
+
+	var warehouse_items: Dictionary = WarehouseManager.get_all_items()
+	for slot_variant in warehouse_items.keys():
+		var slot: int = int(slot_variant)
+		var item_type: int = int(warehouse_items.get(slot, 0))
+		if item_type <= 0:
+			continue
+		var item_id: String = WarehouseManager.get_item_id_from_type(item_type)
+		if not item_id.is_empty():
+			blocked[item_id] = true
+
+	for player_id_variant in EquipmentManager.equipped_items.keys():
+		var player_id: String = str(player_id_variant)
+		var raw_type: Variant = EquipmentManager.equipped_items.get(player_id, 0)
+		var item_type: int = int(raw_type)
+		if item_type <= 0:
+			continue
+		var item_id: String = WarehouseManager.get_item_id_from_type(item_type)
+		if not item_id.is_empty():
+			blocked[item_id] = true
+
+	return blocked
+
+func _resolve_equipment_price(cfg: Dictionary, tier: int) -> int:
+	var configured_price: int = int(cfg.get("shop_price", 0))
+	if configured_price > 0:
+		return configured_price
+	match tier:
+		1:
+			return 40
+		2:
+			return 70
+		3:
+			return 110
+		_:
+			return 120
+
+func _resolve_equipment_weight(tier: int) -> int:
+	match tier:
+		1:
+			return 14
+		2:
+			return 10
+		3:
+			return 6
+		_:
+			return 4
+
+func _generate_consumable_item(used_ids: Array[String]) -> Dictionary:
 	if shop_item_configs.is_empty():
 		return {}
-	
-	# 构建权重池（排除去重池中的）
-	var weighted_pool: Array = []
-	for item_id in shop_item_configs.keys():
+
+	var weighted_pool: Array[String] = []
+	for item_id_variant in shop_item_configs.keys():
+		var item_id: String = str(item_id_variant)
 		if item_id in used_ids:
 			continue
-		var config = shop_item_configs[item_id]
-		var weight = config.get("shop_weight", 10)
-		for i in range(weight):
+		var cfg: Dictionary = shop_item_configs[item_id]
+		if str(cfg.get("item_type", "")) != "consumable":
+			continue
+		var weight: int = int(cfg.get("shop_weight", 0))
+		for _i in range(max(weight, 0)):
 			weighted_pool.append(item_id)
-	
+
 	if weighted_pool.is_empty():
 		return {}
-	
-	var random_index = randi() % weighted_pool.size()
-	var item_id = weighted_pool[random_index]
-	var config = shop_item_configs[item_id].duplicate(true)
-	# 确保 item_type 字段存在（旧配置可能没有统一的 item_type）
-	if not config.has("item_type"):
-		config["item_type"] = "equipment"
-	return config
+
+	var picked_index: int = randi() % weighted_pool.size()
+	var picked_id: String = weighted_pool[picked_index]
+	return shop_item_configs[picked_id].duplicate(true)
 
 func _get_smart_emblem_weights() -> Dictionary:
-	"""根据当前队伍羁绊状态计算徽章权重
-	
-	已拥有但未满级的羁绊对应徽章权重更高（3x），
-	未拥有的羁绊对应徽章使用基础权重（1x）。
-	
-	Returns:
-		{bond_tag: weight} 权重字典
-	"""
 	var weights: Dictionary = {}
 	var base_weight: float = 1.0
 	var boosted_weight: float = 3.0
-	
-	# 获取当前羁绊计数和配置
-	var bond_counts = BondManager.current_bond_counts
-	var bond_configs = BondManager.bond_configs
-	
-	for bond_id in bond_configs.keys():
-		var count = bond_counts.get(bond_id, 0)
-		var max_level = BondManager.get_bond_max_level(bond_id)
-		var current_level = BondManager.get_activated_level(bond_id, count)
-		
+
+	var bond_counts: Dictionary = BondManager.current_bond_counts
+	var bond_configs: Dictionary = BondManager.bond_configs
+
+	for bond_id_variant in bond_configs.keys():
+		var bond_id: String = str(bond_id_variant)
+		var count: int = int(bond_counts.get(bond_id, 0))
+		var max_level: int = int(BondManager.get_bond_max_level(bond_id))
+		var current_level: int = int(BondManager.get_activated_level(bond_id, count))
 		if count > 0 and current_level < max_level:
-			# 已拥有但未满级 → 高权重
 			weights[bond_id] = boosted_weight
 		else:
-			# 未拥有或已满级 → 基础权重
 			weights[bond_id] = base_weight
-	
+
 	return weights
 
-# ============================================================================
-# 购买逻辑
-# ============================================================================
-
 func purchase_item(index: int) -> bool:
-	"""购买商店物品
-	
-	Args:
-		index: 物品在商店列表中的索引
-	
-	Returns:
-		是否购买成功
-	"""
-	print("[ShopManager] 尝试购买物品: index=%d" % index)
-	
-	# 检查索引有效性
 	if index < 0 or index >= current_shop_items.size():
-		printerr("[ShopManager] 错误: 无效的物品索引: %d" % index)
 		purchase_failed.emit("无效的物品索引")
 		return false
-	
-	# 检查是否已购买
+
 	if index in purchased_indices:
-		print("[ShopManager] 物品已购买: index=%d" % index)
 		purchase_failed.emit("物品已购买")
 		return false
-	
-	var item = current_shop_items[index]
-	var item_id = item.get("item_id", "")
-	var price = item.get("price", 0)
-	
-	# 检查金币是否足够
-	var current_gold = DataManager.get_total_gold()
+
+	var item: Dictionary = current_shop_items[index]
+	var item_id: String = str(item.get("item_id", ""))
+	var price: int = int(item.get("price", 0))
+	var current_gold: int = RunStateService.get_run_gold()
 	if current_gold < price:
-		print("[ShopManager] 金币不足: 需要=%d, 拥有=%d" % [price, current_gold])
 		purchase_failed.emit("金币不足")
 		return false
-	
-	# 扣除金币
-	DataManager.add_gold(-price)
-	print("[ShopManager] 扣除金币: %d, 剩余: %d" % [price, DataManager.get_total_gold()])
-	
-	# 根据物品类型分支处理
-	var item_type = item.get("item_type", "")
-	if item_type == "emblem":
-		# 徽章购买：调用 EmblemManager.add_emblem()
-		var success = EmblemManager.add_emblem(item_id)
-		if not success:
-			# 添加失败（如唯一遗物已持有），退还金币
-			DataManager.add_gold(price)
-			print("[ShopManager] 徽章添加失败，已退还金币: %d" % price)
-			purchase_failed.emit("无法添加该护符")
-			return false
-		print("[ShopManager] 徽章购买成功: %s" % item_id)
-	else:
-		# 装备/消耗品：应用物品效果
-		_apply_item_effects(item)
-	
-	# 标记为已购买
+
+	var purchase_result: Dictionary = ShopDomainService.try_purchase(price, func() -> bool:
+		return _apply_purchase_payload(item)
+	)
+	if not bool(purchase_result.get("success", false)):
+		var reason: String = str(purchase_result.get("reason", "购买失败"))
+		print("[ShopManager] 购买失败: %s" % reason)
+		purchase_failed.emit(reason)
+		return false
+
 	purchased_indices.append(index)
-	
 	print("[ShopManager] 购买成功: item_id=%s, price=%d" % [item_id, price])
 	item_purchased.emit(item_id, index)
-	
 	return true
 
-func _apply_item_effects(item: Dictionary) -> void:
-	"""应用物品效果到玩家
-	
-	Args:
-		item: 物品配置字典
-	"""
-	var effects = item.get("effects", [])
-	var item_id = item.get("item_id", "unknown")
-	
-	print("[ShopManager] 应用物品效果: item_id=%s, effects=%d" % [item_id, effects.size()])
-	
-	for effect in effects:
-		var effect_type = effect.get("effect_type", "")
-		var effect_target = effect.get("effect_target", "")
-		var target_tags = effect.get("target_tags", [])
-		var effect_value = effect.get("effect_value", 0.0)
-		var is_trade_off = effect.get("is_trade_off", false)
-		
-		match effect_target:
-			"modifier":
-				# 添加修改器（通过 ModifierManager）
-				ModifierManager.add_modifier(target_tags, effect_type, effect_value)
-				print("[ShopManager] 添加修改器: tags=%s, type=%s, value=%s" % [target_tags, effect_type, effect_value])
-			
-			"stat":
-				# 直接修改玩家属性
-				if Global.player:
-					_apply_stat_effect(Global.player, target_tags, effect_value)
-				else:
-					printerr("[ShopManager] 错误: 玩家不存在，无法应用属性效果")
-			
-			"bond":
-				# 添加羁绊标签（未来扩展）
-				print("[ShopManager] 羁绊标签效果暂未实现: %s" % target_tags)
-			
-			_:
-				printerr("[ShopManager] 未知的效果目标: %s" % effect_target)
+func _apply_purchase_payload(item: Dictionary) -> bool:
+	var item_id: String = str(item.get("item_id", ""))
+	var item_type: String = str(item.get("item_type", ""))
 
-func _apply_stat_effect(player: PlayerBase, stat_tags: Array, value: float) -> void:
-	"""应用属性效果到玩家
-	
-	Args:
-		player: 玩家对象
-		stat_tags: 属性标签（如 ["max_health"]）
-		value: 效果数值
-	"""
+	match item_type:
+		"emblem":
+			return EmblemManager.add_emblem(item_id)
+		"equipment":
+			return WarehouseManager.add_item_by_id(item_id)
+		"consumable":
+			return _apply_item_effects(item)
+		_:
+			printerr("[ShopManager] 未知商品类型: %s" % item_type)
+			return false
+
+func _apply_item_effects(item: Dictionary) -> bool:
+	var effects: Array = item.get("effects", [])
+	var item_id: String = str(item.get("item_id", "unknown"))
+
+	var player_node: Node = Global.player
+	if player_node == null or not (player_node is PlayerBase):
+		printerr("[ShopManager] 当前无有效玩家，无法应用消耗品效果: %s" % item_id)
+		return false
+
+	var player: PlayerBase = player_node
+	var all_ok: bool = true
+	for effect_variant in effects:
+		if not (effect_variant is Dictionary):
+			all_ok = false
+			continue
+		var effect: Dictionary = effect_variant
+		var ok: bool = PurchaseEffectPipeline.apply_effect(player, effect, {
+			"source": "shop_manager",
+			"item_id": item_id
+		})
+		if not ok:
+			all_ok = false
+			printerr("[ShopManager] 效果应用失败: item_id=%s, effect=%s" % [item_id, str(effect)])
+
+	return all_ok
+
+func _apply_stat_effect(player: PlayerBase, stat_tags: Array, value: float, effect_type: String = "") -> void:
 	if stat_tags.is_empty():
 		return
-	
-	var stat_name = stat_tags[0]  # 使用第一个标签作为属性名
-	
-	match stat_name:
-		"max_health":
-			# 生命值存储在 HealthComponent 中
-			if player.has_node("HealthComponent"):
-				var health_comp = player.get_node("HealthComponent")
-				health_comp.max_health += value
-				health_comp.current_health = min(health_comp.current_health, health_comp.max_health)
-				print("[ShopManager] 修改生命上限: %+.0f, 新值: %.0f" % [value, health_comp.max_health])
-			else:
-				printerr("[ShopManager] 玩家没有 HealthComponent")
-		
-		"speed":
-			# 速度现在直接存储在 player 中
-			if "speed" in player:
-				player.speed += value
-				print("[ShopManager] 修改移动速度: %+.0f, 新值: %.0f" % [value, player.speed])
-			else:
-				printerr("[ShopManager] 玩家没有 speed 属性")
-		
-		"damage":
-			# 伤害现在直接存储在 player 中
-			if "damage" in player:
-				player.damage += value
-				print("[ShopManager] 修改基础伤害: %+.0f, 新值: %.0f" % [value, player.damage])
-			else:
-				printerr("[ShopManager] 玩家没有 damage 属性")
-		
-		"armor":
-			# 护甲存储在 PlayerBase 中
-			if "max_armor" in player:
-				player.max_armor += int(value)
-				player.armor = min(player.armor, player.max_armor)
-				print("[ShopManager] 修改护甲上限: %+d, 新值: %d" % [int(value), player.max_armor])
-			else:
-				printerr("[ShopManager] 玩家没有 armor 属性")
-		
-		"crit_chance":
-			# 暴击率通过 UpgradeManager 管理
-			UpgradeManager.add_attribute_bonus("crit_chance", value)
-			print("[ShopManager] 修改暴击率: %+.0f%%" % value)
-		
-		_:
-			print("[ShopManager] 警告: 未知的属性类型: %s" % stat_name)
-		"attack_speed":
-			if "attack_speed" in player:
-				player.attack_speed += value
-				print("[ShopManager] 修改攻击速度: %+.0f%%" % (value * 100))
-		
-		"gold_gain":
-			# 金币获取加成（可以存储在 Global 或 DataManager）
-			print("[ShopManager] 金币获取加成: %+.0f%%" % (value * 100))
-		
-		"exp_gain":
-			# 经验获取加成
-			print("[ShopManager] 经验获取加成: %+.0f%%" % (value * 100))
-		
-		_:
-			printerr("[ShopManager] 未知的属性类型: %s" % stat_name)
-
-# ============================================================================
-# 刷新商店
-# ============================================================================
+	if not PurchaseEffectPipeline.apply_from_tags(player, stat_tags, value, effect_type, {
+		"source": "shop_manager"
+	}):
+		printerr("[ShopManager] 未知或无效的属性效果: type=%s, tags=%s" % [effect_type, str(stat_tags)])
 
 func reroll_shop() -> bool:
-	"""刷新商店（重新生成物品）
-	
-	Returns:
-		是否刷新成功
-	"""
-	print("[ShopManager] 尝试刷新商店...")
-	
-	# 检查金币是否足够
-	var current_gold = DataManager.get_total_gold()
+	var current_gold: int = RunStateService.get_run_gold()
 	if current_gold < REROLL_COST:
-		print("[ShopManager] 金币不足: 需要=%d, 拥有=%d" % [REROLL_COST, current_gold])
 		purchase_failed.emit("金币不足")
 		return false
-	
-	# 扣除金币
-	DataManager.add_gold(-REROLL_COST)
-	print("[ShopManager] 扣除刷新费用: %d, 剩余: %d" % [REROLL_COST, DataManager.get_total_gold()])
-	
-	# 重新生成商店物品
-	generate_shop_items(current_shop_items.size())
-	
-	print("[ShopManager] 商店刷新成功")
+
+	var result: Dictionary = ShopDomainService.try_reroll(REROLL_COST, func() -> bool:
+		generate_shop_items(current_shop_items.size())
+		return true
+	)
+	if not bool(result.get("success", false)):
+		var reason: String = str(result.get("reason", "刷新失败"))
+		purchase_failed.emit(reason)
+		return false
+
 	shop_rerolled.emit()
-	
 	return true
 
-# ============================================================================
-# 查询接口
-# ============================================================================
-
 func get_current_shop_items() -> Array:
-	"""获取当前商店物品列表"""
 	return current_shop_items
 
 func is_item_purchased(index: int) -> bool:
-	"""检查物品是否已购买"""
 	return index in purchased_indices
 
 func get_reroll_cost() -> int:
-	"""获取刷新商店的费用"""
 	return REROLL_COST
 
-# ============================================================================
-# 调试接口
-# ============================================================================
-
 func print_shop_items() -> void:
-	"""打印当前商店物品（调试用）"""
 	print("\n========== 当前商店物品 ==========")
 	for i in range(current_shop_items.size()):
-		var item = current_shop_items[i]
-		var item_id = item.get("item_id", "unknown")
-		var item_name = item.get("item_name", "未知")
-		var price = item.get("price", 0)
-		var purchased = " [已购买]" if is_item_purchased(i) else ""
-		print("[%d] %s (%s) - %d金币%s" % [i, item_name, item_id, price, purchased])
-		
-		var effects = item.get("effects", [])
-		for effect in effects:
-			var desc = effect.get("description", "")
-			var is_trade_off = effect.get("is_trade_off", false)
-			var color = "红色" if is_trade_off else "绿色"
-			print("    - %s (%s)" % [desc, color])
+		var item: Dictionary = current_shop_items[i]
+		var item_id: String = str(item.get("item_id", "unknown"))
+		var item_name: String = str(item.get("item_name", "未知"))
+		var item_type: String = str(item.get("item_type", ""))
+		var price: int = int(item.get("price", 0))
+		var purchased: String = " [已购买]" if is_item_purchased(i) else ""
+		print("[%d] %s (%s/%s) - %d金币%s" % [i, item_name, item_id, item_type, price, purchased])
 	print("==================================\n")

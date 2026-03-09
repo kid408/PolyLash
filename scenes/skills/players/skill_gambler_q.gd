@@ -1,71 +1,142 @@
-extends SkillDrawingBase
+﻿extends SkillDrawingBase
 class_name SkillGamblerQ
 
-## ==============================================================================
-## 赌徒Q技能 - 随机Buff/Debuff区域
-## ==============================================================================
-## 
-## 功能说明:
-## - 画线：沿路径创建随机Buff区域（随机选择一种Buff类型）
-## - 画圈闭合：在闭合区域内创建随机Debuff区域（随机选择一种Debuff类型）
-## 
-## ==============================================================================
+var random_buff_value: float = 0.28
+var random_debuff_value: float = 0.28
+var zone_duration: float = 5.5
+var line_bonus_proc_chance: float = 0.35
+var line_bonus_damage: int = 10
+var jackpot_bonus_attack: float = 0.5
+var jackpot_bonus_cooldown: float = 0.28
+var jackpot_damage: int = 28
+var jackpot_streak_limit: int = 2
 
-# ==============================================================================
-# 赌徒技能专属参数（从CSV加载）
-# ==============================================================================
+var _non_jackpot_streak: int = 0
 
-## 随机Buff数值
-var random_buff_value: float = 0.5
+const LINE_BONUS_OPTIONS := [
+	{"type": "slow", "value": 0.42, "duration": 2.2, "color": Color(0.75, 0.75, 0.2, 0.35)},
+	{"type": "poison", "value": 8.0, "duration": 2.8, "color": Color(0.8, 0.85, 0.25, 0.35)},
+	{"type": "fear", "value": 1.0, "duration": 0.7, "color": Color(0.9, 0.7, 0.2, 0.35)}
+]
 
-## 随机Debuff数值
-var random_debuff_value: float = 0.5
-
-## 区域持续时间
-var zone_duration: float = 5.0
-
-# ==============================================================================
-# 随机池
-# ==============================================================================
-
-const BUFF_TYPES: Array = ["attack_boost", "speed_boost", "heal", "cooldown_reduction"]
-const DEBUFF_TYPES: Array = ["slow", "damage_amp", "freeze", "poison"]
-
-# ==============================================================================
-# 实现基类虚函数
-# ==============================================================================
-
-## 生成随机Buff区域效果（未闭合状态）
 func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
-	var buff_type: String = BUFF_TYPES[randi() % BUFF_TYPES.size()]
-	SkillEffectManager.create_buff_zone({
+	SkillEffectManager.create_debuff_zone({
 		"start": start,
 		"end": end,
 		"width": 24.0,
 		"duration": _get_line_duration(),
-		"buff_type": buff_type,
-		"buff_value": random_buff_value,
-		"tick_interval": 0.5,
-		"color": Color(0.9, 0.8, 0.2, 0.5)
-	})
-
-## 生成随机Debuff区域效果（闭合状态）
-func _spawn_area_effect(polygon: PackedVector2Array) -> void:
-	var debuff_type: String = DEBUFF_TYPES[randi() % DEBUFF_TYPES.size()]
-	SkillEffectManager.create_debuff_zone({
-		"polygon": polygon,
-		"duration": zone_duration,
-		"debuff_type": debuff_type,
+		"debuff_type": "damage_amp",
 		"debuff_value": random_debuff_value,
-		"debuff_duration": zone_duration,
-		"tick_interval": 1.0,
-		"color": Color(0.9, 0.8, 0.2, 0.4)
+		"debuff_duration": 2.6,
+		"tick_interval": 0.5,
+		"damage": line_bonus_damage,
+		"damage_interval": 0.5,
+		"color": Color(0.95, 0.78, 0.2, 0.5)
 	})
 
-## 获取规划线条颜色（金色/黄色）
-func _get_line_color() -> Color:
-	return Color(0.9, 0.8, 0.2, 1.0)
+	if randf() > line_bonus_proc_chance:
+		return
 
-## 获取闭合提示颜色
+	var bonus: Dictionary = LINE_BONUS_OPTIONS[randi() % LINE_BONUS_OPTIONS.size()]
+	SkillEffectManager.create_debuff_zone({
+		"start": start,
+		"end": end,
+		"width": 20.0,
+		"duration": _get_line_duration(),
+		"debuff_type": bonus["type"],
+		"debuff_value": bonus["value"],
+		"debuff_duration": bonus["duration"],
+		"tick_interval": 0.65,
+		"color": bonus["color"]
+	})
+
+func _spawn_area_effect(polygon: PackedVector2Array) -> void:
+	var center := _calculate_polygon_center(polygon)
+	match _roll_area_outcome():
+		"buff":
+			SkillEffectManager.create_buff_zone({
+				"polygon": polygon,
+				"duration": zone_duration,
+				"buff_type": "attack_boost",
+				"buff_value": random_buff_value,
+				"tick_interval": 0.5,
+				"color": Color(0.95, 0.85, 0.2, 0.4)
+			})
+			SkillEffectManager.create_buff_zone({
+				"polygon": polygon,
+				"duration": zone_duration,
+				"buff_type": "speed_boost",
+				"buff_value": random_buff_value * 0.75,
+				"tick_interval": 0.5,
+				"color": Color(1.0, 0.9, 0.3, 0.3)
+			})
+			Global.spawn_floating_text(center, "SAFE BET", Color(1.0, 0.9, 0.3))
+
+		"debuff":
+			SkillEffectManager.create_debuff_zone({
+				"polygon": polygon,
+				"duration": zone_duration,
+				"debuff_type": "damage_amp",
+				"debuff_value": random_debuff_value + 0.1,
+				"debuff_duration": zone_duration,
+				"tick_interval": 0.8,
+				"color": Color(0.85, 0.62, 0.12, 0.35)
+			})
+			SkillEffectManager.create_debuff_zone({
+				"polygon": polygon,
+				"duration": zone_duration,
+				"debuff_type": "fear",
+				"debuff_value": 1.0,
+				"debuff_duration": 0.7,
+				"tick_interval": 1.1,
+				"color": Color(0.9, 0.65, 0.15, 0.25)
+			})
+			Global.spawn_floating_text(center, "BAD ODDS", Color(0.95, 0.65, 0.15))
+
+		"jackpot":
+			SkillEffectManager.create_buff_zone({
+				"polygon": polygon,
+				"duration": zone_duration,
+				"buff_type": "attack_boost",
+				"buff_value": jackpot_bonus_attack,
+				"tick_interval": 0.5,
+				"color": Color(1.0, 0.88, 0.18, 0.45)
+			})
+			SkillEffectManager.create_buff_zone({
+				"polygon": polygon,
+				"duration": zone_duration,
+				"buff_type": "cooldown_reduction",
+				"buff_value": jackpot_bonus_cooldown,
+				"tick_interval": 0.5,
+				"color": Color(1.0, 0.93, 0.28, 0.35)
+			})
+			SkillEffectManager.create_area_effect({
+				"polygon": polygon,
+				"damage": jackpot_damage,
+				"damage_interval": 0.45,
+				"duration": zone_duration,
+				"color": Color(0.95, 0.75, 0.12, 0.22)
+			})
+			Global.spawn_floating_text(center, "JACKPOT!", Color(1.0, 0.92, 0.25))
+
+func _roll_area_outcome() -> String:
+	if _non_jackpot_streak >= jackpot_streak_limit:
+		_non_jackpot_streak = 0
+		return "jackpot"
+
+	var roll := randf()
+	if roll < 0.22:
+		_non_jackpot_streak = 0
+		return "jackpot"
+	if roll < 0.62:
+		_non_jackpot_streak += 1
+		return "buff"
+
+	_non_jackpot_streak += 1
+	return "debuff"
+
+func _get_line_color() -> Color:
+	return Color(0.95, 0.78, 0.2, 1.0)
+
 func _get_closure_color() -> Color:
-	return Color(0.9, 0.7, 0.1, 1.0)
+	return Color(0.95, 0.68, 0.1, 1.0)

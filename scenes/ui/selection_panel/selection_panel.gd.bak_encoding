@@ -1,0 +1,1104 @@
+extends Panel
+class_name SelectionPanel
+
+# ============================================================================
+# 瑙掕壊閫夋嫨闈㈡澘 - 娓告垙寮€濮嬪墠閫夋嫨瑙掕壊鍜屾鍣?
+# ============================================================================
+
+# 棰勫姞杞藉満鏅?
+const BOND_SUMMARY_ITEM = preload("res://scenes/ui/components/bond_summary_item.tscn")
+
+# ============================================================================
+# 淇″彿
+# ============================================================================
+
+signal selection_confirmed(selected_data: Array[Dictionary])
+
+# ============================================================================
+# 鑺傜偣寮曠敤
+# ============================================================================
+
+@onready var player_container: Container = $MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper/PlayerScrollContainer/PlayerContainer
+@onready var player_scroll_container: ScrollContainer = $MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper/PlayerScrollContainer
+@onready var weapon_container: Container = $MarginContainer/HBoxContainer/MainContent/BottomSection/WeaponContainerWrapper/WeaponContainer
+@onready var selected_list: VBoxContainer = $MarginContainer/HBoxContainer/LeftPanel/SelectedList
+@onready var synergy_list: VBoxContainer = $MarginContainer/HBoxContainer/LeftPanel/SynergyScrollContainer/SynergyList
+@onready var player_info: HBoxContainer = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo
+@onready var player_ico: TextureRect = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/PlayerIco
+@onready var player_name_label: Label = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/PlayerName
+@onready var player_ties_label: Label = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/PlayerTies
+@onready var bond_icons_container: HBoxContainer = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/BondIconsContainer
+@onready var player_description: RichTextLabel = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/StatsScroll/PlayerDescription
+@onready var skill_description: RichTextLabel = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/SkillColumn/SkillDescription
+@onready var continue_button: Button = $MarginContainer/HBoxContainer/RightPanel/Continue
+@onready var warehouse_button: Button = $MarginContainer/HBoxContainer/RightPanel/WarehouseButton
+@onready var exit_dialog: ExitConfirmDialog = $ExitConfirmDialog
+
+var player_button_template: Button = null
+var weapon_button_template: Button = null
+var selected_slot_template: Button = null
+
+# ============================================================================
+# 鏁版嵁鍙橀噺
+# ============================================================================
+
+# 宸查€夋嫨鐨勮鑹插垪琛?
+var selected_players: Array[Dictionary] = []
+# 鏍煎紡: [{player_id: String, weapon_type: String, slot_index: int}, ...]
+
+# 褰撳墠棰勮鐨勮鑹睮D
+var preview_player_id: String = ""
+
+# 褰撳墠棰勮瑙掕壊閫夋嫨鐨勬鍣ㄧ被鍨?
+var preview_weapon_type: String = ""
+
+# 閰嶇疆
+var players_per_row: int = 5
+var max_selected_players: int = 3
+
+# 瑙掕壊鎸夐挳鏄犲皠 {player_id: Button}
+var player_buttons: Dictionary = {}
+
+# 宸查€夋Ы浣嶆寜閽暟缁?
+var selected_slot_buttons: Array[Button] = []
+
+# 瑙掕壊姝﹀櫒閫夋嫨缂撳瓨 {player_id: weapon_type} - 璁颁綇姣忎釜瑙掕壊閫夋嫨鐨勬鍣?
+var player_weapon_cache: Dictionary = {}
+
+# 宸查€夎鑹茬紦瀛?- 璁颁綇涓婃閫夋嫨鐨勮鑹?
+var selected_players_cache: Array = []
+
+# 鏈湴瀛樺偍璺緞
+const WEAPON_CACHE_PATH = "user://player_weapon_cache.json"
+const SELECTION_CACHE_PATH = "user://player_selection_cache.json"
+
+# ============================================================================
+# 鍒濆鍖?
+# ============================================================================
+
+func _ready() -> void:
+	# 鍔犺浇閰嶇疆
+	players_per_row = int(ConfigManager.get_game_setting("selection_players_per_row", 5))
+	max_selected_players = int(ConfigManager.get_game_setting("max_selected_players", 3))
+	
+	# 鍔犺浇姝﹀櫒閫夋嫨缂撳瓨
+	_load_weapon_cache()
+	
+	# 鍔犺浇宸查€夎鑹茬紦瀛?
+	_load_selection_cache()
+	
+	# 淇濆瓨妯℃澘鎸夐挳
+	_save_templates()
+	
+	# 鐢熸垚UI
+	_generate_selected_slots()
+	_generate_player_buttons()
+	
+	# 浠庣紦瀛樻仮澶嶅凡閫夎鑹?
+	_restore_selection_from_cache()
+	
+	# 杩炴帴Continue鎸夐挳
+	continue_button.pressed.connect(_on_continue_pressed)
+	continue_button.disabled = true
+
+	# 局外不再开放仓库入口（仓库仅局内可用）
+	warehouse_button.visible = false
+	warehouse_button.disabled = true
+	
+	# 娓呯┖鍒濆鏄剧ず
+	_clear_player_info()
+	_clear_weapon_container()
+	
+	# 鍙冲垪鎶€鑳借鎯呬娇鐢ㄧ郴缁熷瓧浣擄紝閬垮厤鑹烘湳瀛椾綋涓嶆竻鏅?
+	var sys_font = SystemFont.new()
+	sys_font.font_names = PackedStringArray(["Microsoft YaHei", "SimHei", "Noto Sans CJK SC", "sans-serif"])
+	sys_font.antialiasing = TextServer.FONT_ANTIALIASING_LCD
+	skill_description.add_theme_font_override("normal_font", sys_font)
+	skill_description.add_theme_font_override("bold_font", sys_font)
+	
+	# 鏇存柊Continue鎸夐挳鐘舵€?
+	_update_continue_button_state()
+	
+	# 鍒涘缓閫€鍑虹‘璁ゅ璇濇
+	_create_exit_dialog()
+	
+	print("[SelectionPanel] init complete: row=%d max=%d" % [players_per_row, max_selected_players])
+
+# ============================================================================
+# 姝﹀櫒缂撳瓨鎸佷箙鍖?
+# ============================================================================
+
+func _load_weapon_cache() -> void:
+	"""浠庢湰鍦版枃浠跺姞杞芥鍣ㄩ€夋嫨缂撳瓨"""
+	if not FileAccess.file_exists(WEAPON_CACHE_PATH):
+		print("[SelectionPanel] weapon cache not found, using defaults")
+		return
+	
+	var file = FileAccess.open(WEAPON_CACHE_PATH, FileAccess.READ)
+	if not file:
+		printerr("[SelectionPanel] 鏃犳硶鎵撳紑姝﹀櫒缂撳瓨鏂囦欢")
+		return
+	
+	var json_text = file.get_as_text()
+	file.close()
+	
+	var json = JSON.new()
+	var error = json.parse(json_text)
+	if error != OK:
+		printerr("[SelectionPanel] 瑙ｆ瀽姝﹀櫒缂撳瓨JSON澶辫触: %s" % json.get_error_message())
+		return
+	
+	var data = json.get_data()
+	if data is Dictionary:
+		player_weapon_cache = data
+		print("[SelectionPanel] 鍔犺浇姝﹀櫒缂撳瓨: %s" % str(player_weapon_cache))
+
+func _save_weapon_cache() -> void:
+	# 保存武器选择缓存到本地文件
+	var file = FileAccess.open(WEAPON_CACHE_PATH, FileAccess.WRITE)
+	if not file:
+		printerr("[SelectionPanel] 鏃犳硶鍒涘缓姝﹀櫒缂撳瓨鏂囦欢")
+		return
+	
+	var json_text = JSON.stringify(player_weapon_cache)
+	file.store_string(json_text)
+	file.close()
+	print("[SelectionPanel] 淇濆瓨姝﹀櫒缂撳瓨: %s" % str(player_weapon_cache))
+
+func _load_selection_cache() -> void:
+	# 从本地文件加载已选角色缓存
+	if not FileAccess.file_exists(SELECTION_CACHE_PATH):
+		print("[SelectionPanel] 宸查€夎鑹茬紦瀛樻枃浠朵笉瀛樺湪")
+		return
+	
+	var file = FileAccess.open(SELECTION_CACHE_PATH, FileAccess.READ)
+	if not file:
+		printerr("[SelectionPanel] 无法打开已选角色缓存文件")
+		return
+	
+	var json_text = file.get_as_text()
+	file.close()
+	
+	var json = JSON.new()
+	var error = json.parse(json_text)
+	if error != OK:
+		printerr("[SelectionPanel] 瑙ｆ瀽宸查€夎鑹茬紦瀛楯SON澶辫触: %s" % json.get_error_message())
+		return
+	
+	var data = json.get_data()
+	if data is Array:
+		selected_players_cache = data
+		print("[SelectionPanel] 鍔犺浇宸查€夎鑹茬紦瀛? %s" % str(selected_players_cache))
+
+func _save_selection_cache() -> void:
+	"""淇濆瓨宸查€夎鑹茬紦瀛樺埌鏈湴鏂囦欢"""
+	var cache_data: Array = []
+	for data in selected_players:
+		cache_data.append({
+			"player_id": data.player_id,
+			"weapon_type": data.weapon_type,
+			"slot_index": data.slot_index
+		})
+	
+	var file = FileAccess.open(SELECTION_CACHE_PATH, FileAccess.WRITE)
+	if not file:
+		printerr("[SelectionPanel] 无法创建已选角色缓存文件")
+		return
+	
+	var json_text = JSON.stringify(cache_data)
+	file.store_string(json_text)
+	file.close()
+	print("[SelectionPanel] 淇濆瓨宸查€夎鑹茬紦瀛? %s" % str(cache_data))
+
+func _restore_selection_from_cache() -> void:
+	# 从缓存恢复已选角色
+	if selected_players_cache.is_empty():
+		return
+	
+	# 鉁?淇锛氭寜slot_index鎺掑簭缂撳瓨鏁版嵁锛岀‘淇濇仮澶嶉『搴忎竴鑷?
+	var sorted_cache = selected_players_cache.duplicate()
+	sorted_cache.sort_custom(func(a, b): return a.get("slot_index", 0) < b.get("slot_index", 0))
+	
+	for cached_data in sorted_cache:
+		var player_id = cached_data.get("player_id", "")
+		var weapon_type = cached_data.get("weapon_type", "")
+		var slot_index = cached_data.get("slot_index", -1)
+		
+		if player_id == "":
+			continue
+		
+		# 妫€鏌ヨ鑹叉槸鍚﹀瓨鍦?
+		if not player_buttons.has(player_id):
+			continue
+		
+		# 濡傛灉姝﹀櫒涓虹┖锛屼娇鐢ㄧ紦瀛樼殑姝﹀櫒
+		if weapon_type == "":
+			if player_weapon_cache.has(player_id):
+				weapon_type = player_weapon_cache[player_id]
+			else:
+				var weapon_types = ConfigManager.get_player_available_weapon_types(player_id)
+				if weapon_types.size() > 0:
+					weapon_type = weapon_types[0]
+		
+		# 鉁?淇锛氱洿鎺ユ坊鍔犲埌selected_players锛屼繚鐣欏師濮媠lot_index
+		if slot_index >= 0 and slot_index < max_selected_players:
+			# 妫€鏌ヨ妲戒綅鏄惁宸茶鍗犵敤
+			var slot_occupied = false
+			for data in selected_players:
+				if data.slot_index == slot_index:
+					slot_occupied = true
+					break
+			
+			if not slot_occupied:
+				# 鐩存帴娣诲姞锛屼繚鐣欏師濮媠lot_index
+				var data = {
+					"player_id": player_id,
+					"weapon_type": weapon_type,
+					"slot_index": slot_index
+				}
+				selected_players.append(data)
+				
+				# 鏇存柊妲戒綅鏄剧ず
+				_update_selected_slot_display(slot_index, player_id)
+				
+				# 鏇存柊瑙掕壊鎸夐挳鐘舵€?
+				if player_buttons.has(player_id):
+					player_buttons[player_id].modulate = Color(0.5, 1, 0.5)
+				
+				print("[SelectionPanel] 浠庣紦瀛樻仮澶嶈鑹?%s 鍒版Ы浣?%d" % [player_id, slot_index])
+				continue
+		
+		# 濡傛灉slot_index鏃犳晥锛屼娇鐢╛add_player_to_selected鍒嗛厤鏂版Ы浣?
+		_add_player_to_selected(player_id, weapon_type)
+	
+	# 鏇存柊闃熶紞缇佺粖缁熻
+	_update_team_synergy()
+	
+	print("[SelectionPanel] 已从缓存恢复 %d 个角色" % selected_players.size())
+
+func _save_templates() -> void:
+	# 淇濆瓨瑙掕壊鎸夐挳妯℃澘
+	for child in player_container.get_children():
+		if child is Button:
+			player_button_template = child.duplicate()
+			child.queue_free()
+			#print("[SelectionPanel] 淇濆瓨瑙掕壊鎸夐挳妯℃澘鎴愬姛")
+			break
+	
+	if player_button_template == null:
+		print("[SelectionPanel] 璀﹀憡: player_container 娌℃湁鎸夐挳瀛愯妭鐐癸紝鏃犳硶淇濆瓨妯℃澘")
+	
+	# 淇濆瓨姝﹀櫒鎸夐挳妯℃澘
+	for child in weapon_container.get_children():
+		if child is Button:
+			weapon_button_template = child.duplicate()
+			weapon_button_template.modulate = Color.WHITE
+			child.queue_free()
+			#print("[SelectionPanel] 淇濆瓨姝﹀櫒鎸夐挳妯℃澘鎴愬姛")
+			break
+	
+	if weapon_button_template == null:
+		print("[SelectionPanel] 璀﹀憡: weapon_container 娌℃湁鎸夐挳瀛愯妭鐐癸紝鍒涘缓榛樿妯℃澘")
+		weapon_button_template = Button.new()
+		weapon_button_template.custom_minimum_size = Vector2(32, 32)  # 姝﹀櫒鏈€灏忥紝浠呬綔闄勪欢灞曠ず
+		weapon_button_template.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		weapon_button_template.expand_icon = true
+		weapon_button_template.modulate = Color.WHITE
+	
+	# 淇濆瓨宸查€夋Ы浣嶆ā鏉匡紙浠?SelectedList 鑾峰彇锛?
+	for child in selected_list.get_children():
+		if child is Button:
+			selected_slot_template = child.duplicate()
+			child.queue_free()
+			#print("[SelectionPanel] 淇濆瓨宸查€夋Ы浣嶆ā鏉挎垚鍔?)
+			break
+	
+	if selected_slot_template == null:
+		print("[SelectionPanel] 璀﹀憡: selected_list 娌℃湁鎸夐挳瀛愯妭鐐癸紝鏃犳硶淇濆瓨妯℃澘")
+
+# ============================================================================
+# 瑙掕壊鍒楄〃鐢熸垚锛堟寜 Origin 鍒嗙粍锛?
+# ============================================================================
+
+func _generate_player_buttons() -> void:
+	var enabled_players = ConfigManager.get_enabled_players()
+	
+	# 鍥炬爣灏哄閰嶇疆
+	var icon_size = 120  # 瑙掕壊姹犲浘鏍囧昂瀵?(澶у浘鏍?
+	var spacing = 10  # 闂磋窛
+	var grid_columns = 10  # 姣忕粍鍒楁暟锛堟瘡琛屾樉绀?0涓鑹诧級
+	
+	# 鑾峰彇 PlayerScrollContainer
+	var scroll_container = player_scroll_container
+	
+	# 娓呯悊骞堕噸鏂拌缃甈layerContainer
+	player_container.queue_free()
+	
+	# 鍒涘缓涓?VBoxContainer
+	var main_vbox = VBoxContainer.new()
+	main_vbox.name = "PlayerVBox"
+	main_vbox.add_theme_constant_override("separation", 20)  # 缁勯棿璺?
+	main_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	main_vbox.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	scroll_container.add_child(main_vbox)
+	
+	# 鏇存柊寮曠敤
+	player_container = main_vbox
+	
+	# 鎸?origin_tag 鍒嗙粍
+	var grouped_players = {
+		"colossus": [],
+		"inkborn": [],
+		"nomad": [],
+		"alchemist": []
+	}
+	
+	for player_config in enabled_players:
+		var origin = player_config.get("origin_tag", "")
+		if grouped_players.has(origin):
+			grouped_players[origin].append(player_config)
+	
+	# 瀹氫箟鍒嗙粍淇℃伅锛堥『搴忋€佹爣棰樸€侀鑹诧級
+	var group_info = [
+		{"id": "colossus", "title": "閲嶈 (Colossus)", "color": Color(1, 0.3, 0.3)},
+		{"id": "inkborn", "title": "榄斿 (Inkborn)", "color": Color(0.3, 0.5, 1)},
+		{"id": "nomad", "title": "娓镐緺 (Nomad)", "color": Color(0.3, 1, 0.5)},
+		{"id": "alchemist", "title": "鍚庡嫟 (Alchemist)", "color": Color(1, 0.9, 0.3)}
+	]
+	
+	# 涓烘瘡涓垎缁勫垱寤篣I
+	for info in group_info:
+		var group_id = info.id
+		var players = grouped_players[group_id]
+		
+		if players.is_empty():
+			continue
+		
+		# 鍒涘缓鍒嗙粍瀹瑰櫒
+		var group_vbox = VBoxContainer.new()
+		group_vbox.name = "%sGroup" % group_id.capitalize()
+		group_vbox.add_theme_constant_override("separation", 10)
+		main_vbox.add_child(group_vbox)
+		
+		# 鍒涘缓鏍囬 Label
+		var title_label = Label.new()
+		title_label.name = "%sTitle" % group_id.capitalize()
+		title_label.text = info.title
+		title_label.add_theme_font_size_override("font_size", 18)
+		title_label.add_theme_color_override("font_color", info.color)
+		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		group_vbox.add_child(title_label)
+		
+		# 鍒涘缓瑙掕壊 GridContainer
+		var grid = GridContainer.new()
+		grid.name = "%sGrid" % group_id.capitalize()
+		grid.columns = grid_columns
+		grid.add_theme_constant_override("h_separation", spacing)
+		grid.add_theme_constant_override("v_separation", spacing)
+		group_vbox.add_child(grid)
+		
+		# 濉厖瑙掕壊鎸夐挳
+		_populate_group(grid, players, icon_size)
+	
+	print("[SelectionPanel] 鐢熸垚浜?%d 涓鑹叉寜閽紝鎸?Origin 鍒嗙粍" % player_buttons.size())
+
+func _populate_group(grid: GridContainer, players: Array, icon_size: int) -> void:
+	# 填充指定分组的角色按钮
+	for player_config in players:
+		var player_id = player_config.get("player_id", "")
+		if player_id == "":
+			continue
+		
+		# 鍒涘缓鎸夐挳锛堜娇鐢ㄨ嚜瀹氫箟绫伙級
+		var btn = PlayerSelectButton.new()
+		btn.name = "PlayerBtn_" + player_id
+		btn.custom_minimum_size = Vector2(icon_size, icon_size)
+		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		btn.expand_icon = true
+		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		
+		# 鑾峰彇璇ヨ鑹插彲鐢ㄦ鍣紝浼樺厛浣跨敤缂撳瓨鐨勬鍣?
+		var weapon_types = ConfigManager.get_player_available_weapon_types(player_id)
+		var default_weapon = ""
+		if player_weapon_cache.has(player_id):
+			default_weapon = player_weapon_cache[player_id]
+		elif weapon_types.size() > 0:
+			default_weapon = weapon_types[0]
+		btn.setup(player_id, default_weapon)
+		
+		# 璁剧疆鍥炬爣锛堜粠player_visual鑾峰彇sprite_path锛?
+		var visual_config = ConfigManager.get_player_visual(player_id)
+		var sprite_path = visual_config.get("sprite_path", "")
+		if sprite_path != "":
+			var texture = load(sprite_path)
+			if texture:
+				btn.icon = texture
+		
+		# 璁剧疆tooltip
+		btn.tooltip_text = player_config.get("display_name", player_id)
+		
+		# 杩炴帴淇″彿
+		btn.pressed.connect(_on_player_button_pressed.bind(player_id))
+		
+		grid.add_child(btn)
+		player_buttons[player_id] = btn
+
+
+# ============================================================================
+# 宸查€夋Ы浣嶇敓鎴?
+# ============================================================================
+
+func _generate_selected_slots() -> void:
+	selected_slot_buttons.clear()
+	
+	# 娓呴櫎鎵€鏈夋寜閽瓙鑺傜偣
+	for child in selected_list.get_children():
+		if child is Button:
+			child.queue_free()
+	
+	# 鍥哄畾鐢熸垚 3 涓Ы浣嶏紙闃熶紞涓婇檺锛?
+	var slot_size = 110  # 宸︿晶宸查€夊垪琛ㄦЫ浣嶅昂瀵?
+	
+	for i in range(max_selected_players):
+		var btn = SelectedSlotButton.new()
+		btn.name = "SelectedSlot_%d" % i
+		btn.custom_minimum_size = Vector2(slot_size, slot_size)
+		btn.text = ""
+		btn.tooltip_text = "妲戒綅 %d (绌?" % (i + 1)
+		btn.setup(i)
+		btn.pressed.connect(_on_selected_slot_pressed.bind(i))
+		btn.player_dropped.connect(_on_player_dropped)
+		selected_slot_buttons.append(btn)
+		selected_list.add_child(btn)
+	
+	print("[SelectionPanel] 生成了 %d 个已选槽位" % max_selected_players)
+
+# ============================================================================
+# 瑙掕壊鎸夐挳浜嬩欢
+# ============================================================================
+
+func _on_player_button_pressed(player_id: String) -> void:
+	print("[SelectionPanel] === 寮€濮嬪鐞嗚鑹茬偣鍑? %s ===" % player_id)
+	SoundManager.play("ui_char_select")
+	preview_player_id = player_id
+	
+	# 鑾峰彇璇ヨ鑹插彲鐢ㄦ鍣?
+	var weapon_types = ConfigManager.get_player_available_weapon_types(player_id)
+	
+	# 浼樺厛浣跨敤缂撳瓨鐨勬鍣ㄩ€夋嫨锛屽惁鍒欎娇鐢ㄧ涓€涓?
+	if player_weapon_cache.has(player_id):
+		preview_weapon_type = player_weapon_cache[player_id]
+		print("[SelectionPanel] 浠庣紦瀛樿幏鍙栨鍣? %s" % preview_weapon_type)
+	elif weapon_types.size() > 0:
+		preview_weapon_type = weapon_types[0]
+		print("[SelectionPanel] 浣跨敤榛樿姝﹀櫒: %s" % preview_weapon_type)
+		# 淇濆瓨榛樿閫夋嫨鍒扮紦瀛?
+		player_weapon_cache[player_id] = preview_weapon_type
+		_save_weapon_cache()
+	else:
+		preview_weapon_type = ""
+	
+	# 鏇存柊瑙掕壊鎸夐挳鐨勬鍣ㄧ被鍨嬶紙鐢ㄤ簬鎷栨嫿锛?
+	if player_buttons.has(player_id):
+		var btn = player_buttons[player_id] as PlayerSelectButton
+		if btn:
+			btn.weapon_type = preview_weapon_type
+	
+	# 鏇存柊鏄剧ず
+	_update_player_info(player_id)
+	_update_weapon_container(player_id)
+	
+	print("[SelectionPanel] === 瀹屾垚澶勭悊瑙掕壊鐐瑰嚮: %s, 姝﹀櫒: %s ===" % [player_id, preview_weapon_type])
+
+# ============================================================================
+# 瑙掕壊淇℃伅鏄剧ず锛堜簨浠堕┍鍔細褰撹鑹茶鐐瑰嚮鏃惰Е鍙戯級
+# ============================================================================
+
+func _update_player_info(player_id: String) -> void:
+	"""鏇存柊瑙掕壊璇︾粏淇℃伅闈㈡澘锛堝乏鍒楀睘鎬э紝鍙冲垪鎶€鑳借鎯咃級"""
+	var config = ConfigManager.get_player_config(player_id)
+	var visual_config = ConfigManager.get_player_visual(player_id)
+	
+	if config.is_empty():
+		_clear_player_info()
+		return
+	
+	# 璁剧疆鍥炬爣
+	var sprite_path = visual_config.get("sprite_path", "")
+	if sprite_path != "":
+		var texture = load(sprite_path)
+		if texture:
+			player_ico.texture = texture
+	
+	# 璁剧疆鍚嶇О
+	player_name_label.text = config.get("display_name", player_id)
+	
+	# 璁剧疆缇佺粖
+	player_ties_label.text = "[%s]" % config.get("ties", "无")
+	
+	# 鏇存柊缇佺粖鍥炬爣
+	_update_bond_icons(player_id, config)
+	
+	# === 宸﹀垪锛氬睘鎬ф暟鍊?===
+	var stats_text = ""
+	stats_text += "鐢熷懡鍊? %d\n" % int(config.get("health", 0))
+	stats_text += "鐢熷懡鎭㈠: %.1f/绉抃n" % config.get("health_regen", 0)
+	stats_text += "鏈€澶ф姢鐢? %d\n" % int(config.get("max_armor", 0))
+	stats_text += "绉诲姩閫熷害: %d\n" % int(config.get("base_speed", 0))
+	stats_text += "鏈€澶ц兘閲? %d\n" % int(config.get("max_energy", 0))
+	stats_text += "鍒濆鑳介噺: %d\n" % int(config.get("initial_energy", 0))
+	stats_text += "鑳介噺鎭㈠: %.1f/绉抃n" % config.get("energy_regen", 0)
+	stats_text += "Q鎶€鑳芥秷鑰? %d\n" % int(config.get("skill_q_cost", 0))
+	stats_text += "E鎶€鑳芥秷鑰? %d" % int(config.get("skill_e_cost", 0))
+	
+	var final_desc = config.get("description", "")
+	if final_desc != "" and str(final_desc) != "0":
+		stats_text += "\n\n[color=gray]" + str(final_desc) + "[/color]"
+	
+	player_description.text = stats_text
+	
+	# === 鍙冲垪锛氭妧鑳借鎯?===
+	var skill_text = "[color=#FFD700][b]=== 鎶€鑳借鎯?===[/b][/color]\n"
+	
+	# 浠?player_skill_bindings 鑾峰彇鎶€鑳絀D
+	var bindings = ConfigManager.get_player_skill_bindings(player_id)
+	var q_skill_id = str(bindings.get("slot_q", ""))
+	var e_skill_id = str(bindings.get("slot_e", ""))
+	
+	# Q鎶€鑳芥弿杩帮紙鐢荤嚎 + 鐢诲湀锛?
+	if q_skill_id != "":
+		var q_params = ConfigManager.get_skill_params(q_skill_id)
+		var q_line_desc = str(q_params.get("desc_q_line", ""))
+		var q_circle_desc = str(q_params.get("desc_q_circle", ""))
+		if q_line_desc != "" and q_line_desc != "0":
+			skill_text += "\n[b][color=#87CEEB]Q (鐢荤嚎):[/color][/b]\n" + q_line_desc + "\n"
+		if q_circle_desc != "" and q_circle_desc != "0":
+			skill_text += "\n[b][color=#87CEEB]Q (鐢诲湀):[/color][/b]\n" + q_circle_desc + "\n"
+	
+	# E鎶€鑳芥弿杩?
+	if e_skill_id != "":
+		var e_params = ConfigManager.get_skill_params(e_skill_id)
+		var e_desc = str(e_params.get("desc_e", ""))
+		if e_desc != "" and e_desc != "0":
+			skill_text += "\n[b][color=#FFA07A]E 鎶€鑳?[/color][/b]\n" + e_desc + "\n"
+	
+	# F澶ф嫑鎻忚堪锛堜粠 ult_config.csv 璇诲彇锛?
+	var f_desc = _get_ult_description(player_id)
+	if f_desc != "" and f_desc != "0":
+		skill_text += "\n[b][color=#98FB98]F 澶ф嫑:[/color][/b]\n" + f_desc + "\n"
+	
+	skill_description.text = skill_text
+
+func _get_ult_description(player_id: String) -> String:
+	# 通过 ConfigRepository 获取大招描述
+	var config := ConfigRepository.get_ult_config_for_player(player_id)
+	if config.is_empty():
+		return ""
+	return str(config.get("description", "")).strip_edges()
+
+func _update_bond_icons(player_id: String, config: Dictionary) -> void:
+	"""鏇存柊缇佺粖鍥炬爣鏄剧ず"""
+	# 鑾峰彇缇佺粖鏍囩
+	var origin_tag = config.get("origin_tag", "")
+	var mastery_tag = config.get("mastery_tag", "")
+	var tactic_tag = config.get("tactic_tag", "")
+	
+	if origin_tag == "" or mastery_tag == "" or tactic_tag == "":
+		print("[SelectionPanel] 瑙掕壊 %s 缂哄皯缇佺粖鏍囩" % player_id)
+		# 娓呴櫎鐜版湁鍥炬爣
+		for child in bond_icons_container.get_children():
+			child.queue_free()
+		return
+	
+	# 鎻愬彇褰撳墠闃熶紞鐨勮鑹睮D鍒楄〃
+	var team_player_ids: Array = []
+	for data in selected_players:
+		team_player_ids.append(data.player_id)
+	
+	# 浣跨敤 BondUILoader 鏇存柊鍥炬爣锛屼紶鍏ラ槦浼嶄俊鎭互鐢熸垚璇︾粏 Tooltip
+	BondUILoader.update_bond_icons(bond_icons_container, origin_tag, mastery_tag, tactic_tag, team_player_ids)
+
+func _clear_player_info() -> void:
+	player_ico.texture = null
+	player_name_label.text = "閫夋嫨瑙掕壊"
+	player_ties_label.text = ""
+	
+	# 娓呴櫎缇佺粖鍥炬爣
+	for child in bond_icons_container.get_children():
+		child.queue_free()
+	
+	player_description.text = "鐐瑰嚮瑙掕壊鏌ョ湅璇︽儏"
+	skill_description.text = ""
+
+# ============================================================================
+# 闃熶紞缇佺粖缁熻锛堜簨浠堕┍鍔細褰撻槦浼嶆垚鍛樺彉鍖栨椂瑙﹀彂锛?
+# ============================================================================
+
+func _update_team_synergy() -> void:
+	# 更新队伍羁绊统计面板
+	# 触发时机：
+	# - 添加角色到队伍时
+	# - 从队伍移除角色时
+	# - 从缓存恢复队伍时
+
+
+	if not synergy_list:
+		return
+	
+	# 娓呴櫎鐜版湁鏉＄洰
+	for child in synergy_list.get_children():
+		child.queue_free()
+	
+	# 濡傛灉娌℃湁閫夋嫨瑙掕壊锛屾樉绀虹┖鐘舵€?
+	if selected_players.is_empty():
+		return
+	
+	# 鎻愬彇宸查€夎鑹睮D
+	var player_ids: Array = []
+	for data in selected_players:
+		player_ids.append(data.player_id)
+	
+	# 璁＄畻缇佺粖缁熻
+	var bond_stats = BondUILoader.calculate_team_bonds(player_ids)
+	
+	# 鑾峰彇鎺掑簭鍚庣殑缇佺粖鍒楄〃
+	var sorted_bonds = BondUILoader.get_sorted_bonds(bond_stats)
+	
+	# 浜屾鎺掑簭锛氬厛鎸夋縺娲荤姸鎬佹帓搴忥紝鍐嶆寜鏁伴噺鎺掑簭
+	sorted_bonds.sort_custom(func(a, b):
+		var a_active = a.count >= a.max
+		var b_active = b.count >= b.max
+		if a_active != b_active:
+			return a_active  # 宸叉縺娲荤殑鎺掑湪鍓嶉潰
+		return a.count > b.count  # 鏁伴噺澶氱殑鎺掑湪鍓嶉潰
+	)
+	
+	# 涓烘瘡涓緛缁婂垱寤烘潯鐩?
+	for bond_data in sorted_bonds:
+		var item = BOND_SUMMARY_ITEM.instantiate() as BondSummaryItem
+		if item:
+			synergy_list.add_child(item)
+			item.update_info(
+				bond_data.bond_id,
+				bond_data.type,
+				bond_data.count,
+				bond_data.max
+			)
+	
+	print("[SelectionPanel] 更新队伍羁绊统计: %d 个羁绊" % sorted_bonds.size())
+
+# ============================================================================
+# 姝﹀櫒閫夋嫨
+# ============================================================================
+
+func _update_weapon_container(player_id: String) -> void:
+	# 娓呴櫎鐜版湁姝﹀櫒鎸夐挳
+	_clear_weapon_container()
+	
+	var weapon_types = ConfigManager.get_player_available_weapon_types(player_id)
+	
+	# 纭畾褰撳墠搴旇楂樹寒鐨勬鍣細浼樺厛浣跨敤缂撳瓨锛屽惁鍒欎娇鐢╬review_weapon_type
+	var highlight_weapon = player_weapon_cache.get(player_id, "")
+	if highlight_weapon == "":
+		highlight_weapon = preview_weapon_type
+	
+	print("[SelectionPanel] _update_weapon_container: player_id=%s, highlight_weapon=%s" % [player_id, highlight_weapon])
+	
+	# 姝﹀櫒鍥炬爣灏哄 - 瑙掕壊鐨勪竴鍗婏紝闈㈢Н1/4
+	var weapon_slot_size = 60
+	
+	for weapon_type in weapon_types:
+		# 鑾峰彇1绾ф鍣ㄩ厤缃?
+		var weapon_config = ConfigManager.get_weapon_by_type_level(weapon_type, 1)
+		if weapon_config.is_empty():
+			continue
+		
+		# 鑾峰彇姝﹀櫒璇︾粏閰嶇疆锛堝寘鍚浘鏍囪矾寰勶級
+		var weapon_id = "%s_1" % weapon_type
+		var weapon_info = WeaponConfigLoader.get_weapon_info(weapon_id)
+		
+		# 鍒涘缓 Panel 浣滀负 Slot 瀹瑰櫒锛堜笉浣跨敤 CenterContainer锛岀洿鎺ュ乏瀵归綈锛?
+		var slot = Panel.new()
+		slot.name = "WeaponSlot_" + weapon_type
+		slot.custom_minimum_size = Vector2(weapon_slot_size, weapon_slot_size)
+		slot.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		slot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		slot.tooltip_text = weapon_config.get("display_name", weapon_type)
+		
+		# 璁剧疆 Slot 鑳屾櫙鏍峰紡
+		var is_highlighted = (weapon_type == highlight_weapon)
+		var style = StyleBoxFlat.new()
+		if is_highlighted:
+			style.bg_color = Color(0.3, 0.3, 0.3, 1)
+			style.border_color = Color(1, 1, 0)  # 榛勮壊杈规
+			style.set_border_width_all(2)
+			print("[SelectionPanel] 楂樹寒姝﹀櫒: %s" % weapon_type)
+		else:
+			style.bg_color = Color(0.2, 0.2, 0.2, 1)
+			style.border_color = Color(0.4, 0.4, 0.4)
+			style.set_border_width_all(1)
+		style.set_corner_radius_all(4)
+		slot.add_theme_stylebox_override("panel", style)
+		
+		# 鍒涘缓 TextureRect 浣滀负鍥炬爣 - 瀹屽叏濉厖 Slot
+		var icon_rect = TextureRect.new()
+		icon_rect.name = "IconRect"
+		icon_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+		icon_rect.set_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_KEEP_SIZE, 2)
+		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
+		# 璁剧疆鍥炬爣绾圭悊
+		var icon_path = weapon_info.get("icon_path", "")
+		print("[SelectionPanel] 姝﹀櫒 %s 鍥炬爣璺緞: %s" % [weapon_type, icon_path])
+		if icon_path != "":
+			if ResourceLoader.exists(icon_path):
+				var texture = load(icon_path)
+				if texture:
+					icon_rect.texture = texture
+					print("[SelectionPanel] 鉁?鎴愬姛鍔犺浇姝﹀櫒鍥炬爣: %s" % weapon_type)
+				else:
+					printerr("[SelectionPanel] 鉁?鍔犺浇绾圭悊澶辫触: %s" % icon_path)
+			else:
+				printerr("[SelectionPanel] 鉁?鍥炬爣鏂囦欢涓嶅瓨鍦? %s" % icon_path)
+		else:
+			printerr("[SelectionPanel] 鉁?姝﹀櫒 %s 娌℃湁 icon_path" % weapon_type)
+		
+		slot.add_child(icon_rect)
+		
+		# 鍒涘缓閫忔槑鎸夐挳瑕嗙洊灞傜敤浜庣偣鍑绘娴?
+		var click_btn = Button.new()
+		click_btn.name = "ClickArea"
+		click_btn.set_anchors_preset(Control.PRESET_FULL_RECT)
+		click_btn.flat = true
+		click_btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		click_btn.pressed.connect(_on_weapon_button_pressed.bind(weapon_type))
+		slot.add_child(click_btn)
+		
+		# Slot 鐩存帴鏀惧叆 Grid锛堝乏瀵归綈锛?
+		weapon_container.add_child(slot)
+	
+	print("[SelectionPanel] 显示 %d 种武器" % weapon_types.size())
+
+func _clear_weapon_container() -> void:
+	for child in weapon_container.get_children():
+		child.free()  # 浣跨敤 free() 鑰屼笉鏄?queue_free() 閬垮厤寤惰繜鍒犻櫎瀵艰嚧鐨勯棶棰?
+
+func _on_weapon_button_pressed(weapon_type: String) -> void:
+	print("[SelectionPanel] 姝﹀櫒鎸夐挳鐐瑰嚮: %s (褰撳墠棰勮瑙掕壊: %s)" % [weapon_type, preview_player_id])
+	SoundManager.play("ui_tab_switch")
+	preview_weapon_type = weapon_type
+	
+	# 鏇存柊姝﹀櫒鎸夐挳楂樹寒 - 浣跨敤 StyleBox 杈规
+	for child in weapon_container.get_children():
+		if child is Button:
+			var is_selected = child.name == "WeaponBtn_" + weapon_type
+			var style = StyleBoxFlat.new()
+			if is_selected:
+				style.bg_color = Color(0.3, 0.3, 0.3, 1)
+				style.border_color = Color(1, 1, 0)  # 榛勮壊杈规
+				style.set_border_width_all(4)
+			else:
+				style.bg_color = Color(0.2, 0.2, 0.2, 1)
+				style.border_color = Color(0.4, 0.4, 0.4)
+				style.set_border_width_all(2)
+			style.set_corner_radius_all(8)
+			child.add_theme_stylebox_override("normal", style)
+			child.add_theme_stylebox_override("hover", style)
+			child.add_theme_stylebox_override("pressed", style)
+			child.add_theme_stylebox_override("focus", style)
+	
+	# 鏇存柊瑙掕壊鎸夐挳鐨勬鍣ㄧ被鍨嬶紙鐢ㄤ簬鎷栨嫿锛?
+	if player_buttons.has(preview_player_id):
+		var btn = player_buttons[preview_player_id] as PlayerSelectButton
+		if btn:
+			btn.weapon_type = weapon_type
+	
+	# 淇濆瓨鍒扮紦瀛樺苟鎸佷箙鍖?
+	if preview_player_id != "":
+		player_weapon_cache[preview_player_id] = weapon_type
+		_save_weapon_cache()
+	
+	# 濡傛灉褰撳墠棰勮瑙掕壊宸插湪宸查€夊垪琛ㄤ腑锛屾洿鏂板叾姝﹀櫒骞朵繚瀛樼紦瀛?
+	var found_in_selected = false
+	for i in range(selected_players.size()):
+		if selected_players[i].player_id == preview_player_id:
+			selected_players[i].weapon_type = weapon_type
+			found_in_selected = true
+			print("[SelectionPanel] 鏇存柊宸查€夎鑹?%s 鐨勬鍣ㄤ负 %s" % [preview_player_id, weapon_type])
+			break
+	
+	# 濡傛灉瑙掕壊鍦ㄥ凡閫夊垪琛ㄤ腑锛屼繚瀛樺凡閫夎鑹茬紦瀛?
+	if found_in_selected:
+		_save_selection_cache()
+
+# ============================================================================
+# 宸查€夋Ы浣嶄簨浠?
+# ============================================================================
+
+func _on_selected_slot_pressed(slot_index: int) -> void:
+	# 妫€鏌ヨ妲戒綅鏄惁鏈夎鑹?
+	for i in range(selected_players.size()):
+		if selected_players[i].slot_index == slot_index:
+			_remove_player_from_selected(i)
+			return
+
+# ============================================================================
+# 瑙掕壊閫夋嫨绠＄悊
+# ============================================================================
+
+func is_player_selected(player_id: String) -> bool:
+	# 检查角色是否已被选择
+	for data in selected_players:
+		if data.player_id == player_id:
+			return true
+	return false
+
+func _add_player_to_selected(player_id: String, weapon_type: String) -> bool:
+	# 妫€鏌ユ槸鍚﹀凡閫夋弧
+	if selected_players.size() >= max_selected_players:
+		print("[SelectionPanel] 已选满 %d 个角色" % max_selected_players)
+		return false
+	
+	# 妫€鏌ユ槸鍚﹀凡閫夋嫨璇ヨ鑹?
+	for data in selected_players:
+		if data.player_id == player_id:
+			print("[SelectionPanel] 瑙掕壊 %s 宸茶閫夋嫨" % player_id)
+			return false
+	
+	# 鎵惧埌绌烘Ы浣?
+	var slot_index = -1
+	for i in range(max_selected_players):
+		var slot_occupied = false
+		for data in selected_players:
+			if data.slot_index == i:
+				slot_occupied = true
+				break
+		if not slot_occupied:
+			slot_index = i
+			break
+	
+	if slot_index == -1:
+		return false
+	
+	# 娣诲姞鍒板凡閫夊垪琛?
+	var data = {
+		"player_id": player_id,
+		"weapon_type": weapon_type,
+		"slot_index": slot_index
+	}
+	selected_players.append(data)
+	
+	# 鏇存柊妲戒綅鏄剧ず
+	_update_selected_slot_display(slot_index, player_id)
+	
+	# 鏇存柊瑙掕壊鎸夐挳鐘舵€侊紙鏄剧ず宸查€変腑锛?
+	if player_buttons.has(player_id):
+		player_buttons[player_id].modulate = Color(0.5, 1, 0.5)  # 缁胯壊琛ㄧず宸查€?
+	
+	# 鏇存柊Continue鎸夐挳鐘舵€?
+	_update_continue_button_state()
+	
+	# 鏇存柊闃熶紞缇佺粖缁熻
+	_update_team_synergy()
+	
+	print("[SelectionPanel] 娣诲姞瑙掕壊 %s 鍒版Ы浣?%d锛屾鍣? %s" % [player_id, slot_index, weapon_type])
+	return true
+
+func _remove_player_from_selected(index: int) -> void:
+	if index < 0 or index >= selected_players.size():
+		return
+	
+	var data = selected_players[index]
+	var player_id = data.player_id
+	var slot_index = data.slot_index
+	
+	# 浠庡垪琛ㄧЩ闄?
+	selected_players.remove_at(index)
+	
+	# 娓呯┖妲戒綅鏄剧ず
+	_clear_selected_slot_display(slot_index)
+	
+	# 鎭㈠瑙掕壊鎸夐挳鐘舵€?
+	if player_buttons.has(player_id):
+		player_buttons[player_id].modulate = Color.WHITE
+	
+	# 鏇存柊Continue鎸夐挳鐘舵€?
+	_update_continue_button_state()
+	
+	# 鏇存柊闃熶紞缇佺粖缁熻
+	_update_team_synergy()
+	
+	# 淇濆瓨宸查€夎鑹茬紦瀛橈紙鍒犻櫎鍚庝篃瑕佷繚瀛橈級
+	_save_selection_cache()
+	
+	print("[SelectionPanel] 绉婚櫎瑙掕壊 %s 浠庢Ы浣?%d" % [player_id, slot_index])
+
+func _update_selected_slot_display(slot_index: int, player_id: String) -> void:
+	if slot_index < 0 or slot_index >= selected_slot_buttons.size():
+		return
+	
+	var btn = selected_slot_buttons[slot_index]
+	
+	# 璁剧疆鍥炬爣
+	var visual_config = ConfigManager.get_player_visual(player_id)
+	var sprite_path = visual_config.get("sprite_path", "")
+	if sprite_path != "":
+		var texture = load(sprite_path)
+		if texture:
+			btn.icon = texture
+	
+	# 璁剧疆tooltip
+	var config = ConfigManager.get_player_config(player_id)
+	btn.tooltip_text = config.get("display_name", player_id)
+
+func _clear_selected_slot_display(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= selected_slot_buttons.size():
+		return
+	
+	var btn = selected_slot_buttons[slot_index]
+	btn.icon = null
+	btn.tooltip_text = "妲戒綅 %d (绌?" % (slot_index + 1)
+
+# ============================================================================
+# 鎷栨嫿鍔熻兘
+# ============================================================================
+
+func _on_player_dropped(slot_index: int, player_id: String, weapon_type: String) -> void:
+	# 濡傛灉姝﹀櫒涓虹┖锛屼紭鍏堜娇鐢ㄧ紦瀛樼殑姝﹀櫒锛屽惁鍒欎娇鐢ㄩ粯璁ゆ鍣?
+	if weapon_type == "":
+		if player_weapon_cache.has(player_id):
+			weapon_type = player_weapon_cache[player_id]
+		else:
+			var weapon_types = ConfigManager.get_player_available_weapon_types(player_id)
+			if weapon_types.size() > 0:
+				weapon_type = weapon_types[0]
+	
+	# 灏濊瘯娣诲姞鍒板凡閫夊垪琛?
+	_add_player_to_selected(player_id, weapon_type)
+
+# ============================================================================
+# Continue鎸夐挳
+# ============================================================================
+
+func _update_continue_button_state() -> void:
+	continue_button.disabled = selected_players.size() == 0
+
+func _on_warehouse_pressed() -> void:
+	"""仓库仅局内可用"""
+	print("[SelectionPanel] 仓库仅局内可用")
+
+func _on_continue_pressed() -> void:
+	if selected_players.size() == 0:
+		print("[SelectionPanel] 请至少选择一个角色")
+		SoundManager.play("ui_error")
+		# 鏄剧ず鎻愮ず淇℃伅
+		_show_selection_hint("璇疯嚦灏戦€夋嫨涓€涓鑹诧紒")
+		return
+	
+	SoundManager.play("ui_click")
+	
+	# 淇濆瓨宸查€夎鑹茬紦瀛樺埌鏈湴
+	_save_selection_cache()
+	
+	# 鍑嗗鏁版嵁浼犻€掔粰Global
+	var player_ids: Array[String] = []
+	var player_weapons: Dictionary = {}
+	
+	# 鎸夋Ы浣嶉『搴忔帓鍒?
+	var sorted_players = selected_players.duplicate()
+	sorted_players.sort_custom(func(a, b): return a.slot_index < b.slot_index)
+	
+	for data in sorted_players:
+		var pid = data.player_id
+		var wtype = data.weapon_type
+		
+		# 濡傛灉姝﹀櫒绫诲瀷涓虹┖锛屼粠缂撳瓨鑾峰彇
+		if wtype == "" and player_weapon_cache.has(pid):
+			wtype = player_weapon_cache[pid]
+			print("[SelectionPanel] 浠庣紦瀛樿ˉ鍏呮鍣? %s -> %s" % [pid, wtype])
+		
+		player_ids.append(pid)
+		player_weapons[pid] = wtype
+		print("[SelectionPanel] 瑙掕壊 %s 姝﹀櫒: %s" % [pid, wtype])
+	
+	# 淇濆瓨鍒癎lobal
+	Global.selected_player_ids = player_ids
+	Global.selected_player_weapons = player_weapons
+	Global.current_player_index = 0
+	
+	print("[SelectionPanel] Global.selected_player_weapons = %s" % str(Global.selected_player_weapons))
+	
+	# 鍒濆鍖栬鑹茬姸鎬?
+	Global.init_player_states()
+	
+	# === 妫€鏌ユ槸鍚﹂渶瑕侀噸缃睘鎬у崌绾?(Roguelike妯″紡) ===
+	DataManager.check_and_reset_on_new_game()
+	
+	# === 鑷姩淇濆瓨鍒板綋鍓嶆Ы浣?===
+	if Global.current_save_slot >= 0:
+		var leader_id: String = player_ids[0] if player_ids.size() > 0 else ""
+		var save_players: Array = []
+		for data in sorted_players:
+			save_players.append({
+				"player_id": data.player_id,
+				"weapon_type": data.weapon_type
+			})
+		SaveFacade.create_new_slot_save(Global.current_save_slot, leader_id, save_players)
+		print("[SelectionPanel] 鑷姩淇濆瓨鍒版Ы浣?%d" % Global.current_save_slot)
+	
+	print("[SelectionPanel] 纭閫夋嫨锛岃鑹? %s" % str(player_ids))
+	
+	# 鍙戝嚭淇″彿
+	selection_confirmed.emit(sorted_players)
+	
+	# 鍒囨崲鍒版父鎴忓満鏅?
+	get_tree().change_scene_to_file("res://scenes/arena/arena.tscn")
+
+
+# ============================================================================
+# 鎻愮ず淇℃伅
+# ============================================================================
+
+func _show_selection_hint(message: String) -> void:
+	"""鏄剧ず閫夋嫨鎻愮ず淇℃伅锛堥瀛楁晥鏋滐級"""
+	var hint_label = Label.new()
+	hint_label.text = message
+	hint_label.add_theme_font_size_override("font_size", 32)
+	hint_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))  # 绾㈣壊
+	hint_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	hint_label.add_theme_constant_override("outline_size", 4)
+	
+	# 璁剧疆浣嶇疆锛堝睆骞曚腑澶亸涓婏級
+	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hint_label.anchors_preset = Control.PRESET_CENTER_TOP
+	hint_label.position = Vector2(get_viewport_rect().size.x / 2 - 150, 100)
+	hint_label.custom_minimum_size = Vector2(300, 50)
+	
+	add_child(hint_label)
+	
+	# 鍒涘缓鍔ㄧ敾锛氬悜涓婇鍔ㄥ苟娣″嚭
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(hint_label, "position:y", hint_label.position.y - 50, 1.5)
+	tween.tween_property(hint_label, "modulate:a", 0.0, 1.5)
+	tween.set_parallel(false)
+	tween.tween_callback(hint_label.queue_free)
+
+
+# ============================================================================
+# 閫€鍑虹‘璁ゅ璇濇
+# ============================================================================
+
+func _create_exit_dialog() -> void:
+	pass
+
+func _input(event: InputEvent) -> void:
+	# 处理输入事件：ESC 返回主菜单
+	if event.is_action_pressed("ui_cancel"):
+		print("[SelectionPanel] 返回主菜单")
+		get_viewport().set_input_as_handled()
+		get_tree().change_scene_to_file("res://scenes/ui/main_menu/main_menu_root.tscn")

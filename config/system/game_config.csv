@@ -1,22 +1,55 @@
-setting,value,description
--1,值,说明
-difficulty,1,游戏难度系数（影响敌人强度）
-starting_wave,1,起始波次
-max_waves,20,最大波次数
-enemy_spawn_rate,1,敌人生成速率倍率
-player_damage_multiplier,1,玩家伤害倍率
-enemy_damage_multiplier,1,敌人伤害倍率
-xp_gain_multiplier,1,经验获取倍率
-gold_gain_multiplier,1,金币获取倍率
-enemy_health_per_wave,20,每波增加的敌人生命值
-enemy_damage_per_wave,4,每波增加的敌人伤害
-armor_reduction_per_level,0.2,每点护甲减伤比例
-selection_players_per_row,5,角色选择界面每行显示的角色数量
-max_selected_players,3,最多可选择的角色数量
-max_upgrade_level,5,属性最大升级等级
-default_gold,1000,初始金币数量
-reset_attributes_on_new_game,0,新游戏时是否重置属性升级(1=重置 0=保留)
-enable_starting_weapon_shop,1,是否显示随机武器商店(1=显示 0=隐藏)
-starting_weapon_price,100,随机初始武器价格
-WarehouseCapacity,80,仓库容量（格子数量）
-WarehouseColumns,8,仓库列数
+﻿"setting","value","description"
+"-1","值","说明"
+"difficulty","1","游戏难度系数（影响敌人强度）"
+"starting_wave","1","起始波次"
+"max_waves","20","最大波次数"
+"enemy_spawn_rate","1","敌人生成速率倍率"
+"player_damage_multiplier","1","玩家伤害倍率"
+"enemy_damage_multiplier","1","敌人伤害倍率"
+"xp_gain_multiplier","1","经验获取倍率"
+"xp_level_base","60","等级需求经验基数（成长曲线）"
+"xp_level_linear","24","等级需求经验一次项系数"
+"xp_level_quad","3","等级需求经验二次项系数"
+"gold_gain_multiplier","1","金币获取倍率"
+"enemy_health_per_wave","8","每波增加的敌人生命值"
+"enemy_damage_per_wave","1.2","每波增加的敌人伤害"
+"armor_reduction_per_level","0.2","每点护甲减伤比例"
+"selection_players_per_row","5","角色选择界面每行显示的角色数量"
+"max_selected_players","3","最多可选择的角色数量"
+"max_upgrade_level","5","属性最大升级等级"
+"default_gold","1000","初始金币数量"
+"default_soul_shard","1000","初始灵魂碎片数量"
+"run_gold_to_soul_shard_ratio","1","局内金币结算为碎片倍率"
+"run_gold_to_soul_shard_flat","0","局内结算碎片固定加成"
+"run_settlement_min_shard","0","单局最低碎片奖励（仅在有局内收益时生效）"
+"reset_attributes_on_new_game","0","新游戏时是否重置属性升级(1=重置 0=保留)"
+"enable_starting_weapon_shop","1","是否显示随机武器商店(1=显示 0=隐藏)"
+"starting_weapon_price","40","随机初始武器价格"
+"WarehouseCapacity","80","仓库容量（格子数量）"
+"WarehouseColumns","8","仓库列数"
+"enemy_speed_scale","1.08","Enemy move speed scale"
+"player_speed_scale","1.00","Player move speed scale"
+"player_hit_cooldown","0.12","Player minimum hit interval in seconds"
+"director_early_finish_enabled","0","是否允许预算耗尽后提前结束波次(1=允许 0=严格按倒计时)"
+"recruit_first_wave","3","角色招募首次出现波次"
+"recruit_wave_interval","2","角色招募出现间隔波次(>0生效)"
+"reward_weight_recruit","55","奖励池类型权重-角色"
+"reward_weight_attribute","20","奖励池类型权重-属性"
+"reward_weight_bond","15","奖励池类型权重-羁绊"
+"reward_weight_other","10","奖励池类型权重-其他"
+"reward_weight_other_equipment","70","其他类型内权重-装备"
+"reward_weight_other_gold","30","其他类型内权重-金币"
+"reward_attr_weight_max_health","35","属性类型内权重-生命上限"
+"reward_attr_weight_max_energy","25","属性类型内权重-能量上限"
+"reward_attr_weight_energy_regen","20","属性类型内权重-能量回复"
+"reward_attr_weight_base_speed","20","属性类型内权重-移动速度"
+"recruit_cost_add_member","260","招募新成员费用"
+"recruit_cost_replace_member","260","满员替换招募费用"
+"reward_icon_recruit","res://assets/sprites/Icons/origins/origin1.png","奖励图标-角色"
+"reward_icon_bond","res://assets/sprites/Icons/masterys/mastery5.png","奖励图标-羁绊"
+"reward_icon_equipment","res://assets/sprites/Icons/origins/origin3.png","奖励图标-道具"
+"reward_icon_gold","res://assets/sprites/Icons/masterys/mastery6.png","奖励图标-金币"
+"reward_icon_attr_max_health","res://assets/sprites/Icons/origins/origin1.png","奖励图标-属性生命"
+"reward_icon_attr_max_energy","res://assets/sprites/Icons/origins/origin2.png","奖励图标-属性能量"
+"reward_icon_attr_energy_regen","res://assets/sprites/Icons/masterys/mastery1.png","奖励图标-属性回能"
+"reward_icon_attr_base_speed","res://assets/sprites/Icons/origins/origin2.png","奖励图标-属性速度"

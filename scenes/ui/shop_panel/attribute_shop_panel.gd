@@ -46,8 +46,10 @@ func _ready() -> void:
 	if close_button:
 		close_button.pressed.connect(_on_close_button_pressed)
 	
-	# 连接金币变化信号
-	if DataManager.has_signal("gold_changed"):
+	# 连接局内金币变化信号
+	if DataManager.has_signal("run_gold_changed"):
+		DataManager.run_gold_changed.connect(_on_gold_changed)
+	elif DataManager.has_signal("gold_changed"):
 		DataManager.gold_changed.connect(_on_gold_changed)
 	
 	# 初始隐藏
@@ -163,7 +165,7 @@ func _clear_cards() -> void:
 
 func _update_gold_display() -> void:
 	"""更新金币显示"""
-	var gold = DataManager.get_total_gold()
+	var gold = RunStateService.get_run_gold()
 	
 	if gold_label:
 		gold_label.text = "金币: %d" % gold
@@ -178,7 +180,7 @@ func _update_gold_display() -> void:
 
 func _update_all_cards_affordability() -> void:
 	"""更新所有卡片的买得起状态"""
-	var gold = DataManager.get_total_gold()
+	var gold = RunStateService.get_run_gold()
 	
 	for card in current_cards:
 		if card.has_method("set_affordable"):
@@ -209,20 +211,24 @@ func _on_card_purchase_requested(card_index: int) -> void:
 	
 	var attr = attributes[card_index]
 	var price = attr.price
-	var gold = DataManager.get_total_gold()
+	var gold = RunStateService.get_run_gold()
 	
 	# 检查金币
 	if gold < price:
 		print("[AttributeShopPanel] 金币不足: 需要=%d, 拥有=%d" % [price, gold])
 		SoundManager.play("ui_error")
 		return
-	
-	# 扣除金币
-	DataManager.add_gold(-price)
-	print("[AttributeShopPanel] 扣除金币: %d, 剩余: %d" % [price, DataManager.get_total_gold()])
-	
-	# 应用属性效果
-	_apply_attribute_to_player(attr)
+
+	var result = ShopDomainService.try_purchase(price, func() -> bool:
+		_apply_attribute_to_player(attr)
+		return true
+	)
+	if not bool(result.get("success", false)):
+		print("[AttributeShopPanel] 购买失败: %s" % str(result.get("reason", "未知错误")))
+		SoundManager.play("ui_error")
+		return
+
+	print("[AttributeShopPanel] 扣除金币: %d, 剩余: %d" % [price, RunStateService.get_run_gold()])
 	
 	# 标记为已购买
 	purchased_indices.append(card_index)
@@ -250,82 +256,19 @@ func _apply_attribute_to_player(attr: Dictionary) -> void:
 		return
 	
 	print("[AttributeShopPanel] 应用属性: %s = %s" % [attr.display_name, attr.value])
-	
-	match attr.effect_target:
-		"stat":
-			_apply_stat_effect(player, attr)
-		"modifier":
-			_apply_modifier_effect(attr)
-		_:
-			printerr("[AttributeShopPanel] 未知的效果目标: %s" % attr.effect_target)
 
-func _apply_stat_effect(player, attr: Dictionary) -> void:
-	"""应用属性效果到玩家
-	
-	Args:
-		player: 玩家对象
-		attr: 属性字典
-	"""
-	if attr.target_tags.is_empty():
-		return
-	
-	var stat_name = attr.target_tags[0]
-	var value = attr.value
-	
-	match stat_name:
-		"max_health":
-			if player.has_node("HealthComponent"):
-				var health_comp = player.get_node("HealthComponent")
-				health_comp.max_health += value
-				health_comp.current_health = min(health_comp.current_health, health_comp.max_health)
-				print("[AttributeShopPanel] 修改生命上限: %+.0f → %.0f" % [value, health_comp.max_health])
-		
-		"speed":
-			if "speed" in player:
-				player.speed += value
-				print("[AttributeShopPanel] 修改移动速度: %+.0f → %.0f" % [value, player.speed])
-		
-		"damage":
-			if "damage" in player:
-				player.damage += value
-				print("[AttributeShopPanel] 修改基础伤害: %+.0f → %.0f" % [value, player.damage])
-		
-		"armor":
-			if "max_armor" in player:
-				player.max_armor += int(value)
-				player.armor = min(player.armor, player.max_armor)
-				print("[AttributeShopPanel] 修改护甲上限: %+d → %d" % [int(value), player.max_armor])
-		
-		"crit_chance":
-			UpgradeManager.add_attribute_bonus("crit_chance", value)
-			print("[AttributeShopPanel] 修改暴击率: %+.0f%%" % value)
-		
-		"attack_speed":
-			if "attack_speed" in player:
-				player.attack_speed += value
-				print("[AttributeShopPanel] 修改攻击速度: %+.0f%%" % (value * 100))
-		
-		"regen":
-			if "regen" in player:
-				player.regen += value
-				print("[AttributeShopPanel] 修改生命回复: %+.1f → %.1f" % [value, player.regen])
-		
-		"gold_gain", "exp_gain":
-			# 这些属性可以存储在 Global 或 DataManager 中
-			print("[AttributeShopPanel] %s 加成: %+.0f%%" % [stat_name, value * 100])
-		
-		_:
-			print("[AttributeShopPanel] 警告: 未知的属性类型: %s" % stat_name)
-
-func _apply_modifier_effect(attr: Dictionary) -> void:
-	"""应用修改器效果
-	
-	Args:
-		attr: 属性字典
-	"""
-	var effect_type = "percent_add" if attr.value_type == "percent" else "flat_add"
-	ModifierManager.add_modifier(attr.target_tags, effect_type, attr.value)
-	print("[AttributeShopPanel] 添加修改器: tags=%s, type=%s, value=%s" % [attr.target_tags, effect_type, attr.value])
+	var effect := {
+		"effect_target": str(attr.get("effect_target", "")),
+		"target_tags": attr.get("target_tags", []),
+		"effect_type": str(attr.get("effect_type", "")),
+		"effect_value": float(attr.get("value", 0.0)),
+		"value_type": str(attr.get("value_type", "flat"))
+	}
+	if not PurchaseEffectPipeline.apply_effect(player, effect, {
+		"source": "attribute_shop_panel",
+		"attribute_id": str(attr.get("attribute_id", ""))
+	}):
+		printerr("[AttributeShopPanel] 属性效果应用失败: %s" % str(effect))
 
 # ============================================================================
 # 按钮事件
@@ -336,7 +279,7 @@ func _on_reroll_button_pressed() -> void:
 	print("[AttributeShopPanel] 刷新按钮被点击")
 	
 	var reroll_cost = ShopAttributeManager.get_reroll_cost(current_wave)
-	var gold = DataManager.get_total_gold()
+	var gold = RunStateService.get_run_gold()
 	
 	if gold < reroll_cost:
 		print("[AttributeShopPanel] 金币不足，无法刷新")
@@ -345,13 +288,16 @@ func _on_reroll_button_pressed() -> void:
 	
 	SoundManager.play("ui_click")
 	
-	# 扣除金币
-	DataManager.add_gold(-reroll_cost)
-	
-	# 重新生成属性
-	purchased_indices.clear()
-	var attributes = ShopAttributeManager.generate_shop_for_wave(current_wave)
-	_display_attributes(attributes)
+	var result = ShopDomainService.try_reroll(reroll_cost, func() -> bool:
+		purchased_indices.clear()
+		var attributes = ShopAttributeManager.generate_shop_for_wave(current_wave)
+		_display_attributes(attributes)
+		return true
+	)
+	if not bool(result.get("success", false)):
+		print("[AttributeShopPanel] 刷新失败: %s" % str(result.get("reason", "未知错误")))
+		SoundManager.play("ui_error")
+		return
 	
 	print("[AttributeShopPanel] 商店已刷新")
 

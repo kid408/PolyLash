@@ -270,16 +270,6 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
 text = "开始游戏"
 
-[node name="UpgradeButton" type="Button" parent="MarginContainer/HBoxContainer/RightPanel"]
-custom_minimum_size = Vector2(200, 50)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 20
-theme_override_styles/normal = SubResource("StyleBoxFlat_upgrade_btn")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_upgrade_btn")
-theme_override_styles/hover = SubResource("StyleBoxFlat_upgrade_btn")
-text = "强化角色"
-
 [node name="WarehouseButton" type="Button" parent="MarginContainer/HBoxContainer/RightPanel"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2

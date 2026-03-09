@@ -27,47 +27,21 @@ func _ready() -> void:
 # ============================================================================
 
 func _load_bond_configs() -> void:
-	"""从 CSV 加载羁绊配置"""
-	var csv_path = "res://config/player/bond_config.csv"
-	if not FileAccess.file_exists(csv_path):
-		printerr("[BondUILoader] 羁绊配置文件不存在: %s" % csv_path)
-		return
-	
-	var file = FileAccess.open(csv_path, FileAccess.READ)
-	if not file:
-		printerr("[BondUILoader] 无法打开羁绊配置文件")
-		return
-	
-	# 跳过表头
-	file.get_csv_line()
-	# 跳过说明行
-	file.get_csv_line()
-	
-	while not file.eof_reached():
-		var line = file.get_csv_line()
-		if line.size() < 10:  # 现在需要至少10列
-			continue
-		
-		# CSV 列顺序: bond_id, type, level, required_count, effect_type, effect_param, effect_value, icon_path_index, display_name, description
-		var bond_id = line[0]
-		var bond_type = line[1]
-		var icon_path_index = int(line[7])  # 修复：使用正确的列索引
-		var display_name = line[8]          # 修复：使用正确的列索引
-		var description = line[9]           # 修复：使用正确的列索引
-		
-		if bond_id == "" or bond_id == "-1":
-			continue
-		
-		# 只在第一次遇到该 bond_id 时创建配置（避免重复）
-		if not bond_configs.has(bond_id):
-			bond_configs[bond_id] = {
-				"bond_type": bond_type,
-				"icon_path_index": icon_path_index,
-				"display_name": display_name,
-				"description": description
-			}
-	
-	file.close()
+	"""通过 ConfigRepository 加载羁绊配置（自动优先 v3）。"""
+	bond_configs.clear()
+	var loaded := ConfigRepository.load_bond_configs()
+	for bond_id in loaded.keys():
+		var cfg: Dictionary = loaded[bond_id]
+		var levels = cfg.get("levels", [])
+		var description := ""
+		if levels is Array and not levels.is_empty():
+			description = str(levels[0].get("description", ""))
+		bond_configs[bond_id] = {
+			"bond_type": cfg.get("bond_type", ""),
+			"icon_path_index": int(cfg.get("icon_path_index", 1)),
+			"display_name": cfg.get("display_name", bond_id),
+			"description": description
+		}
 	print("[BondUILoader] 加载了 %d 个羁绊配置" % bond_configs.size())
 
 # ============================================================================

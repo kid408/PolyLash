@@ -7,6 +7,8 @@ extends EditorScript
 ## 2. 点击 File → Run（或按 Ctrl+Shift+X）
 ## 3. 检查输出面板查看创建结果
 
+const OVERWRITE_EXISTING := false
+
 func _run() -> void:
 	print("========================================")
 	print("开始创建武器场景...")
@@ -132,6 +134,10 @@ func create_melee_scene(scene_name: String, description: String) -> void:
 	
 	# 保存场景
 	var scene_path = "res://scenes/weapons/melee/%s.tscn" % scene_name
+	if FileAccess.file_exists(scene_path) and not OVERWRITE_EXISTING:
+		print("  ⚠ 场景已存在，跳过覆盖: %s" % scene_path)
+		weapon.queue_free()
+		return
 	var packed_scene = PackedScene.new()
 	var result = packed_scene.pack(weapon)
 	
@@ -234,6 +240,10 @@ func create_range_scene(scene_name: String, description: String, muzzle_x: float
 	
 	# 保存场景
 	var scene_path = "res://scenes/weapons/range/%s.tscn" % scene_name
+	if FileAccess.file_exists(scene_path) and not OVERWRITE_EXISTING:
+		print("  ⚠ 场景已存在，跳过覆盖: %s" % scene_path)
+		weapon.queue_free()
+		return
 	var packed_scene = PackedScene.new()
 	var result = packed_scene.pack(weapon)
 	

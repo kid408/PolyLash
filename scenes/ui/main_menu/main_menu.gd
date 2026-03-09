@@ -33,7 +33,9 @@ const BUTTON_DEFS: Array = [
 # 节点引用
 @onready var button_container: VBoxContainer = $ButtonContainer
 @onready var continue_info_card: PanelContainer = $ContinueInfoCard
-@onready var card_portrait: TextureRect = $ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardPortrait
+@onready var card_portrait_1: TextureRect = $ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardPortraits/CardPortrait1
+@onready var card_portrait_2: TextureRect = $ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardPortraits/CardPortrait2
+@onready var card_portrait_3: TextureRect = $ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardPortraits/CardPortrait3
 @onready var card_name_label: Label = $ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardNameLabel
 @onready var card_floor_label: Label = $ContinueInfoCard/CardMargin/CardVBox/CardFloorLabel
 @onready var card_time_label: Label = $ContinueInfoCard/CardMargin/CardVBox/CardTimeLabel
@@ -41,8 +43,11 @@ const BUTTON_DEFS: Array = [
 # 按钮实例列表
 var _buttons: Array = []
 var _continue_button: Button = null
+var _card_portrait_slots: Array[TextureRect] = []
 
 func _ready() -> void:
+	_card_portrait_slots = [card_portrait_1, card_portrait_2, card_portrait_3]
+
 	# 隐藏信息卡片
 	continue_info_card.visible = false
 	# 构建菜单按钮
@@ -138,25 +143,24 @@ func _on_continue_hover_enter() -> void:
 	if data.is_empty():
 		return
 
-	# 填充卡片数据
-	var leader_id: String = data.get("leader_id", "")
+	# 填充三人缩略图（优先 selected_players，回退 leader_id）
+	var player_ids := _extract_saved_player_ids(data)
+	_update_continue_portraits(player_ids)
+	card_name_label.text = _build_team_name_text(player_ids)
 
-	# 加载队长头像
-	var visual := ConfigManager.get_player_visual(leader_id)
-	var sprite_path: String = visual.get("sprite_path", "")
-	if sprite_path != "" and ResourceLoader.exists(sprite_path):
-		card_portrait.texture = load(sprite_path)
+	# 进度显示按 game_state 分支，避免失败后仍显示旧波次。
+	var game_state: String = str(data.get("game_state", "in_progress"))
+	if game_state == "character_selection":
+		card_floor_label.text = "角色准备中"
+	elif game_state == "in_battle" and data.has("battle_state"):
+		var battle_state: Dictionary = data.get("battle_state", {})
+		var floor_num_battle: int = int(battle_state.get("current_floor", data.get("current_floor", 1)))
+		var wave_num_battle: int = int(battle_state.get("current_wave", data.get("current_wave", 1)))
+		card_floor_label.text = "第%d层 - 波次%d" % [floor_num_battle, wave_num_battle]
 	else:
-		card_portrait.texture = null
-
-	# 队长名称
-	var player_config := ConfigManager.get_player_config(leader_id)
-	card_name_label.text = player_config.get("display_name", leader_id)
-
-	# 层数/波次
-	var floor_num: int = int(data.get("current_floor", 1))
-	var wave_num: int = int(data.get("current_wave", 1))
-	card_floor_label.text = "第%d层 - 波次%d" % [floor_num, wave_num]
+		var floor_num: int = int(data.get("current_floor", 1))
+		var wave_num: int = int(data.get("current_wave", 1))
+		card_floor_label.text = "第%d层 - 波次%d" % [floor_num, wave_num]
 
 	# 游戏时长
 	var play_seconds: int = int(data.get("play_time_seconds", 0))
@@ -168,6 +172,59 @@ func _on_continue_hover_enter() -> void:
 func _on_continue_hover_exit() -> void:
 	"""离开 CONTINUE 按钮时隐藏信息卡片"""
 	continue_info_card.visible = false
+
+func _update_continue_portraits(player_ids: Array[String]) -> void:
+	for i in range(_card_portrait_slots.size()):
+		var slot = _card_portrait_slots[i]
+		if i < player_ids.size():
+			var tex := _load_player_portrait(player_ids[i])
+			slot.texture = tex
+			slot.visible = tex != null
+			slot.tooltip_text = _get_player_display_name(player_ids[i])
+		else:
+			slot.texture = null
+			slot.visible = false
+			slot.tooltip_text = ""
+
+func _build_team_name_text(player_ids: Array[String]) -> String:
+	if player_ids.is_empty():
+		return "未知队伍"
+	var names: Array[String] = []
+	for pid in player_ids:
+		names.append(_get_player_display_name(pid))
+	return " / ".join(names)
+
+func _extract_saved_player_ids(data: Dictionary) -> Array[String]:
+	var result: Array[String] = []
+	var selected_players = data.get("selected_players", [])
+	if selected_players is Array:
+		for entry in selected_players:
+			var pid := ""
+			if entry is Dictionary:
+				pid = str(entry.get("player_id", "")).strip_edges()
+			elif entry is String:
+				pid = str(entry).strip_edges()
+			if pid == "":
+				continue
+			result.append(pid)
+			if result.size() >= _card_portrait_slots.size():
+				return result
+
+	var leader_id := str(data.get("leader_id", "")).strip_edges()
+	if result.is_empty() and leader_id != "":
+		result.append(leader_id)
+	return result
+
+func _load_player_portrait(player_id: String) -> Texture2D:
+	var visual := ConfigManager.get_player_visual(player_id)
+	var sprite_path := str(visual.get("sprite_path", "")).strip_edges()
+	if sprite_path == "" or not ResourceLoader.exists(sprite_path):
+		return null
+	return load(sprite_path) as Texture2D
+
+func _get_player_display_name(player_id: String) -> String:
+	var config := ConfigManager.get_player_config(player_id)
+	return str(config.get("display_name", player_id))
 
 
 # ============================================================================

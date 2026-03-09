@@ -36,6 +36,7 @@ func _refresh_slots() -> void:
 	# 创建3个新卡片
 	for i in range(SaveManager.MAX_SLOTS):
 		var card = SAVE_SLOT_CARD.instantiate()
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card_container.add_child(card)
 		var data := SaveManager.get_slot_data(i)
 		card.setup(i, data, mode)

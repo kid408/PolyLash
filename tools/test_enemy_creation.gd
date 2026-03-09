@@ -8,11 +8,13 @@ func _run() -> void:
 	print("================================================================================")
 	print("敌人创建系统测试")
 	print("================================================================================")
+
+	var suffix := str(Time.get_unix_time_from_system())
 	
 	# 测试1: 创建简单敌人
 	print("\n[测试1] 创建简单敌人...")
 	var simple_config = {
-		"enemy_id": "test_simple",
+		"enemy_id": "test_simple_%s" % suffix,
 		"display_name": "测试简单敌人",
 		"health": 100,
 		"speed": 150,
@@ -27,7 +29,7 @@ func _run() -> void:
 	# 测试2: 创建带能力的敌人
 	print("\n[测试2] 创建带能力的敌人...")
 	var ability_config = {
-		"enemy_id": "test_with_ability",
+		"enemy_id": "test_with_ability_%s" % suffix,
 		"display_name": "测试能力敌人",
 		"health": 150,
 		"speed": 180,
@@ -41,7 +43,7 @@ func _run() -> void:
 	
 	# 测试3: 从预设创建
 	print("\n[测试3] 从预设创建敌人...")
-	var result3 = tool.create_from_preset("test_preset_tank", "tank")
+	var result3 = tool.create_from_preset("test_preset_tank_%s" % suffix, "tank")
 	print("[测试3] 结果: %s" % ("✅ 成功" if result3 else "❌ 失败"))
 	
 	# 总结
@@ -53,6 +55,6 @@ func _run() -> void:
 	print("2. 在场景中测试创建的敌人")
 	print("3. 如有问题，查看控制台错误信息")
 	print("\n创建的测试敌人:")
-	print("  - test_simple")
-	print("  - test_with_ability")
-	print("  - test_preset_tank")
+	print("  - test_simple_%s" % suffix)
+	print("  - test_with_ability_%s" % suffix)
+	print("  - test_preset_tank_%s" % suffix)

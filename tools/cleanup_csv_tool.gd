@@ -55,27 +55,26 @@ func _remove_character_from_csv(file_path: String, character_id: String) -> bool
 		printerr("❌ 文件不存在: %s" % file_path)
 		return false
 	
-	# 读取所有行
+	# 读取所有行（CSV解析，兼容引号）
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
 		printerr("❌ 无法打开文件: %s" % file_path)
 		return false
 	
-	var lines = []
+	var rows: Array[PackedStringArray] = []
 	var found = false
 	
 	# 对于 ult_config.csv，需要匹配 {character_id}_ult
 	var is_ult_config = file_path.ends_with("ult_config.csv")
-	var search_id = character_id + "_ult," if is_ult_config else character_id + ","
+	var search_id = character_id + "_ult" if is_ult_config else character_id
 	
 	while not file.eof_reached():
-		var line = file.get_line()
-		# 跳过空行
-		if line.strip_edges().is_empty():
+		var row = file.get_csv_line()
+		if row.is_empty():
 			continue
-		# 保留不是目标角色的行
-		if not line.begins_with(search_id):
-			lines.append(line)
+		var row_id = str(row[0]).strip_edges()
+		if row_id != search_id:
+			rows.append(row)
 		else:
 			found = true
 			var display_id = character_id + "_ult" if is_ult_config else character_id
@@ -94,9 +93,8 @@ func _remove_character_from_csv(file_path: String, character_id: String) -> bool
 		printerr("❌ 无法写入文件: %s" % file_path)
 		return false
 	
-	# 所有行都使用 store_line，包括最后一行
-	for line in lines:
-		file.store_line(line)
+	for row in rows:
+		file.store_csv_line(row)
 	
 	file.close()
 	

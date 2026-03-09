@@ -61,6 +61,7 @@ const DEFAULT_EXPLOSION = preload("uid://dvfjoyutjx5jf")
 @onready var vision_area: Area2D = $VisionArea
 @onready var knockback_timer: Timer = $KnockbackTimer
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
+@onready var contact_hitbox: HitboxComponent = $HitboxComponent
 
 # 【新增】预警线节点 (代码动态生成，免去手动添加)
 var warning_line: Line2D 
@@ -74,6 +75,17 @@ var is_dead: bool = false
 var knockback_dir: Vector2 = Vector2.ZERO
 var knockback_power: float = 0.0
 var break_radius: float = 40.0
+
+# 峰值波词缀（P1-ENEMY）
+var elite_affix_id: String = ""
+var elite_affix_params: Dictionary = {}
+var _affix_vamp_tick: float = 0.0
+
+# Boss 三阶段模板（P1-ENEMY-03）
+var boss_phase_configs: Array = []
+var boss_current_phase: int = 1
+var _boss_base_speed: float = 0.0
+var _boss_base_damage: float = 0.0
 
 # AI 状态
 var current_ai_state: AIState = AIState.CHASE
@@ -120,15 +132,20 @@ func _ready() -> void:
 	_apply_visual_from_config()  # 应用视觉配置（精灵、缩放、碰撞体等）
 	_apply_color_from_config()   # 应用颜色配置
 	_apply_behavior_from_config() # 应用行为配置
+	_sync_contact_hitbox_damage()
 	
 	original_modulate = visuals.modulate
 	
 	# 动态生成特殊节点
 	_setup_special_nodes()
+	_init_boss_phase_template()
 	
 	# 如果是刺猬，默认开启冲锋
 	if enemy_type == EnemyType.SPIKED:
 		can_charge = true
+
+	# Split 子体在 ready 后应用缩放参数，避免在物理查询回调中直接改碰撞状态。
+	_apply_split_spawn_profile()
 
 # 根据 enemy_id 设置敌人类型
 func _set_enemy_type_from_id() -> void:
@@ -174,10 +191,18 @@ func _apply_visual_from_config() -> void:
 	
 	# 设置精灵
 	if visual_config.has("sprite_path"):
-		var sprite_path = visual_config.get("sprite_path", "")
-		if sprite_path != "" and sprite_path != null:
-			var texture = load(sprite_path)
-			if texture:
+		var sprite_path: String = str(visual_config.get("sprite_path", ""))
+		if not sprite_path.is_empty():
+			var resolved_sprite_path: String = sprite_path
+			if not FileAccess.file_exists(resolved_sprite_path):
+				push_warning("[Enemy] sprite missing for %s: %s, fallback to Enemy_1.png" % [enemy_id, sprite_path])
+				resolved_sprite_path = "res://assets/sprites/Enemies/Enemy_1.png"
+
+			var texture: Texture2D = null
+			if FileAccess.file_exists(resolved_sprite_path):
+				texture = load(resolved_sprite_path) as Texture2D
+
+			if texture != null:
 				# 尝试找到精灵节点（支持 Sprite 和 Sprite2D）
 				var sprite_node = null
 				if visuals.has_node("Sprite"):
@@ -410,6 +435,8 @@ func _process(delta: float) -> void:
 	
 	# P2-3/P2-4: 处理状态效果
 	_process_status_effects(delta)
+	_process_elite_affix(delta)
+	_process_boss_phase_template(delta)
 	
 	# 剪刀手切线
 	if enemy_type == EnemyType.LINE_BREAKER:
@@ -425,6 +452,128 @@ func _process(delta: float) -> void:
 			_state_charging(delta)
 		AIState.COOLDOWN:
 			_state_cooldown(delta)
+
+func apply_elite_affix(affix_id: String, params: Dictionary = {}) -> void:
+	elite_affix_id = affix_id
+	elite_affix_params = params.duplicate(true)
+	if elite_affix_id.is_empty():
+		return
+	
+	var visual_node: Node2D = visuals
+	if not is_instance_valid(visual_node):
+		visual_node = get_node_or_null("Visuals") as Node2D
+
+	match elite_affix_id.to_lower():
+		"swift":
+			var speed_mult := float(params.get("speed_mult", 1.35))
+			speed *= speed_mult
+			if is_instance_valid(visual_node):
+				visual_node.modulate = visual_node.modulate.lerp(Color(0.7, 1.4, 2.0, 1.0), 0.35)
+		"titan":
+			var hp_mult := float(params.get("hp_mult", 1.6))
+			var dmg_mult := float(params.get("dmg_mult", 1.25))
+			damage *= dmg_mult
+			if health_component:
+				health_component.max_health *= hp_mult
+				health_component.current_health = health_component.max_health
+			health *= hp_mult
+			if is_instance_valid(visual_node):
+				visual_node.scale *= 1.15
+				visual_node.modulate = visual_node.modulate.lerp(Color(1.6, 1.2, 0.8, 1.0), 0.35)
+		"vamp":
+			_affix_vamp_tick = 0.0
+			if is_instance_valid(visual_node):
+				visual_node.modulate = visual_node.modulate.lerp(Color(1.5, 0.5, 0.6, 1.0), 0.30)
+		"split":
+			if is_instance_valid(visual_node):
+				visual_node.modulate = visual_node.modulate.lerp(Color(1.0, 1.0, 1.8, 1.0), 0.30)
+		_:
+			pass
+
+	Global.spawn_floating_text(global_position, affix_id.to_upper(), Color(1.4, 1.6, 2.0))
+	_sync_contact_hitbox_damage()
+
+func _process_elite_affix(delta: float) -> void:
+	if elite_affix_id.to_lower() != "vamp":
+		return
+	if not health_component:
+		return
+	_affix_vamp_tick += delta
+	if _affix_vamp_tick < 1.0:
+		return
+	_affix_vamp_tick = 0.0
+	var heal_amount: float = max(1.0, float(health_component.max_health) * 0.01)
+	health_component.heal(heal_amount)
+
+func _init_boss_phase_template() -> void:
+	if enemy_id != "boss_enemy":
+		return
+
+	var grouped: Dictionary = ConfigRepository.load_boss_phase_configs()
+	boss_phase_configs = grouped.get(enemy_id, [])
+	if boss_phase_configs.is_empty():
+		return
+
+	_boss_base_speed = speed
+	_boss_base_damage = damage
+	boss_current_phase = int(boss_phase_configs[0].get("phase", 1))
+	_apply_boss_phase(boss_current_phase, true)
+
+func _process_boss_phase_template(_delta: float) -> void:
+	if boss_phase_configs.is_empty():
+		return
+	if not health_component:
+		return
+	if health_component.max_health <= 0:
+		return
+
+	var hp_ratio := float(health_component.current_health) / float(health_component.max_health)
+	var target_phase := boss_current_phase
+	for phase_cfg in boss_phase_configs:
+		var threshold := float(phase_cfg.get("trigger_hp_ratio", 1.0))
+		var phase_no := int(phase_cfg.get("phase", 1))
+		if hp_ratio <= threshold:
+			target_phase = max(target_phase, phase_no)
+
+	if target_phase > boss_current_phase:
+		_apply_boss_phase(target_phase, false)
+
+func _apply_boss_phase(phase_no: int, is_initial: bool) -> void:
+	var phase_cfg := _get_boss_phase_config(phase_no)
+	if phase_cfg.is_empty():
+		return
+
+	var speed_mul := float(phase_cfg.get("speed_multiplier", 1.0))
+	var damage_mul := float(phase_cfg.get("damage_multiplier", 1.0))
+	var budget_mul := float(phase_cfg.get("spawn_budget_multiplier", 1.0))
+	var event_tag := str(phase_cfg.get("event_tag", ""))
+
+	speed = _boss_base_speed * speed_mul
+	damage = _boss_base_damage * damage_mul
+	_sync_contact_hitbox_damage()
+	boss_current_phase = phase_no
+	set_meta("boss_phase_budget_multiplier", budget_mul)
+	set_meta("boss_phase_event_tag", event_tag)
+
+	if not is_initial:
+		Global.spawn_floating_text(global_position, "BOSS P%d" % phase_no, Color(1.6, 0.8, 0.2))
+		SoundManager.play("enemy_charge_warning")
+
+	print("[Enemy][BossPhase] enemy=%s phase=%d speed_mul=%.2f damage_mul=%.2f budget_mul=%.2f event=%s" % [
+		enemy_id, phase_no, speed_mul, damage_mul, budget_mul, event_tag
+	])
+
+func _get_boss_phase_config(phase_no: int) -> Dictionary:
+	for phase_cfg in boss_phase_configs:
+		if int(phase_cfg.get("phase", 0)) == phase_no:
+			return phase_cfg
+	return {}
+
+func _sync_contact_hitbox_damage() -> void:
+	if not contact_hitbox:
+		return
+	var final_damage: float = max(1.0, damage)
+	contact_hitbox.setup(final_damage, false, 0.0, self)
 
 # --- 状态：追逐 (默认) ---
 func _state_chase(delta: float) -> void:
@@ -846,10 +995,29 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 	# 增强打击感：敌人受击时的反馈
 	# 安全检查：确保 source 和 Global.player 仍然有效
 	if hitbox.source and is_instance_valid(hitbox.source) and hitbox.source == Global.player: 
-		# 根据伤害大小调整顿帧强度
-		var freeze_duration = clamp(hitbox.damage / 100.0, 0.02, 0.08)
-		Global.frame_freeze(freeze_duration, 0.2) 
-		Global.on_camera_shake.emit(2.0 + hitbox.damage / 20.0, 0.08)
+		var is_elite_target: bool = self is EnemyElites
+		if Global.has_method("apply_enemy_hit_feedback"):
+			Global.apply_enemy_hit_feedback(hitbox.damage, hitbox.critical, is_elite_target)
+
+func despawn_for_wave_end() -> void:
+	# Force-remove enemy for wave settlement without rewards, drops, split, or poison pool.
+	if is_dead:
+		return
+	is_dead = true
+	can_move = false
+
+	if warning_line and is_instance_valid(warning_line):
+		warning_line.queue_free()
+
+	if collision_shape:
+		collision_shape.set_deferred("disabled", true)
+
+	if contact_hitbox:
+		contact_hitbox.monitoring = false
+		contact_hitbox.monitorable = false
+
+	clear_all_statuses()
+	queue_free()
 
 func destroy_enemy() -> void:
 	if is_dead: return
@@ -901,15 +1069,21 @@ func destroy_enemy() -> void:
 	
 	# 记录击杀数
 	Global.add_session_kill()
+
+	# 记录战利品掉落（波末统一选择）
+	var arena = get_tree().get_first_node_in_group("arena")
+	if arena and arena.has_method("record_enemy_wave_loot_drop"):
+		arena.record_enemy_wave_loot_drop(enemy_id, self is EnemyElites)
 	
 	if Global.player and Global.player.has_method("on_enemy_killed"):
 		Global.player.on_enemy_killed(self)
 	
-	SoundManager.play("enemy_death")
+	var is_elite_target: bool = self is EnemyElites
+	if Global.has_method("apply_enemy_kill_feedback"):
+		Global.apply_enemy_kill_feedback(is_elite_target)
 	spawn_explosion_safe()
-	# 增强打击感：敌人死亡时的反馈
-	Global.frame_freeze(0.04, 0.3)
-	Global.on_camera_shake.emit(3.0, 0.12)
+	if elite_affix_id.to_lower() == "split":
+		call_deferred("_spawn_split_children")
 	
 	var tween = create_tween()
 	tween.set_parallel(true)
@@ -929,6 +1103,50 @@ func spawn_explosion_safe() -> void:
 	vfx_tween.tween_interval(2.0)
 	vfx_tween.tween_callback(vfx.queue_free)
 
+func _spawn_split_children() -> void:
+	# Split 词缀：死亡时分裂出两个小体型单位（不继承 split，防止递归）
+	var scene_path := scene_file_path
+	if scene_path.is_empty():
+		scene_path = "res://scenes/unit/enemy/enemy_generic.tscn"
+	var scene := load(scene_path) as PackedScene
+	if scene == null:
+		return
+
+	for i in range(2):
+		var child_enemy = scene.instantiate() as Enemy
+		if child_enemy == null:
+			continue
+		child_enemy.enemy_id = enemy_id
+		child_enemy.global_position = global_position + Vector2(randf_range(-36, 36), randf_range(-24, 24))
+		child_enemy.elite_affix_id = "" # 取消继承，避免无限分裂
+		child_enemy.set_meta("split_spawn_profile", {
+			"speed_mult": 1.12,
+			"damage_mult": 0.60,
+			"hp_mult": 0.45
+		})
+		get_tree().current_scene.call_deferred("add_child", child_enemy)
+
+func _apply_split_spawn_profile() -> void:
+	if not has_meta("split_spawn_profile"):
+		return
+	var raw_profile: Variant = get_meta("split_spawn_profile")
+	remove_meta("split_spawn_profile")
+	if not (raw_profile is Dictionary):
+		return
+
+	var profile: Dictionary = raw_profile
+	var speed_mult: float = float(profile.get("speed_mult", 1.0))
+	var damage_mult: float = float(profile.get("damage_mult", 1.0))
+	var hp_mult: float = float(profile.get("hp_mult", 1.0))
+
+	speed *= speed_mult
+	damage *= damage_mult
+	health *= hp_mult
+	if health_component:
+		health_component.max_health *= hp_mult
+		health_component.current_health = health_component.max_health
+	_sync_contact_hitbox_damage()
+
 # 地雷怪死后生成毒池
 func _spawn_poison_pool(pos: Vector2) -> void:
 	# 安全检查：确保场景树可用
@@ -939,6 +1157,7 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 	
 	var poison = Area2D.new()
 	poison.name = "PoisonPool_" + str(Time.get_ticks_msec())
+	poison.add_to_group("enemy_effects")
 	poison.collision_layer = 0
 	poison.collision_mask = 1
 	poison.monitorable = false

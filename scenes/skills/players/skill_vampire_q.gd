@@ -1,74 +1,65 @@
-extends SkillDrawingBase
+﻿extends SkillDrawingBase
 class_name SkillVampireQ
 
-## ==============================================================================
-## 血族Q技能 - 血路与血池
-## ==============================================================================
-## 
-## 功能说明:
-## - 画线：消耗自身HP，沿路径创建血路，对接触的敌人造成伤害
-## - 画圈闭合：在闭合区域内创建血池，为区域内队友提供100%生命偷取
-## 
-## ==============================================================================
-
-# ==============================================================================
-# 血族技能专属参数（从CSV加载）
-# ==============================================================================
-
-## 自伤比例（10%最大生命值）
-var hp_cost_percent: float = 0.1
-
-## 血路伤害
-var blood_damage: int = 30
-
-## 血池吸血比例（100%）
+var hp_cost_percent: float = 0.08
+var blood_damage: int = 36
 var lifesteal_value: float = 1.0
+var blood_pool_duration: float = 5.5
+var blood_mark_amp: float = 0.25
+var blood_heal_value: int = 4
 
-## 血池持续时间
-var blood_pool_duration: float = 5.0
-
-# ==============================================================================
-# 实现基类虚函数
-# ==============================================================================
-
-## 生成血路效果（未闭合状态）
 func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
-	# 自伤：消耗自身HP
 	if skill_owner and skill_owner.has_node("HealthComponent"):
 		var hc = skill_owner.health_component
-		var cost = int(hc.max_health * hp_cost_percent)
-		# 确保不会自杀，至少保留1点HP
+		var cost: int = int(round(float(hc.max_health) * hp_cost_percent))
 		if hc.current_health > 1:
-			var actual_cost = min(cost, int(hc.current_health) - 1)
+			var actual_cost: int = min(cost, int(hc.current_health) - 1)
 			hc.take_damage(actual_cost)
 			Global.spawn_floating_text(skill_owner.global_position, "-%d HP" % actual_cost, Color(0.7, 0.1, 0.1))
 
-	# 创建血路（伤害线段效果）
 	SkillEffectManager.create_line_effect({
 		"start": start,
 		"end": end,
-		"width": 24.0,
+		"width": 26.0,
 		"damage": blood_damage,
-		"damage_interval": 0.5,
+		"damage_interval": 0.45,
 		"duration": _get_line_duration(),
-		"color": Color(0.7, 0.1, 0.1, 0.7)
+		"color": Color(0.7, 0.1, 0.1, 0.72)
 	})
 
-## 生成血池效果（闭合状态）
+	SkillEffectManager.create_debuff_zone({
+		"start": start,
+		"end": end,
+		"width": 20.0,
+		"duration": _get_line_duration(),
+		"debuff_type": "damage_amp",
+		"debuff_value": blood_mark_amp,
+		"debuff_duration": 2.0,
+		"tick_interval": 0.5,
+		"color": Color(0.62, 0.08, 0.08, 0.24)
+	})
+
 func _spawn_area_effect(polygon: PackedVector2Array) -> void:
 	SkillEffectManager.create_buff_zone({
 		"polygon": polygon,
 		"duration": blood_pool_duration,
 		"buff_type": "lifesteal",
 		"buff_value": lifesteal_value,
-		"tick_interval": 0.5,
-		"color": Color(0.5, 0.0, 0.0, 0.5)
+		"tick_interval": 0.45,
+		"color": Color(0.5, 0.0, 0.0, 0.55)
 	})
 
-## 获取规划线条颜色（暗红色/血色）
+	SkillEffectManager.create_buff_zone({
+		"polygon": polygon,
+		"duration": blood_pool_duration,
+		"buff_type": "heal",
+		"buff_value": float(blood_heal_value),
+		"tick_interval": 0.55,
+		"color": Color(0.62, 0.08, 0.08, 0.28)
+	})
+
 func _get_line_color() -> Color:
 	return Color(0.7, 0.1, 0.1, 1.0)
 
-## 获取闭合提示颜色
 func _get_closure_color() -> Color:
 	return Color(0.5, 0.0, 0.0, 1.0)

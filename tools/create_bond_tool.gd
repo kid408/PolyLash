@@ -8,7 +8,9 @@ extends EditorScript
 ## 使用方法：
 ## 1. 修改 _run() 中的 config 字典
 ## 2. 在 Godot 编辑器中：File -> Run
-## 3. 工具会自动将羁绊追加到 bond_config.csv
+## 3. 工具会自动将羁绊追加到当前生效羁绊表
+##    - 优先: bond_config_v3.csv
+##    - 回退: bond_config.csv
 ##
 ## 羁绊类型说明：
 ##   - origin  : 身世羁绊（如 魔导/重装/游侠/后勤）
@@ -29,6 +31,7 @@ func _run() -> void:
 	print("\n================================================================================")
 	print("羁绊创建工具")
 	print("================================================================================\n")
+	print("当前写入目标: %s\n" % _get_bond_csv_path())
 
 	# ============================================================================
 	# 在这里修改配置，然后 File -> Run
@@ -130,7 +133,7 @@ func create_bond(config: Dictionary) -> bool:
 # ==============================================================================
 
 func _write_bond_config(config: Dictionary) -> bool:
-	var csv_path = "res://config/player/bond_config.csv"
+	var csv_path = _get_bond_csv_path()
 	var bond_id = config.bond_id
 	var bond_type = config.get("bond_type", "origin")
 	var icon_idx = config.get("icon_path_index", 1)
@@ -139,7 +142,7 @@ func _write_bond_config(config: Dictionary) -> bool:
 
 	for level_data in levels:
 		# bond_id,type,level,required_count,effect_type,effect_param,effect_value,icon_path_index,display_name,description
-		var line = ",".join(PackedStringArray([
+		var row = PackedStringArray([
 			bond_id,
 			bond_type,
 			str(level_data.get("level", 1)),
@@ -150,12 +153,12 @@ func _write_bond_config(config: Dictionary) -> bool:
 			str(icon_idx),
 			display_name,
 			str(level_data.get("description", "")),
-		]))
+		])
 
-		if not _append_line(csv_path, line):
+		if not _append_csv_row(csv_path, row):
 			return false
 
-	print("[CreateBondTool] ✅ 已写入 %d 个等级到 bond_config.csv" % levels.size())
+	print("[CreateBondTool] ✅ 已写入 %d 个等级到 %s" % [levels.size(), csv_path.get_file()])
 	return true
 
 # ==============================================================================
@@ -175,7 +178,7 @@ func _create_matching_emblem(config: Dictionary) -> void:
 	var price = config.get("emblem_price", 120)
 
 	# emblem_id,display_name,artifact_type,bond_tag,rarity,shop_price,is_unique,icon_path,description
-	var line = ",".join(PackedStringArray([
+	var row = PackedStringArray([
 		emblem_id,
 		display_name,
 		"emblem",
@@ -185,9 +188,9 @@ func _create_matching_emblem(config: Dictionary) -> void:
 		"0",
 		icon_path,
 		"全队%s标签+1" % config.get("display_name", config.bond_id),
-	]))
+	])
 
-	if _append_line(csv_path, line):
+	if _append_csv_row(csv_path, row):
 		print("[CreateBondTool] ✅ 已创建徽章: %s" % emblem_id)
 
 # ==============================================================================
@@ -212,7 +215,7 @@ func _create_matching_relic(config: Dictionary) -> void:
 	var icon_path = relic_cfg.get("icon_path", "res://assets/sprites/Icons/origins/origin1.png")
 
 	# id,name,tier,type,slot_type,base_stat,base_value,mod_type,mod_value,bond_grant,shop_price,icon_path,description
-	var line = ",".join(PackedStringArray([
+	var row = PackedStringArray([
 		relic_id,
 		display_name,
 		"3",
@@ -226,9 +229,9 @@ func _create_matching_relic(config: Dictionary) -> void:
 		str(price),
 		icon_path,
 		"%s神器" % config.get("display_name", config.bond_id),
-	]))
+	])
 
-	if _append_line(csv_path, line):
+	if _append_csv_row(csv_path, row):
 		print("[CreateBondTool] ✅ 已创建圣物: %s" % relic_id)
 
 # ==============================================================================
@@ -259,8 +262,8 @@ func add_level_to_bond(bond_id: String, level_data: Dictionary) -> bool:
 		printerr("[CreateBondTool] 错误: 无法读取羁绊信息: %s" % bond_id)
 		return false
 
-	var csv_path = "res://config/player/bond_config.csv"
-	var line = ",".join(PackedStringArray([
+	var csv_path = _get_bond_csv_path()
+	var row = PackedStringArray([
 		bond_id,
 		existing.get("type", "origin"),
 		str(level_data.get("level", 1)),
@@ -271,9 +274,9 @@ func add_level_to_bond(bond_id: String, level_data: Dictionary) -> bool:
 		str(existing.get("icon_path_index", 1)),
 		existing.get("display_name", bond_id),
 		str(level_data.get("description", "")),
-	]))
+	])
 
-	if _append_line(csv_path, line):
+	if _append_csv_row(csv_path, row):
 		print("[CreateBondTool] ✅ 已为 %s 添加 Lv.%d" % [bond_id, level_data.get("level", 1)])
 		return true
 	return false
@@ -364,11 +367,11 @@ func _validate_config(config: Dictionary) -> bool:
 	return true
 
 func _bond_exists(bond_id: String) -> bool:
-	return _id_exists_in_csv("res://config/player/bond_config.csv", bond_id)
+	return _id_exists_in_csv(_get_bond_csv_path(), bond_id)
 
 func _read_bond_info(bond_id: String) -> Dictionary:
 	"""读取已有羁绊的基本信息（type, icon_path_index, display_name）"""
-	var csv_path = "res://config/player/bond_config.csv"
+	var csv_path = _get_bond_csv_path()
 	if not FileAccess.file_exists(csv_path):
 		return {}
 	var file = FileAccess.open(csv_path, FileAccess.READ)
@@ -397,14 +400,24 @@ func _id_exists_in_csv(file_path: String, target_id: String) -> bool:
 	if not file:
 		return false
 	while not file.eof_reached():
-		var line = file.get_line().strip_edges()
-		if line.begins_with(target_id + ","):
+		var row = file.get_csv_line()
+		if row.is_empty():
+			continue
+		var row_id = str(row[0]).strip_edges()
+		if row_id == target_id:
 			file.close()
 			return true
 	file.close()
 	return false
 
-func _append_line(file_path: String, line: String) -> bool:
+func _get_bond_csv_path() -> String:
+	var v3_path := "res://config/player/bond_config_v3.csv"
+	var legacy_path := "res://config/player/bond_config.csv"
+	if FileAccess.file_exists(v3_path):
+		return v3_path
+	return legacy_path
+
+func _append_csv_row(file_path: String, row: PackedStringArray) -> bool:
 	if not FileAccess.file_exists(file_path):
 		printerr("[CreateBondTool] 文件不存在: %s" % file_path)
 		return false
@@ -423,7 +436,7 @@ func _append_line(file_path: String, line: String) -> bool:
 	file.seek_end()
 	if content.length() > 0 and not content.ends_with("\n"):
 		file.store_string("\n")
-	file.store_line(line)
+	file.store_csv_line(row)
 	file.close()
 	return true
 
@@ -434,7 +447,7 @@ func _append_line(file_path: String, line: String) -> bool:
 func _print_next_steps(config: Dictionary) -> void:
 	print("\n📖 下一步:")
 	print("────────────────────────────────────────")
-	print("1. 重启游戏使 BondManager 重新加载 bond_config.csv")
+	print("1. 重启游戏使 BondManager 重新加载 %s" % _get_bond_csv_path().get_file())
 	print("2. 在 player_config.csv 中为角色分配标签:")
 	print("   - origin_tag / mastery_tag / tactic_tag 列填入 '%s'" % config.bond_id)
 	print("3. 选择足够数量的角色即可激活羁绊")

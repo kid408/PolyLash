@@ -1,108 +1,88 @@
-extends SkillDrawingBase
+﻿extends SkillDrawingBase
 class_name SkillSwarmQ
 
-## ==============================================================================
-## 虫母Q技能 - 裂缝与孵化场
-## ==============================================================================
-## 
-## 功能说明:
-## - 画线：沿路径创建裂缝，每1秒生成一只自爆甲虫
-## - 画圈闭合：在闭合区域内创建孵化场，生成3个远程炮塔并为队友恢复生命
-## 
-## ==============================================================================
-
-# ==============================================================================
-# 虫母技能专属参数（从CSV加载）
-# ==============================================================================
-
-## 甲虫自爆伤害
-var beetle_damage: int = 30
-
-## 甲虫生成间隔
-var beetle_interval: float = 1.0
-
-## 甲虫存活时间
-var beetle_duration: float = 5.0
-
-## 炮塔伤害
-var turret_damage: int = 15
-
-## 孵化场炮塔数量
+var beetle_damage: int = 32
+var beetle_interval: float = 0.8
+var beetle_duration: float = 5.5
+var turret_damage: int = 18
 var turret_count: int = 3
-
-## 孵化场治疗量
 var heal_value: int = 3
+var brood_slow_value: float = 0.35
+var turret_duration: float = 10.0
+var brood_heal_duration: float = 8.0
 
-# ==============================================================================
-# 实现基类虚函数
-# ==============================================================================
-
-## 生成裂缝效果（未闭合状态）
-## 沿线段每隔 beetle_interval 秒生成一只自爆甲虫
 func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
-	var s = start
-	var e = end
-	var dur = _get_line_duration()
-	var spawn_count = int(dur / beetle_interval)
-	for i in range(spawn_count):
-		var delay = beetle_interval * i
-		var timer = get_tree().create_timer(delay)
-		var t = float(i) / max(spawn_count - 1, 1)
-		var pos = s.lerp(e, t)
-		timer.timeout.connect(func():
-			SkillEffectManager.create_summon({
-				"position": pos,
-				"summon_type": "beetle",
-				"duration": beetle_duration,
-				"damage": beetle_damage,
-				"attack_interval": 0.5,
-				"attack_range": 80.0,
-				"max_count": 10,
-				"owner_skill_id": "skill_swarm_q",
-				"color": Color(0.5, 0.4, 0.1)
-			})
-		)
+	var duration: float = _get_line_duration()
+	var spawn_count: int = max(1, int(floor(duration / max(0.1, beetle_interval))))
 
-## 生成孵化场效果（闭合状态）
-## 在闭合区域内生成炮塔并为队友恢复生命
+	for i in range(spawn_count):
+		var delay: float = beetle_interval * float(i)
+		var t: float = float(i) / float(max(spawn_count - 1, 1))
+		var pos: Vector2 = start.lerp(end, t)
+		get_tree().create_timer(delay).timeout.connect(_spawn_beetle_at.bind(pos))
+
+	SkillEffectManager.create_debuff_zone({
+		"start": start,
+		"end": end,
+		"width": 18.0,
+		"duration": duration,
+		"debuff_type": "slow",
+		"debuff_value": brood_slow_value,
+		"debuff_duration": 1.6,
+		"tick_interval": 0.5,
+		"color": Color(0.45, 0.38, 0.1, 0.24)
+	})
+
 func _spawn_area_effect(polygon: PackedVector2Array) -> void:
-	# 生成炮塔
+	var center: Vector2 = _calculate_polygon_center(polygon)
 	for i in range(turret_count):
-		var center = _get_polygon_center(polygon)
-		var offset = Vector2(randf_range(-50, 50), randf_range(-50, 50))
+		var angle: float = TAU * float(i) / float(max(turret_count, 1))
+		var pos: Vector2 = center + Vector2.RIGHT.rotated(angle) * 55.0
 		SkillEffectManager.create_summon({
-			"position": center + offset,
+			"position": pos,
 			"summon_type": "turret",
-			"duration": 10.0,
+			"duration": turret_duration,
 			"damage": turret_damage,
-			"attack_interval": 1.0,
-			"attack_range": 200.0,
-			"max_count": 5,
+			"attack_interval": 0.9,
+			"attack_range": 220.0,
+			"max_count": 6,
 			"owner_skill_id": "skill_swarm_q",
 			"color": Color(0.4, 0.3, 0.0)
 		})
 
-	# 治疗 Buff 区域
 	SkillEffectManager.create_buff_zone({
 		"polygon": polygon,
-		"duration": 8.0,
+		"duration": brood_heal_duration,
 		"buff_type": "heal",
 		"buff_value": float(heal_value),
-		"tick_interval": 1.0,
+		"tick_interval": 0.6,
 		"color": Color(0.5, 0.6, 0.2, 0.3)
 	})
 
-## 计算多边形中心点
-func _get_polygon_center(polygon: PackedVector2Array) -> Vector2:
-	var center = Vector2.ZERO
-	for p in polygon:
-		center += p
-	return center / polygon.size()
+	SkillEffectManager.create_buff_zone({
+		"polygon": polygon,
+		"duration": brood_heal_duration,
+		"buff_type": "attack_boost",
+		"buff_value": 0.2,
+		"tick_interval": 0.6,
+		"color": Color(0.55, 0.48, 0.16, 0.18)
+	})
 
-## 获取规划线条颜色（虫绿/棕色）
 func _get_line_color() -> Color:
 	return Color(0.5, 0.4, 0.1, 1.0)
 
-## 获取闭合提示颜色
 func _get_closure_color() -> Color:
 	return Color(0.4, 0.3, 0.0, 1.0)
+
+func _spawn_beetle_at(pos: Vector2) -> void:
+	SkillEffectManager.create_summon({
+		"position": pos,
+		"summon_type": "beetle",
+		"duration": beetle_duration,
+		"damage": beetle_damage,
+		"attack_interval": 0.45,
+		"attack_range": 90.0,
+		"max_count": 12,
+		"owner_skill_id": "skill_swarm_q",
+		"color": Color(0.5, 0.4, 0.1)
+	})

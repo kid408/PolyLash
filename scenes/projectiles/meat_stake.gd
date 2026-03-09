@@ -15,6 +15,8 @@ func setup(_target_pos: Vector2, _player: PlayerButcher):
 	target_pos = _target_pos
 	player_ref = _player
 	speed = player_ref.stake_throw_speed
+	add_to_group("projectiles")
+	add_to_group("player_skill_effects")
 	
 	# 创建视觉
 	visual_sprite = Polygon2D.new()

@@ -28,6 +28,38 @@ var active_effects: Dictionary = {}
 ## 效果ID计数器
 var next_effect_id: int = 0
 
+## 临时伤害倍率栈（由技能基类压栈/出栈）
+var _damage_multiplier_stack: Array[float] = []
+
+func push_damage_multiplier(multiplier: float) -> void:
+	var safe_multiplier: float = max(0.0, multiplier)
+	_damage_multiplier_stack.append(safe_multiplier)
+
+func pop_damage_multiplier() -> void:
+	if _damage_multiplier_stack.is_empty():
+		return
+	_damage_multiplier_stack.pop_back()
+
+func _get_damage_multiplier() -> float:
+	if _damage_multiplier_stack.is_empty():
+		return 1.0
+	var multiplier: float = 1.0
+	for item in _damage_multiplier_stack:
+		multiplier *= max(0.0, item)
+	return multiplier
+
+func _apply_runtime_damage_multiplier(config: Dictionary) -> Dictionary:
+	var multiplier: float = _get_damage_multiplier()
+	if is_equal_approx(multiplier, 1.0):
+		return config
+
+	var adjusted: Dictionary = config.duplicate(true)
+	for key in ["damage", "contact_damage"]:
+		if not adjusted.has(key):
+			continue
+		adjusted[key] = int(round(float(adjusted.get(key, 0)) * multiplier))
+	return adjusted
+
 # ==============================================================================
 # 创建效果
 # ==============================================================================
@@ -47,6 +79,7 @@ var next_effect_id: int = 0
 ##   - fade_out_duration: float (可选，默认0.3)
 ## @return: effect_id (用于后续操作)
 func create_area_effect(config: Dictionary) -> int:
+	config = _apply_runtime_damage_multiplier(config)
 	var effect_id = next_effect_id
 	next_effect_id += 1
 	
@@ -129,6 +162,7 @@ func create_area_effect(config: Dictionary) -> int:
 ##   - pull_force: float (可选，默认0)
 ## @return: effect_id
 func create_line_effect(config: Dictionary) -> int:
+	config = _apply_runtime_damage_multiplier(config)
 	var effect_id = next_effect_id
 	next_effect_id += 1
 	
@@ -216,6 +250,7 @@ func create_line_effect(config: Dictionary) -> int:
 ##   - color: Color (可选) - 墙体颜色
 ## @return: effect_id (用于后续操作), -1 表示失败
 func create_wall_effect(config: Dictionary) -> int:
+	config = _apply_runtime_damage_multiplier(config)
 	# 验证必需参数
 	if not config.has("start") or not config.has("end"):
 		push_error("[SkillEffectManager] create_wall_effect 缺少必需参数: start 或 end")
@@ -964,6 +999,7 @@ func _end_buff_zone(effect_id: int) -> void:
 ##   - fade_out_duration: float (淡出时间，默认 0.3)
 ## @return: effect_id, -1 表示失败
 func create_debuff_zone(config: Dictionary) -> int:
+	config = _apply_runtime_damage_multiplier(config)
 	# 验证必需参数
 	var has_polygon = config.has("polygon")
 	var has_line = config.has("start") and config.has("end")

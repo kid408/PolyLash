@@ -29,8 +29,8 @@ visible = false
 layout_mode = 0
 offset_left = 420.0
 offset_top = 200.0
-offset_right = 700.0
-offset_bottom = 380.0
+offset_right = 740.0
+offset_bottom = 400.0
 
 [node name="CardMargin" type="MarginContainer" parent="ContinueInfoCard"]
 layout_mode = 2
@@ -47,9 +47,25 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="CardPortrait" type="TextureRect" parent="ContinueInfoCard/CardMargin/CardVBox/CardHeader"]
+[node name="CardPortraits" type="HBoxContainer" parent="ContinueInfoCard/CardMargin/CardVBox/CardHeader"]
 layout_mode = 2
-custom_minimum_size = Vector2(64, 64)
+theme_override_constants/separation = 6
+
+[node name="CardPortrait1" type="TextureRect" parent="ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardPortraits"]
+layout_mode = 2
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CardPortrait2" type="TextureRect" parent="ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardPortraits"]
+layout_mode = 2
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CardPortrait3" type="TextureRect" parent="ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardPortraits"]
+layout_mode = 2
+custom_minimum_size = Vector2(40, 40)
 expand_mode = 1
 stretch_mode = 5
 

@@ -143,6 +143,10 @@ func restore_from_save(equipment_data: Dictionary) -> void:
 	Args:
 		equipment_data: 装备数据字典 {player_id: item_data}
 	"""
+	deserialize_from_save(equipment_data)
+
+func deserialize_from_save(equipment_data: Dictionary) -> void:
+	"""统一反序列化入口。"""
 	equipped_items.clear()
 	
 	for player_id in equipment_data.keys():
@@ -156,6 +160,15 @@ func restore_from_save(equipment_data: Dictionary) -> void:
 	
 	save_equipment_data()
 	print("[EquipmentManager] 从存档恢复 %d 个装备" % equipped_items.size())
+
+func serialize_for_players(player_ids: Array[String]) -> Dictionary:
+	"""统一序列化入口（仅导出指定角色）。"""
+	var equipment_data: Dictionary = {}
+	for pid in player_ids:
+		var item_data = get_equipped_item_data(pid)
+		if not item_data.is_empty():
+			equipment_data[pid] = item_data
+	return equipment_data
 
 # ============================================================================
 # 新增：统一装备/使用入口 & 数据查询
@@ -193,7 +206,7 @@ func _equip_item_with_replace(player_id: String, new_item_id: String, slot_index
 			var old_config = ConfigManager.get_item_config_by_id(old_item_id)
 			var sell_price = int(float(old_config.get("shop_price", 0)) * 0.5)
 			if sell_price > 0:
-				DataManager.add_gold(sell_price)
+				RunStateService.add_run_gold(sell_price)
 				print("[EquipmentManager] 旧装备自动出售: +%d 金币" % sell_price)
 	
 	# 装备新道具

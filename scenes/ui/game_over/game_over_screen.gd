@@ -3,6 +3,7 @@ class_name GameOverScreen
 
 @onready var kills_value: Label = %KillsValue
 @onready var gold_value: Label = %GoldValue
+@onready var gold_label: Label = $CenterContainer/MainPanel/MarginContainer/VBoxContainer/StatsContainer/GoldLabel
 @onready var stats_container: GridContainer = %StatsContainer
 
 func _ready() -> void:
@@ -16,14 +17,20 @@ func set_stats(data: Dictionary) -> void:
 	"""
 	设置结算数据
 	参数:
-		data: 统计数据字典，例如 {"kills": 105, "gold": 500}
+		data: 统计数据字典，例如 {"kills": 105, "soul_shard": 120}
 	"""
 	# 更新击杀数
 	if data.has("kills"):
 		kills_value.text = str(data["kills"])
 	
-	# 更新金币数
-	if data.has("gold"):
+	# 更新结算奖励（优先显示 soul_shard）
+	if data.has("soul_shard"):
+		if gold_label:
+			gold_label.text = "获得碎片:"
+		gold_value.text = str(data["soul_shard"])
+	elif data.has("gold"):
+		if gold_label:
+			gold_label.text = "获得金币:"
 		gold_value.text = str(data["gold"])
 	
 	# 未来可以在这里添加更多统计项
@@ -56,18 +63,21 @@ func add_stat_row(label_text: String, value_text: String, value_color: Color = C
 func show_screen() -> void:
 	print("[GameOverScreen] 显示结算界面")
 	show()
-	# 使用 Godot 的场景树暂停
-	get_tree().paused = true
+	# 统一暂停入口
+	PauseService.request_pause("game_over_screen", get_tree())
 	print("[GameOverScreen] 游戏已暂停")
 
 # 返回按钮点击
 func _on_return_button_pressed() -> void:
 	print("[GameOverScreen] 返回角色选择界面")
 	SoundManager.play("ui_click")
+
+	var current_scene := get_tree().current_scene
+	if is_instance_valid(current_scene) and current_scene.has_method("prepare_run_exit_cleanup"):
+		current_scene.call("prepare_run_exit_cleanup")
 	
 	# 恢复游戏状态
-	get_tree().paused = false
-	Global.game_paused = false
+	PauseService.release_pause("game_over_screen", get_tree())
 	
 	# 先同步选角缓存（reset_selection 会清空数据，必须在之前写入）
 	_sync_selection_cache_from_global()
@@ -84,17 +94,28 @@ func _on_return_button_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
 
 func _sync_selection_cache_from_global() -> void:
-	"""将当前 Global 的角色/武器数据写入 SelectionPanel 的缓存文件"""
-	# 写入 player_selection_cache.json
+	"""将当前开局角色写入 SelectionPanel 缓存文件（失败返回仅显示1个角色）。"""
+	var leader_id: String = ""
+	if Global.has_method("get_leader_player_id"):
+		leader_id = str(Global.get_leader_player_id())
+	if leader_id.is_empty() and Global.selected_player_ids.size() > 0:
+		leader_id = str(Global.selected_player_ids[0])
+
 	var selection_cache: Array = []
-	for i in range(Global.selected_player_ids.size()):
-		var pid: String = Global.selected_player_ids[i]
-		var wtype: String = Global.selected_player_weapons.get(pid, "")
+	var weapon_cache: Dictionary = {}
+	if not leader_id.is_empty():
+		var weapon_type: String = str(Global.selected_player_weapons.get(leader_id, ""))
+		if weapon_type.is_empty():
+			var weapon_types: Array[String] = ConfigManager.get_player_available_weapon_types(leader_id)
+			if weapon_types.size() > 0:
+				weapon_type = weapon_types[0]
 		selection_cache.append({
-			"player_id": pid,
-			"weapon_type": wtype,
-			"slot_index": i
+			"player_id": leader_id,
+			"weapon_type": weapon_type,
+			"slot_index": 0
 		})
+		if not weapon_type.is_empty():
+			weapon_cache[leader_id] = weapon_type
 	
 	var sel_file := FileAccess.open("user://player_selection_cache.json", FileAccess.WRITE)
 	if sel_file:
@@ -103,12 +124,6 @@ func _sync_selection_cache_from_global() -> void:
 		print("[GameOverScreen] 已同步角色选择缓存: %s" % str(selection_cache))
 	
 	# 写入 player_weapon_cache.json
-	var weapon_cache: Dictionary = {}
-	for pid in Global.selected_player_ids:
-		var wtype: String = Global.selected_player_weapons.get(pid, "")
-		if wtype != "":
-			weapon_cache[pid] = wtype
-	
 	var wpn_file := FileAccess.open("user://player_weapon_cache.json", FileAccess.WRITE)
 	if wpn_file:
 		wpn_file.store_string(JSON.stringify(weapon_cache))

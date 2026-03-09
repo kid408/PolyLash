@@ -2,199 +2,160 @@
 extends EditorScript
 
 # ============================================================================
-# 商店系统使用情况检查工具
+# 商店/奖励流程检查工具（当前流程版）
 # ============================================================================
+#
+# 目标：
+# - 校验当前“波次奖励 -> 商店 -> 下一波”流程依赖是否齐全
+# - 检查关键配置与 autoload 注册
+# - 输出代码引用位置，方便定位旧逻辑和冲突点
 #
 # 使用方法：
-# 1. 在Godot编辑器中打开此脚本
-# 2. 点击 File -> Run
-# 3. 查看输出面板的检查结果
-#
+# 1. 在 Godot 编辑器中打开本脚本
+# 2. File -> Run
+# 3. 查看输出面板
 # ============================================================================
 
+const REQUIRED_FILES := {
+	"商店管理器": "res://autoloads/shop_manager.gd",
+	"属性商店管理器": "res://autoloads/shop_attribute_manager.gd",
+	"波次奖励系统": "res://scenes/arena/wave_reward_system.gd",
+	"波次奖励面板": "res://scenes/ui/wave_reward/wave_reward_panel.gd",
+	"商店流程服务": "res://scenes/arena/services/shop_flow_service.gd",
+	"奖励流程服务": "res://scenes/arena/services/reward_flow_service.gd",
+	"战斗流程控制器": "res://scenes/arena/battle_flow_controller.gd",
+	"竞技场核心": "res://scenes/arena/arena_core.gd"
+}
+
+const REQUIRED_CONFIGS := {
+	"物品商店配置": "res://config/item/shop_item_config.csv",
+	"属性商店配置": "res://config/wave/shop_attribute_config.csv",
+	"属性商店波次配置": "res://config/wave/shop_wave_config.csv"
+}
+
+const KEYWORDS := [
+	"ShopManager",
+	"ShopAttributeManager",
+	"WaveRewardSystem",
+	"WaveRewardPanel",
+	"ShopFlowService",
+	"RewardFlowService",
+	"BattleFlowController"
+]
+
 func _run() -> void:
-	print("\n" + "=".repeat(60))
-	print("商店系统使用情况检查")
-	print("=".repeat(60) + "\n")
-	
-	_check_old_system()
-	_check_new_system()
-	_check_conflicts()
-	_print_recommendations()
-	
-	print("\n" + "=".repeat(60))
-	print("检查完成")
-	print("=".repeat(60) + "\n")
+	print("\n" + "=".repeat(72))
+	print("商店/奖励流程检查（当前流程版）")
+	print("=".repeat(72) + "\n")
 
-func _check_old_system() -> void:
-	"""检查旧系统"""
-	print("【旧系统检查】")
-	
-	# 检查配置文件
-	var old_config = "res://config/item/shop_item_config.csv"
-	if FileAccess.file_exists(old_config):
-		print("  ✅ 配置文件存在: %s" % old_config)
-		_print_file_info(old_config)
-	else:
-		print("  ❌ 配置文件不存在: %s" % old_config)
-	
-	# 检查管理器
-	var old_manager = "res://autoloads/shop_manager.gd"
-	if FileAccess.file_exists(old_manager):
-		print("  ✅ 管理器存在: %s" % old_manager)
-	else:
-		print("  ❌ 管理器不存在: %s" % old_manager)
-	
-	# 检查自动加载
-	var autoloads = ProjectSettings.get_setting("autoload")
-	if autoloads and "ShopManager" in str(autoloads):
-		print("  ✅ 已注册为自动加载: ShopManager")
-	else:
-		print("  ❌ 未注册为自动加载: ShopManager")
-	
-	# 搜索使用情况
-	print("  📊 使用情况:")
-	_search_usage("ShopManager")
-	
-	print("")
+	var ok := true
+	ok = _check_required_files() and ok
+	ok = _check_required_configs() and ok
+	ok = _check_autoloads() and ok
+	_print_keyword_usage()
 
-func _check_new_system() -> void:
-	"""检查新系统"""
-	print("【新系统检查】")
-	
-	# 检查配置文件
-	var new_configs = [
-		"res://config/wave/shop_attribute_config.csv",
-		"res://config/wave/shop_wave_config.csv"
-	]
-	
-	for config in new_configs:
-		if FileAccess.file_exists(config):
-			print("  ✅ 配置文件存在: %s" % config)
-			_print_file_info(config)
+	print("\n" + "=".repeat(72))
+	if ok:
+		print("✅ 检查通过：关键依赖与配置均已就绪")
+	else:
+		print("⚠️ 检查未通过：请按上方缺失项修复")
+	print("=".repeat(72) + "\n")
+
+func _check_required_files() -> bool:
+	print("【1/4】关键脚本检查")
+	var all_ok := true
+	for display_name in REQUIRED_FILES.keys():
+		var path := REQUIRED_FILES[display_name]
+		if FileAccess.file_exists(path):
+			print("  ✅ %s: %s" % [display_name, path])
 		else:
-			print("  ❌ 配置文件不存在: %s" % config)
-	
-	# 检查管理器
-	var new_manager = "res://autoloads/shop_attribute_manager.gd"
-	if FileAccess.file_exists(new_manager):
-		print("  ✅ 管理器存在: %s" % new_manager)
-	else:
-		print("  ❌ 管理器不存在: %s" % new_manager)
-	
-	# 检查自动加载
-	var autoloads = ProjectSettings.get_setting("autoload")
-	if autoloads and "ShopAttributeManager" in str(autoloads):
-		print("  ✅ 已注册为自动加载: ShopAttributeManager")
-	else:
-		print("  ⚠️  未注册为自动加载: ShopAttributeManager")
-	
-	# 搜索使用情况
-	print("  📊 使用情况:")
-	_search_usage("ShopAttributeManager")
-	
-	print("")
+			print("  ❌ %s 缺失: %s" % [display_name, path])
+			all_ok = false
+	return all_ok
 
-func _check_conflicts() -> void:
-	"""检查冲突"""
-	print("【冲突检查】")
-	
-	var old_exists = FileAccess.file_exists("res://autoloads/shop_manager.gd")
-	var new_exists = FileAccess.file_exists("res://autoloads/shop_attribute_manager.gd")
-	
-	if old_exists and new_exists:
-		print("  ⚠️  两个系统同时存在")
-		print("     建议：选择一个系统使用，或明确分工")
-	elif old_exists:
-		print("  ℹ️  只有旧系统存在")
-	elif new_exists:
-		print("  ℹ️  只有新系统存在")
-	else:
-		print("  ❌ 两个系统都不存在")
-	
-	print("")
+func _check_required_configs() -> bool:
+	print("\n【2/4】关键配置检查")
+	var all_ok := true
+	for display_name in REQUIRED_CONFIGS.keys():
+		var path := REQUIRED_CONFIGS[display_name]
+		if FileAccess.file_exists(path):
+			print("  ✅ %s: %s" % [display_name, path])
+			_print_csv_row_count(path)
+		else:
+			print("  ❌ %s 缺失: %s" % [display_name, path])
+			all_ok = false
+	return all_ok
 
-func _print_recommendations() -> void:
-	"""打印建议"""
-	print("【迁移建议】")
-	
-	var old_exists = FileAccess.file_exists("res://autoloads/shop_manager.gd")
-	var new_exists = FileAccess.file_exists("res://autoloads/shop_attribute_manager.gd")
-	var new_registered = false
-	
-	var autoloads = ProjectSettings.get_setting("autoload")
-	if autoloads:
-		new_registered = "ShopAttributeManager" in str(autoloads)
-	
-	if old_exists and new_exists and not new_registered:
-		print("  📝 步骤1: 在 project.godot 中添加 ShopAttributeManager 到自动加载")
-		print("  📝 步骤2: 修改 shop_panel.gd 使用新系统")
-		print("  📝 步骤3: 测试新系统功能")
-		print("  📝 步骤4: 确认无误后移除旧系统")
-	elif old_exists and new_exists and new_registered:
-		print("  ✅ 新系统已注册，可以开始迁移UI代码")
-		print("  📝 参考: MIGRATION_GUIDE.md")
-	elif old_exists and not new_exists:
-		print("  ℹ️  当前使用旧系统")
-		print("  💡 如需使用新系统，请先创建新配置文件")
-	elif new_exists and not old_exists:
-		print("  ✅ 已完全迁移到新系统")
-	
-	print("")
+func _check_autoloads() -> bool:
+	print("\n【3/4】Autoload 检查")
+	var all_ok := true
+	var autoloads := ProjectSettings.get_setting("autoload", {})
+	var autoload_text := str(autoloads)
 
-func _print_file_info(path: String) -> void:
-	"""打印文件信息"""
-	var file = FileAccess.open(path, FileAccess.READ)
-	if file:
-		var line_count = 0
-		while not file.eof_reached():
-			file.get_line()
-			line_count += 1
-		file.close()
-		print("     行数: %d" % line_count)
+	var required_autoloads := {
+		"ShopManager": "res://autoloads/shop_manager.gd",
+		"ShopAttributeManager": "res://autoloads/shop_attribute_manager.gd"
+	}
 
-func _search_usage(keyword: String) -> void:
-	"""搜索关键词使用情况"""
-	var found_files = []
-	_search_in_directory("res://", keyword, found_files)
-	
-	if found_files.is_empty():
-		print("     未找到使用 '%s' 的文件" % keyword)
-	else:
-		print("     找到 %d 个文件使用 '%s':" % [found_files.size(), keyword])
-		for file_path in found_files:
-			print("       - %s" % file_path)
+	for name in required_autoloads.keys():
+		var path := required_autoloads[name]
+		var has_name := name in autoload_text
+		var has_path := path in autoload_text
+		if has_name and has_path:
+			print("  ✅ %s 已注册" % name)
+		else:
+			print("  ❌ %s 未正确注册（期望路径: %s）" % [name, path])
+			all_ok = false
 
-func _search_in_directory(dir_path: String, keyword: String, found_files: Array) -> void:
-	"""递归搜索目录"""
-	var dir = DirAccess.open(dir_path)
-	if not dir:
+	return all_ok
+
+func _print_keyword_usage() -> void:
+	print("\n【4/4】关键字引用扫描（.gd）")
+	for keyword in KEYWORDS:
+		var found_files: Array[String] = []
+		_search_gd_usage("res://", keyword, found_files)
+		if found_files.is_empty():
+			print("  ⚠️ 未找到 '%s' 的 .gd 引用" % keyword)
+		else:
+			print("  ✅ '%s' 命中 %d 个文件" % [keyword, found_files.size()])
+			for i in range(min(5, found_files.size())):
+				print("     - %s" % found_files[i])
+			if found_files.size() > 5:
+				print("     ... 其余 %d 个文件省略" % (found_files.size() - 5))
+
+func _print_csv_row_count(path: String) -> void:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
 		return
-	
+	var rows := 0
+	while not file.eof_reached():
+		file.get_line()
+		rows += 1
+	file.close()
+	print("     行数: %d" % rows)
+
+func _search_gd_usage(dir_path: String, keyword: String, found_files: Array[String]) -> void:
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return
+
 	dir.list_dir_begin()
-	var file_name = dir.get_next()
-	
+	var file_name := dir.get_next()
 	while file_name != "":
-		var full_path = dir_path.path_join(file_name)
-		
+		var full_path := dir_path.path_join(file_name)
 		if dir.current_is_dir():
 			if not file_name.begins_with("."):
-				_search_in_directory(full_path, keyword, found_files)
+				_search_gd_usage(full_path, keyword, found_files)
 		elif file_name.ends_with(".gd"):
-			if _file_contains_keyword(full_path, keyword):
+			if _gd_contains_keyword(full_path, keyword):
 				found_files.append(full_path)
-		
 		file_name = dir.get_next()
-	
 	dir.list_dir_end()
 
-func _file_contains_keyword(file_path: String, keyword: String) -> bool:
-	"""检查文件是否包含关键词"""
-	var file = FileAccess.open(file_path, FileAccess.READ)
-	if not file:
+func _gd_contains_keyword(file_path: String, keyword: String) -> bool:
+	var file := FileAccess.open(file_path, FileAccess.READ)
+	if file == null:
 		return false
-	
-	var content = file.get_as_text()
+	var content := file.get_as_text()
 	file.close()
-	
 	return keyword in content

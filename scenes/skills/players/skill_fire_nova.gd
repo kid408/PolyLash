@@ -1,51 +1,51 @@
-extends SkillBase
+﻿extends SkillBase
 class_name SkillFireNova
 
 ## ==============================================================================
-## 烈焰者E技能 - 烈焰新星
+## 鐑堢劙鑰匛鎶€鑳?- 鐑堢劙鏂版槦
 ## ==============================================================================
 ## 
-## 功能说明:
-## - 按E键在玩家位置生成范围火焰爆发
-## - 对范围内敌人造成持续伤害
-## - 带有视觉特效和音效
+## 鍔熻兘璇存槑:
+## - 鎸塃閿湪鐜╁浣嶇疆鐢熸垚鑼冨洿鐏劙鐖嗗彂
+## - 瀵硅寖鍥村唴鏁屼汉閫犳垚鎸佺画浼ゅ
+## - 甯︽湁瑙嗚鐗规晥鍜岄煶鏁?
 ## 
-## 使用方法:
-##   - 按E键释放
+## 浣跨敤鏂规硶:
+##   - 鎸塃閿噴鏀?
 ## 
 ## ==============================================================================
 
 # ==============================================================================
-# 技能参数（从CSV加载）
+# 鎶€鑳藉弬鏁帮紙浠嶤SV鍔犺浇锛?
 # ==============================================================================
 
-## 火焰新星半径
+## 鐏劙鏂版槦鍗婂緞
 var fire_nova_radius: float = 140.0
 
-## 火焰新星伤害
+## 鐏劙鏂版槦浼ゅ
 var fire_nova_damage: int = 35
 
-## 火焰新星持续时间
+## 鐏劙鏂版槦鎸佺画鏃堕棿
 var fire_nova_duration: float = 3.0
 
-## 伤害tick间隔
+## 浼ゅtick闂撮殧
 var damage_tick_interval: float = 0.5
 
-## 已生成的效果节点列表（用于清理）
+## 宸茬敓鎴愮殑鏁堟灉鑺傜偣鍒楄〃锛堢敤浜庢竻鐞嗭級
 var spawned_effects: Array[Node] = []
 
 # ==============================================================================
-# 生命周期
+# 鐢熷懡鍛ㄦ湡
 # ==============================================================================
 
 func _ready() -> void:
 	super._ready()
 
 # ==============================================================================
-# 技能执行
+# 鎶€鑳芥墽琛?
 # ==============================================================================
 
-## 执行技能
+## 鎵ц鎶€鑳?
 func execute() -> void:
 	if not consume_energy():
 		if skill_owner:
@@ -55,35 +55,35 @@ func execute() -> void:
 	if not skill_owner:
 		return
 	
-	# 相机震动
+	# 鐩告満闇囧姩
 	Global.on_camera_shake.emit(8.0, 0.2)
 	
-	# 生成火焰新星
+	# 鐢熸垚鐏劙鏂版槦
 	call_deferred("_spawn_fire_nova", skill_owner.global_position)
 	
-	# 开始冷却
+	# 寮€濮嬪喎鍗?
 	start_cooldown()
 
 # ==============================================================================
-# 火焰新星生成
+# 鐏劙鏂版槦鐢熸垚
 # ==============================================================================
 
-## 生成火焰新星
+## 鐢熸垚鐏劙鏂版槦
 func _spawn_fire_nova(center_pos: Vector2) -> void:
 	var area = Area2D.new()
 	area.global_position = center_pos
-	area.collision_mask = 1 | 2  # 检测 Layer1(Player/Enemy默认) + Layer2(Enemy标记)
+	area.collision_mask = 1 | 2  # 妫€娴?Layer1(Player/Enemy榛樿) + Layer2(Enemy鏍囪)
 	area.monitorable = false
 	area.monitoring = true
 	
-	# 碰撞形状
+	# 纰版挒褰㈢姸
 	var col = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
 	shape.radius = fire_nova_radius
 	col.shape = shape
 	area.add_child(col)
 	
-	# 视觉效果（圆形多边形）
+	# 瑙嗚鏁堟灉锛堝渾褰㈠杈瑰舰锛?
 	var vis = Polygon2D.new()
 	var points = PackedVector2Array()
 	var steps = 32
@@ -97,30 +97,31 @@ func _spawn_fire_nova(center_pos: Vector2) -> void:
 	area.add_child(vis)
 	
 	get_tree().current_scene.add_child(area)
-	spawned_effects.append(area)  # 追踪效果节点
+	area.add_to_group("player_skill_effects")
+	spawned_effects.append(area)  # 杩借釜鏁堟灉鑺傜偣
 	Global.spawn_floating_text(center_pos, "NOVA!", Color.ORANGE)
 	
-	# 缩放动画
+	# 缂╂斁鍔ㄧ敾
 	vis.scale = Vector2.ZERO
 	var tween = area.create_tween()
 	tween.tween_property(vis, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK)
 	
-	# 伤害逻辑
+	# 浼ゅ閫昏緫
 	var timer = Timer.new()
 	timer.wait_time = damage_tick_interval
 	timer.autostart = true
 	area.add_child(timer)
 	timer.timeout.connect(_on_damage_tick.bind(area, fire_nova_damage))
 	
-	# 寿命
+	# 瀵垮懡
 	var life = get_tree().create_timer(fire_nova_duration)
 	life.timeout.connect(_on_object_expired.bind(area, vis))
 
 # ==============================================================================
-# 回调函数
+# 鍥炶皟鍑芥暟
 # ==============================================================================
 
-## 伤害tick
+## 浼ゅtick
 func _on_damage_tick(area_ref: Area2D, amount: int) -> void:
 	if not is_instance_valid(area_ref) or area_ref.is_queued_for_deletion():
 		return
@@ -136,7 +137,7 @@ func _on_damage_tick(area_ref: Area2D, amount: int) -> void:
 		if enemy and enemy.has_node("HealthComponent"):
 			enemy.health_component.take_damage(amount)
 
-## 对象过期
+## 瀵硅薄杩囨湡
 func _on_object_expired(area_ref: Area2D, visual_ref: Node) -> void:
 	if is_instance_valid(area_ref):
 		if is_instance_valid(visual_ref):
@@ -149,9 +150,10 @@ func _on_object_expired(area_ref: Area2D, visual_ref: Node) -> void:
 		else:
 			area_ref.queue_free()
 
-## 清理资源（角色切换时调用）
+## 娓呯悊璧勬簮锛堣鑹插垏鎹㈡椂璋冪敤锛?
 func cleanup() -> void:
-	# ✅ 不清理已生成的效果节点（火焰新星）
-	# 让它们按照自己的生命周期消失
-	# spawned_effects 中的效果会自动通过生命周期计时器清理
-	pass
+	for effect: Node in spawned_effects:
+		if is_instance_valid(effect):
+			effect.queue_free()
+	spawned_effects.clear()
+
