@@ -1,5 +1,7 @@
 ﻿extends Node
 
+const DEBUG_VERBOSE := false
+
 # 羁绊系统核心入口：
 # 1) 汇总角色/装备/护符/临时标签四类来源；
 # 2) 计算各羁绊激活等级与效果列表；
@@ -34,7 +36,7 @@ var _last_team_player_ids: Array = []
 func _ready() -> void:
 	_load_bond_configs()
 	_connect_runtime_sources()
-	print("[BondManager] init done, loaded %d bond configs" % bond_configs.size())
+	if DEBUG_VERBOSE: print("[BondManager] init done, loaded %d bond configs" % bond_configs.size())
 
 
 
@@ -55,7 +57,7 @@ func _load_bond_configs() -> void:
 	var line_count: int = 0
 	for bond_id in bond_configs.keys():
 		line_count += bond_configs[bond_id].levels.size()
-	print("[BondManager] loaded %d bond config rows from ConfigRepository" % line_count)
+	if DEBUG_VERBOSE: print("[BondManager] loaded %d bond config rows from ConfigRepository" % line_count)
 
 
 func recalculate_active_bonds(team_player_ids: Array, equipped_relics: Array = []) -> void:
@@ -96,10 +98,10 @@ func recalculate_active_bonds(team_player_ids: Array, equipped_relics: Array = [
 
 	_detect_level_changes(old_bonds)
 	
-	print("[BondManager] recalc bonds: tags=%d active=%d" % [current_bond_counts.size(), active_bonds.size()])
-	print("[BondManager] tag counts: %s" % str(current_bond_counts))
-	print("[BondManager] tag sources: %s" % str(tag_sources))
-	print("[BondManager] active bond ids: %s" % str(active_bonds.keys()))
+	if DEBUG_VERBOSE: print("[BondManager] recalc bonds: tags=%d active=%d" % [current_bond_counts.size(), active_bonds.size()])
+	if DEBUG_VERBOSE: print("[BondManager] tag counts: %s" % str(current_bond_counts))
+	if DEBUG_VERBOSE: print("[BondManager] tag sources: %s" % str(tag_sources))
+	if DEBUG_VERBOSE: print("[BondManager] active bond ids: %s" % str(active_bonds.keys()))
 	
 
 	bonds_recalculated.emit(active_bonds)
@@ -393,7 +395,7 @@ func _apply_stat_share(stats: Dictionary) -> void:
 	if bench_characters.is_empty():
 		return
 	
-	print("[BondManager] [P4-3] stat_share triggered, share_ratio: %.0f%%" % (share_ratio * 100))
+	if DEBUG_VERBOSE: print("[BondManager] [P4-3] stat_share triggered, share_ratio: %.0f%%" % (share_ratio * 100))
 	
 	var total_bonus_damage = 0.0
 	var total_bonus_health = 0.0
@@ -413,7 +415,7 @@ func _apply_stat_share(stats: Dictionary) -> void:
 		total_bonus_health += base_health * share_ratio
 		total_bonus_speed += base_speed * share_ratio
 		
-		print("[BondManager] [P4-3] bench %s shared: damage %.0f, health %.0f, speed %.0f" % [
+		if DEBUG_VERBOSE: print("[BondManager] [P4-3] bench %s shared: damage %.0f, health %.0f, speed %.0f" % [
 			char_id,
 			base_damage * share_ratio,
 			base_health * share_ratio,
@@ -422,15 +424,15 @@ func _apply_stat_share(stats: Dictionary) -> void:
 	
 	if total_bonus_damage > 0:
 		stats["damage"] = stats.get("damage", 0) + total_bonus_damage
-		print("[BondManager] [P4-3] total shared damage bonus: +%.0f" % total_bonus_damage)
+		if DEBUG_VERBOSE: print("[BondManager] [P4-3] total shared damage bonus: +%.0f" % total_bonus_damage)
 	
 	if total_bonus_health > 0:
 		stats["max_health"] = stats.get("max_health", 100) + total_bonus_health
-		print("[BondManager] [P4-3] total shared health bonus: +%.0f" % total_bonus_health)
+		if DEBUG_VERBOSE: print("[BondManager] [P4-3] total shared health bonus: +%.0f" % total_bonus_health)
 	
 	if total_bonus_speed > 0:
 		stats["speed"] = stats.get("speed", 100) + total_bonus_speed
-		print("[BondManager] [P4-3] total shared speed bonus: +%.0f" % total_bonus_speed)
+		if DEBUG_VERBOSE: print("[BondManager] [P4-3] total shared speed bonus: +%.0f" % total_bonus_speed)
 
 func _get_bench_characters() -> Array[String]:
 	var bench: Array[String] = []
@@ -563,7 +565,7 @@ func add_temp_tag(tag: String) -> void:
 		return
 
 	temp_bonus_tags[tag] = temp_bonus_tags.get(tag, 0) + 1
-	print("[BondManager] add temp tag: %s (%d)" % [tag, temp_bonus_tags[tag]])
+	if DEBUG_VERBOSE: print("[BondManager] add temp tag: %s (%d)" % [tag, temp_bonus_tags[tag]])
 	_recalculate_with_current_team()
 
 func remove_temp_tag(tag: String) -> void:
@@ -574,7 +576,7 @@ func remove_temp_tag(tag: String) -> void:
 	if temp_bonus_tags[tag] <= 0:
 		temp_bonus_tags.erase(tag)
 
-	print("[BondManager] remove temp tag: %s (%d)" % [tag, temp_bonus_tags.get(tag, 0)])
+	if DEBUG_VERBOSE: print("[BondManager] remove temp tag: %s (%d)" % [tag, temp_bonus_tags.get(tag, 0)])
 	_recalculate_with_current_team()
 
 func get_temp_tags() -> Dictionary:
@@ -602,7 +604,7 @@ func set_overdrive_mode(enabled: bool) -> void:
 		return
 
 	is_overdrive_mode = enabled
-	print("[BondManager] overdrive mode: %s" % ("on" if enabled else "off"))
+	if DEBUG_VERBOSE: print("[BondManager] overdrive mode: %s" % ("on" if enabled else "off"))
 	_recalculate_with_current_team()
 
 func is_in_overdrive_mode() -> bool:
@@ -620,7 +622,7 @@ func get_bond_summary() -> Array:
 	return summary
 
 func restore_from_save(bond_counts_data: Dictionary) -> void:
-	print("[BondManager] restore from save: %s" % str(bond_counts_data))
+	if DEBUG_VERBOSE: print("[BondManager] restore from save: %s" % str(bond_counts_data))
 	current_bond_counts = bond_counts_data.duplicate(true)
 
 	active_bonds.clear()
@@ -630,21 +632,21 @@ func restore_from_save(bond_counts_data: Dictionary) -> void:
 		if activated_level > 0:
 			_activate_bond(bond_id, activated_level)
 
-	print("[BondManager] restore complete: active=%d" % active_bonds.size())
+	if DEBUG_VERBOSE: print("[BondManager] restore complete: active=%d" % active_bonds.size())
 	bonds_recalculated.emit(active_bonds)
 	stat_modifiers_changed.emit()
 
 func print_active_bonds() -> void:
-	print("\n========== Active Bonds ==========")
+	if DEBUG_VERBOSE: print("\n========== Active Bonds ==========")
 	for bond_id in active_bonds.keys():
 		var bond_data = active_bonds[bond_id]
-		print("[%s] Lv.%d - %s" % [bond_data.display_name, bond_data.level, bond_id])
+		if DEBUG_VERBOSE: print("[%s] Lv.%d - %s" % [bond_data.display_name, bond_data.level, bond_id])
 		for effect in bond_data.effects:
-			print("  - Lv.%d %s: %s = %.2f (%s)" % [
+			if DEBUG_VERBOSE: print("  - Lv.%d %s: %s = %.2f (%s)" % [
 				effect.level,
 				effect.effect_type,
 				effect.effect_param,
 				effect.effect_value,
 				effect.description
 			])
-	print("================================\n")
+	if DEBUG_VERBOSE: print("================================\n")

@@ -55,8 +55,7 @@ static func find_all_closing_polygons(points: Array[Vector2], close_threshold: f
 		var poly = PackedVector2Array()
 		for p in points:
 			poly.append(p)
-		if _validate_polygon(poly):
-			result.append(poly)
+		_append_if_valid_polygon(result, poly)
 		return result
 	
 	# 3. 如果有交叉点，提取闭合区域
@@ -92,9 +91,10 @@ static func _extract_regions_from_intersections(points: Array[Vector2], intersec
 			if k < points.size():
 				poly.append(points[k])
 		
-		if _validate_polygon(poly):
-			result.append(poly)
-			print("[PolygonUtils] 单交叉点区域: 点数=%d" % poly.size())
+		var cleaned_poly: PackedVector2Array = sanitize_polygon(poly)
+		if not cleaned_poly.is_empty():
+			result.append(cleaned_poly)
+			print("[PolygonUtils] 单交叉点区域: 点数=%d" % cleaned_poly.size())
 	
 	elif intersections.size() == 2:
 		# 8字形检测
@@ -126,9 +126,10 @@ static func _extract_regions_from_intersections(points: Array[Vector2], intersec
 				if k < points.size():
 					poly1.append(points[k])
 			
-			if _validate_polygon(poly1):
-				result.append(poly1)
-				print("[PolygonUtils] ✓ 区域1: 点数=%d, 面积=%.1f" % [poly1.size(), _calculate_polygon_area(poly1)])
+			var cleaned_poly1: PackedVector2Array = sanitize_polygon(poly1)
+			if not cleaned_poly1.is_empty():
+				result.append(cleaned_poly1)
+				print("[PolygonUtils] ✓ 区域1: 点数=%d, 面积=%.1f" % [cleaned_poly1.size(), _calculate_polygon_area(cleaned_poly1)])
 			
 			# 区域2（下圈）: point2 -> path[i2+1...j2-1] -> point2
 			var poly2 = PackedVector2Array()
@@ -137,9 +138,10 @@ static func _extract_regions_from_intersections(points: Array[Vector2], intersec
 				if k < points.size():
 					poly2.append(points[k])
 			
-			if _validate_polygon(poly2):
-				result.append(poly2)
-				print("[PolygonUtils] ✓ 区域2: 点数=%d, 面积=%.1f" % [poly2.size(), _calculate_polygon_area(poly2)])
+			var cleaned_poly2: PackedVector2Array = sanitize_polygon(poly2)
+			if not cleaned_poly2.is_empty():
+				result.append(cleaned_poly2)
+				print("[PolygonUtils] ✓ 区域2: 点数=%d, 面积=%.1f" % [cleaned_poly2.size(), _calculate_polygon_area(cleaned_poly2)])
 		else:
 			# 非标准8字形，为每个交叉点单独创建区域
 			print("[PolygonUtils] ⚠️ 非标准8字形，单独处理每个交叉点")
@@ -154,17 +156,18 @@ static func _extract_regions_from_intersections(points: Array[Vector2], intersec
 					if k < points.size():
 						poly.append(points[k])
 				
-				if _validate_polygon(poly):
+				var cleaned_poly: PackedVector2Array = sanitize_polygon(poly)
+				if not cleaned_poly.is_empty():
 					# 检查是否与已有区域重叠
 					var dominated = false
 					for existing in result:
 						var existing_area = abs(_calculate_polygon_area(existing))
-						var new_area = abs(_calculate_polygon_area(poly))
+						var new_area = abs(_calculate_polygon_area(cleaned_poly))
 						if new_area > existing_area * 0.9 and new_area < existing_area * 1.1:
 							dominated = true
 							break
 					if not dominated:
-						result.append(poly)
+						result.append(cleaned_poly)
 	else:
 		# 多于2个交叉点
 		print("[PolygonUtils] 多交叉点(%d个)" % intersections.size())
@@ -201,8 +204,7 @@ static func _extract_regions_from_intersections(points: Array[Vector2], intersec
 					if k < points.size():
 						poly.append(points[k])
 			
-			if _validate_polygon(poly):
-				result.append(poly)
+			_append_if_valid_polygon(result, poly)
 	
 	print("[PolygonUtils] 提取完成，共 %d 个区域" % result.size())
 	return result
@@ -213,11 +215,113 @@ static func _extract_regions_from_intersections(points: Array[Vector2], intersec
 
 ## 验证多边形是否有效
 static func _validate_polygon(points: PackedVector2Array) -> bool:
+	return not sanitize_polygon(points).is_empty()
+
+static func _append_if_valid_polygon(result: Array[PackedVector2Array], points: PackedVector2Array) -> void:
+	var cleaned: PackedVector2Array = sanitize_polygon(points)
+	if cleaned.is_empty():
+		return
+	result.append(cleaned)
+
+static func sanitize_polygon(
+	points: PackedVector2Array,
+	min_distance: float = 2.0,
+	min_area: float = 100.0
+) -> PackedVector2Array:
 	if points.size() < 3:
+		return PackedVector2Array()
+
+	var sanitized: PackedVector2Array = PackedVector2Array()
+	for point: Vector2 in points:
+		if sanitized.is_empty() or point.distance_to(sanitized[sanitized.size() - 1]) >= min_distance:
+			sanitized.append(point)
+
+	if sanitized.size() > 1 and sanitized[0].distance_to(sanitized[sanitized.size() - 1]) < min_distance:
+		var trimmed: PackedVector2Array = PackedVector2Array()
+		for i in range(sanitized.size() - 1):
+			trimmed.append(sanitized[i])
+		sanitized = trimmed
+
+	sanitized = _remove_degenerate_vertices(sanitized, min_distance)
+	sanitized = ensure_ccw_winding(sanitized)
+
+	if sanitized.size() < 3:
+		return PackedVector2Array()
+	if abs(_calculate_polygon_area(sanitized)) <= min_area:
+		return PackedVector2Array()
+	if _has_self_intersection(sanitized):
+		return PackedVector2Array()
+
+	var triangles: PackedInt32Array = Geometry2D.triangulate_polygon(sanitized)
+	if triangles.is_empty():
+		return PackedVector2Array()
+
+	return sanitized
+
+static func _remove_degenerate_vertices(
+	points: PackedVector2Array,
+	min_distance: float = 2.0
+) -> PackedVector2Array:
+	var current: PackedVector2Array = points
+	var changed: bool = true
+
+	while changed and current.size() >= 3:
+		changed = false
+		var filtered: PackedVector2Array = PackedVector2Array()
+		var count: int = current.size()
+
+		for i in range(count):
+			var prev: Vector2 = current[(i - 1 + count) % count]
+			var curr: Vector2 = current[i]
+			var next: Vector2 = current[(i + 1) % count]
+			var prev_vec: Vector2 = curr - prev
+			var next_vec: Vector2 = next - curr
+			var prev_len: float = prev_vec.length()
+			var next_len: float = next_vec.length()
+
+			if prev_len < min_distance or next_len < min_distance:
+				changed = true
+				continue
+
+			var cross: float = abs(prev_vec.cross(next_vec))
+			var normalized_cross: float = cross / max(prev_len * next_len, 0.001)
+			var dot: float = prev_vec.normalized().dot(next_vec.normalized())
+			if normalized_cross <= 0.015 and dot > 0.98:
+				changed = true
+				continue
+
+			filtered.append(curr)
+
+		current = filtered
+
+	return current
+
+static func _has_self_intersection(points: PackedVector2Array) -> bool:
+	var count: int = points.size()
+	if count < 4:
 		return false
-	
-	var area = abs(_calculate_polygon_area(points))
-	return area > 100.0
+
+	for i in range(count):
+		var a1: Vector2 = points[i]
+		var a2: Vector2 = points[(i + 1) % count]
+		for j in range(i + 1, count):
+			if _polygon_edges_are_adjacent(i, j, count):
+				continue
+			var b1: Vector2 = points[j]
+			var b2: Vector2 = points[(j + 1) % count]
+			if Geometry2D.segment_intersects_segment(a1, a2, b1, b2) != null:
+				return true
+
+	return false
+
+static func _polygon_edges_are_adjacent(i: int, j: int, count: int) -> bool:
+	if i == j:
+		return true
+	if (i + 1) % count == j:
+		return true
+	if (j + 1) % count == i:
+		return true
+	return false
 
 ## 计算多边形面积
 static func _calculate_polygon_area(poly: PackedVector2Array) -> float:

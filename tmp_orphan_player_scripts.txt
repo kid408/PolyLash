@@ -1,2 +1,0 @@
-﻿scenes/unit/players/player_base
-scenes/unit/players/player_tempest

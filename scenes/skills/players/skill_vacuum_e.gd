@@ -2,6 +2,9 @@ extends SkillBase
 class_name SkillVacuumE
 
 var vacuum_radius: float = 300.0
+const VACUUM_META_CENTER: String = "vacuum_vortex_center"
+const VACUUM_META_RADIUS: String = "vacuum_vortex_radius"
+const VACUUM_META_EXPIRE_MSEC: String = "vacuum_vortex_expire_msec"
 
 func execute() -> void:
 	if not consume_energy():
@@ -15,6 +18,10 @@ func execute() -> void:
 	var damage_amp: float = get_e_damage_amp(0.24, 0.32)
 	var final_radius: float = vacuum_radius * (1.0 + (duration_amp - 1.0) * 0.42)
 	var center: Vector2 = skill_owner.global_position
+	var synergy_active: bool = _is_vortex_window_active()
+	if synergy_active:
+		center = _vortex_center_from_meta()
+		final_radius = max(final_radius, _vortex_radius_from_meta() * 0.95)
 
 	var collected: int = _pull_all_coins(center, final_radius)
 	var sucked: int = 0
@@ -25,6 +32,8 @@ func execute() -> void:
 
 	var burst_delay: float = 0.22 if not is_f_window_active() else 0.16
 	var burst_damage: int = max(1, int(round(34.0 * damage_amp * (1.0 if not is_f_window_active() else 1.25))))
+	if synergy_active:
+		burst_damage = max(burst_damage, int(round(float(burst_damage) * 1.22)))
 	var timer: SceneTreeTimer = get_tree().create_timer(burst_delay)
 	timer.timeout.connect(_on_reverse_burst_timeout.bind(center, final_radius * 0.74, burst_damage, duration_amp))
 
@@ -122,3 +131,20 @@ func _knock_enemy(enemy: Node, center: Vector2, power: float) -> void:
 		var enemy_node2: Node2D = enemy
 		var dir2: Vector2 = center.direction_to(enemy_node2.global_position)
 		enemy_node2.global_position += dir2 * power * 0.02
+
+func _is_vortex_window_active() -> bool:
+	if not is_instance_valid(skill_owner):
+		return false
+	if not skill_owner.has_meta(VACUUM_META_EXPIRE_MSEC):
+		return false
+	var expire_msec: int = int(skill_owner.get_meta(VACUUM_META_EXPIRE_MSEC, 0))
+	return Time.get_ticks_msec() <= expire_msec
+
+func _vortex_center_from_meta() -> Vector2:
+	var center_val: Variant = skill_owner.get_meta(VACUUM_META_CENTER, skill_owner.global_position)
+	if center_val is Vector2:
+		return center_val
+	return skill_owner.global_position
+
+func _vortex_radius_from_meta() -> float:
+	return max(60.0, float(skill_owner.get_meta(VACUUM_META_RADIUS, vacuum_radius)))

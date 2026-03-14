@@ -14,6 +14,11 @@ var charge_lane_length: float = 280.0
 var charge_lane_width: float = 52.0
 var charge_lane_damage: int = 42
 
+const PEN_META_CENTER: String = "herder_pen_center"
+const PEN_META_RADIUS: String = "herder_pen_radius"
+const PEN_META_EXPIRE_MSEC: String = "herder_pen_expire_msec"
+const HERDER_E_PACK_META: String = "herder_e_pack_until_msec"
+
 func execute() -> void:
 	if not can_execute():
 		if is_on_cooldown and is_instance_valid(skill_owner):
@@ -35,11 +40,18 @@ func execute() -> void:
 
 	var burst_hits: int = _detonate(center, explosion_radius, final_damage, final_knockback, final_mark, mark_duration * duration_amp)
 	var lane_hits: int = _emit_pack_charge(center, damage_amp, duration_amp, is_f_window_active())
+	var pen_hits: int = _apply_pen_synergy(damage_amp, duration_amp)
 	_grant_armor()
 	spawn_skill_vfx(center, Color(1.1, 0.95, 0.35, 0.9), 0.8)
-	Global.on_camera_shake.emit(6.8 + float(burst_hits + lane_hits) * 0.24, 0.12)
-	if burst_hits > 0 or lane_hits > 0:
-		Global.spawn_floating_text(center, "HERD x%d / CHARGE x%d" % [burst_hits, lane_hits], Color(1.2, 1.0, 0.45))
+	Global.on_camera_shake.emit(6.8 + float(burst_hits + lane_hits + pen_hits) * 0.24, 0.12)
+	if burst_hits > 0 or lane_hits > 0 or pen_hits > 0:
+		Global.spawn_floating_text(
+			center,
+			"HERD x%d / CHARGE x%d / PEN x%d" % [burst_hits, lane_hits, pen_hits],
+			Color(1.2, 1.0, 0.45)
+		)
+	var pack_window: float = 2.0 + (0.6 if is_f_window_active() else 0.0)
+	skill_owner.set_meta(HERDER_E_PACK_META, Time.get_ticks_msec() + int(round(pack_window * 1000.0)))
 
 	start_cooldown()
 
@@ -165,3 +177,28 @@ func _grant_armor() -> void:
 	if skill_owner.has_signal("armor_changed"):
 		skill_owner.armor_changed.emit(after)
 	Global.spawn_floating_text(skill_owner.global_position, "+ARMOR", Color(0.6, 1.0, 1.0))
+
+func _apply_pen_synergy(damage_amp: float, duration_amp: float) -> int:
+	if not is_instance_valid(skill_owner):
+		return 0
+	if not skill_owner.has_meta(PEN_META_CENTER):
+		return 0
+	var expire_msec: int = 0
+	if skill_owner.has_meta(PEN_META_EXPIRE_MSEC):
+		expire_msec = int(skill_owner.get_meta(PEN_META_EXPIRE_MSEC))
+	if Time.get_ticks_msec() > expire_msec:
+		return 0
+	var center: Vector2 = Vector2(skill_owner.get_meta(PEN_META_CENTER))
+	var radius: float = float(skill_owner.get_meta(PEN_META_RADIUS, 0.0))
+	if radius <= 8.0:
+		return 0
+	var pen_damage: int = max(1, int(round(float(explosion_damage) * 0.42 * damage_amp)))
+	var mark_value: float = mark_amp * 0.8 * damage_amp
+	var mark_time: float = max(0.8, mark_duration * 0.9 * duration_amp)
+	var hit_count: int = _detonate(center, radius * 0.74, pen_damage, explosion_knockback * 0.42 * duration_amp, mark_value, mark_time)
+	if hit_count > 0:
+		var sweep_dir: Vector2 = _get_aim_direction()
+		var sweep_end: Vector2 = center + sweep_dir * radius
+		_damage_along_lane(center, sweep_end, charge_lane_width * 0.8, pen_damage, explosion_knockback * 0.35, mark_value, mark_time)
+		spawn_skill_vfx(center, Color(1.2, 0.92, 0.32, 0.78), 0.52)
+	return hit_count

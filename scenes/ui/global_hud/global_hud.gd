@@ -1,6 +1,8 @@
 ﻿extends Control
 class_name GlobalHUD
 
+const DEBUG_VERBOSE := false
+
 # UI 节点引用
 @onready var vbox_container: VBoxContainer = $VBoxContainer
 @onready var resource_container: HBoxContainer = $VBoxContainer/ResourceContainer
@@ -35,10 +37,10 @@ func _ready() -> void:
 	# 连接 DataManager 局内金币信号
 	if DataManager.has_signal("run_gold_changed"):
 		DataManager.run_gold_changed.connect(_on_gold_changed)
-		print("[GlobalHUD] 已连接 DataManager.run_gold_changed 信号")
+		if DEBUG_VERBOSE: print("[GlobalHUD] 已连接 DataManager.run_gold_changed 信号")
 	elif DataManager.has_signal("gold_changed"):
 		DataManager.gold_changed.connect(_on_gold_changed)
-		print("[GlobalHUD] 已连接 DataManager.gold_changed 信号(兼容)")
+		if DEBUG_VERBOSE: print("[GlobalHUD] 已连接 DataManager.gold_changed 信号(兼容)")
 	
 	# 设置资源标签颜色
 	if xp_label:
@@ -107,7 +109,7 @@ func _on_session_xp_changed(current: int) -> void:
 
 func _on_gold_changed(new_gold: int) -> void:
 	"""金币变化时更新显示"""
-	print("[GlobalHUD] 收到金币变化信号: new_gold=%d" % new_gold)
+	if DEBUG_VERBOSE: print("[GlobalHUD] 收到金币变化信号: new_gold=%d" % new_gold)
 	update_gold(new_gold)
 
 func _ensure_progress_widgets() -> void:

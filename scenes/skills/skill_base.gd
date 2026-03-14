@@ -105,6 +105,9 @@ func consume_energy() -> bool:
 ## 开始冷却
 func start_cooldown() -> void:
 	if cooldown_time > 0:
+		if _is_e_skill() and _is_global_e_no_cooldown_enabled():
+			reset_cooldown()
+			return
 		is_on_cooldown = true
 		var cd: float = cooldown_time
 		if _is_e_skill():
@@ -195,6 +198,13 @@ func _is_e_skill() -> bool:
 	if has_skill_tag("e"):
 		return true
 	return skill_id.ends_with("_e")
+
+func _is_global_e_no_cooldown_enabled() -> bool:
+	if Global == null:
+		return false
+	if not Global.has_meta("debug_e_no_cooldown"):
+		return false
+	return bool(Global.get_meta("debug_e_no_cooldown"))
 
 func _get_f_e_energy_discount(profile: Dictionary) -> float:
 	var line_amp: float = max(1.0, float(profile.get("q_line_amp", 1.0)))

@@ -6,7 +6,7 @@ var dash_damage: int = 1
 var dash_base_damage: int = 10
 var dash_knockback: float = 2.0
 
-# Extra tuning for new drawing framework implementation.
+# Role signature tuning.
 var pen_duration: float = 5.6
 var pen_pull_force: float = 220.0
 var pack_mark_damage_amp: float = 0.16
@@ -14,6 +14,33 @@ var execute_bonus_damage: int = 68
 var execute_threshold_ratio: float = 0.32
 var energy_refund_ratio: float = 0.25
 var fence_width: float = 20.0
+var dash_speed: float = 1450.0
+var dash_turn_lerp: float = 0.22
+
+const PEN_META_CENTER: String = "herder_pen_center"
+const PEN_META_RADIUS: String = "herder_pen_radius"
+const PEN_META_EXPIRE_MSEC: String = "herder_pen_expire_msec"
+
+func charge(delta: float) -> void:
+	super.charge(delta)
+	_dash_along_brush(delta)
+
+func _dash_along_brush(delta: float) -> void:
+	if not is_planning or not is_drawing:
+		return
+	if not is_instance_valid(skill_owner):
+		return
+	var target: Vector2 = skill_owner.get_global_mouse_position()
+	var to_target: Vector2 = target - skill_owner.global_position
+	var distance: float = to_target.length()
+	if distance <= 2.0:
+		return
+	var desired_dir: Vector2 = to_target / distance
+	var current_dir: Vector2 = Vector2.RIGHT.rotated(skill_owner.rotation)
+	var dash_dir: Vector2 = current_dir.lerp(desired_dir, dash_turn_lerp).normalized()
+	var step: float = min(distance, dash_speed * delta)
+	skill_owner.global_position += dash_dir * step
+	skill_owner.rotation = dash_dir.angle()
 
 func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
 	var duration: float = max(_get_line_duration(), 2.4)
@@ -99,7 +126,18 @@ func _spawn_area_effect(polygon: PackedVector2Array) -> void:
 		"color": Color(1.0, 0.72, 0.2, 0.18)
 	})
 
+	_cache_pen_snapshot(polygon, duration)
 	_apply_execute_sweep(polygon)
+
+func _cache_pen_snapshot(polygon: PackedVector2Array, duration: float) -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	var center: Vector2 = _polygon_center(polygon)
+	var radius: float = _polygon_radius(polygon, center)
+	var expire_msec: int = Time.get_ticks_msec() + int(round(duration * 1000.0))
+	skill_owner.set_meta(PEN_META_CENTER, center)
+	skill_owner.set_meta(PEN_META_RADIUS, radius)
+	skill_owner.set_meta(PEN_META_EXPIRE_MSEC, expire_msec)
 
 func _spawn_pen_fence(polygon: PackedVector2Array, duration: float) -> void:
 	var point_count: int = polygon.size()
@@ -185,6 +223,12 @@ func _polygon_center(polygon: PackedVector2Array) -> Vector2:
 	for point: Vector2 in polygon:
 		center += point
 	return center / float(polygon.size())
+
+func _polygon_radius(polygon: PackedVector2Array, center: Vector2) -> float:
+	var radius: float = 0.0
+	for point: Vector2 in polygon:
+		radius = max(radius, center.distance_to(point))
+	return max(8.0, radius)
 
 func _get_line_color() -> Color:
 	return Color(1.05, 0.9, 0.3, 1.0)

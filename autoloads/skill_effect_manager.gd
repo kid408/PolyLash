@@ -1,5 +1,7 @@
 extends Node
 
+const DEBUG_VERBOSE := false
+
 ## ==============================================================================
 ## 技能效果生命周期管理器 - 统一管理所有技能的场景效果
 ## ==============================================================================
@@ -60,6 +62,35 @@ func _apply_runtime_damage_multiplier(config: Dictionary) -> Dictionary:
 		adjusted[key] = int(round(float(adjusted.get(key, 0)) * multiplier))
 	return adjusted
 
+func _normalize_polygon_config(config: Dictionary, effect_name: String) -> Dictionary:
+	if not config.has("polygon"):
+		return config
+
+	var raw_points: PackedVector2Array = config["polygon"]
+	var polygon: PackedVector2Array = PolygonUtils.sanitize_polygon(raw_points)
+	if polygon.is_empty():
+		push_warning(
+			"[SkillEffectManager] %s 跳过无效多边形: raw_points=%d" % [
+				effect_name,
+				raw_points.size()
+			]
+		)
+		return {}
+
+	var adjusted: Dictionary = config.duplicate(true)
+	adjusted["polygon"] = polygon
+
+	if DEBUG_VERBOSE and polygon.size() != raw_points.size():
+		print(
+			"[SkillEffectManager] %s polygon sanitized: %d -> %d" % [
+				effect_name,
+				raw_points.size(),
+				polygon.size()
+			]
+		)
+
+	return adjusted
+
 # ==============================================================================
 # 创建效果
 # ==============================================================================
@@ -87,13 +118,18 @@ func create_area_effect(config: Dictionary) -> int:
 	if not config.has("polygon"):
 		push_error("[SkillEffectManager] 缺少必需参数: polygon")
 		return -1
+
+	config = _normalize_polygon_config(config, "create_area_effect")
+	if config.is_empty():
+		return -1
 	
 	var points: PackedVector2Array = config["polygon"]
 	if points.size() < 3:
 		push_error("[SkillEffectManager] 多边形点数不足: %d" % points.size())
 		return -1
 	
-	print("[SkillEffectManager] create_area_effect 被调用: 点数=%d, damage=%d, duration=%.1f" % [
+	if DEBUG_VERBOSE:
+		print("[SkillEffectManager] create_area_effect 被调用: 点数=%d, damage=%d, duration=%.1f" % [
 		points.size(), config.get("damage", 0), config.get("duration", 5.0)
 	])
 	
@@ -171,7 +207,8 @@ func create_line_effect(config: Dictionary) -> int:
 		push_error("[SkillEffectManager] 缺少必需参数: start 或 end")
 		return -1
 	
-	print("[SkillEffectManager] create_line_effect 被调用: damage=%d, duration=%.1f" % [
+	if DEBUG_VERBOSE:
+		print("[SkillEffectManager] create_line_effect 被调用: damage=%d, duration=%.1f" % [
 		config.get("damage", 0), config.get("duration", 5.0)
 	])
 	
@@ -256,7 +293,8 @@ func create_wall_effect(config: Dictionary) -> int:
 		push_error("[SkillEffectManager] create_wall_effect 缺少必需参数: start 或 end")
 		return -1
 
-	print("[SkillEffectManager] create_wall_effect 被调用: start=%s, end=%s, block=%s, damage=%d" % [
+	if DEBUG_VERBOSE:
+		print("[SkillEffectManager] create_wall_effect 被调用: start=%s, end=%s, block=%s, damage=%d" % [
 		config.get("start"), config.get("end"),
 		config.get("block_enemies", true), config.get("contact_damage", 0)
 	])
@@ -528,7 +566,8 @@ func _apply_wall_contact_damage(damage_area: Area2D, damage: int) -> void:
 
 		if enemy and is_instance_valid(enemy) and enemy.has_node("HealthComponent"):
 			enemy.health_component.take_damage(damage)
-			print("[SkillEffectManager] 墙体接触伤害: %d -> %s" % [damage, enemy.name])
+			if DEBUG_VERBOSE:
+				print("[SkillEffectManager] 墙体接触伤害: %d -> %s" % [damage, enemy.name])
 
 ## 将敌人推离墙体（Area2D 推回机制）
 ## 因为敌人是 Area2D 使用 position += 移动，StaticBody2D 无法物理阻挡
@@ -568,7 +607,8 @@ func _push_enemies_from_wall(block_area: Area2D, effect_data: Dictionary) -> voi
 				# 仅首次推回时打印日志（避免刷屏）
 				if not effect_data.has("_push_logged"):
 					effect_data["_push_logged"] = true
-					print("[SkillEffectManager] 墙体推回敌人: %s, dist=%.1f" % [enemy.name, dist])
+					if DEBUG_VERBOSE:
+						print("[SkillEffectManager] 墙体推回敌人: %s, dist=%.1f" % [enemy.name, dist])
 
 ## 墙体淡出并移除
 func _end_wall_effect(effect_id: int) -> void:
@@ -644,6 +684,11 @@ func create_buff_zone(config: Dictionary) -> int:
 	if not has_polygon and not has_line:
 		push_error("[SkillEffectManager] create_buff_zone 缺少必需参数: polygon 或 start/end")
 		return -1
+
+	if has_polygon:
+		config = _normalize_polygon_config(config, "create_buff_zone")
+		if config.is_empty():
+			return -1
 
 	var effect_id = next_effect_id
 	next_effect_id += 1
@@ -852,7 +897,8 @@ func _apply_single_buff(player: Node, buff_type: String, buff_value: float, conf
 			# 增加移动速度百分比
 			if not player.has_meta("buff_speed_boost"):
 				player.set_meta("buff_speed_boost", buff_value)
-				print("[SkillEffectManager] Buff区域命中: speed_boost -> %s (+%.0f%%)" % [player.name, buff_value * 100])
+				if DEBUG_VERBOSE:
+					print("[SkillEffectManager] Buff区域命中: speed_boost -> %s (+%.0f%%)" % [player.name, buff_value * 100])
 			else:
 				var current = player.get_meta("buff_speed_boost")
 				player.set_meta("buff_speed_boost", max(current, buff_value))
@@ -1007,11 +1053,17 @@ func create_debuff_zone(config: Dictionary) -> int:
 		push_error("[SkillEffectManager] create_debuff_zone 缺少必需参数: polygon 或 start/end")
 		return -1
 
-	print("[SkillEffectManager] create_debuff_zone 被调用: type=%s, debuff=%s, damage=%d" % [
+	if DEBUG_VERBOSE:
+		print("[SkillEffectManager] create_debuff_zone 被调用: type=%s, debuff=%s, damage=%d" % [
 		"polygon" if has_polygon else "line",
 		config.get("debuff_type", "none"),
 		config.get("damage", 0)
 	])
+
+	if has_polygon:
+		config = _normalize_polygon_config(config, "create_debuff_zone")
+		if config.is_empty():
+			return -1
 
 	var effect_id = next_effect_id
 	next_effect_id += 1
@@ -1171,7 +1223,8 @@ func _apply_debuff_to_targets(area: Area2D, config: Dictionary) -> void:
 			enemy = t.owner
 
 		if enemy and is_instance_valid(enemy) and enemy.has_method("apply_status"):
-			print("[SkillEffectManager] Debuff区域命中: %s -> %s (type=%s)" % [debuff_type, enemy.name, enemy.get_class()])
+			if DEBUG_VERBOSE:
+				print("[SkillEffectManager] Debuff区域命中: %s -> %s (type=%s)" % [debuff_type, enemy.name, enemy.get_class()])
 			_apply_single_debuff(enemy, debuff_type, debuff_value, debuff_duration)
 
 ## 对单个敌人应用 Debuff

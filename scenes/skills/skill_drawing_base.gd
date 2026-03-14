@@ -39,6 +39,19 @@ const POINT_INTERVAL: float = 10.0
 # 字段定义
 var base_line_duration: float = 5.0
 
+# Q->E/F 联动上下文（统一键）
+const Q_CTX_META_CENTER: String = "q_ctx_last_center"
+const Q_CTX_META_RADIUS: String = "q_ctx_last_radius"
+const Q_CTX_META_TIME_MSEC: String = "q_ctx_last_time_msec"
+const Q_CTX_META_CLOSED: String = "q_ctx_last_closed"
+const Q_CTX_META_SEGMENTS: String = "q_ctx_last_segments"
+const Q_CTX_META_POLYGONS: String = "q_ctx_last_polygons"
+
+# 兼容旧 E 原型键（避免已有逻辑失效）
+const Q_CTX_LEGACY_CENTER: String = "q_proto_last_center"
+const Q_CTX_LEGACY_RADIUS: String = "q_proto_last_radius"
+const Q_CTX_LEGACY_TIME_MSEC: String = "q_proto_last_time_msec"
+
 # ==============================================================================
 # 閻㈣崵鍤庨幎鈧懗鍊熺箥鐞涘本妞傞悩鑸碘偓?
 # ==============================================================================
@@ -657,6 +670,14 @@ func _calculate_polygon_center(polygon: PackedVector2Array) -> Vector2:
 		center += p
 	return center / polygon.size()
 
+func _calculate_polygon_radius(polygon: PackedVector2Array, center: Vector2) -> float:
+	if polygon.is_empty():
+		return 120.0
+	var radius: float = 0.0
+	for point: Vector2 in polygon:
+		radius = float(max(radius, center.distance_to(point)))
+	return float(max(60.0, radius))
+
 # ==============================================================================
 # 鐢熷懡鍛ㄦ湡
 # ==============================================================================
@@ -682,6 +703,7 @@ func _ready() -> void:
 			skill_owner.add_child(line_2d)
 		
 		line_2d.top_level = true
+		line_2d.global_position = Vector2.ZERO
 		line_2d.clear_points()
 		line_2d.default_color = _get_line_color()
 		print("[SkillDrawingBase] Line2D 创建成功: %s" % skill_id)
@@ -710,8 +732,16 @@ func charge(delta: float) -> void:
 		_enter_planning_mode()
 	
 	if is_planning:
+		var left_pressed: bool = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+		if (
+			not left_pressed
+			and Global != null
+			and Global.has_meta("qef_test_mode_active")
+			and bool(Global.get_meta("qef_test_mode_active"))
+		):
+			left_pressed = Input.is_action_pressed("click_left")
 		# 条件判断
-		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		if left_pressed:
 			if not is_drawing:
 				_start_drawing()
 			
@@ -806,14 +836,30 @@ func _execute_closed_path() -> void:
 	var tolerance = _get_closure_tolerance()
 	var polygons = PolygonUtils.find_all_closing_polygons(path_points, tolerance)
 	
+	var context_center: Vector2 = _calculate_points_center(path_points)
+	var context_radius: float = _calculate_points_radius(path_points, context_center)
+
 	if polygons.size() > 0:
 		print("[%s] detected %d closed polygons" % [skill_id, polygons.size()])
-		
+
+		var primary_polygon: PackedVector2Array = polygons[0]
+		var max_area: float = _calculate_polygon_area(primary_polygon)
+		for poly_obj: Variant in polygons:
+			if not (poly_obj is PackedVector2Array):
+				continue
+			var poly: PackedVector2Array = poly_obj
+			var area: float = _calculate_polygon_area(poly)
+			if area > max_area:
+				max_area = area
+				primary_polygon = poly
+		context_center = _calculate_polygon_center(primary_polygon)
+		context_radius = _calculate_polygon_radius(primary_polygon, context_center)
+
 		# 字段定义
 		var mask_color = _get_closure_color()
 		mask_color.a = 0.7
 		PolygonUtils.show_closure_masks(polygons, mask_color, get_tree(), 0.6)
-		
+
 		for polygon in polygons:
 			# 瀛愮被瀹炵幇鍏蜂綋鏁堟灉
 			_push_runtime_effect_damage_multiplier(true)
@@ -824,8 +870,9 @@ func _execute_closed_path() -> void:
 			var main_damage: int = _estimate_closed_shape_damage(polygon)
 			_trigger_secondary_explode(polygon, main_damage)
 			_trigger_chain_reaction(polygon, main_damage)
-		
-		_notify_ultimate_path_executed(true, path_points.size(), polygons.size())
+
+	_cache_q_execution_context(true, path_points.size(), polygons.size(), context_center, context_radius)
+	_notify_ultimate_path_executed(true, path_points.size(), polygons.size())
 
 ## 閹笛嗩攽瀵偓閺€鎹愮熅瀵?
 func _execute_open_path() -> void:
@@ -854,6 +901,8 @@ func _execute_open_path() -> void:
 	
 	print("[%s] 閻㈢喐鍨氬鈧弨鎹愮熅瀵板嫭鏅ラ弸婊愮礉閸樼喎顫愰悙瑙勬殶: %d, 閸氬牆鑻熺痪鎸庮唽閺? %d" % [skill_id, path_points.size(), merged_segments.size()])
 	var line_duration: float = _get_line_duration()
+	var context_center: Vector2 = _calculate_points_center(path_points)
+	var context_radius: float = _calculate_points_radius(path_points, context_center)
 	
 	for seg in merged_segments:
 		_push_runtime_effect_damage_multiplier(false)
@@ -862,6 +911,7 @@ func _execute_open_path() -> void:
 		_spawn_thorns_wall_trigger(seg["start"], seg["end"], line_duration)
 	
 	print("[%s] open-path effects spawned" % skill_id)
+	_cache_q_execution_context(false, merged_segments.size(), 0, context_center, context_radius)
 	_notify_ultimate_path_executed(false, merged_segments.size(), 0)
 
 func _notify_ultimate_path_executed(is_closed: bool, segment_count: int, polygon_count: int) -> void:
@@ -1030,6 +1080,47 @@ func _cache_draw_snapshot() -> void:
 		return
 	Global.cache_recent_draw_path(skill_owner.player_id, path_points, has_closure)
 
+func _cache_q_execution_context(
+	is_closed_path: bool,
+	segment_count: int,
+	polygon_count: int,
+	center: Vector2,
+	radius: float
+) -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	var now_msec: int = Time.get_ticks_msec()
+	var safe_radius: float = float(max(60.0, radius))
+
+	# 新统一键
+	skill_owner.set_meta(Q_CTX_META_CENTER, center)
+	skill_owner.set_meta(Q_CTX_META_RADIUS, safe_radius)
+	skill_owner.set_meta(Q_CTX_META_TIME_MSEC, now_msec)
+	skill_owner.set_meta(Q_CTX_META_CLOSED, is_closed_path)
+	skill_owner.set_meta(Q_CTX_META_SEGMENTS, max(0, segment_count))
+	skill_owner.set_meta(Q_CTX_META_POLYGONS, max(0, polygon_count))
+
+	# 旧键兼容（E 原型仍在使用）
+	skill_owner.set_meta(Q_CTX_LEGACY_CENTER, center)
+	skill_owner.set_meta(Q_CTX_LEGACY_RADIUS, safe_radius)
+	skill_owner.set_meta(Q_CTX_LEGACY_TIME_MSEC, now_msec)
+
+func _calculate_points_center(points: Array[Vector2]) -> Vector2:
+	if points.is_empty():
+		return skill_owner.global_position if is_instance_valid(skill_owner) else Vector2.ZERO
+	var center: Vector2 = Vector2.ZERO
+	for point: Vector2 in points:
+		center += point
+	return center / float(points.size())
+
+func _calculate_points_radius(points: Array[Vector2], center: Vector2) -> float:
+	if points.is_empty():
+		return 120.0
+	var radius: float = 0.0
+	for point: Vector2 in points:
+		radius = float(max(radius, center.distance_to(point)))
+	return float(max(60.0, radius))
+
 func _apply_death_brush_segment(seg_start: Vector2, seg_end: Vector2) -> void:
 	if not BondManager.has_mechanic("death_brush"):
 		return
@@ -1161,19 +1252,12 @@ func _perform_final_closure_check() -> void:
 	
 	# 条件判断
 	if path_points.size() >= 3:
-		var last_point_pos = path_points[path_points.size() - 1]
+		var last_point_pos: Vector2 = path_points[path_points.size() - 1]
 		
 		# 条件判断
 		if last_point_pos.distance_to(path_points[0]) < tolerance:
 			has_closure = true
 			return
-		
-		# 字段定义
-		var check_until = max(0, path_points.size() - 20)
-		for i in range(check_until):
-			if last_point_pos.distance_to(path_points[i]) < tolerance:
-				has_closure = true
-				return
 
 # 函数：_check_intersection_and_closure
 func _check_intersection_and_closure() -> void:
@@ -1198,8 +1282,8 @@ func _check_intersection_and_closure() -> void:
 			return
 	
 	# 条件判断
-	if path_points.size() >= 20:
-		var current_point = path_points[path_points.size() - 1]
+	if path_points.size() >= 12:
+		var current_point: Vector2 = path_points[path_points.size() - 1]
 		if current_point.distance_to(path_points[0]) < tolerance:
 			has_closure = true
 			SoundManager.play("skill_q_closure_detected")
@@ -1250,6 +1334,7 @@ func _update_visuals() -> void:
 	if not is_instance_valid(line_2d):
 		return
 	
+	line_2d.global_position = Vector2.ZERO
 	line_2d.clear_points()
 	
 	if path_points.is_empty() and not is_planning:

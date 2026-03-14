@@ -1,5 +1,7 @@
 ﻿extends Node
 
+const DEBUG_VERBOSE := false
+
 # 闪避文字
 signal on_create_block_text(unit:Node2D)
 # 伤害数文字
@@ -123,7 +125,7 @@ func _setup_tooltip_theme() -> void:
 	
 	# 应用到场景树根节点
 	get_tree().root.theme = theme
-	print("[Global] 全局 Tooltip 主题已设置")
+	if DEBUG_VERBOSE: print("[Global] 全局 Tooltip 主题已设置")
 
 func _process(delta: float) -> void:
 	# P4-1: 处理切换冷却计时器
@@ -132,7 +134,7 @@ func _process(delta: float) -> void:
 		if switch_cooldown_timer <= 0:
 			is_switch_on_cooldown = false
 			switch_cooldown_timer = 0.0
-			print("[Global] [P4-1] 切换冷却结束")
+			if DEBUG_VERBOSE: print("[Global] [P4-1] 切换冷却结束")
 
 	# 切换协同窗口计时
 	if switch_synergy_active and not switch_synergy_consumed:
@@ -290,7 +292,7 @@ func init_player_states() -> void:
 			"last_activated_time": now_sec
 		}
 	
-	print("[Global] 初始化 %d 个角色状态" % player_states.size())
+	if DEBUG_VERBOSE: print("[Global] 初始化 %d 个角色状态" % player_states.size())
 
 func is_wave_recruit_mode_enabled() -> bool:
 	var raw_value = ConfigManager.get_game_setting("enable_wave_recruit_mode", 1)
@@ -319,7 +321,7 @@ func enter_wave_recruit_mode() -> void:
 	_ensure_selected_weapon_for_player(first_player_id)
 	_rebuild_recruit_pool(preferred_reserve_ids)
 
-	print("[Global] 波次招募模式启用: active=%s reserve=%s" % [
+	if DEBUG_VERBOSE: print("[Global] 波次招募模式启用: active=%s reserve=%s" % [
 		str(selected_player_ids),
 		str(reserve_player_ids)
 	])
@@ -402,7 +404,7 @@ func recruit_player(player_id: String) -> bool:
 		var state = get_player_state(player_id)
 		emit_signal("on_squad_state_changed", new_index, state)
 
-	print("[Global] 招募成功: %s, active=%s, reserve=%s" % [
+	if DEBUG_VERBOSE: print("[Global] 招募成功: %s, active=%s, reserve=%s" % [
 		player_id,
 		str(selected_player_ids),
 		str(reserve_player_ids)
@@ -451,7 +453,7 @@ func replace_player(out_player_id: String, in_player_id: String) -> bool:
 	BondManager.recalculate_active_bonds(selected_player_ids)
 	emit_signal("on_active_character_changed", current_player_index)
 
-	print("[Global] 替换招募成功: out=%s in=%s, active=%s, reserve=%s" % [
+	if DEBUG_VERBOSE: print("[Global] 替换招募成功: out=%s in=%s, active=%s, reserve=%s" % [
 		out_player_id,
 		in_player_id,
 		str(selected_player_ids),
@@ -631,15 +633,15 @@ func _get_equipment_bench_cd_bonus(player_id: String) -> float:
 
 # 切换到下一个角色
 func switch_to_next_player() -> void:
-	print("[Global] switch_to_next_player 调用")
-	print("[Global] selected_player_ids.size() = %d" % selected_player_ids.size())
+	if DEBUG_VERBOSE: print("[Global] switch_to_next_player 调用")
+	if DEBUG_VERBOSE: print("[Global] selected_player_ids.size() = %d" % selected_player_ids.size())
 	
 	if selected_player_ids.size() <= 1:
-		print("[Global] 只有一个或没有角色，无法切换")
+		if DEBUG_VERBOSE: print("[Global] 只有一个或没有角色，无法切换")
 		return
 	
 	if is_game_over:
-		print("[Global] 游戏已结束，无法切换")
+		if DEBUG_VERBOSE: print("[Global] 游戏已结束，无法切换")
 		return
 	
 	# 1. 保存当前角色状态并标记切出
@@ -655,11 +657,11 @@ func switch_to_next_player() -> void:
 	mark_player_activated(next_player_id)
 	_apply_switch_reset(next_player_id)
 	
-	print("[Global] 切换到角色: %s (索引 %d)" % [next_player_id, current_player_index])
+	if DEBUG_VERBOSE: print("[Global] 切换到角色: %s (索引 %d)" % [next_player_id, current_player_index])
 	
 	# 4. 通知Arena生成新角色
 	# 这里发出信号，由Arena处理实际的角色切换
-	print("[Global] 发出 on_player_switch_requested 信号")
+	if DEBUG_VERBOSE: print("[Global] 发出 on_player_switch_requested 信号")
 	emit_signal("on_player_switch_requested", next_player_id)
 
 # 获取当前角色ID
@@ -678,11 +680,11 @@ func restore_player_state(player_instance: PlayerBase) -> void:
 	
 	# 安全检查：确保 player_id 不为空
 	if player_id.is_empty():
-		print("[Global] 警告: restore_player_state 中 player_id 为空，跳过恢复")
+		if DEBUG_VERBOSE: print("[Global] 警告: restore_player_state 中 player_id 为空，跳过恢复")
 		return
 	
 	if not player_states.has(player_id):
-		print("[Global] 警告: 未找到角色状态: %s" % player_id)
+		if DEBUG_VERBOSE: print("[Global] 警告: 未找到角色状态: %s" % player_id)
 		return
 	
 	var state: Dictionary = player_states[player_id]
@@ -705,7 +707,7 @@ func restore_player_state(player_instance: PlayerBase) -> void:
 		var bench_speed_multiplier: float = get_bench_cooldown_speed_multiplier(player_id)
 		player_instance.queue_restore_skill_cooldowns(cooldown_snapshot, bench_elapsed, bench_speed_multiplier)
 
-	print("[Global] 恢复角色状态: %s (血量: %d/%d)" % [player_id, player_instance.health_component.current_health, player_instance.health_component.max_health])
+	if DEBUG_VERBOSE: print("[Global] 恢复角色状态: %s (血量: %d/%d)" % [player_id, player_instance.health_component.current_health, player_instance.health_component.max_health])
 
 # 波次结束后回满当前小队资源（生命/能量/护甲）并重置当前角色技能冷却
 func refill_squad_after_wave() -> void:
@@ -754,7 +756,7 @@ func refill_squad_after_wave() -> void:
 			if player.has_method("update_ui_signals"):
 				player.update_ui_signals()
 
-	print("[Global] 波次结算回满完成: %d 名角色" % selected_player_ids.size())
+	if DEBUG_VERBOSE: print("[Global] 波次结算回满完成: %d 名角色" % selected_player_ids.size())
 
 func _reset_active_player_cooldowns(player_instance: PlayerBase) -> void:
 	if not is_instance_valid(player_instance):
@@ -795,7 +797,7 @@ func game_over() -> void:
 	
 	is_game_over = true
 	_clear_switch_synergy()
-	print("[Global] 游戏结束!")
+	if DEBUG_VERBOSE: print("[Global] 游戏结束!")
 	
 	# 暂停游戏（统一入口）
 	PauseService.request_pause("global_game_over")
@@ -847,7 +849,7 @@ func reset_session_data() -> void:
 	_clear_switch_synergy()
 	recent_draw_snapshots.clear()
 	PauseService.clear_all()
-	print("[Global] 局内数据已重置")
+	if DEBUG_VERBOSE: print("[Global] 局内数据已重置")
 
 func cache_recent_draw_path(player_id: String, points: Array, closed_shape: bool) -> void:
 	if player_id.is_empty() or points.size() < 2:
@@ -960,15 +962,20 @@ func spawn_coin(pos: Vector2, amount: int = 1) -> void:
 
 # 通过索引切换角色（1-2-3 键）
 func switch_to_player_by_index(index: int) -> bool:
-	print("[Global] switch_to_player_by_index 调用, index=%d" % index)
+	if DEBUG_VERBOSE: print("[Global] switch_to_player_by_index 调用, index=%d" % index)
+
+	var synergy_test_mode: bool = has_meta("skill_synergy_test_mode_active") and bool(get_meta("skill_synergy_test_mode_active"))
 	
 	# P4-1: 检查切换冷却
-	if is_switch_on_cooldown:
-		print("[Global] [P4-1] 切换防抖中，剩余 %.2f 秒" % switch_cooldown_timer)
+	if is_switch_on_cooldown and not synergy_test_mode:
+		if DEBUG_VERBOSE: print("[Global] [P4-1] 切换防抖中，剩余 %.2f 秒" % switch_cooldown_timer)
 		SoundManager.play("char_switch_fail")
 		if is_instance_valid(player):
 			spawn_floating_text(player.global_position, "Switch Lock: %.2fs" % switch_cooldown_timer, Color.ORANGE)
 		return false
+	if synergy_test_mode:
+		is_switch_on_cooldown = false
+		switch_cooldown_timer = 0.0
 	
 	# 1. 检查索引有效性
 	if index < 0 or index >= selected_player_ids.size():
@@ -977,24 +984,31 @@ func switch_to_player_by_index(index: int) -> bool:
 	
 	# 2. 自我屏蔽检查 - 如果已经是当前角色，忽略
 	if index == current_player_index:
-		print("[Global] 已经是当前角色，忽略切换")
+		if DEBUG_VERBOSE: print("[Global] 已经是当前角色，忽略切换")
 		return false
 	
 	# 3. 游戏结束检查
 	if is_game_over:
-		print("[Global] 游戏已结束，无法切换")
+		if DEBUG_VERBOSE: print("[Global] 游戏已结束，无法切换")
 		return false
 	
 	# 4. 死亡检查
 	var target_player_id = selected_player_ids[index]
-	var state = player_states.get(target_player_id, {})
-	var health = state.get("health", 0)
+	if not player_states.has(target_player_id):
+		player_states[target_player_id] = _build_default_player_state(target_player_id)
+	var state_variant: Variant = player_states.get(target_player_id, {})
+	var state: Dictionary = state_variant if state_variant is Dictionary else _build_default_player_state(target_player_id)
+	var health: float = float(state.get("health", state.get("max_health", 0.0)))
 	
-	if health <= 0:
-		print("[Global] 目标角色已死亡: %s" % target_player_id)
+	if health <= 0.0 and not synergy_test_mode:
+		if DEBUG_VERBOSE: print("[Global] 目标角色已死亡: %s" % target_player_id)
 		SoundManager.play("char_switch_fail")
 		emit_signal("on_switch_rejected", index, "dead")
 		return false
+	if health <= 0.0 and synergy_test_mode:
+		var max_health: float = float(state.get("max_health", 100.0))
+		state["health"] = max(1.0, max_health)
+		player_states[target_player_id] = state
 	
 	# 5. 保存当前角色状态并标记切出
 	var old_player_id := get_current_player_id()
@@ -1006,13 +1020,14 @@ func switch_to_player_by_index(index: int) -> bool:
 	mark_player_activated(target_player_id)
 	_apply_switch_reset(target_player_id)
 	
-	print("[Global] 切换到角色: %s (索引 %d)" % [target_player_id, index])
+	if DEBUG_VERBOSE: print("[Global] 切换到角色: %s (索引 %d)" % [target_player_id, index])
 	
 	# 角色切换成功音效
 	SoundManager.play("char_switch_success")
 	
 	# P4-1: 启动切换冷却
-	_start_switch_cooldown()
+	if not synergy_test_mode:
+		_start_switch_cooldown()
 	_start_switch_synergy(target_player_id)
 	
 	# 7. 发出信号
@@ -1051,7 +1066,7 @@ func _start_switch_cooldown() -> void:
 	if BondManager.has_mechanic("switch_cd_reduce"):
 		var reduction = BondManager.get_mechanic_value("switch_cd_reduce")
 		cooldown = base_switch_cooldown * (1.0 - reduction)
-		print("[Global] [P4-1] 切换防抖缩减: %.2f秒 -> %.2f秒 (减少%.0f%%)" % [
+		if DEBUG_VERBOSE: print("[Global] [P4-1] 切换防抖缩减: %.2f秒 -> %.2f秒 (减少%.0f%%)" % [
 			base_switch_cooldown,
 			cooldown,
 			reduction * 100
@@ -1062,7 +1077,7 @@ func _start_switch_cooldown() -> void:
 	
 	switch_cooldown_timer = cooldown
 	is_switch_on_cooldown = true
-	print("[Global] [P4-1] 切换防抖开始: %.2f秒" % cooldown)
+	if DEBUG_VERBOSE: print("[Global] [P4-1] 切换防抖开始: %.2f秒" % cooldown)
 
 func _start_switch_synergy(player_id: String) -> void:
 	"""切换后开启协同窗口：2秒内首个Q/E技能获得一次性增益。"""

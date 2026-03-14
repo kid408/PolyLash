@@ -3,6 +3,40 @@ class_name SkillUltimateQEFV3
 
 const MIN_TICK_INTERVAL: float = 0.25
 const DEFAULT_TARGET_CAP: int = 8
+const F_MODE_ALIAS: Dictionary = {
+	"f01": "illusionist",
+	"f02": "weaver",
+	"f03": "plague",
+	"f04": "goo",
+	"f05": "blacksmith",
+	"f06": "vampire",
+	"f07": "voodoo",
+	"f08": "paladin",
+	"f09": "turret_eng",
+	"f10": "merchant",
+	"f11": "wind",
+	"f12": "glacier",
+	"f13": "new_totem",
+	"f14": "herder",
+	"f15": "banner",
+	"f16": "pyro",
+	"f17": "new_pyro",
+	"f18": "ammo",
+	"f19": "tesla",
+	"f20": "medic",
+	"f21": "train",
+	"f22": "sapper",
+	"f23": "new_tempest",
+	"f24": "jailer",
+	"f25": "butcher",
+	"f26": "swarm",
+	"f27": "necro",
+	"f28": "midas",
+	"f29": "vacuum",
+	"f30": "executioner",
+	"f31": "gambler",
+	"f32": "hunter"
+}
 
 const LINE_PROFILES := {
 	"butcher": {"damage_mul": 1.18, "radius_mul": 0.90, "status": "marked", "status_duration": 1.6, "status_value": 0.20, "knockback": 145.0, "max_targets": 10, "util_damage_scale": 0.20},
@@ -156,17 +190,25 @@ func on_q_path_executed(is_closed: bool, segment_count: int, polygon_count: int)
 	_sync_mode_runtime_profile()
 
 func _resolve_mode_id() -> String:
-	var mode = f_mode_id.strip_edges()
+	var mode: String = f_mode_id.strip_edges()
 	if mode != "":
-		return mode
+		return _normalize_mode_id(mode)
 
 	if is_instance_valid(player_ref) and "player_id" in player_ref:
-		return str(player_ref.player_id)
+		return _normalize_mode_id(str(player_ref.player_id))
 
 	if ult_id.ends_with("_ult"):
 		if ult_id.length() > 4:
-			return ult_id.substr(0, ult_id.length() - 4)
-	return ult_id
+			return _normalize_mode_id(ult_id.substr(0, ult_id.length() - 4))
+	return _normalize_mode_id(ult_id)
+
+func _normalize_mode_id(raw_mode: String) -> String:
+	var mode: String = raw_mode.strip_edges().to_lower()
+	if mode == "":
+		return mode
+	if F_MODE_ALIAS.has(mode):
+		return str(F_MODE_ALIAS.get(mode, mode))
+	return mode
 
 func _emit_line_mode_effect(intensity: float) -> void:
 	var profile = LINE_PROFILES.get(_mode_id_runtime, {})
@@ -309,6 +351,7 @@ func _apply_packet(packet: Dictionary) -> void:
 		Global.spawn_floating_text(center, player_text, visual_color)
 
 	_apply_mode_signature(str(packet.get("phase", "tick")), packet, center, hit_count)
+	_apply_q_link_signature(str(packet.get("phase", "tick")), packet, center)
 
 func _resolve_packet_center(packet: Dictionary) -> Vector2:
 	if not is_instance_valid(player_ref):
@@ -391,6 +434,394 @@ func _apply_mode_signature(phase: String, packet: Dictionary, center: Vector2, h
 		_:
 			pass
 
+func _apply_q_link_signature(phase: String, packet: Dictionary, center: Vector2) -> void:
+	if phase == "tick":
+		return
+	var q_ctx: Dictionary = _resolve_recent_q_context()
+	if q_ctx.is_empty():
+		return
+
+	var q_center_raw: Variant = q_ctx.get("center", center)
+	var q_center: Vector2 = q_center_raw if q_center_raw is Vector2 else center
+	var q_radius: float = max(90.0, float(q_ctx.get("radius", float(packet.get("radius", 140.0)))))
+	var q_closed: bool = bool(q_ctx.get("is_closed", false))
+	var base_damage: float = _get_player_base_damage()
+	var q_dir: Vector2 = _get_player_aim_direction()
+	if q_dir.length_squared() <= 0.001:
+		q_dir = Vector2.RIGHT
+	var q_side: Vector2 = Vector2(-q_dir.y, q_dir.x)
+	var q_line_len: float = q_radius * 1.18
+
+	match _mode_id_runtime:
+		"butcher":
+			if q_closed:
+				_pull_enemies_burst(q_center, q_radius * 0.72, 3, 18.0)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.58, q_center + q_dir * q_line_len * 0.58, 22.0, 0.34, "curse", 1.0, max(1.0, base_damage * 0.10), true, 220.0)
+		"weaver":
+			if q_closed:
+				_apply_status_burst(q_center, q_radius * 0.8, 4, "slow", 1.0, 0.30)
+				_line_slice_burst(q_center - q_side * q_line_len * 0.52, q_center + q_side * q_line_len * 0.52, 20.0, 0.24, "slow", 1.1, 0.28, true, 160.0)
+		"herder":
+			if phase == "line":
+				_knock_enemies_burst(q_center, q_radius * 0.7, 4, 140.0)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.64, q_center + q_dir * q_line_len * 0.64, 18.0, 0.28, "marked", 1.1, 0.16, false, 180.0)
+		"pyro":
+			if q_closed:
+				_spawn_pyro_patch(q_center, q_radius * 0.5, 1.5, 0.24)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.58, q_center + q_dir * q_line_len * 0.58, 22.0, 0.30, "burn", 1.2, max(1.0, base_damage * 0.10), false, 220.0)
+			else:
+				_line_slice_burst(q_center - q_side * q_line_len * 0.46, q_center + q_side * q_line_len * 0.46, 16.0, 0.20, "burn", 0.9, max(1.0, base_damage * 0.06), false, 140.0)
+		"wind":
+			if q_closed:
+				_pull_enemies_burst(q_center, q_radius * 0.92, 5, 14.0)
+				_line_slice_burst(q_center - q_side * q_line_len * 0.58, q_center + q_side * q_line_len * 0.58, 24.0, 0.24, "slow", 1.0, 0.26, true, 200.0)
+		"sapper":
+			if q_closed:
+				_spawn_sapper_mine(q_center, 0.45, q_radius * 0.42, 0.30)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.54, q_center + q_dir * q_line_len * 0.54, 20.0, 0.24, "marked", 1.1, 0.18, false, 180.0)
+			else:
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.38, q_center + q_dir * q_line_len * 0.38, 14.0, 0.18, "slow", 0.8, 0.22, false, 120.0)
+		"glacier":
+			if q_closed:
+				_spawn_glacier_ring_walls(q_center, q_radius * 0.66, 1.2, 6, int(max(1.0, base_damage * 0.12)), 0.32, false)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.46, q_center + q_dir * q_line_len * 0.46, 20.0, 0.22, "freeze", 0.32, 0.0, true, 120.0)
+				_line_slice_burst(q_center - q_side * q_line_len * 0.46, q_center + q_side * q_line_len * 0.46, 20.0, 0.22, "freeze", 0.32, 0.0, true, 120.0)
+		"tesla":
+			if q_closed:
+				_apply_status_burst(q_center, q_radius * 0.78, 4, "stun", 0.32, 0.0)
+				_line_slice_burst(q_center - q_side * q_line_len * 0.62, q_center + q_side * q_line_len * 0.62, 18.0, 0.26, "stun", 0.24, 0.0, false, 160.0)
+			else:
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.56, q_center + q_dir * q_line_len * 0.56, 14.0, 0.20, "marked", 0.9, 0.16, false, 100.0)
+		"necro":
+			if q_closed:
+				_apply_status_burst(q_center, q_radius * 0.82, 5, "curse", 1.2, max(1.0, base_damage * 0.12))
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.54, q_center + q_dir * q_line_len * 0.54, 18.0, 0.24, "curse", 1.2, max(1.0, base_damage * 0.10), true, 170.0)
+			else:
+				_line_slice_burst(q_center - q_side * q_line_len * 0.42, q_center + q_side * q_line_len * 0.42, 14.0, 0.18, "curse", 0.9, max(1.0, base_damage * 0.06), true, 120.0)
+		"swarm":
+			if q_closed:
+				_apply_status_burst(q_center, q_radius * 0.9, 6, "poison", 1.2, max(1.0, base_damage * 0.10))
+				_line_slice_burst(q_center - q_side * q_line_len * 0.68, q_center + q_side * q_line_len * 0.68, 20.0, 0.20, "poison", 1.1, max(1.0, base_damage * 0.08), false, 120.0)
+			else:
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.40, q_center + q_dir * q_line_len * 0.40, 14.0, 0.16, "poison", 0.8, max(1.0, base_damage * 0.05), false, 80.0)
+		"turret_eng":
+			if q_closed:
+				_spawn_turret_pylon(q_center, q_radius * 0.45, 2.0, 0.28)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.52, q_center + q_dir * q_line_len * 0.52, 16.0, 0.24, "marked", 1.0, 0.18, false, 140.0)
+			else:
+				_line_slice_burst(q_center - q_side * q_line_len * 0.34, q_center + q_side * q_line_len * 0.34, 12.0, 0.16, "marked", 0.8, 0.14, false, 80.0)
+		"hunter":
+			if phase == "closure":
+				var target: Node2D = _pick_hunter_target(q_center, q_radius)
+				if target != null:
+					_damage_enemy(target, base_damage * 0.74, "HUNT", Color(1.0, 0.85, 0.3))
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.66, q_center + q_dir * q_line_len * 0.66, 12.0, 0.30, "marked", 1.0, 0.22, false, 120.0)
+			else:
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.52, q_center + q_dir * q_line_len * 0.20, 10.0, 0.18, "marked", 0.8, 0.18, false, 80.0)
+		"blacksmith":
+			if q_closed:
+				_knock_enemies_burst(q_center, q_radius * 0.72, 4, 180.0)
+				_line_slice_burst(q_center - q_side * q_line_len * 0.54, q_center + q_side * q_line_len * 0.54, 18.0, 0.28, "burn", 1.0, max(1.0, base_damage * 0.08), false, 220.0)
+			else:
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.46, q_center + q_dir * q_line_len * 0.46, 14.0, 0.20, "burn", 0.8, max(1.0, base_damage * 0.05), false, 140.0)
+		"medic":
+			if q_closed:
+				_heal_player(base_damage * 0.42)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.44, q_center + q_dir * q_line_len * 0.44, 14.0, 0.18, "slow", 0.9, 0.22, true, 120.0)
+			else:
+				_line_slice_burst(q_center - q_side * q_line_len * 0.36, q_center + q_side * q_line_len * 0.36, 12.0, 0.12, "slow", 0.7, 0.18, true, 80.0)
+		"ammo":
+			if phase == "line":
+				_gain_energy(1.8)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.66, q_center + q_dir * q_line_len * 0.66, 12.0, 0.22, "marked", 0.9, 0.18, false, 120.0)
+			else:
+				_line_slice_burst(q_center - q_side * q_line_len * 0.46, q_center + q_side * q_line_len * 0.46, 12.0, 0.16, "marked", 0.8, 0.16, false, 80.0)
+		"paladin":
+			if q_closed:
+				_add_player_armor(4)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.54, q_center + q_dir * q_line_len * 0.54, 16.0, 0.20, "stun", 0.24, 0.0, false, 140.0)
+			else:
+				_line_slice_burst(q_center - q_side * q_line_len * 0.34, q_center + q_side * q_line_len * 0.34, 12.0, 0.14, "slow", 0.8, 0.20, false, 80.0)
+		"banner":
+			if q_closed:
+				_apply_temp_meta_delta("buff_speed_boost", 0.10, 1.8)
+				_line_slice_burst(q_center - q_side * q_line_len * 0.74, q_center + q_side * q_line_len * 0.74, 18.0, 0.18, "marked", 1.1, 0.18, true, 170.0)
+			else:
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.42, q_center + q_dir * q_line_len * 0.42, 12.0, 0.12, "marked", 0.8, 0.14, true, 90.0)
+		"midas":
+			if phase == "closure":
+				_drop_coins_at(q_center, 2)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.56, q_center + q_dir * q_line_len * 0.56, 14.0, 0.22, "slow", 1.0, 0.24, false, 130.0)
+			else:
+				_line_slice_burst(q_center - q_side * q_line_len * 0.38, q_center + q_side * q_line_len * 0.38, 10.0, 0.12, "slow", 0.8, 0.18, false, 70.0)
+		"new_pyro":
+			if q_closed:
+				_spawn_pyro_patch(q_center, q_radius * 0.46, 1.6, 0.28)
+				_line_slice_burst(q_center - q_side * q_line_len * 0.62, q_center + q_side * q_line_len * 0.62, 20.0, 0.28, "burn", 1.2, max(1.0, base_damage * 0.10), false, 200.0)
+			else:
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.44, q_center + q_dir * q_line_len * 0.44, 14.0, 0.18, "burn", 0.9, max(1.0, base_damage * 0.06), false, 110.0)
+		"plague":
+			if q_closed:
+				_apply_status_burst(q_center, q_radius * 0.88, 5, "poison", 1.4, max(1.0, base_damage * 0.12))
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.62, q_center + q_dir * q_line_len * 0.62, 18.0, 0.20, "poison", 1.2, max(1.0, base_damage * 0.08), false, 120.0)
+			else:
+				_line_slice_burst(q_center - q_side * q_line_len * 0.42, q_center + q_side * q_line_len * 0.42, 12.0, 0.14, "poison", 0.9, max(1.0, base_damage * 0.05), false, 80.0)
+		"jailer":
+			if q_closed:
+				_apply_status_burst(q_center, q_radius * 0.78, 4, "stun", 0.30, 0.0)
+				_line_slice_burst(q_center - q_side * q_line_len * 0.60, q_center + q_side * q_line_len * 0.60, 16.0, 0.20, "stun", 0.22, 0.0, true, 130.0)
+			else:
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.36, q_center + q_dir * q_line_len * 0.36, 12.0, 0.14, "slow", 0.8, 0.20, true, 90.0)
+		"new_tempest":
+			if q_closed:
+				_pull_enemies_burst(q_center, q_radius * 0.92, 5, 16.0)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.72, q_center + q_dir * q_line_len * 0.72, 20.0, 0.24, "slow", 1.0, 0.24, true, 180.0)
+			else:
+				_line_slice_burst(q_center - q_side * q_line_len * 0.54, q_center + q_side * q_line_len * 0.54, 14.0, 0.16, "slow", 0.8, 0.2, true, 120.0)
+		"vampire":
+			if q_closed:
+				_heal_player(base_damage * 0.34)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.52, q_center + q_dir * q_line_len * 0.52, 16.0, 0.24, "curse", 1.0, max(1.0, base_damage * 0.08), true, 140.0)
+			else:
+				_line_slice_burst(q_center - q_side * q_line_len * 0.34, q_center + q_side * q_line_len * 0.34, 12.0, 0.14, "curse", 0.8, max(1.0, base_damage * 0.05), true, 90.0)
+		"train":
+			if phase == "line":
+				_knock_enemies_burst(q_center, q_radius * 0.86, 5, 220.0)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.72, q_center + q_dir * q_line_len * 0.72, 24.0, 0.36, "slow", 0.9, 0.28, false, 260.0)
+		"new_totem":
+			if q_closed:
+				_on_new_totem_pulse_timeout(q_center, q_radius * 0.7, 0.26, false)
+				_line_slice_burst(q_center - q_side * q_line_len * 0.54, q_center + q_side * q_line_len * 0.54, 16.0, 0.18, "marked", 0.9, 0.16, true, 110.0)
+			else:
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.42, q_center + q_dir * q_line_len * 0.42, 12.0, 0.12, "marked", 0.8, 0.14, true, 70.0)
+		"goo":
+			if q_closed:
+				_spawn_goo_pool(q_center, q_radius * 0.34, 1.6, 0.24, 1)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.50, q_center + q_dir * q_line_len * 0.50, 18.0, 0.16, "poison", 1.1, max(1.0, base_damage * 0.06), false, 100.0)
+			else:
+				_line_slice_burst(q_center - q_side * q_line_len * 0.38, q_center + q_side * q_line_len * 0.38, 12.0, 0.12, "slow", 0.8, 0.18, false, 70.0)
+		"illusionist":
+			if q_closed:
+				var mirror_target: Node2D = _pick_hunter_target(q_center, q_radius)
+				if mirror_target != null:
+					_on_illusionist_mirror_timeout(weakref(mirror_target), q_center, 0.38)
+				_line_slice_burst(q_center - q_side * q_line_len * 0.58, q_center + q_side * q_line_len * 0.58, 14.0, 0.18, "marked", 1.0, 0.18, false, 100.0)
+			else:
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.40, q_center + q_dir * q_line_len * 0.40, 10.0, 0.12, "marked", 0.8, 0.14, false, 60.0)
+		"voodoo":
+			if q_closed:
+				_apply_status_burst(q_center, q_radius * 0.78, 4, "curse", 1.2, max(1.0, base_damage * 0.11))
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.56, q_center + q_dir * q_line_len * 0.56, 16.0, 0.20, "curse", 1.1, max(1.0, base_damage * 0.08), true, 120.0)
+			else:
+				_line_slice_burst(q_center - q_side * q_line_len * 0.34, q_center + q_side * q_line_len * 0.34, 12.0, 0.14, "marked", 0.8, 0.16, true, 80.0)
+		"merchant":
+			if phase == "closure":
+				_drop_coins_at(q_center, 1)
+				_line_slice_burst(q_center - q_side * q_line_len * 0.62, q_center + q_side * q_line_len * 0.62, 14.0, 0.16, "marked", 1.0, 0.16, false, 90.0)
+			else:
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.34, q_center + q_dir * q_line_len * 0.34, 10.0, 0.10, "marked", 0.7, 0.12, false, 60.0)
+		"vacuum":
+			if q_closed:
+				_pull_enemies_burst(q_center, q_radius * 0.96, 6, 20.0)
+				_line_slice_burst(q_center - q_side * q_line_len * 0.66, q_center + q_side * q_line_len * 0.66, 28.0, 0.30, "slow", 1.0, 0.30, true, 260.0)
+		"executioner":
+			if q_closed:
+				_apply_status_burst(q_center, q_radius * 0.72, 4, "marked", 1.2, 0.18)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.50, q_center + q_dir * q_line_len * 0.50, 16.0, 0.42, "marked", 1.2, 0.20, false, 160.0)
+		"gambler":
+			if phase == "closure":
+				if randf() < 0.5:
+					_apply_temp_attack_boost(1.6, 0.12)
+				else:
+					_drop_coins_at(q_center, 2)
+				_line_slice_burst(q_center - q_dir * q_line_len * 0.58, q_center + q_dir * q_line_len * 0.58, 14.0, randf_range(0.12, 0.38), "marked", 1.0, 0.16, false, randf_range(60.0, 180.0))
+			else:
+				_line_slice_burst(q_center - q_side * q_line_len * 0.40, q_center + q_side * q_line_len * 0.40, 10.0, randf_range(0.08, 0.22), "marked", 0.8, 0.12, false, randf_range(40.0, 120.0))
+		_:
+			pass
+
+func _resolve_recent_q_context() -> Dictionary:
+	var result: Dictionary = {}
+	if not is_instance_valid(player_ref):
+		return result
+	if not player_ref.has_meta("q_ctx_last_center"):
+		return result
+	if not player_ref.has_meta("q_ctx_last_radius"):
+		return result
+
+	var center_raw: Variant = player_ref.get_meta("q_ctx_last_center")
+	if not (center_raw is Vector2):
+		return result
+	var radius_raw: float = float(player_ref.get_meta("q_ctx_last_radius"))
+	if radius_raw <= 0.0:
+		return result
+
+	var now_msec: int = Time.get_ticks_msec()
+	var time_msec: int = int(player_ref.get_meta("q_ctx_last_time_msec")) if player_ref.has_meta("q_ctx_last_time_msec") else 0
+	if time_msec > 0 and now_msec - time_msec > 18000:
+		return result
+
+	result["center"] = center_raw
+	result["radius"] = radius_raw
+	result["is_closed"] = bool(player_ref.get_meta("q_ctx_last_closed")) if player_ref.has_meta("q_ctx_last_closed") else false
+	return result
+
+func _apply_status_burst(center: Vector2, radius: float, max_count: int, status: String, duration: float, value: float) -> void:
+	var targets: Array = _sort_enemies_by_distance(_get_enemies_in_radius(center, radius), center)
+	var count: int = min(max_count, targets.size())
+	for i in range(count):
+		var enemy: Node = targets[i]
+		_apply_enemy_status(enemy, status, duration, value, 1, 0.1)
+
+func _pull_enemies_burst(center: Vector2, radius: float, max_count: int, pull_distance: float) -> void:
+	var targets: Array = _sort_enemies_by_distance(_get_enemies_in_radius(center, radius), center)
+	var count: int = min(max_count, targets.size())
+	for i in range(count):
+		var enemy: Node = targets[i]
+		_pull_enemy(enemy, center, pull_distance)
+
+func _knock_enemies_burst(center: Vector2, radius: float, max_count: int, knockback: float) -> void:
+	var targets: Array = _sort_enemies_by_distance(_get_enemies_in_radius(center, radius), center)
+	var count: int = min(max_count, targets.size())
+	for i in range(count):
+		var enemy: Node = targets[i]
+		_knock_enemy(enemy, center, knockback)
+
+func _line_slice_burst(
+	start: Vector2,
+	finish: Vector2,
+	half_width: float,
+	damage_scale: float,
+	status: String,
+	status_duration: float,
+	status_value: float,
+	pull_to_line: bool,
+	force: float
+) -> int:
+	var hit_count: int = 0
+	var safe_half_width: float = max(8.0, half_width)
+	var safe_damage_scale: float = max(0.0, damage_scale)
+	var base_damage: float = _get_player_base_damage()
+	var enemies: Array = get_tree().get_nodes_in_group("enemies")
+	for enemy_obj: Variant in enemies:
+		if enemy_obj == null or not is_instance_valid(enemy_obj):
+			continue
+		if not (enemy_obj is Node2D):
+			continue
+		var enemy_node: Node2D = enemy_obj
+		var closest: Vector2 = _closest_point_on_segment(enemy_node.global_position, start, finish)
+		if enemy_node.global_position.distance_to(closest) > safe_half_width:
+			continue
+		if safe_damage_scale > 0.0:
+			_damage_enemy(enemy_obj, base_damage * safe_damage_scale)
+		if status != "" and status_duration > 0.0:
+			_apply_enemy_status(enemy_obj, status, status_duration, status_value, 1, 0.1)
+		if force > 0.0:
+			if pull_to_line:
+				_pull_enemy(enemy_obj, closest, force * 0.10)
+			else:
+				_knock_enemy(enemy_obj, closest, force)
+		hit_count += 1
+	return hit_count
+
+func _schedule_line_sweep_sequence(
+	center: Vector2,
+	dir: Vector2,
+	length: float,
+	lane_step: float,
+	sweep_count: int,
+	delay_step: float,
+	half_width: float,
+	damage_scale: float,
+	status: String,
+	status_duration: float,
+	status_value: float,
+	pull_to_line: bool,
+	force: float
+) -> void:
+	var safe_dir: Vector2 = dir
+	if safe_dir.length_squared() <= 0.001:
+		safe_dir = Vector2.RIGHT
+	else:
+		safe_dir = safe_dir.normalized()
+	var side_dir: Vector2 = Vector2(-safe_dir.y, safe_dir.x)
+	var safe_length: float = max(60.0, length)
+	var safe_lane_step: float = max(0.0, lane_step)
+	var safe_count: int = max(1, sweep_count)
+	var safe_delay: float = max(0.04, delay_step)
+	var safe_half_width: float = max(8.0, half_width)
+	var safe_damage_scale: float = max(0.0, damage_scale)
+	var center_index: float = float(safe_count - 1) * 0.5
+	for idx: int in range(safe_count):
+		var lane_offset: float = (float(idx) - center_index) * safe_lane_step
+		var lane_center: Vector2 = center + side_dir * lane_offset
+		var start: Vector2 = lane_center - safe_dir * safe_length * 0.5
+		var finish: Vector2 = lane_center + safe_dir * safe_length * 0.5
+		var delay: float = safe_delay * float(idx)
+		get_tree().create_timer(delay).timeout.connect(func() -> void:
+			_line_slice_burst(
+				start,
+				finish,
+				safe_half_width,
+				safe_damage_scale,
+				status,
+				status_duration,
+				status_value,
+				pull_to_line,
+				force
+			)
+		)
+
+func _spawn_parallel_wall_pair(center: Vector2, dir: Vector2, length: float, half_gap: float, duration: float, contact_damage: int, color: Color) -> void:
+	if SkillEffectManager == null:
+		return
+	if not SkillEffectManager.has_method("create_wall_effect"):
+		return
+	var safe_dir: Vector2 = dir
+	if safe_dir.length_squared() <= 0.001:
+		safe_dir = Vector2.RIGHT
+	else:
+		safe_dir = safe_dir.normalized()
+	var side_dir: Vector2 = Vector2(-safe_dir.y, safe_dir.x)
+	var safe_length: float = max(80.0, length)
+	var safe_gap: float = max(12.0, half_gap)
+	var safe_duration: float = max(0.5, duration)
+	var safe_damage: int = max(0, contact_damage)
+	var half_len: float = safe_length * 0.5
+	var wall_a_center: Vector2 = center + side_dir * safe_gap
+	var wall_b_center: Vector2 = center - side_dir * safe_gap
+	var wall_width: float = max(10.0, safe_gap * 0.3)
+	SkillEffectManager.create_wall_effect({
+		"start": wall_a_center - safe_dir * half_len,
+		"end": wall_a_center + safe_dir * half_len,
+		"width": wall_width,
+		"duration": safe_duration,
+		"block_enemies": true,
+		"block_bullets": false,
+		"contact_damage": safe_damage,
+		"contact_interval": 0.22,
+		"color": color
+	})
+	SkillEffectManager.create_wall_effect({
+		"start": wall_b_center - safe_dir * half_len,
+		"end": wall_b_center + safe_dir * half_len,
+		"width": wall_width,
+		"duration": safe_duration,
+		"block_enemies": true,
+		"block_bullets": false,
+		"contact_damage": safe_damage,
+		"contact_interval": 0.22,
+		"color": color
+	})
+
+func _closest_point_on_segment(point: Vector2, start: Vector2, finish: Vector2) -> Vector2:
+	var seg: Vector2 = finish - start
+	var seg_len_sq: float = seg.length_squared()
+	if seg_len_sq <= 0.0001:
+		return start
+	var t: float = float(clamp((point - start).dot(seg) / seg_len_sq, 0.0, 1.0))
+	return start + seg * t
+
 func _signature_butcher(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(80.0, float(packet.get("radius", 120.0)) * 0.84)
 	var targets: Array = _sort_enemies_by_distance(_get_enemies_in_radius(center, radius), center)
@@ -414,6 +845,23 @@ func _signature_butcher(phase: String, packet: Dictionary, center: Vector2) -> v
 		_pull_enemy(enemy, center, 14.0 + 8.0 * float(i))
 		_damage_enemy(enemy, base_damage * damage_scale, "RIP", Color(1.0, 0.35, 0.35))
 		_apply_enemy_status(enemy, "curse", 1.2 + (0.4 if phase == "closure" else 0.0), max(1.0, base_damage * 0.12), 1, 0.6)
+	if phase == "closure":
+		var aim_dir: Vector2 = _get_player_aim_direction()
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			radius * 1.65,
+			46.0,
+			3,
+			0.12,
+			18.0,
+			0.38,
+			"curse",
+			1.1,
+			max(1.0, base_damage * 0.10),
+			true,
+			220.0
+		)
 	_heal_player(base_damage * (0.04 + 0.01 * float(limit)))
 
 func _signature_weaver(phase: String, packet: Dictionary, center: Vector2) -> void:
@@ -428,6 +876,38 @@ func _signature_weaver(phase: String, packet: Dictionary, center: Vector2) -> vo
 		_apply_enemy_status(enemy, "slow", 1.2 + 0.25 * float(i), 0.32, 1, 0.1)
 		if phase == "closure":
 			_apply_enemy_status(enemy, "stun", 0.55, 0.0, 1, 0.1)
+	if phase == "closure":
+		var aim_dir: Vector2 = _get_player_aim_direction()
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			radius * 1.5,
+			58.0,
+			3,
+			0.10,
+			16.0,
+			0.28,
+			"slow",
+			1.0,
+			0.30,
+			true,
+			180.0
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-aim_dir.y, aim_dir.x),
+			radius * 1.3,
+			52.0,
+			2,
+			0.14,
+			14.0,
+			0.24,
+			"slow",
+			0.9,
+			0.28,
+			true,
+			150.0
+		)
 
 func _signature_herder(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(100.0, float(packet.get("radius", 120.0)) * 0.98)
@@ -452,17 +932,91 @@ func _signature_herder(phase: String, packet: Dictionary, center: Vector2) -> vo
 		hit += 1
 	if phase == "closure" and hit > 0:
 		_add_player_armor(1)
+	if phase == "closure":
+		var aim_dir: Vector2 = _get_player_aim_direction()
+		_spawn_parallel_wall_pair(
+			center,
+			aim_dir,
+			radius * 1.5,
+			70.0,
+			1.4,
+			int(max(1.0, base_damage * 0.22)),
+			Color(0.92, 0.82, 0.35, 0.72)
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			radius * 1.4,
+			0.0,
+			1,
+			0.08,
+			20.0,
+			0.34,
+			"marked",
+			1.1,
+			0.18,
+			false,
+			300.0
+		)
 
 func _signature_pyro(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(70.0, float(packet.get("radius", 120.0)) * (0.56 if phase != "closure" else 0.64))
 	var duration: float = 1.2 if phase == "tick" else 1.8
 	var damage_scale: float = 0.25 if phase == "tick" else 0.34
+	var aim_dir: Vector2 = _get_player_aim_direction()
+	var line_len: float = radius * (1.45 if phase != "closure" else 1.75)
 	_spawn_pyro_patch(center, radius, duration, damage_scale)
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			line_len,
+			34.0,
+			2,
+			0.10,
+			16.0,
+			0.28,
+			"burn",
+			1.1,
+			max(1.0, _get_player_base_damage() * 0.09),
+			false,
+			180.0
+		)
 	if phase == "closure":
 		for i in range(2):
 			var angle: float = randf_range(0.0, TAU)
 			var offset: Vector2 = Vector2(cos(angle), sin(angle)) * radius * 0.8
 			_spawn_pyro_patch(center + offset, radius * 0.7, duration * 0.8, damage_scale * 0.9)
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			line_len,
+			44.0,
+			3,
+			0.08,
+			18.0,
+			0.34,
+			"burn",
+			1.3,
+			max(1.0, _get_player_base_damage() * 0.11),
+			false,
+			220.0
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			-aim_dir,
+			line_len,
+			44.0,
+			2,
+			0.18,
+			18.0,
+			0.30,
+			"burn",
+			1.1,
+			max(1.0, _get_player_base_damage() * 0.10),
+			false,
+			200.0
+		)
 
 func _signature_wind(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(85.0, float(packet.get("radius", 120.0)) * 0.82)
@@ -477,34 +1031,219 @@ func _signature_wind(phase: String, packet: Dictionary, center: Vector2) -> void
 		_apply_enemy_status(enemy, "slow", 1.0 + 0.2 * float(i), 0.30, 1, 0.1)
 		if phase == "closure":
 			_damage_enemy(enemy, base_damage * 0.42)
+	if phase == "closure":
+		var aim_dir: Vector2 = _get_player_aim_direction()
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-aim_dir.y, aim_dir.x),
+			radius * 1.8,
+			42.0,
+			3,
+			0.09,
+			22.0,
+			0.28,
+			"slow",
+			1.0,
+			0.28,
+			true,
+			220.0
+		)
 
 func _signature_sapper(phase: String, packet: Dictionary, center: Vector2, _hit_count: int) -> void:
 	if phase == "closure":
 		_detonate_all_sapper_mines(true)
+		var closure_radius: float = max(90.0, float(packet.get("radius", 120.0)) * 1.1)
+		var closure_dir: Vector2 = _get_player_aim_direction()
+		_schedule_line_sweep_sequence(
+			center,
+			closure_dir,
+			closure_radius * 1.5,
+			56.0,
+			3,
+			0.10,
+			18.0,
+			0.34,
+			"marked",
+			1.1,
+			0.20,
+			false,
+			220.0
+		)
 		return
 	var orbit_radius: float = max(60.0, float(packet.get("radius", 120.0)) * 0.34)
 	var angle: float = randf_range(0.0, TAU)
 	var spawn_pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * orbit_radius
 	_spawn_sapper_mine(spawn_pos, 0.9, max(48.0, orbit_radius * 0.7), 0.52)
+	if phase == "line":
+		var line_dir: Vector2 = _get_player_aim_direction()
+		_schedule_line_sweep_sequence(
+			center,
+			line_dir,
+			orbit_radius * 2.8,
+			38.0,
+			2,
+			0.14,
+			14.0,
+			0.24,
+			"slow",
+			0.9,
+			0.24,
+			false,
+			170.0
+		)
 
 func _signature_glacier(phase: String, packet: Dictionary, center: Vector2) -> void:
-	var radius: float = max(90.0, float(packet.get("radius", 120.0)) * 0.96)
-	var inner_radius: float = radius * (0.52 if phase == "closure" else 0.42)
-	var enemies: Array = _get_enemies_in_radius(center, radius)
-	if enemies.is_empty():
-		return
+	var radius: float = max(96.0, float(packet.get("radius", 120.0)) * 1.02)
+	var inner_radius: float = radius * (0.58 if phase == "closure" else (0.50 if phase == "line" else 0.42))
+	var ring_radius: float = radius * (0.88 if phase != "tick" else 0.78)
 	var base_damage: float = _get_player_base_damage()
+
+	var core_damage_scale: float = 0.30
+	var freeze_duration: float = 0.35
+	var pull_distance: float = 3.0
+	match phase:
+		"line":
+			core_damage_scale = 0.40
+			freeze_duration = 0.55
+			pull_distance = 6.0
+		"closure":
+			core_damage_scale = 0.56
+			freeze_duration = 0.95
+			pull_distance = 10.0
+		_:
+			core_damage_scale = 0.30
+			freeze_duration = 0.35
+			pull_distance = 3.0
+
+	var enemies: Array = _get_enemies_in_radius(center, radius)
 	for enemy in enemies:
 		if not is_instance_valid(enemy) or not (enemy is Node2D):
 			continue
 		var enemy_node: Node2D = enemy
 		var dist: float = enemy_node.global_position.distance_to(center)
 		if dist <= inner_radius:
-			_damage_enemy(enemy, base_damage * (0.45 if phase == "closure" else 0.30))
-			_apply_enemy_status(enemy, "freeze", 0.65 if phase == "closure" else 0.35, 0.0, 1, 0.1)
-		else:
-			_knock_enemy(enemy, center, 105.0 + (45.0 if phase == "closure" else 0.0))
-			_apply_enemy_status(enemy, "slow", 1.1, 0.34, 1, 0.1)
+			_damage_enemy(enemy, base_damage * core_damage_scale, "FROST", Color(0.72, 0.95, 1.22))
+			_apply_enemy_status(enemy, "freeze", freeze_duration, 0.0, 1, 0.1)
+			if pull_distance > 0.0:
+				_pull_enemy(enemy, center, pull_distance)
+		elif dist <= ring_radius:
+			_apply_enemy_status(enemy, "slow", 1.2 + (0.4 if phase == "closure" else 0.0), 0.36, 1, 0.1)
+			if phase == "closure":
+				_knock_enemy(enemy, center, 120.0)
+		elif phase == "closure":
+			_knock_enemy(enemy, center, 180.0)
+
+	match phase:
+		"line":
+			_spawn_glacier_ring_walls(center, ring_radius, 1.25, 6, 0, 0.35, true)
+			_schedule_line_sweep_sequence(
+				center,
+				_get_player_aim_direction(),
+				ring_radius * 1.35,
+				0.0,
+				1,
+				0.08,
+				16.0,
+				0.20,
+				"freeze",
+				0.30,
+				0.0,
+				true,
+				120.0
+			)
+		"closure":
+			_spawn_glacier_ring_walls(center, ring_radius, 2.0, 8, int(max(1.0, base_damage * 0.18)), 0.28, true)
+			_spawn_glacier_core_zone(center, inner_radius * 1.06, 2.1, int(max(1.0, base_damage * 0.24)), 0.45)
+			var glacier_dir: Vector2 = _get_player_aim_direction()
+			_spawn_parallel_wall_pair(
+				center,
+				glacier_dir,
+				ring_radius * 1.2,
+				72.0,
+				1.4,
+				int(max(1.0, base_damage * 0.14)),
+				Color(0.62, 0.9, 1.18, 0.70)
+			)
+			_schedule_line_sweep_sequence(
+				center,
+				glacier_dir,
+				ring_radius * 1.3,
+				50.0,
+				3,
+				0.11,
+				17.0,
+				0.26,
+				"freeze",
+				0.36,
+				0.0,
+				true,
+				160.0
+			)
+		_:
+			pass
+
+func _spawn_glacier_ring_walls(
+	center: Vector2,
+	radius: float,
+	duration: float,
+	segment_count: int,
+	contact_damage: int,
+	contact_interval: float,
+	block_bullets: bool
+) -> void:
+	if SkillEffectManager == null:
+		return
+	if not SkillEffectManager.has_method("create_wall_effect"):
+		return
+
+	var segs: int = max(4, segment_count)
+	var wall_width: float = max(10.0, radius * 0.055)
+	for i in range(segs):
+		var a0: float = TAU * float(i) / float(segs)
+		var a1: float = TAU * float(i + 1) / float(segs)
+		var p0: Vector2 = center + Vector2(cos(a0), sin(a0)) * radius
+		var p1: Vector2 = center + Vector2(cos(a1), sin(a1)) * radius
+		SkillEffectManager.create_wall_effect({
+			"start": p0,
+			"end": p1,
+			"width": wall_width,
+			"duration": duration,
+			"block_enemies": true,
+			"block_bullets": block_bullets,
+			"contact_damage": max(0, contact_damage),
+			"contact_interval": max(0.08, contact_interval),
+			"color": Color(0.52, 0.82, 1.2, 0.68)
+		})
+
+func _spawn_glacier_core_zone(center: Vector2, radius: float, duration: float, tick_damage: int, tick_interval: float) -> void:
+	if SkillEffectManager == null:
+		return
+
+	var local_poly: PackedVector2Array = _build_circle_polygon(radius, 20)
+	var world_poly: PackedVector2Array = PackedVector2Array()
+	for point in local_poly:
+		world_poly.append(center + point)
+
+	if SkillEffectManager.has_method("create_area_effect"):
+		SkillEffectManager.create_area_effect({
+			"polygon": world_poly,
+			"damage": max(0, tick_damage),
+			"damage_interval": max(0.1, tick_interval),
+			"duration": max(0.2, duration),
+			"color": Color(0.42, 0.72, 1.05, 0.24),
+			"z_index": 26
+		})
+
+	if SkillEffectManager.has_method("create_debuff_zone"):
+		SkillEffectManager.create_debuff_zone({
+			"polygon": world_poly,
+			"duration": max(0.2, duration),
+			"debuff_type": "freeze",
+			"debuff_value": 0.0,
+			"debuff_duration": 0.52,
+			"tick_interval": max(0.12, tick_interval),
+			"color": Color(0.65, 0.9, 1.18, 0.18)
+		})
 
 func _signature_tesla(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(100.0, float(packet.get("radius", 120.0)) * 1.08)
@@ -532,6 +1271,54 @@ func _signature_tesla(phase: String, packet: Dictionary, center: Vector2) -> voi
 		_damage_enemy(enemy, base_damage * base_scale * step_scale, "ARC", Color(0.45, 0.95, 1.3))
 		_apply_enemy_status(enemy, "stun", 0.38 + 0.08 * float(i == 0), 0.0, 1, 0.1)
 		_apply_enemy_status(enemy, "marked", 1.2, 0.18, 1, 0.3)
+	var tesla_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			tesla_dir,
+			radius * 1.45,
+			34.0,
+			2,
+			0.10,
+			14.0,
+			0.24,
+			"stun",
+			0.18,
+			0.0,
+			false,
+			120.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			tesla_dir,
+			radius * 1.55,
+			40.0,
+			3,
+			0.08,
+			15.0,
+			0.28,
+			"stun",
+			0.22,
+			0.0,
+			false,
+			150.0
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-tesla_dir.y, tesla_dir.x),
+			radius * 1.35,
+			32.0,
+			2,
+			0.12,
+			13.0,
+			0.20,
+			"marked",
+			1.0,
+			0.16,
+			false,
+			100.0
+		)
 
 func _signature_necro(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(95.0, float(packet.get("radius", 120.0)) * 1.02)
@@ -547,6 +1334,54 @@ func _signature_necro(phase: String, packet: Dictionary, center: Vector2) -> voi
 	var reap_delay: float = 0.46 if phase != "closure" else 0.33
 	var reap_scale: float = 0.38 if phase != "closure" else 0.62
 	get_tree().create_timer(reap_delay).timeout.connect(_on_necro_reap_timeout.bind(refs, reap_scale, center))
+	var necro_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			necro_dir,
+			radius * 1.45,
+			34.0,
+			2,
+			0.12,
+			15.0,
+			0.24,
+			"curse",
+			1.1,
+			max(1.0, _get_player_base_damage() * 0.09),
+			true,
+			150.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			necro_dir,
+			radius * 1.6,
+			40.0,
+			3,
+			0.10,
+			16.0,
+			0.30,
+			"curse",
+			1.3,
+			max(1.0, _get_player_base_damage() * 0.11),
+			true,
+			180.0
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-necro_dir.y, necro_dir.x),
+			radius * 1.35,
+			32.0,
+			2,
+			0.14,
+			14.0,
+			0.22,
+			"slow",
+			1.0,
+			0.24,
+			true,
+			120.0
+		)
 
 func _signature_swarm(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(90.0, float(packet.get("radius", 120.0)) * 1.12)
@@ -568,6 +1403,39 @@ func _signature_swarm(phase: String, packet: Dictionary, center: Vector2) -> voi
 		for enemy in _get_enemies_in_radius(burst_center, radius * 0.45):
 			_damage_enemy(enemy, burst_damage)
 			_apply_enemy_status(enemy, "poison", 1.6, max(1.0, burst_damage * 0.4), 1, 0.6)
+	var swarm_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			swarm_dir,
+			radius * 1.35,
+			30.0,
+			2,
+			0.12,
+			14.0,
+			0.20,
+			"poison",
+			1.0,
+			max(1.0, _get_player_base_damage() * 0.08),
+			false,
+			110.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			swarm_dir,
+			radius * 1.5,
+			36.0,
+			3,
+			0.10,
+			15.0,
+			0.24,
+			"poison",
+			1.2,
+			max(1.0, _get_player_base_damage() * 0.10),
+			false,
+			130.0
+		)
 
 func _signature_turret_eng(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var count: int = 1
@@ -590,6 +1458,38 @@ func _signature_turret_eng(phase: String, packet: Dictionary, center: Vector2) -
 		var dir: Vector2 = aim_dir.rotated(angle)
 		var pos: Vector2 = center + dir * (66.0 + float(i) * 22.0)
 		_spawn_turret_pylon(pos, radius, duration, damage_scale)
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			radius * 1.25,
+			24.0,
+			2,
+			0.12,
+			13.0,
+			0.20,
+			"marked",
+			0.9,
+			0.16,
+			false,
+			110.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			radius * 1.35,
+			28.0,
+			3,
+			0.10,
+			14.0,
+			0.24,
+			"marked",
+			1.1,
+			0.18,
+			false,
+			130.0
+		)
 
 func _signature_hunter(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(110.0, float(packet.get("radius", 120.0)) * 1.1)
@@ -603,6 +1503,39 @@ func _signature_hunter(phase: String, packet: Dictionary, center: Vector2) -> vo
 	var delay: float = 0.2 if phase != "closure" else 0.12
 	var shot_scale: float = 0.56 if phase != "closure" else 1.05
 	get_tree().create_timer(delay).timeout.connect(_on_hunter_shot_timeout.bind(weakref(target), shot_scale))
+	var hunter_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			hunter_dir,
+			radius * 1.45,
+			0.0,
+			1,
+			0.08,
+			12.0,
+			0.24,
+			"marked",
+			1.0,
+			0.18,
+			false,
+			100.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			hunter_dir,
+			radius * 1.6,
+			28.0,
+			2,
+			0.10,
+			12.0,
+			0.30,
+			"marked",
+			1.2,
+			0.22,
+			false,
+			120.0
+		)
 
 func _signature_blacksmith(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(90.0, float(packet.get("radius", 120.0)) * 0.92)
@@ -629,10 +1562,43 @@ func _signature_blacksmith(phase: String, packet: Dictionary, center: Vector2) -
 		hit_count += 1
 	if phase == "closure" and hit_count > 0:
 		_apply_temp_attack_boost(1.8, 0.12)
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			radius * 1.3,
+			0.0,
+			1,
+			0.08,
+			15.0,
+			0.26,
+			"burn",
+			1.0,
+			max(1.0, base_damage * 0.08),
+			false,
+			150.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			radius * 1.45,
+			32.0,
+			3,
+			0.09,
+			16.0,
+			0.30,
+			"burn",
+			1.3,
+			max(1.0, base_damage * 0.10),
+			false,
+			190.0
+		)
 
 func _signature_medic(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(120.0, float(packet.get("radius", 120.0)) * 1.06)
 	var heal_ratio: float = 0.10 if phase == "line" else (0.16 if phase == "closure" else 0.08)
+	var aim_dir: Vector2 = _get_player_aim_direction()
 	_heal_player(_get_player_base_damage() * heal_ratio * 4.0)
 	if phase != "tick":
 		_apply_temp_meta_delta("lifesteal_bonus", 0.08 if phase == "line" else 0.14, 1.8 if phase == "line" else 2.4)
@@ -645,6 +1611,56 @@ func _signature_medic(phase: String, packet: Dictionary, center: Vector2) -> voi
 		if phase == "closure":
 			_apply_enemy_status(enemy, "marked", 1.4, 0.16, 1, 0.3)
 		hit_count += 1
+	if phase == "line":
+		_spawn_parallel_wall_pair(
+			center,
+			aim_dir,
+			radius * 1.25,
+			58.0,
+			1.2,
+			int(max(1.0, _get_player_base_damage() * 0.12)),
+			Color(0.65, 1.0, 0.85, 0.65)
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			radius * 1.3,
+			28.0,
+			2,
+			0.12,
+			14.0,
+			0.18,
+			"slow",
+			0.9,
+			0.22,
+			true,
+			120.0
+		)
+	elif phase == "closure":
+		_spawn_parallel_wall_pair(
+			center,
+			aim_dir,
+			radius * 1.35,
+			66.0,
+			1.6,
+			int(max(1.0, _get_player_base_damage() * 0.14)),
+			Color(0.62, 0.95, 0.88, 0.72)
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-aim_dir.y, aim_dir.x),
+			radius * 1.45,
+			34.0,
+			3,
+			0.10,
+			16.0,
+			0.22,
+			"slow",
+			1.0,
+			0.24,
+			true,
+			150.0
+		)
 
 func _signature_ammo(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(110.0, float(packet.get("radius", 120.0)) * 1.0)
@@ -659,11 +1675,45 @@ func _signature_ammo(phase: String, packet: Dictionary, center: Vector2) -> void
 	for enemy in _get_enemies_in_radius(center, radius):
 		_damage_enemy(enemy, base_damage * damage_scale)
 		_apply_enemy_status(enemy, "marked", 1.1, 0.18, 1, 0.3)
+	var ammo_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			ammo_dir,
+			radius * 1.5,
+			30.0,
+			2,
+			0.10,
+			13.0,
+			0.24,
+			"marked",
+			1.0,
+			0.18,
+			false,
+			120.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			ammo_dir,
+			radius * 1.65,
+			34.0,
+			3,
+			0.08,
+			14.0,
+			0.30,
+			"marked",
+			1.2,
+			0.22,
+			false,
+			150.0
+		)
 
 func _signature_paladin(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(115.0, float(packet.get("radius", 120.0)) * 1.05)
 	var enemies: Array = _get_enemies_in_radius(center, radius)
 	var base_damage: float = _get_player_base_damage()
+	var aim_dir: Vector2 = _get_player_aim_direction()
 	var hit_count: int = 0
 	for enemy in enemies:
 		if hit_count >= 12:
@@ -680,6 +1730,62 @@ func _signature_paladin(phase: String, packet: Dictionary, center: Vector2) -> v
 		_add_player_armor(1 if phase != "closure" else 2)
 		if phase == "closure":
 			_heal_player(base_damage * 0.7)
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			radius * 1.3,
+			0.0,
+			1,
+			0.08,
+			16.0,
+			0.24,
+			"marked",
+			1.0,
+			0.18,
+			false,
+			160.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			radius * 1.45,
+			44.0,
+			3,
+			0.09,
+			16.0,
+			0.30,
+			"stun",
+			0.22,
+			0.0,
+			false,
+			180.0
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-aim_dir.y, aim_dir.x),
+			radius * 1.45,
+			44.0,
+			3,
+			0.12,
+			16.0,
+			0.26,
+			"marked",
+			1.1,
+			0.20,
+			true,
+			150.0
+		)
+		_spawn_parallel_wall_pair(
+			center,
+			aim_dir,
+			radius * 1.2,
+			64.0,
+			1.4,
+			int(max(1.0, base_damage * 0.16)),
+			Color(1.0, 0.92, 0.65, 0.70)
+		)
 
 func _signature_banner(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(120.0, float(packet.get("radius", 120.0)) * 1.08)
@@ -699,6 +1805,62 @@ func _signature_banner(phase: String, packet: Dictionary, center: Vector2) -> vo
 	var speed_delta: float = 0.08 if phase == "line" else (0.12 if phase == "closure" else 0.05)
 	var speed_duration: float = 1.5 if phase == "line" else (2.3 if phase == "closure" else 1.0)
 	_apply_temp_meta_delta("buff_speed_boost", speed_delta, speed_duration)
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center + aim_dir * radius * 0.22,
+			aim_dir,
+			radius * 1.5,
+			34.0,
+			2,
+			0.10,
+			16.0,
+			0.24,
+			"marked",
+			1.0,
+			0.18,
+			false,
+			180.0
+		)
+	elif phase == "closure":
+		_spawn_parallel_wall_pair(
+			center + aim_dir * radius * 0.16,
+			aim_dir,
+			radius * 1.35,
+			60.0,
+			1.5,
+			int(max(1.0, base_damage * 0.14)),
+			Color(1.0, 0.88, 0.45, 0.72)
+		)
+		_schedule_line_sweep_sequence(
+			center + aim_dir * radius * 0.24,
+			aim_dir,
+			radius * 1.6,
+			46.0,
+			3,
+			0.09,
+			17.0,
+			0.30,
+			"marked",
+			1.1,
+			0.20,
+			false,
+			220.0
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-aim_dir.y, aim_dir.x),
+			radius * 1.3,
+			36.0,
+			2,
+			0.12,
+			15.0,
+			0.22,
+			"slow",
+			0.9,
+			0.22,
+			true,
+			140.0
+		)
 
 func _signature_midas(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(95.0, float(packet.get("radius", 120.0)) * 0.95)
@@ -717,6 +1879,55 @@ func _signature_midas(phase: String, packet: Dictionary, center: Vector2) -> voi
 		_damage_enemy(target, amount, "GILD", Color(0.95, 0.72, 0.24))
 	_apply_enemy_status(target, "slow", 1.0 + (0.4 if phase == "closure" else 0.0), 0.28, 1, 0.1)
 	_drop_coins_at((target as Node2D).global_position, coin_count)
+	var midas_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			midas_dir,
+			radius * 1.4,
+			30.0,
+			2,
+			0.10,
+			14.0,
+			0.24,
+			"slow",
+			0.9,
+			0.22,
+			false,
+			140.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			midas_dir,
+			radius * 1.55,
+			36.0,
+			3,
+			0.09,
+			15.0,
+			0.30,
+			"slow",
+			1.1,
+			0.26,
+			false,
+			170.0
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-midas_dir.y, midas_dir.x),
+			radius * 1.25,
+			28.0,
+			2,
+			0.12,
+			13.0,
+			0.20,
+			"marked",
+			1.0,
+			0.16,
+			true,
+			110.0
+		)
+		_drop_coins_at(center, 1)
 
 func _signature_new_pyro(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(90.0, float(packet.get("radius", 120.0)) * 0.78)
@@ -765,6 +1976,54 @@ func _signature_plague(phase: String, packet: Dictionary, center: Vector2) -> vo
 	var bloom_radius: float = radius * (0.28 if phase != "closure" else 0.34)
 	var bloom_scale: float = 0.34 if phase != "closure" else 0.56
 	get_tree().create_timer(delay).timeout.connect(_on_plague_bloom_timeout.bind(refs, bloom_radius, bloom_scale))
+	var plague_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			plague_dir,
+			radius * 1.55,
+			40.0,
+			2,
+			0.12,
+			16.0,
+			0.22,
+			"poison",
+			1.2,
+			max(1.0, _get_player_base_damage() * 0.08),
+			false,
+			120.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			plague_dir,
+			radius * 1.65,
+			48.0,
+			3,
+			0.10,
+			17.0,
+			0.26,
+			"poison",
+			1.4,
+			max(1.0, _get_player_base_damage() * 0.10),
+			false,
+			160.0
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-plague_dir.y, plague_dir.x),
+			radius * 1.45,
+			36.0,
+			2,
+			0.14,
+			15.0,
+			0.22,
+			"curse",
+			1.0,
+			max(1.0, _get_player_base_damage() * 0.08),
+			true,
+			120.0
+		)
 
 func _signature_jailer(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(100.0, float(packet.get("radius", 120.0)) * 1.02)
@@ -790,6 +2049,48 @@ func _signature_jailer(phase: String, packet: Dictionary, center: Vector2) -> vo
 				verdict_refs.append(weakref(enemy))
 	if phase == "line" and not verdict_refs.is_empty():
 		get_tree().create_timer(0.24).timeout.connect(_on_jailer_verdict_timeout.bind(verdict_refs, 0.48))
+	var jailer_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			jailer_dir,
+			radius * 1.35,
+			32.0,
+			2,
+			0.11,
+			15.0,
+			0.20,
+			"slow",
+			0.9,
+			0.26,
+			true,
+			130.0
+		)
+	elif phase == "closure":
+		_spawn_parallel_wall_pair(
+			center,
+			jailer_dir,
+			radius * 1.2,
+			56.0,
+			1.3,
+			int(max(1.0, base_damage * 0.12)),
+			Color(0.95, 0.72, 0.62, 0.66)
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			jailer_dir,
+			radius * 1.45,
+			36.0,
+			3,
+			0.10,
+			16.0,
+			0.26,
+			"stun",
+			0.22,
+			0.0,
+			true,
+			160.0
+		)
 
 func _signature_new_tempest(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(110.0, float(packet.get("radius", 120.0)) * 1.12)
@@ -806,6 +2107,54 @@ func _signature_new_tempest(phase: String, packet: Dictionary, center: Vector2) 
 			_apply_enemy_status(enemy, "slow", 1.1 + (0.3 if phase == "closure" else 0.0), 0.30, 1, 0.1)
 	if phase != "tick":
 		_apply_temp_meta_delta("buff_speed_boost", 0.08 if phase == "line" else 0.13, 1.6 if phase == "line" else 2.3)
+	var tempest_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			tempest_dir,
+			radius * 1.55,
+			36.0,
+			2,
+			0.10,
+			16.0,
+			0.22,
+			"slow",
+			1.0,
+			0.24,
+			true,
+			160.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			tempest_dir,
+			radius * 1.7,
+			40.0,
+			3,
+			0.09,
+			17.0,
+			0.28,
+			"slow",
+			1.2,
+			0.28,
+			true,
+			200.0
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-tempest_dir.y, tempest_dir.x),
+			radius * 1.45,
+			34.0,
+			2,
+			0.13,
+			15.0,
+			0.22,
+			"slow",
+			1.0,
+			0.24,
+			true,
+			150.0
+		)
 
 func _signature_vampire(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(95.0, float(packet.get("radius", 120.0)) * 0.96)
@@ -827,6 +2176,39 @@ func _signature_vampire(phase: String, packet: Dictionary, center: Vector2) -> v
 		drained += 1
 	if drained > 0:
 		_heal_player(base_damage * heal_scale * float(drained))
+	var vampire_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			vampire_dir,
+			radius * 1.35,
+			30.0,
+			2,
+			0.11,
+			14.0,
+			0.22,
+			"curse",
+			1.0,
+			max(1.0, base_damage * 0.08),
+			true,
+			130.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			vampire_dir,
+			radius * 1.5,
+			34.0,
+			3,
+			0.10,
+			15.0,
+			0.28,
+			"curse",
+			1.3,
+			max(1.0, base_damage * 0.10),
+			true,
+			160.0
+		)
 
 func _signature_train(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(120.0, float(packet.get("radius", 120.0)) * 1.18)
@@ -854,6 +2236,38 @@ func _signature_train(phase: String, packet: Dictionary, center: Vector2) -> voi
 		var delay: float = 0.22 if phase == "line" else 0.15
 		var second_scale: float = 0.40 if phase == "line" else 0.72
 		get_tree().create_timer(delay).timeout.connect(_on_train_aftershock_timeout.bind(center, aim_dir, lane_len, half_width * 1.16, second_scale))
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			lane_len * 1.1,
+			36.0,
+			2,
+			0.09,
+			16.0,
+			0.24,
+			"slow",
+			1.0,
+			0.24,
+			false,
+			200.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			lane_len * 1.2,
+			42.0,
+			3,
+			0.08,
+			17.0,
+			0.30,
+			"slow",
+			1.2,
+			0.28,
+			false,
+			240.0
+		)
 
 func _signature_new_totem(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(100.0, float(packet.get("radius", 120.0)) * 1.02)
@@ -869,6 +2283,39 @@ func _signature_new_totem(phase: String, packet: Dictionary, center: Vector2) ->
 		get_tree().create_timer(delay).timeout.connect(_on_new_totem_pulse_timeout.bind(pos, radius * 0.52, pulse_scale + 0.08 * float(i), phase == "closure"))
 	if phase != "tick":
 		_gain_energy(2.0 if phase == "line" else 3.5)
+	var totem_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			totem_dir,
+			radius * 1.35,
+			30.0,
+			2,
+			0.11,
+			14.0,
+			0.20,
+			"marked",
+			1.0,
+			0.16,
+			true,
+			120.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			totem_dir,
+			radius * 1.5,
+			34.0,
+			3,
+			0.10,
+			15.0,
+			0.26,
+			"marked",
+			1.2,
+			0.20,
+			true,
+			150.0
+		)
 
 func _signature_goo(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(96.0, float(packet.get("radius", 120.0)) * 1.06)
@@ -876,11 +2323,40 @@ func _signature_goo(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var duration: float = 1.6 if phase == "tick" else (2.3 if phase == "line" else 3.0)
 	var scale: float = 0.22 if phase == "tick" else (0.32 if phase == "line" else 0.46)
 	var split_count: int = 0 if phase != "closure" else 1
+	var aim_dir: Vector2 = _get_player_aim_direction()
 	for i in range(pool_count):
 		var angle: float = randf_range(0.0, TAU)
 		var offset_len: float = radius * (0.18 + 0.26 * randf())
 		var pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * offset_len
 		_spawn_goo_pool(pos, radius * (0.30 + 0.06 * float(i)), duration, scale, split_count)
+	if phase == "line":
+		for step: int in range(3):
+			var t: float = float(step) / 2.0
+			var trail_pos: Vector2 = center + aim_dir * radius * (0.25 + 0.55 * t)
+			_spawn_goo_pool(trail_pos, radius * (0.22 + 0.05 * float(step)), 1.7, 0.26, 0)
+	elif phase == "closure":
+		for step: int in range(4):
+			var t2: float = float(step) / 3.0
+			var front: Vector2 = center + aim_dir * radius * (0.20 + 0.70 * t2)
+			var back: Vector2 = center - aim_dir * radius * (0.20 + 0.45 * t2)
+			_spawn_goo_pool(front, radius * (0.24 + 0.05 * float(step)), 2.1, 0.30, 1 if step >= 2 else 0)
+			if step <= 2:
+				_spawn_goo_pool(back, radius * (0.20 + 0.04 * float(step)), 1.8, 0.24, 0)
+		_schedule_line_sweep_sequence(
+			center,
+			aim_dir,
+			radius * 1.55,
+			34.0,
+			3,
+			0.10,
+			18.0,
+			0.22,
+			"poison",
+			1.2,
+			max(1.0, _get_player_base_damage() * 0.08),
+			false,
+			110.0
+		)
 
 func _signature_illusionist(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(105.0, float(packet.get("radius", 120.0)) * 1.04)
@@ -901,6 +2377,54 @@ func _signature_illusionist(phase: String, packet: Dictionary, center: Vector2) 
 		var mirror_pos: Vector2 = center + mirror_dir * min(radius * 0.45, 92.0)
 		var delay: float = 0.16 + 0.04 * float(i)
 		get_tree().create_timer(delay).timeout.connect(_on_illusionist_mirror_timeout.bind(weakref(enemy), mirror_pos, shot_scale))
+	var illusion_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			illusion_dir,
+			radius * 1.35,
+			30.0,
+			2,
+			0.12,
+			13.0,
+			0.18,
+			"marked",
+			0.9,
+			0.16,
+			false,
+			100.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			illusion_dir,
+			radius * 1.45,
+			34.0,
+			3,
+			0.09,
+			14.0,
+			0.24,
+			"marked",
+			1.1,
+			0.20,
+			false,
+			130.0
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-illusion_dir.y, illusion_dir.x),
+			radius * 1.25,
+			26.0,
+			2,
+			0.13,
+			12.0,
+			0.18,
+			"slow",
+			0.8,
+			0.20,
+			true,
+			100.0
+		)
 
 func _signature_voodoo(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(105.0, float(packet.get("radius", 120.0)) * 1.00)
@@ -919,6 +2443,54 @@ func _signature_voodoo(phase: String, packet: Dictionary, center: Vector2) -> vo
 	var delay: float = 0.38 if phase != "closure" else 0.24
 	var link_scale: float = 0.30 if phase != "closure" else 0.52
 	get_tree().create_timer(delay).timeout.connect(_on_voodoo_link_timeout.bind(refs, center, link_scale))
+	var voodoo_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			voodoo_dir,
+			radius * 1.4,
+			30.0,
+			2,
+			0.12,
+			14.0,
+			0.22,
+			"curse",
+			1.1,
+			max(1.0, _get_player_base_damage() * 0.08),
+			true,
+			120.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			voodoo_dir,
+			radius * 1.55,
+			36.0,
+			3,
+			0.10,
+			15.0,
+			0.28,
+			"curse",
+			1.3,
+			max(1.0, _get_player_base_damage() * 0.10),
+			true,
+			150.0
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-voodoo_dir.y, voodoo_dir.x),
+			radius * 1.3,
+			28.0,
+			2,
+			0.14,
+			14.0,
+			0.22,
+			"marked",
+			1.0,
+			0.18,
+			true,
+			110.0
+		)
 
 func _signature_merchant(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(100.0, float(packet.get("radius", 120.0)) * 0.98)
@@ -942,6 +2514,50 @@ func _signature_merchant(phase: String, packet: Dictionary, center: Vector2) -> 
 		_gain_energy(1.6 if phase == "line" else 2.6)
 	if phase == "closure" and coin_total >= 3:
 		_drop_coins(1)
+	var merchant_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			merchant_dir,
+			radius * 1.45,
+			34.0,
+			2,
+			0.11,
+			14.0,
+			0.18,
+			"marked",
+			1.0,
+			0.16,
+			false,
+			100.0
+		)
+	elif phase == "closure":
+		_spawn_parallel_wall_pair(
+			center,
+			merchant_dir,
+			radius * 1.25,
+			52.0,
+			1.3,
+			int(max(1.0, base_damage * 0.10)),
+			Color(0.95, 0.78, 0.35, 0.68)
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			merchant_dir,
+			radius * 1.55,
+			38.0,
+			3,
+			0.09,
+			15.0,
+			0.22,
+			"marked",
+			1.1,
+			0.18,
+			false,
+			130.0
+		)
+		if coin_total >= 2:
+			_drop_coins_at(center, 1)
 
 func _signature_vacuum(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(130.0, float(packet.get("radius", 120.0)) * 1.20)
@@ -956,6 +2572,54 @@ func _signature_vacuum(phase: String, packet: Dictionary, center: Vector2) -> vo
 		var delay: float = 0.22 if phase == "line" else 0.16
 		var implode_scale: float = 0.44 if phase == "line" else 0.72
 		get_tree().create_timer(delay).timeout.connect(_on_vacuum_implode_timeout.bind(center, radius * 0.56, implode_scale))
+	var vacuum_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			vacuum_dir,
+			radius * 1.6,
+			40.0,
+			2,
+			0.10,
+			18.0,
+			0.20,
+			"slow",
+			1.0,
+			0.24,
+			true,
+			180.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			vacuum_dir,
+			radius * 1.75,
+			46.0,
+			3,
+			0.08,
+			20.0,
+			0.24,
+			"slow",
+			1.2,
+			0.28,
+			true,
+			240.0
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-vacuum_dir.y, vacuum_dir.x),
+			radius * 1.55,
+			38.0,
+			2,
+			0.12,
+			18.0,
+			0.20,
+			"slow",
+			1.0,
+			0.24,
+			true,
+			180.0
+		)
 
 func _signature_executioner(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(95.0, float(packet.get("radius", 120.0)) * 0.90)
@@ -981,6 +2645,54 @@ func _signature_executioner(phase: String, packet: Dictionary, center: Vector2) 
 	if phase == "closure":
 		var guillotine_scale: float = 0.74 + 0.08 * float(min(3, execute_count))
 		get_tree().create_timer(0.18).timeout.connect(_on_executioner_guillotine_timeout.bind(center, radius * 0.58, guillotine_scale))
+	var exec_dir: Vector2 = _get_player_aim_direction()
+	if phase == "line":
+		_schedule_line_sweep_sequence(
+			center,
+			exec_dir,
+			radius * 1.35,
+			28.0,
+			2,
+			0.10,
+			14.0,
+			0.24,
+			"marked",
+			1.0,
+			0.20,
+			false,
+			140.0
+		)
+	elif phase == "closure":
+		_schedule_line_sweep_sequence(
+			center,
+			exec_dir,
+			radius * 1.5,
+			32.0,
+			3,
+			0.09,
+			15.0,
+			0.30,
+			"marked",
+			1.2,
+			0.24,
+			false,
+			170.0
+		)
+		_schedule_line_sweep_sequence(
+			center,
+			Vector2(-exec_dir.y, exec_dir.x),
+			radius * 1.25,
+			24.0,
+			2,
+			0.12,
+			13.0,
+			0.22,
+			"slow",
+			0.9,
+			0.26,
+			true,
+			130.0
+		)
 
 func _signature_gambler(phase: String, packet: Dictionary, center: Vector2) -> void:
 	if not is_instance_valid(player_ref):

@@ -2,6 +2,9 @@ extends SkillBase
 class_name SkillMerchantE
 
 var gold_amount: int = 50
+const MARKET_META_CENTER: String = "merchant_market_center"
+const MARKET_META_RADIUS: String = "merchant_market_radius"
+const MARKET_META_EXPIRE_MSEC: String = "merchant_market_expire_msec"
 
 func execute() -> void:
 	if not consume_energy():
@@ -17,12 +20,18 @@ func execute() -> void:
 	var mark_count: int = 3 if not is_f_window_active() else 5
 	var settlement_delay: float = 0.34 if not is_f_window_active() else 0.24
 	var settle_damage: int = max(1, int(round(32.0 * damage_amp)))
+	var market_active: bool = _is_market_window_active()
+	if market_active:
+		main_coins += 2
+		settle_damage = max(settle_damage, int(round(float(settle_damage) * 1.2)))
 
 	_drop_coins_at(skill_owner.global_position, min(8, main_coins))
 	if main_coins > 8:
 		_drop_coins_at(skill_owner.global_position + Vector2(26, -8), main_coins - 8)
 
 	var targets: Array = _pick_nearest_enemies(skill_owner.global_position, 260.0 * duration_amp, mark_count)
+	if market_active:
+		targets = _pick_nearest_enemies(_market_center_from_meta(), max(180.0, _market_radius_from_meta()), mark_count + 1)
 	var refs: Array = []
 	for enemy in targets:
 		_apply_status(enemy, "marked", 1.8 * duration_amp, 0.26, 1, 0.3)
@@ -32,6 +41,11 @@ func execute() -> void:
 	if not refs.is_empty():
 		var timer: SceneTreeTimer = get_tree().create_timer(settlement_delay)
 		timer.timeout.connect(_on_settlement_timeout.bind(refs, settle_damage, duration_amp))
+
+	if market_active:
+		var center: Vector2 = _market_center_from_meta()
+		spawn_skill_vfx(center, Color(1.0, 0.86, 0.28, 0.72), 0.55)
+		Global.spawn_floating_text(center, "MARKET SETTLE", Color(1.0, 0.9, 0.42))
 
 	_apply_temp_meta_delta("buff_speed_boost", 0.10 if not is_f_window_active() else 0.16, 1.8 * duration_amp)
 	if is_f_window_active():
@@ -125,3 +139,20 @@ func _apply_status(enemy: Node, status_name: String, duration: float, value: flo
 		return
 	if enemy.has_method("apply_status"):
 		enemy.apply_status(status_name, max(0.1, duration), value, max(1, stacks), max(0.05, tick_interval))
+
+func _is_market_window_active() -> bool:
+	if not is_instance_valid(skill_owner):
+		return false
+	if not skill_owner.has_meta(MARKET_META_EXPIRE_MSEC):
+		return false
+	var expire_msec: int = int(skill_owner.get_meta(MARKET_META_EXPIRE_MSEC, 0))
+	return Time.get_ticks_msec() <= expire_msec
+
+func _market_center_from_meta() -> Vector2:
+	var center_value: Variant = skill_owner.get_meta(MARKET_META_CENTER, skill_owner.global_position)
+	if center_value is Vector2:
+		return center_value
+	return skill_owner.global_position
+
+func _market_radius_from_meta() -> float:
+	return max(60.0, float(skill_owner.get_meta(MARKET_META_RADIUS, 220.0)))

@@ -1,6 +1,8 @@
 ﻿extends Node
 class_name SkillManager
 
+const DEBUG_VERBOSE := false
+
 ## ==============================================================================
 
 ## ==============================================================================
@@ -94,7 +96,7 @@ func _load_skill_to_slot(slot: String, skill_id: String) -> bool:
 	# 条件判断
 	if skill_id.is_empty():
 		if debug_mode:
-			print("[SkillManager] slot %s has no skill configured" % slot.to_upper())
+			if DEBUG_VERBOSE: print("[SkillManager] slot %s has no skill configured" % slot.to_upper())
 		return false
 	
 	# 构造技能脚本路径
@@ -132,7 +134,7 @@ func _load_skill_to_slot(slot: String, skill_id: String) -> bool:
 	# 娣囨繂鐡ㄩ崚鐗埿担?
 	skill_slots[slot] = skill
 	
-	print("[SkillManager] skill loaded %s -> %s (script=%s, class=%s, energy: %.0f, cooldown: %.1fs)" % [
+	if DEBUG_VERBOSE: print("[SkillManager] skill loaded %s -> %s (script=%s, class=%s, energy: %.0f, cooldown: %.1fs)" % [
 		slot.to_upper(),
 		skill_id,
 		skill_script_path,
@@ -152,7 +154,7 @@ func _load_skill_params(skill: SkillBase, skill_id: String) -> void:
 	
 	if params.is_empty():
 		if debug_mode:
-			print("[SkillManager] Warning: missing skill params for %s, using defaults" % skill_id)
+			if DEBUG_VERBOSE: print("[SkillManager] Warning: missing skill params for %s, using defaults" % skill_id)
 		return
 	
 	# 閻犱礁澧介悿鍡涙焻濮樿鲸鏆忛柛娆忓€归弳?
@@ -172,7 +174,7 @@ func _load_skill_params(skill: SkillBase, skill_id: String) -> void:
 		if key in skill:
 			skill.set(key, params[key])
 			if debug_mode:
-				print("[SkillManager]   set param: %s = %s" % [key, params[key]])
+				if DEBUG_VERBOSE: print("[SkillManager]   set param: %s = %s" % [key, params[key]])
 
 func _infer_default_skill_tags(skill_id: String, params: Dictionary) -> String:
 	var tags: Array[String] = []
@@ -216,7 +218,7 @@ func _infer_default_skill_tags(skill_id: String, params: Dictionary) -> String:
 func execute_skill(slot: String) -> void:
 	var skill = skill_slots.get(slot)
 	if not skill:
-		print("[SkillManager] slot %s has no skill | loaded slots: %s" % [slot.to_upper(), str(skill_slots.keys().filter(func(k): return skill_slots[k] != null))])
+		if DEBUG_VERBOSE: print("[SkillManager] slot %s has no skill | loaded slots: %s" % [slot.to_upper(), str(skill_slots.keys().filter(func(k): return skill_slots[k] != null))])
 		return
 	
 	if not is_instance_valid(skill):
@@ -225,19 +227,19 @@ func execute_skill(slot: String) -> void:
 	
 	# 条件判断
 	if skill.is_on_cooldown:
-		print("[SkillManager] skill cooling down: %s (%s), remaining: %.1fs" % [
+		if DEBUG_VERBOSE: print("[SkillManager] skill cooling down: %s (%s), remaining: %.1fs" % [
 			slot.to_upper(), skill.skill_id, skill.get_cooldown_remaining()
 		])
 		return
 	
 	var owner_energy = skill.skill_owner.energy if skill.skill_owner else -1.0
 	if skill.energy_cost > 0 and owner_energy < skill.energy_cost:
-		print("[SkillManager] not enough energy: %s (%s), need: %.0f, current: %.0f" % [
+		if DEBUG_VERBOSE: print("[SkillManager] not enough energy: %s (%s), need: %.0f, current: %.0f" % [
 			slot.to_upper(), skill.skill_id, skill.energy_cost, owner_energy
 		])
 		return
 	
-	print("[SkillManager] execute skill %s (%s), energy: %.0f/%.0f, cost: %.0f" % [
+	if DEBUG_VERBOSE: print("[SkillManager] execute skill %s (%s), energy: %.0f/%.0f, cost: %.0f" % [
 		slot.to_upper(), skill.skill_id, owner_energy,
 		skill.skill_owner.max_energy if skill.skill_owner else 0.0,
 		skill.energy_cost
@@ -258,14 +260,14 @@ func charge_skill(slot: String, delta: float) -> void:
 		# 条件判断
 		if not has_meta("_warned_no_skill_%s" % slot):
 			set_meta("_warned_no_skill_%s" % slot, true)
-			print("[SkillManager] charge_skill: slot %s has no skill | slot states: %s" % [
+			if DEBUG_VERBOSE: print("[SkillManager] charge_skill: slot %s has no skill | slot states: %s" % [
 				slot.to_upper(),
 				str(skill_slots.keys().map(func(k): return "%s=%s" % [k, skill_slots[k].skill_id if skill_slots[k] else "null"]))
 			])
 		return
 	
 	if not skill.is_charging:
-		print("[SkillManager] start charging: %s (%s)" % [slot.to_upper(), skill.skill_id])
+		if DEBUG_VERBOSE: print("[SkillManager] start charging: %s (%s)" % [slot.to_upper(), skill.skill_id])
 		skill.is_charging = true
 	
 	skill.charge(delta)
@@ -275,11 +277,11 @@ func charge_skill(slot: String, delta: float) -> void:
 func release_skill(slot: String) -> void:
 	var skill = skill_slots.get(slot)
 	if not skill or not is_instance_valid(skill):
-		print("[SkillManager] release_skill: slot %s has no skill" % slot.to_upper())
+		if DEBUG_VERBOSE: print("[SkillManager] release_skill: slot %s has no skill" % slot.to_upper())
 		return
 	
 	if skill.is_charging:
-		print("[SkillManager] release skill %s (%s), path points: %d" % [
+		if DEBUG_VERBOSE: print("[SkillManager] release skill %s (%s), path points: %d" % [
 			slot.to_upper(), skill.skill_id,
 			skill.path_points.size() if "path_points" in skill else -1
 		])
@@ -288,7 +290,7 @@ func release_skill(slot: String) -> void:
 		skill.release()
 		_end_switch_synergy_bonus(skill, slot, switch_synergy_ctx)
 	else:
-		print("[SkillManager] release_skill skipped: %s (%s) is not charging" % [slot.to_upper(), skill.skill_id])
+		if DEBUG_VERBOSE: print("[SkillManager] release_skill skipped: %s (%s) is not charging" % [slot.to_upper(), skill.skill_id])
 
 func _begin_switch_synergy_bonus(skill: SkillBase, slot: String) -> Dictionary:
 	"""Apply one-shot switch synergy bonus before skill execution."""
@@ -321,7 +323,7 @@ func _begin_switch_synergy_bonus(skill: SkillBase, slot: String) -> Dictionary:
 		ctx["had_cd_meta"] = had_cd
 		ctx["old_cd_reduction"] = old_cd
 
-	print("[SkillManager] [SwitchCombo] first-skill bonus applied: slot=%s skill=%s" % [slot.to_upper(), skill.skill_id])
+	if DEBUG_VERBOSE: print("[SkillManager] [SwitchCombo] first-skill bonus applied: slot=%s skill=%s" % [slot.to_upper(), skill.skill_id])
 	return ctx
 
 func _end_switch_synergy_bonus(skill: SkillBase, slot: String, ctx: Dictionary) -> void:
@@ -349,7 +351,7 @@ func _end_switch_synergy_bonus(skill: SkillBase, slot: String, ctx: Dictionary) 
 			var refund: float = calculated_refund if calculated_refund > min_refund else min_refund
 			if refund > 0:
 				owner.gain_energy(refund)
-				print("[SkillManager] [SwitchCombo] first-skill energy refund: slot=%s skill=%s refund=%.1f" % [
+				if DEBUG_VERBOSE: print("[SkillManager] [SwitchCombo] first-skill energy refund: slot=%s skill=%s refund=%.1f" % [
 					slot.to_upper(), skill.skill_id, refund
 				])
 
@@ -439,25 +441,25 @@ func import_cooldown_state(snapshot: Dictionary, elapsed_time: float = 0.0, benc
 
 # 函数：cleanup
 func cleanup() -> void:
-	print("[SkillManager] ===== cleanup() called =====")
-	print("[SkillManager] current slot states:")
+	if DEBUG_VERBOSE: print("[SkillManager] ===== cleanup() called =====")
+	if DEBUG_VERBOSE: print("[SkillManager] current slot states:")
 	for slot in skill_slots.keys():
 		var skill = skill_slots[slot]
 		if skill and is_instance_valid(skill):
-			print("  %s: %s (valid)" % [slot.to_upper(), skill.skill_id])
+			if DEBUG_VERBOSE: print("  %s: %s (valid)" % [slot.to_upper(), skill.skill_id])
 		else:
-			print("  %s: (empty)" % slot.to_upper())
+			if DEBUG_VERBOSE: print("  %s: (empty)" % slot.to_upper())
 	
 	for slot in skill_slots.keys():
 		var skill = skill_slots[slot]
 		if skill and is_instance_valid(skill):
-			print("[SkillManager] cleaning skill %s (%s)" % [slot.to_upper(), skill.skill_id])
+			if DEBUG_VERBOSE: print("[SkillManager] cleaning skill %s (%s)" % [slot.to_upper(), skill.skill_id])
 			if skill.has_method("cleanup"):
 				skill.cleanup()
 			skill.queue_free()
 		skill_slots[slot] = null
 	
-	print("[SkillManager] ===== cleanup() done =====")
+	if DEBUG_VERBOSE: print("[SkillManager] ===== cleanup() done =====")
 
 
 
@@ -491,11 +493,11 @@ func get_loaded_skill_count() -> int:
 
 # 函数：print_skills_info
 func print_skills_info() -> void:
-	print("[SkillManager] skill slot info:")
+	if DEBUG_VERBOSE: print("[SkillManager] skill slot info:")
 	for slot in ["q", "e", "lmb", "rmb"]:
 		var skill = skill_slots[slot]
 		if skill and is_instance_valid(skill):
-			print("  %s: %s (energy: %.0f, cooldown: %.1fs, state: %s)" % [
+			if DEBUG_VERBOSE: print("  %s: %s (energy: %.0f, cooldown: %.1fs, state: %s)" % [
 				slot.to_upper(),
 				skill.skill_id,
 				skill.energy_cost,
@@ -503,4 +505,4 @@ func print_skills_info() -> void:
 				"Cooling" if skill.is_on_cooldown else "Ready"
 			])
 		else:
-			print("  %s: (empty)" % slot.to_upper())
+			if DEBUG_VERBOSE: print("  %s: (empty)" % slot.to_upper())

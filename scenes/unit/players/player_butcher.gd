@@ -145,6 +145,9 @@ func try_break_line(enemy_pos: Vector2, radius: float) -> void:
 			
 			# 如果正在规划模式，更新视觉
 			if q_skill.is_planning:
-				q_skill._update_visuals()
+				if q_skill.has_method("_update_planning_visuals"):
+					q_skill.call("_update_planning_visuals")
+				elif q_skill.has_method("_update_visuals"):
+					q_skill.call("_update_visuals")
 			
 			return

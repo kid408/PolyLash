@@ -741,8 +741,8 @@ func _on_back_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
 
 func _get_upgrade_fail_reason(player_id: String, attr_name: String) -> String:
-	var current_level := DataManager.get_upgrade_level(player_id, attr_name)
-	var max_level := DataManager.get_max_upgrade_level()
+	var current_level: int = int(DataManager.get_upgrade_level(player_id, attr_name))
+	var max_level: int = int(DataManager.get_max_upgrade_level())
 	if current_level >= max_level:
 		return "已达到最大等级"
 

@@ -124,6 +124,8 @@ const ROLE_CAPS := {
 	"denier": 0.18
 }
 const AFFIX_POOL := ["Swift", "Titan", "Vamp", "Split"]
+const SYNERGY_TEST_WAVE_TIME_DEFAULT: float = 999.0
+const AUTO_SHOW_WAVE_TIME_DEFAULT: float = 999.0
 
 var _director_enabled: bool = false
 var enemy_speed_scale: float = 1.0
@@ -224,6 +226,7 @@ func _load_director_v2_configs() -> void:
 	])
 
 func _prepare_director_for_wave() -> void:
+	_director_allow_early_finish = bool(ConfigManager.get_game_setting("director_early_finish_enabled", false))
 	_current_director_wave_id = _get_director_wave_id_for_index(wave_index)
 	if _current_director_wave_id.is_empty():
 		_current_director_wave_id = _get_wave_id_for_index(wave_index)
@@ -248,6 +251,9 @@ func _prepare_director_for_wave() -> void:
 		if DEBUG_VERBOSE: print("[Spawner][Director] wave=%d id=%s budget=%.1f pressure=%.3f peak=%s event=%s" % [
 			wave_index, _current_director_wave_id, _director_budget_total, _last_wave_pressure_score, str(_is_peak_wave), peak_event
 		])
+	if _is_skill_synergy_test_mode():
+		_director_budget_total = max(_director_budget_total, 999999.0)
+		_director_allow_early_finish = false
 func _calc_wave_budget(w: int) -> float:
 	var wf := float(w)
 	return 28.0 + 6.0 * wf + 0.8 * wf * wf
@@ -469,6 +475,8 @@ func start_wave() -> void:
 	var wave_time = current_wave_config.get("wave_time", 20.0)
 	if _director_enabled and _wave_v2.has(_current_director_wave_id):
 		wave_time = float(_wave_v2[_current_director_wave_id].get("wave_time", wave_time))
+	if _is_skill_synergy_test_mode():
+		wave_time = _get_skill_synergy_wave_time(float(wave_time))
 	wave_timer.wait_time = wave_time
 	wave_timer.start()
 	
@@ -656,9 +664,113 @@ func set_spawn_timer() -> void:
 		spawn_timer.wait_time = fixed_time
 	else:
 		spawn_timer.wait_time = randf_range(min_t, max_t)
-		
-	if spawn_timer.is_stopped():
-		spawn_timer.start()
+	var spawn_rate_mult: float = _get_skill_synergy_spawn_rate_multiplier()
+	if spawn_rate_mult > 1.0:
+		spawn_timer.wait_time = max(0.01, spawn_timer.wait_time / spawn_rate_mult)
+
+	# 始终重启计时器，确保新的间隔（含压测倍率）立即生效。
+	if not spawn_timer.is_stopped():
+		spawn_timer.stop()
+	spawn_timer.start()
+
+func _is_skill_synergy_test_mode() -> bool:
+	var synergy_mode: bool = Global.has_meta("skill_synergy_test_mode_active") and bool(Global.get_meta("skill_synergy_test_mode_active"))
+	var auto_show_mode: bool = Global.has_meta("qef_auto_show_mode_active") and bool(Global.get_meta("qef_auto_show_mode_active"))
+	return synergy_mode or auto_show_mode
+
+func _get_skill_synergy_wave_time(default_wave_time: float) -> float:
+	if not _is_skill_synergy_test_mode():
+		return default_wave_time
+	if Global.has_meta("qef_auto_show_mode_active") and bool(Global.get_meta("qef_auto_show_mode_active")):
+		var auto_wave_meta: Variant = Global.get_meta("qef_auto_show_wave_time", AUTO_SHOW_WAVE_TIME_DEFAULT)
+		return max(1.0, float(auto_wave_meta))
+	var wave_time_meta: Variant = Global.get_meta("skill_synergy_test_wave_time", SYNERGY_TEST_WAVE_TIME_DEFAULT)
+	var wave_time_value: float = float(wave_time_meta)
+	return max(1.0, wave_time_value)
+
+func _get_skill_synergy_spawn_rate_multiplier() -> float:
+	if not _is_skill_synergy_test_mode():
+		return 1.0
+	if Global.has_meta("qef_auto_show_mode_active") and bool(Global.get_meta("qef_auto_show_mode_active")):
+		var auto_spawn_meta: Variant = Global.get_meta("qef_auto_show_spawn_rate_mul", 1.0)
+		return max(1.0, float(auto_spawn_meta))
+	var spawn_mult_meta: Variant = Global.get_meta("skill_synergy_test_spawn_rate_mul", 1.0)
+	var spawn_mult: float = float(spawn_mult_meta)
+	return max(1.0, spawn_mult)
+
+func spawn_debug_enemy_burst(
+	anchor: Vector2,
+	forward_dir: Vector2,
+	count: int = 6,
+	forward_offset: float = 120.0,
+	spread_radius: float = 120.0
+) -> int:
+	var spawned: int = 0
+	if count <= 0:
+		return 0
+	var dir: Vector2 = forward_dir.normalized()
+	if dir.length_squared() <= 0.001:
+		dir = Vector2.RIGHT
+	var center: Vector2 = anchor + dir * max(0.0, forward_offset)
+
+	for i: int in range(count):
+		var angle: float = TAU * float(i) / float(max(1, count))
+		var radius_scale: float = 0.62 + 0.38 * randf()
+		var pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * spread_radius * radius_scale
+		var enemy: Enemy = _spawn_debug_enemy_at(pos)
+		if enemy != null and is_instance_valid(enemy):
+			spawned += 1
+	return spawned
+
+func _spawn_debug_enemy_at(spawn_pos: Vector2) -> Enemy:
+	var enemy_data: Dictionary = {}
+	if _director_enabled:
+		enemy_data = _get_director_enemy_data()
+	if enemy_data.is_empty():
+		enemy_data = get_random_enemy_data()
+	if enemy_data.is_empty():
+		return null
+
+	var enemy_scene_path: String = str(enemy_data.get("enemy_scene", "")).strip_edges()
+	var enemy_id: String = str(enemy_data.get("enemy_id", "basic_enemy")).strip_edges()
+	if enemy_scene_path.is_empty():
+		return null
+
+	var enemy_scene: PackedScene = load(enemy_scene_path) as PackedScene
+	if enemy_scene == null:
+		return null
+
+	var enemy_instance: Enemy = enemy_scene.instantiate() as Enemy
+	if enemy_instance == null:
+		return null
+
+	enemy_instance.global_position = spawn_pos
+	enemy_instance.enemy_id = enemy_id
+
+	if _director_enabled:
+		if enemy_data.has("hp"):
+			var base_hp: float = float(enemy_data.get("hp", 0.0))
+			if base_hp > 0.0:
+				enemy_instance.health = base_hp
+		if enemy_data.has("speed"):
+			var base_speed: float = float(enemy_data.get("speed", 0.0))
+			if base_speed > 0.0:
+				enemy_instance.speed = base_speed
+		if enemy_data.has("damage"):
+			var base_damage: float = float(enemy_data.get("damage", 0.0))
+			if base_damage > 0.0:
+				enemy_instance.damage = base_damage
+
+	if "speed" in enemy_instance and enemy_speed_scale > 0.0:
+		enemy_instance.speed *= enemy_speed_scale
+	if "health" in enemy_instance:
+		enemy_instance.health += (wave_index - 1) * enemy_health_per_wave
+	if "damage" in enemy_instance:
+		enemy_instance.damage += (wave_index - 1) * enemy_damage_per_wave
+
+	get_parent().add_child(enemy_instance)
+	spawned_enemies.append(enemy_instance)
+	return enemy_instance
 
 func get_random_spawn_position() -> Vector2:
 	"""
@@ -794,17 +906,17 @@ func spawn_enemy() -> void:
 			wave_index, enemy_id, role, cost, _director_budget_spent, _director_budget_total
 		])
 
-		get_parent().add_child(enemy_instance)
-		spawned_enemies.append(enemy_instance)
-		
-		# 条件判断
-		# 条件判断
-		if _director_enabled and _is_peak_wave and randf() < 0.22:
-			var affix = AFFIX_POOL[randi() % AFFIX_POOL.size()]
-			if enemy_instance.has_method("apply_elite_affix"):
-				enemy_instance.call_deferred("apply_elite_affix", affix)
-		
-		set_spawn_timer()
+	get_parent().add_child(enemy_instance)
+	spawned_enemies.append(enemy_instance)
+
+	# 条件判断
+	# 条件判断
+	if _director_enabled and _is_peak_wave and randf() < 0.22:
+		var affix = AFFIX_POOL[randi() % AFFIX_POOL.size()]
+		if enemy_instance.has_method("apply_elite_affix"):
+			enemy_instance.call_deferred("apply_elite_affix", affix)
+
+	set_spawn_timer()
 
 func get_random_enemy_data() -> Dictionary:
 	"""

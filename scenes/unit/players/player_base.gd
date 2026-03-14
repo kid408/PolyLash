@@ -592,6 +592,8 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 		return
 	if not hitbox:
 		return
+	if Global.has_meta("skill_synergy_test_no_damage") and bool(Global.get_meta("skill_synergy_test_no_damage")):
+		return
 
 	if has_meta("buff_invincible"):
 		Global.on_create_block_text.emit(self)
@@ -614,6 +616,8 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 		apply_knockback_self(knock_dir * hitbox.knockback_power)
 
 func take_damage(raw_amount: float) -> void:
+	if Global.has_meta("skill_synergy_test_no_damage") and bool(Global.get_meta("skill_synergy_test_no_damage")):
+		return
 	# 伤害流程：护甲减伤 -> 护甲层消耗/破甲反馈 -> 扣血 -> 被动反制触发。
 	var damage_multiplier = 1.0 - (clamp(armor, 0, max_armor) * reduction_per_armor)
 	var final_damage = max(1, raw_amount * damage_multiplier)
@@ -806,6 +810,9 @@ func apply_knockback_self(force: Vector2) -> void:
 	Global.on_camera_shake.emit(5.0, 0.1)
 
 func consume_energy(amount: float) -> bool:
+	if _is_skill_synergy_test_no_cost_mode():
+		return true
+
 	if energy >= amount:
 		energy -= amount
 		update_ui_signals()
@@ -984,7 +991,20 @@ func _load_ult_config_from_csv(pid: String) -> Dictionary:
 
 func _get_ultimate_script_for_player(pid: String) -> Script:
 
-	var script_path := "res://scenes/skills/players/skill_ultimate_qef_v3.gd"
+	var script_path: String = ""
+	var role_script_path: String = "res://scenes/skills/players/f_roles/skill_%s_f.gd" % pid
+	if FileAccess.file_exists(role_script_path):
+		script_path = role_script_path
+
+	var ult_cfg: Dictionary = _load_ult_config_from_csv(pid)
+	var f_mode_id: String = str(ult_cfg.get("f_mode_id", "")).strip_edges().to_lower()
+	if script_path.is_empty() and not f_mode_id.is_empty():
+		var mode_script_path: String = "res://scenes/skills/players/f_modes/skill_%s.gd" % f_mode_id
+		if FileAccess.file_exists(mode_script_path):
+			script_path = mode_script_path
+	if script_path.is_empty():
+		script_path = "res://scenes/skills/players/skill_ultimate_qef_v3.gd"
+
 	if not FileAccess.file_exists(script_path):
 		script_path = "res://scenes/skills/skill_ultimate_base.gd"
 		print("[PlayerBase] QEF V3 script missing, fallback to base ultimate: %s" % pid)
@@ -1087,9 +1107,17 @@ func get_energy_percent() -> float:
 	return (energy / max_energy) * 100.0
 
 func consume_energy_percent(percent: float) -> bool:
+	if _is_skill_synergy_test_no_cost_mode():
+		return true
+
 	
 	var amount = (percent / 100.0) * max_energy
 	return consume_energy(amount)
+
+func _is_skill_synergy_test_no_cost_mode() -> bool:
+	if Global == null:
+		return false
+	return Global.has_meta("skill_synergy_test_mode_active") and bool(Global.get_meta("skill_synergy_test_mode_active"))
 
 func try_break_line(enemy_pos: Vector2, radius: float) -> void:
 	pass

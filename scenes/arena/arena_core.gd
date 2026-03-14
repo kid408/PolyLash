@@ -639,6 +639,14 @@ func _finish_run_telemetry(cleared: bool, reason: String) -> void:
 		telemetry.call("end_run", cleared, reason)
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		var key_event: InputEventKey = event
+		if key_event.pressed and not key_event.echo:
+			if key_event.keycode == KEY_TAB or key_event.physical_keycode == KEY_TAB:
+				if _try_advance_synergy_group():
+					get_viewport().set_input_as_handled()
+					return
+
 	# ESC 键打开暂停菜单
 	if event.is_action_pressed("ui_cancel"):
 		# 检查暂停菜单是否已显示
@@ -647,6 +655,9 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 	# Tab 键循环切换角色
 	elif event.is_action_pressed("switch_player"):
+		if _try_advance_synergy_group():
+			get_viewport().set_input_as_handled()
+			return
 		_try_switch_to_next()
 		get_viewport().set_input_as_handled()
 	# 1-2-3 键精准切换角色
@@ -659,6 +670,26 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("switch_player_3"):
 		_try_switch_to_index(2)
 		get_viewport().set_input_as_handled()
+
+func _is_synergy_test_active() -> bool:
+	if DebugSwitcher != null and is_instance_valid(DebugSwitcher):
+		if DebugSwitcher.has_method("is_synergy_test_mode_enabled"):
+			var mode_enabled_by_method: Variant = DebugSwitcher.call("is_synergy_test_mode_enabled")
+			return bool(mode_enabled_by_method)
+		var mode_enabled_by_prop: Variant = DebugSwitcher.get("synergy_test_mode_enabled")
+		if mode_enabled_by_prop != null:
+			return bool(mode_enabled_by_prop)
+	if Global != null and Global.has_meta("skill_synergy_test_mode_active"):
+		return bool(Global.get_meta("skill_synergy_test_mode_active"))
+	return false
+
+func _try_advance_synergy_group() -> bool:
+	if not _is_synergy_test_active():
+		return false
+	if DebugSwitcher != null and is_instance_valid(DebugSwitcher) and DebugSwitcher.has_method("advance_synergy_group"):
+		DebugSwitcher.call("advance_synergy_group")
+		return true
+	return false
 
 # 尝试切换到指定索引的角色
 func _try_switch_to_index(index: int) -> void:
@@ -674,6 +705,8 @@ func _try_switch_to_index(index: int) -> void:
 
 # 循环切换到下一个存活的角色（Tab 键）
 func _try_switch_to_next() -> void:
+	if _try_advance_synergy_group():
+		return
 	var squad_size = Global.selected_player_ids.size()
 	if squad_size == 0:
 		return

@@ -14,9 +14,11 @@ var afterburn_interval: float = 0.45
 var inferno_pulse_damage: int = 28
 var inferno_pulse_interval: float = 0.9
 var scorch_mark_amp: float = 0.18
+const FIRE_ACTIVE_META: String = "pyro_fire_active_until_msec"
 
 func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
 	var duration: float = max(_get_line_duration(), fire_line_duration)
+	_mark_fire_active(duration)
 	SkillEffectManager.create_wall_effect({
 		"start": start,
 		"end": end,
@@ -58,6 +60,7 @@ func _spawn_area_effect(polygon: PackedVector2Array) -> void:
 		return
 
 	var duration: float = max(3.2, fire_sea_duration)
+	_mark_fire_active(duration + inferno_pulse_interval + 0.2)
 	SkillEffectManager.create_area_effect({
 		"polygon": polygon,
 		"damage": fire_sea_damage,
@@ -136,3 +139,9 @@ func _get_line_color() -> Color:
 
 func _get_closure_color() -> Color:
 	return Color(1.45, 0.24, 0.1, 1.0)
+
+func _mark_fire_active(duration: float) -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	var expire_msec: int = Time.get_ticks_msec() + int(round(max(0.2, duration) * 1000.0))
+	skill_owner.set_meta(FIRE_ACTIVE_META, expire_msec)

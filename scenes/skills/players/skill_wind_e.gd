@@ -12,6 +12,8 @@ var path_slash_damage: int = 28
 var return_slash_delay: float = 0.14
 var return_slash_damage_scale: float = 0.72
 var wind_zone_drift_speed: float = 145.0
+const WIND_ACTIVE_META: String = "wind_path_active_until_msec"
+const WIND_E_GUST_META: String = "wind_e_gust_until_msec"
 
 func execute() -> void:
 	if not can_execute():
@@ -28,6 +30,9 @@ func execute() -> void:
 	var damage_amp: float = get_e_damage_amp(0.42, 0.36)
 	var duration_amp: float = get_e_duration_amp(0.38)
 	var enhanced: bool = is_f_window_active()
+	var q_combo_active: bool = _is_wind_path_active()
+	if q_combo_active:
+		enhanced = true
 	var dash_data: Dictionary = _dash_to_cursor()
 	var start_pos: Vector2 = Vector2(dash_data.get("start", skill_owner.global_position))
 	var end_pos: Vector2 = Vector2(dash_data.get("end", skill_owner.global_position))
@@ -36,8 +41,13 @@ func execute() -> void:
 		dash_dir = Vector2.RIGHT
 
 	_apply_path_slash(start_pos, end_pos, damage_amp, duration_amp)
-	_schedule_return_slash(end_pos, start_pos, damage_amp, duration_amp, enhanced)
+	_schedule_return_slash(end_pos, start_pos, damage_amp, duration_amp, enhanced, q_combo_active)
 	_spawn_wind_zone(end_pos, damage_amp, duration_amp, enhanced, dash_dir)
+	if q_combo_active:
+		var side_dir: Vector2 = Vector2(-dash_dir.y, dash_dir.x)
+		_spawn_wind_zone(end_pos + side_dir * 96.0, damage_amp * 0.86, duration_amp * 0.9, false, dash_dir)
+	var gust_window: float = 1.8 + (0.7 if q_combo_active else 0.0) + (0.4 if enhanced else 0.0)
+	skill_owner.set_meta(WIND_E_GUST_META, Time.get_ticks_msec() + int(round(gust_window * 1000.0)))
 	spawn_skill_vfx(end_pos, Color(0.45, 1.25, 1.35, 0.85), 0.7)
 	Global.on_camera_shake.emit(5.8, 0.11)
 	Global.spawn_floating_text(end_pos, "WIND STEP / RETURN", Color(0.55, 1.25, 1.35))
@@ -133,16 +143,21 @@ func _on_wind_zone_tick(zone: Node2D, visual: Polygon2D) -> void:
 		do_damage = true
 	_tick_wind_zone(zone.global_position, tick_damage, storm_eye_radius, storm_eye_pull_force * duration_amp, do_damage)
 
-func _schedule_return_slash(from_pos: Vector2, to_pos: Vector2, damage_amp: float, duration_amp: float, enhanced: bool) -> void:
-	var delay: float = return_slash_delay * (0.75 if enhanced else 1.0)
+func _schedule_return_slash(from_pos: Vector2, to_pos: Vector2, damage_amp: float, duration_amp: float, enhanced: bool, q_combo_active: bool) -> void:
+	var delay_scale: float = 0.75 if enhanced else 1.0
+	if q_combo_active:
+		delay_scale *= 0.75
+	var delay: float = return_slash_delay * delay_scale
 	get_tree().create_timer(delay).timeout.connect(
-		_on_return_slash_timeout.bind(from_pos, to_pos, damage_amp, duration_amp, enhanced)
+		_on_return_slash_timeout.bind(from_pos, to_pos, damage_amp, duration_amp, enhanced, q_combo_active)
 	)
 
-func _on_return_slash_timeout(from_pos: Vector2, to_pos: Vector2, damage_amp: float, duration_amp: float, enhanced: bool) -> void:
+func _on_return_slash_timeout(from_pos: Vector2, to_pos: Vector2, damage_amp: float, duration_amp: float, enhanced: bool, q_combo_active: bool) -> void:
 	if not is_instance_valid(skill_owner):
 		return
 	var bonus_scale: float = 1.15 if enhanced else 1.0
+	if q_combo_active:
+		bonus_scale *= 1.18
 	var return_damage: int = max(1, int(round(float(path_slash_damage) * return_slash_damage_scale * damage_amp * bonus_scale)))
 	var return_width: float = path_slash_width * (1.15 if enhanced else 1.0)
 	var enemies: Array = get_tree().get_nodes_in_group("enemies")
@@ -158,6 +173,8 @@ func _on_return_slash_timeout(from_pos: Vector2, to_pos: Vector2, damage_amp: fl
 		_apply_damage(enemy, return_damage)
 		_apply_status(enemy, "slow", 1.0 * duration_amp, 0.36)
 		_apply_pull(enemy, to_pos, storm_eye_pull_force * 0.5 * duration_amp)
+		if q_combo_active:
+			_apply_status(enemy, "marked", 1.1, 0.16)
 	spawn_skill_vfx(to_pos, Color(0.55, 1.35, 1.45, 0.85), 0.55)
 
 func _tick_wind_zone(center: Vector2, damage: int, radius: float, pull_force: float, do_damage: bool) -> void:
@@ -216,3 +233,11 @@ func _distance_point_to_segment(point: Vector2, a: Vector2, b: Vector2) -> float
 	var t: float = clamp((point - a).dot(ab) / len_sq, 0.0, 1.0)
 	var closest: Vector2 = a + ab * t
 	return point.distance_to(closest)
+
+func _is_wind_path_active() -> bool:
+	if not is_instance_valid(skill_owner):
+		return false
+	if not skill_owner.has_meta(WIND_ACTIVE_META):
+		return false
+	var expire_msec: int = int(skill_owner.get_meta(WIND_ACTIVE_META))
+	return Time.get_ticks_msec() <= expire_msec

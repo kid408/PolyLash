@@ -10,6 +10,9 @@ var bounce_damage: int = 24
 var recall_delay: float = 0.28
 var recall_damage_scale: float = 0.58
 var execute_threshold_ratio: float = 0.34
+var forced_recall_bonus_mult: float = 1.24
+var forced_recall_pull: float = 520.0
+const WEAVER_E_RECALL_META: String = "weaver_e_recall_until_msec"
 
 func execute() -> void:
 	if not can_execute():
@@ -25,7 +28,9 @@ func execute() -> void:
 
 	var damage_amp: float = get_e_damage_amp(0.42, 0.35)
 	var duration_amp: float = get_e_duration_amp(0.35)
-	var max_bounces: int = clamp(bounce_count + (1 if is_f_window_active() else 0), 1, 6)
+	var recall_triggered: bool = _try_trigger_forced_recall(damage_amp, duration_amp)
+	var max_bounces: int = clamp(bounce_count + (1 if is_f_window_active() else 0) + (1 if recall_triggered else 0), 1, 7)
+	var opening_stun_bonus: float = 0.15 if recall_triggered else 0.0
 
 	var used: Array[Node2D] = []
 	var from_pos: Vector2 = skill_owner.global_position
@@ -42,7 +47,7 @@ func execute() -> void:
 			int(round(float(bounce_damage) * (1.0 + float(i) * 0.15) * damage_amp))
 		)
 		_apply_damage(target, hit_damage)
-		_apply_status(target, "stun", stun_duration * duration_amp, 0.0)
+		_apply_status(target, "stun", (stun_duration + opening_stun_bonus) * duration_amp, 0.0)
 		_apply_status(target, "curse", 2.2 + float(i) * 0.35, 8.0 + float(i) * 2.2)
 		spawn_skill_vfx(target.global_position, Color(0.48, 0.95, 1.25, 0.88), 0.52)
 
@@ -50,7 +55,11 @@ func execute() -> void:
 		Global.spawn_floating_text(skill_owner.global_position, "MISS", Color(0.8, 0.85, 1.0))
 	else:
 		_schedule_net_recall(used, damage_amp, duration_amp)
+		if recall_triggered:
+			Global.spawn_floating_text(skill_owner.global_position, "WEB RECALL!", Color(1.1, 0.6, 0.28))
 		Global.on_camera_shake.emit(4.5 + float(used.size()) * 0.5, 0.1)
+	var recall_window: float = 1.6 + (0.6 if recall_triggered else 0.0) + (0.4 if is_f_window_active() else 0.0)
+	skill_owner.set_meta(WEAVER_E_RECALL_META, Time.get_ticks_msec() + int(round(recall_window * 1000.0)))
 
 	start_cooldown()
 
@@ -144,3 +153,24 @@ func _get_hp_ratio(enemy: Node2D) -> float:
 		return 1.0
 	var max_hp: float = max(1.0, float(hc.get("max_health")))
 	return float(hc.get("current_health")) / max_hp
+
+func _try_trigger_forced_recall(damage_amp: float, duration_amp: float) -> bool:
+	if not is_instance_valid(skill_owner):
+		return false
+	var skill_manager: Node = skill_owner.get_node_or_null("SkillManager")
+	if not is_instance_valid(skill_manager):
+		return false
+	if not skill_manager.has_method("get_skill"):
+		return false
+	var q_skill_var: Variant = skill_manager.call("get_skill", "q")
+	if q_skill_var == null:
+		return false
+	if not (q_skill_var is Node):
+		return false
+	var q_skill: Node = q_skill_var
+	if not q_skill.has_method("trigger_forced_recall"):
+		return false
+	var bonus: float = forced_recall_bonus_mult + (0.14 if is_f_window_active() else 0.0)
+	var pull: float = forced_recall_pull * (0.9 + duration_amp * 0.25)
+	var result: Variant = q_skill.call("trigger_forced_recall", bonus * damage_amp, pull)
+	return bool(result)

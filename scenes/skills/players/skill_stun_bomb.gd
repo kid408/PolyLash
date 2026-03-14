@@ -1,173 +1,114 @@
 extends SkillBase
 class_name SkillStunBomb
 
-## ==============================================================================
-## 织网者E技能 - 定身炸弹
-## ==============================================================================
-## 
-## 功能说明:
-## - 在玩家位置释放范围定身效果
-## - 定身范围内的所有敌人
-## - 定身持续一定时间
-## - 显示视觉效果和震屏
-## 
-## 使用方法:
-##   - 按E键触发
-##   - 自动影响范围内所有敌人
-## 
-## ==============================================================================
+# Weaver E: recall command first, stun fallback if no web is active.
+var forced_recall_bonus_mult: float = 1.25
+var forced_recall_pull: float = 480.0
+var fallback_stun_radius: float = 220.0
+var fallback_stun_duration: float = 0.8
+var fallback_stun_color: Color = Color(0.2, 0.8, 1.0, 0.5)
 
-# ==============================================================================
-# 技能参数（从CSV加载）
-# ==============================================================================
-
-## 定身半径
-var stun_radius: float = 300.0
-
-## 定身持续时间
-var stun_duration: float = 2.5
-
-# ==============================================================================
-# 视觉配置
-# ==============================================================================
-
-## 定身视觉颜色
-var stun_color: Color = Color(0.2, 0.8, 1.0, 0.5)
-
-# ==============================================================================
-# 生命周期
-# ==============================================================================
-
-func _ready() -> void:
-	super._ready()
-
-# ==============================================================================
-# 技能执行
-# ==============================================================================
-
-## 执行定身炸弹技能
 func execute() -> void:
-	# 检查是否可以执行
 	if not can_execute():
-		if is_on_cooldown:
-			if skill_owner:
-				Global.spawn_floating_text(skill_owner.global_position, "Cooldown!", Color.YELLOW)
+		if is_on_cooldown and is_instance_valid(skill_owner):
+			Global.spawn_floating_text(skill_owner.global_position, "Cooldown!", Color.YELLOW)
 		return
-	
-	# 消耗能量
+
 	if not consume_energy():
-		if skill_owner:
+		if is_instance_valid(skill_owner):
 			Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
 		return
-	
-	# 执行定身效果
-	_perform_stun()
-	
-	# 开始冷却
+
+	var recalled: bool = _try_trigger_forced_recall()
+	if recalled:
+		Global.on_camera_shake.emit(6.0, 0.12)
+		if is_instance_valid(skill_owner):
+			Global.spawn_floating_text(skill_owner.global_position, "RECALL!", Color(1.15, 0.45, 0.25))
+	else:
+		_perform_fallback_stun()
+
 	start_cooldown()
 
-## 执行定身效果
-func _perform_stun() -> void:
-	if not skill_owner:
-		return
-	
-	# 震屏效果
-	Global.on_camera_shake.emit(8.0, 0.3)
-	
-	# 创建视觉效果
-	_create_stun_visual(stun_radius)
-	
-	# 查找并定身范围内的敌人
-	var enemies = get_tree().get_nodes_in_group("enemies")
-	var hit_count = 0
-	
-	for enemy in enemies:
-		if not is_instance_valid(enemy):
-			continue
-		
-		# 检查距离
-		if skill_owner.global_position.distance_to(enemy.global_position) < stun_radius:
-			_apply_stun_effect(enemy)
-			hit_count += 1
-	
-	# 显示命中提示
-	if hit_count > 0:
-		Global.spawn_floating_text(skill_owner.global_position, "FREEZE! x%d" % hit_count, Color.CYAN)
+func _try_trigger_forced_recall() -> bool:
+	if not is_instance_valid(skill_owner):
+		return false
+	var skill_manager: Node = skill_owner.get_node_or_null("SkillManager")
+	if not is_instance_valid(skill_manager):
+		return false
+	if not skill_manager.has_method("get_skill"):
+		return false
 
-## 应用定身效果到单个敌人
+	var q_skill_var: Variant = skill_manager.call("get_skill", "q")
+	if q_skill_var == null:
+		return false
+	if not (q_skill_var is Node):
+		return false
+	var q_skill: Node = q_skill_var
+	if not q_skill.has_method("trigger_forced_recall"):
+		return false
+
+	var result: Variant = q_skill.call("trigger_forced_recall", forced_recall_bonus_mult, forced_recall_pull)
+	return bool(result)
+
+func _perform_fallback_stun() -> void:
+	if not is_instance_valid(skill_owner):
+		return
+
+	Global.on_camera_shake.emit(7.0, 0.18)
+	_create_stun_visual(skill_owner.global_position, fallback_stun_radius)
+
+	var enemies: Array = get_tree().get_nodes_in_group("enemies")
+	var hit_count: int = 0
+	for enemy_obj: Variant in enemies:
+		if enemy_obj == null or not is_instance_valid(enemy_obj):
+			continue
+		if not (enemy_obj is Node2D):
+			continue
+		var enemy: Node2D = enemy_obj
+		if skill_owner.global_position.distance_to(enemy.global_position) > fallback_stun_radius:
+			continue
+		_apply_stun_effect(enemy)
+		hit_count += 1
+
+	if hit_count > 0:
+		Global.spawn_floating_text(skill_owner.global_position, "STUN x%d" % hit_count, Color(0.8, 1.0, 1.2))
+
 func _apply_stun_effect(enemy: Node2D) -> void:
-	var enemy_ref = weakref(enemy)
-	
-	# 禁用移动
+	var enemy_ref: WeakRef = weakref(enemy)
 	if "can_move" in enemy:
-		enemy.can_move = false
-	
-	# 改变颜色（蓝色表示冰冻）
-	enemy.modulate = Color(0.3, 0.3, 1.0)
-	
-	# 定时恢复
-	get_tree().create_timer(stun_duration).timeout.connect(func():
-		var e = enemy_ref.get_ref()
-		if is_instance_valid(e):
-			# 检查是否仍被蛛网困住
-			var is_still_trapped = _check_if_trapped(e)
-			
-			if not is_still_trapped:
-				# 完全恢复
-				if "can_move" in e:
-					e.can_move = true
-				e.modulate = Color.WHITE
-			else:
-				# 仍被困，恢复为陷阱颜色
-				e.modulate = Color(1, 0.5, 0.5)
+		enemy.set("can_move", false)
+	enemy.modulate = Color(0.35, 0.45, 1.0)
+
+	get_tree().create_timer(fallback_stun_duration).timeout.connect(func():
+		var enemy_obj: Variant = enemy_ref.get_ref()
+		if enemy_obj == null or not is_instance_valid(enemy_obj):
+			return
+		if not (enemy_obj is Node2D):
+			return
+		var live_enemy: Node2D = enemy_obj
+		if "can_move" in live_enemy:
+			live_enemy.set("can_move", true)
+		live_enemy.modulate = Color.WHITE
 	)
 
-## 检查敌人是否被蛛网困住
-func _check_if_trapped(enemy: Node2D) -> bool:
-	# 尝试从skill_owner获取trapped_enemies列表
-	if skill_owner and "trapped_enemies" in skill_owner:
-		for ref in skill_owner.trapped_enemies:
-			if ref.get_ref() == enemy:
-				return true
-	
-	return false
-
-## 创建定身视觉效果
-func _create_stun_visual(radius: float) -> void:
-	if not skill_owner:
+func _create_stun_visual(center: Vector2, radius: float) -> void:
+	var scene_tree: SceneTree = get_tree()
+	if scene_tree == null or scene_tree.current_scene == null:
 		return
-	
-	# 创建多边形表示范围
-	var poly = Polygon2D.new()
-	var points = PackedVector2Array()
-	
-	# 生成圆形多边形
-	for i in range(32):
-		var angle = i * TAU / 32
+
+	var poly: Polygon2D = Polygon2D.new()
+	var points: PackedVector2Array = PackedVector2Array()
+	for i: int in range(32):
+		var angle: float = float(i) * TAU / 32.0
 		points.append(Vector2(cos(angle), sin(angle)) * radius)
-	
+
 	poly.polygon = points
-	poly.color = stun_color
+	poly.color = fallback_stun_color
 	poly.z_index = 80
-	poly.global_position = skill_owner.global_position
-	
-	# 添加到场景
-	get_tree().current_scene.add_child(poly)
-	
-	# 动画效果
-	var t = poly.create_tween()
-	t.tween_property(poly, "scale", Vector2(1.1, 1.1), 0.1)
-	t.tween_property(poly, "color:a", 0.0, 0.5)
-	t.tween_callback(poly.queue_free)
+	poly.global_position = center
+	scene_tree.current_scene.add_child(poly)
 
-# ==============================================================================
-# 辅助方法
-# ==============================================================================
-
-## 打印调试信息
-func print_debug_info() -> void:
-	print("[SkillStunBomb] 调试信息:")
-	print("  - stun_radius: %.0f" % stun_radius)
-	print("  - stun_duration: %.1f" % stun_duration)
-	print("  - energy_cost: %.0f" % energy_cost)
-	print("  - cooldown_time: %.1f" % cooldown_time)
+	var tween: Tween = poly.create_tween()
+	tween.tween_property(poly, "scale", Vector2(1.1, 1.1), 0.1)
+	tween.tween_property(poly, "color:a", 0.0, 0.35)
+	tween.tween_callback(poly.queue_free)

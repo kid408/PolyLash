@@ -222,7 +222,7 @@ static func _build_progress_payload(slot_index: int, context: Dictionary) -> Dic
 		"last_save_timestamp": int(Time.get_unix_time_from_system())
 	}
 
-	var progress_data := DataManager.serialize_progress_data()
+	var progress_data: Dictionary = DataManager.serialize_progress_data()
 	for key in progress_data:
 		payload[key] = progress_data[key]
 

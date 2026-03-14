@@ -1,0 +1,99 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2570)
+=== 配置管理器初始化 ===
+[ConfigManager] 加载配置: res://config/player/player_config.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_visual.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_weapons.csv - 33 条记录
+[ConfigManager] 加载配置: res://config/player/player_skill_bindings.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_available_weapons.csv - 33 条记录
+[ConfigManager] 加载宽表技能参数: res://config/player/skill_params_wide.csv - 77 个技能, 114 条描述
+[ConfigManager] 加载配置: res://config/enemy/enemy_config.csv - 12 条记录
+[ConfigManager] 加载配置: res://config/enemy/enemy_visual.csv - 12 条记录
+[ConfigManager] 加载配置: res://config/enemy/enemy_weapons.csv - 5 条记录
+[ConfigManager] 加载配置: res://config/weapon/weapon_config_optimized.csv - 35 条记录
+[ConfigManager] 加载配置: res://config/wave/wave_config.csv - 4 条记录
+[ConfigManager] 加载波次单位配置: res://config/wave/wave_units_config.csv - 4 个波次
+[ConfigManager] 加载配置: res://config/system/input_config.csv - 16 条记录
+[ConfigManager] 加载配置: res://config/item/upgrade_attributes.csv - 4 条记录
+[ConfigManager] 加载配置: res://config/item/chest_config.csv - 4 条记录
+[ConfigManager] 加载配置: res://config/wave/wave_chest_config.csv - 5 条记录
+[ConfigManager] 加载 key-value 配置: res://config/system/game_config.csv - 53 条记录
+[ConfigManager] 加载 key-value 配置: res://config/system/camera_config.csv - 8 条记录
+[ConfigManager] 加载 key-value 配置: res://config/system/map_config.csv - 15 条记录
+[ConfigManager] 加载新格式道具配置: res://config/item/item_config.csv - 59 条记录
+[ConfigManager] 加载护符配置: res://config/item/emblem_config.csv - 14 条记录
+[ConfigManager] 加载致谢配置: res://config/system/credits_config.csv - 4 条记录
+=== 配置加载完成 ===
+[ConfigManager] 加载配置: res://config/audio/ui_sounds.csv - 12 条记录
+[ConfigManager] 加载配置: res://config/audio/combat_sounds.csv - 18 条记录
+[ConfigManager] 加载配置: res://config/audio/skill_sounds.csv - 10 条记录
+[ConfigManager] 加载配置: res://config/audio/environment_sounds.csv - 25 条记录
+[SoundManager] 初始化完成: 65 条配置, 93 个音频缓存, 1 个音效组
+[SaveManager] 已创建存档目录: user://saves/
+=== 升级管理器初始化 ===
+[EliteConfigManager] 加载精英敌人: EliteConfig(enemy_glutton: 吞噬者)
+[EliteConfigManager] 加载精英能力配置: EliteAbilityConfig(enemy_glutton)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 1)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 2)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 3)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 4)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 5)
+[EliteConfigManager] 加载波次精英配置: WaveEliteConfig(wave_1_to_5: enemy_glutton x0)
+[EliteConfigManager] 加载波次精英配置: WaveEliteConfig(wave_6_to_10: enemy_glutton x1)
+[EliteConfigManager] 加载波次精英配置: WaveEliteConfig(wave_11_to_15: enemy_glutton x2)
+[EliteConfigManager] 加载波次精英配置: WaveEliteConfig(wave_16_to_20: enemy_glutton x3)
+[EliteConfigManager] 加载精英生成配置: EliteSpawnConfig(wave_1_to_5: enemy_glutton, 间隔999.0-999.0s, 最多0个)
+[EliteConfigManager] 加载精英生成配置: EliteSpawnConfig(wave_6_to_10: enemy_glutton, 间隔20.0-30.0s, 最多1个)
+[EliteConfigManager] 加载精英生成配置: EliteSpawnConfig(wave_11_to_15: enemy_glutton, 间隔15.0-25.0s, 最多2个)
+[EliteConfigManager] 加载精英生成配置: EliteSpawnConfig(wave_16_to_20: enemy_glutton, 间隔12.0-22.0s, 最多3个)
+[EliteConfigManager] 初始化完成
+
+=== 精英敌人配置 ===
+  enemy_glutton: 吞噬者 (血量88, 伤害9, 护甲0.0, 速度158.0)
+
+=== 进化阶段配置 ===
+  enemy_glutton:
+    Stage 1: 血量x1.00, 伤害x1.00, 护甲x1.00, 速度x1.00, 吞噬1个敌人 - 初始阶段
+    Stage 2: 血量x1.00, 伤害x1.20, 护甲x1.00, 速度x1.07, 吞噬5个敌人 - 酸液射手
+    Stage 3: 血量x1.40, 伤害x1.44, 护甲x1.00, 速度x1.13, 吞噬5个敌人 - 巨型怪物
+    Stage 4: 血量x1.88, 伤害x1.73, 护甲x1.00, 速度x1.20, 吞噬5个敌人 - 过度进食
+    Stage 5: 血量x1.46, 伤害x2.07, 护甲x1.00, 速度x1.27, 吞噬5个敌人 - 终极形态
+
+=== 波次精英配置 ===
+  wave_1_to_5:
+    enemy_glutton: 生成0个, 权重0.0, 初始阶段1, 允许进化false
+  wave_6_to_10:
+    enemy_glutton: 生成1个, 权重2.0, 初始阶段1, 允许进化true
+  wave_11_to_15:
+    enemy_glutton: 生成2个, 权重3.0, 初始阶段1, 允许进化true
+  wave_16_to_20:
+    enemy_glutton: 生成3个, 权重4.0, 初始阶段1, 允许进化true
+
+=== 精英生成配置 ===
+  wave_1_to_5:
+    enemy_glutton: 生成间隔999.0-999.0s, 最多0个 [禁用]
+  wave_6_to_10:
+    enemy_glutton: 生成间隔20.0-30.0s, 最多1个 [启用]
+  wave_11_to_15:
+    enemy_glutton: 生成间隔15.0-25.0s, 最多2个 [启用]
+  wave_16_to_20:
+    enemy_glutton: 生成间隔12.0-22.0s, 最多3个 [启用]
+[PlayerFactory] 已初始化
+[EquipmentManager] 装备数据文件不存在，使用默认值
+[EquipmentManager] 初始化完成
+[WarehouseManager] 加载了 59 个道具配置（委托 ConfigManager）
+[WarehouseManager] 初始化完成（局内模式），容量: 48
+[BondUILoader] 加载了 11 个羁绊配置
+[BondUILoader] 初始化完成，加载了 11 个羁绊配置
+[ResonanceRuntimeService] init complete, players=32
+[ShopManager] 通过 ConfigRepository 加载了 18 行商店配置数据
+[ShopManager] 初始化完成，加载了 13 个商店配置项
+[ShopAttributeManager] 通过 ConfigRepository 加载了 32 个属性配置
+[ShopAttributeManager] 通过 ConfigRepository 加载了 5 个波次配置
+[ShopAttributeManager] 初始化完成: 32个属性, 5个波次配置
+[AbilityManager] 加载了 5 个敌人的能力配置
+[AbilityManager] 初始化完成，已注册 3 个能力类型
+[WeaponConfigLoader] 加载表头: 46 个字段
+[WeaponConfigLoader] 加载完成: 35 个武器基础配置

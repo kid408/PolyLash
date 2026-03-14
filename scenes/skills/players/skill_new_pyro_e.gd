@@ -4,6 +4,9 @@ class_name SkillNewPyroE
 var knockback_force: float = 600.0
 var explosion_radius: float = 160.0
 var explosion_damage: int = 45
+const NEW_PYRO_META_CENTER: String = "new_pyro_fire_center"
+const NEW_PYRO_META_RADIUS: String = "new_pyro_fire_radius"
+const NEW_PYRO_META_EXPIRE_MSEC: String = "new_pyro_fire_expire_msec"
 
 func execute() -> void:
 	if not consume_energy():
@@ -20,7 +23,11 @@ func execute() -> void:
 	var base_burn_duration: float = 2.0 * duration_amp
 	var base_burn_value: float = 8.0 * damage_amp
 	var base_knockback: float = knockback_force * (1.0 + (duration_amp - 1.0) * 0.30)
+	var synergy_bonus: bool = _is_fire_window_active()
 	var rune_count: int = 2 if not is_f_window_active() else 3
+	if synergy_bonus:
+		rune_count += 1
+		base_damage = max(base_damage, int(round(float(base_damage) * 1.18)))
 
 	var aim_dir: Vector2 = _get_aim_direction()
 	var spread: float = 0.42
@@ -43,6 +50,9 @@ func execute() -> void:
 			)
 		)
 		spawn_skill_vfx(pos, Color(1.0, 0.4, 0.16, 0.4), 0.35)
+
+	if synergy_bonus:
+		_trigger_firefield_echo(base_damage, duration_amp)
 
 	Global.spawn_floating_text(skill_owner.global_position, "RUNE IGNITE!", Color(1.0, 0.45, 0.2))
 	Global.on_camera_shake.emit(7.5, 0.16)
@@ -120,3 +130,30 @@ func _knock_enemy(enemy: Node, center: Vector2, power: float) -> void:
 		var enemy_node2: Node2D = enemy
 		var push_dir: Vector2 = center.direction_to(enemy_node2.global_position)
 		enemy_node2.global_position += push_dir * power * 0.02
+
+func _is_fire_window_active() -> bool:
+	if not is_instance_valid(skill_owner):
+		return false
+	if not skill_owner.has_meta(NEW_PYRO_META_EXPIRE_MSEC):
+		return false
+	var expire_msec: int = int(skill_owner.get_meta(NEW_PYRO_META_EXPIRE_MSEC, 0))
+	return Time.get_ticks_msec() <= expire_msec
+
+func _trigger_firefield_echo(base_damage: int, duration_amp: float) -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	var center_val: Variant = skill_owner.get_meta(NEW_PYRO_META_CENTER, skill_owner.global_position)
+	var radius_val: Variant = skill_owner.get_meta(NEW_PYRO_META_RADIUS, explosion_radius)
+	if not (center_val is Vector2):
+		return
+	var center: Vector2 = center_val
+	var radius: float = max(30.0, float(radius_val) * 0.55)
+	var echo_damage: int = max(1, int(round(float(base_damage) * 0.56)))
+	var hit_count: int = 0
+	for enemy in _get_enemies_in_radius(center, radius):
+		_apply_damage(enemy, echo_damage)
+		_apply_status(enemy, "burn", 1.6 * duration_amp, max(1.0, float(echo_damage) * 0.38), 1, 0.5)
+		hit_count += 1
+	if hit_count > 0:
+		Global.spawn_floating_text(center, "FIELD ECHO x%d" % hit_count, Color(1.0, 0.56, 0.22))
+		spawn_skill_vfx(center, Color(1.0, 0.5, 0.2, 0.78), 0.6)

@@ -10,6 +10,9 @@ var totem_explosion_damage: int = 155
 var sync_detonate_scale: float = 0.72
 var sync_slow_value: float = 0.45
 var sync_slow_duration: float = 1.6
+var remote_chain_damage_bonus: float = 0.12
+const SAPPER_E_CHAIN_META: String = "sapper_e_chain_until_msec"
+const SAPPER_E_REMOTE_COUNT_META: String = "sapper_e_remote_count"
 
 func execute() -> void:
 	if not can_execute():
@@ -25,16 +28,25 @@ func execute() -> void:
 
 	var damage_amp: float = get_e_damage_amp(0.4, 0.35)
 	var duration_amp: float = get_e_duration_amp(0.4)
+	var remote_mine_count: int = _detonate_q_mines()
+	if remote_mine_count > 0:
+		damage_amp *= 1.0 + min(0.42, remote_chain_damage_bonus * float(remote_mine_count))
 	var center: Vector2 = skill_owner.global_position
 	var totem: Node2D = _spawn_support_totem(center, damage_amp, duration_amp)
 	_retarget_enemies(totem)
 	_sync_detonate(center, damage_amp, duration_amp, "SYNC BLAST")
+	if remote_mine_count > 0:
+		Global.spawn_floating_text(center, "REMOTE MINE x%d" % remote_mine_count, Color(1.25, 0.82, 0.34))
+		_sync_detonate(center, damage_amp * 0.72, duration_amp, "CHAIN BLAST")
 
 	if is_f_window_active():
 		var totem_ref: WeakRef = weakref(totem)
 		get_tree().create_timer(0.6).timeout.connect(
 			_on_sync_overload_timeout.bind(totem_ref, damage_amp, duration_amp)
 		)
+	var chain_window: float = 2.0 + (0.5 if is_f_window_active() else 0.0)
+	skill_owner.set_meta(SAPPER_E_CHAIN_META, Time.get_ticks_msec() + int(round(chain_window * 1000.0)))
+	skill_owner.set_meta(SAPPER_E_REMOTE_COUNT_META, remote_mine_count)
 
 	start_cooldown()
 
@@ -172,3 +184,22 @@ func _on_totem_life_timeout(totem_ref: WeakRef, damage_amp: float, duration_amp:
 	if not (totem is Node2D):
 		return
 	_explode_totem(totem, damage_amp, duration_amp)
+
+func _detonate_q_mines() -> int:
+	if not is_instance_valid(skill_owner):
+		return 0
+	var skill_manager: Node = skill_owner.get_node_or_null("SkillManager")
+	if not is_instance_valid(skill_manager):
+		return 0
+	if not skill_manager.has_method("get_skill"):
+		return 0
+	var q_skill_var: Variant = skill_manager.call("get_skill", "q")
+	if q_skill_var == null:
+		return 0
+	if not (q_skill_var is Node):
+		return 0
+	var q_skill: Node = q_skill_var
+	if not q_skill.has_method("remote_detonate_all"):
+		return 0
+	var result: Variant = q_skill.call("remote_detonate_all")
+	return max(0, int(result))

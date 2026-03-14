@@ -1,120 +1,141 @@
-# ==============================================================================
-# 内部类：肉桩
-# ==============================================================================
 extends Node2D
 class_name MeatStake
 
-var target_pos: Vector2
-var player_ref: PlayerButcher
+var target_pos: Vector2 = Vector2.ZERO
+var player_ref: Node2D = null
 var is_landed: bool = false
-var chained_enemies: Array = []  # 被链接的敌人（WeakRef）
+var chained_enemies: Array[WeakRef] = []
 var speed: float = 0.0
-var visual_sprite: Polygon2D
+var visual_sprite: Polygon2D = null
 
-func setup(_target_pos: Vector2, _player: PlayerButcher):
+func setup(_target_pos: Vector2, _player: Node2D) -> void:
 	target_pos = _target_pos
 	player_ref = _player
-	speed = player_ref.stake_throw_speed
+	speed = _get_player_float("stake_throw_speed", 1200.0)
 	add_to_group("projectiles")
 	add_to_group("player_skill_effects")
-	
-	# 创建视觉
+
 	visual_sprite = Polygon2D.new()
 	visual_sprite.polygon = PackedVector2Array([
-		Vector2(0, -20), Vector2(10, 10), 
-		Vector2(0, 30), Vector2(-10, 10)
+		Vector2(0, -20),
+		Vector2(10, 10),
+		Vector2(0, 30),
+		Vector2(-10, 10)
 	])
-	visual_sprite.color = Color(0.2, 0.2, 0.2, 1)
+	visual_sprite.color = Color(0.2, 0.2, 0.2, 1.0)
 	add_child(visual_sprite)
-	
-	# 创建生命周期计时器
-	var timer = Timer.new()
-	timer.wait_time = player_ref.stake_duration
+
+	var timer: Timer = Timer.new()
+	timer.wait_time = _get_player_float("stake_duration", 6.0)
 	timer.one_shot = true
 	timer.timeout.connect(queue_free)
-	timer.autostart = true 
+	timer.autostart = true
 	add_child(timer)
 
 func _process(delta: float) -> void:
 	if not is_landed:
 		_process_flying(delta)
-	else:
-		_update_chains()
-		queue_redraw()
+		return
+	_update_chains()
+	queue_redraw()
 
 func _process_flying(delta: float) -> void:
-	var dist = global_position.distance_to(target_pos)
-	if dist < 10.0:
+	var dist: float = global_position.distance_to(target_pos)
+	if dist < 8.0:
 		_land()
 		return
-	
-	# 移动
-	var move_step = speed * delta
-	if move_step > dist: move_step = dist
-	var dir = (target_pos - global_position).normalized()
+
+	var move_step: float = min(dist, speed * delta)
+	var dir: Vector2 = (target_pos - global_position).normalized()
 	global_position += dir * move_step
-	visual_sprite.rotation += 10.0 * delta 
-	
-	# 飞行时拉扯沿途敌人
-	var enemies = get_tree().get_nodes_in_group("enemies")
-	for e in enemies:
-		if not is_instance_valid(e): continue
-		if global_position.distance_to(e.global_position) < 60.0:
-			e.global_position = global_position
+	if is_instance_valid(visual_sprite):
+		visual_sprite.rotation += 10.0 * delta
+
+	var enemies: Array = get_tree().get_nodes_in_group("enemies")
+	for enemy_obj: Variant in enemies:
+		if enemy_obj == null or not is_instance_valid(enemy_obj):
+			continue
+		if not (enemy_obj is Node2D):
+			continue
+		var enemy: Node2D = enemy_obj
+		if global_position.distance_to(enemy.global_position) < 60.0:
+			enemy.global_position = enemy.global_position.lerp(global_position, min(1.0, 8.0 * delta))
 
 func _land() -> void:
 	is_landed = true
-	visual_sprite.rotation = 0 
-	visual_sprite.scale = Vector2(1.5, 1.5)
-	Global.on_camera_shake.emit(10.0, 0.2)
-	Global.spawn_floating_text(global_position, "THUD!", Color.WEB_GRAY)
-	
-	# 链接范围内的敌人
-	var radius = player_ref.chain_radius
-	var enemies = get_tree().get_nodes_in_group("enemies")
-	for e in enemies:
-		if global_position.distance_to(e.global_position) < radius:
-			_chain_enemy(e)
+	if is_instance_valid(visual_sprite):
+		visual_sprite.rotation = 0.0
+		visual_sprite.scale = Vector2(1.5, 1.5)
+	Global.on_camera_shake.emit(8.0, 0.16)
+	Global.spawn_floating_text(global_position, "THUD!", Color.GRAY)
+
+	var radius: float = _get_player_float("chain_radius", 250.0)
+	var enemies: Array = get_tree().get_nodes_in_group("enemies")
+	for enemy_obj: Variant in enemies:
+		if enemy_obj == null or not is_instance_valid(enemy_obj):
+			continue
+		if not (enemy_obj is Node2D):
+			continue
+		var enemy: Node2D = enemy_obj
+		if global_position.distance_to(enemy.global_position) <= radius:
+			_chain_enemy(enemy)
 
 func _chain_enemy(enemy: Node2D) -> void:
-	# 检查是否已链接
-	for ref in chained_enemies:
-		if ref.get_ref() == enemy: return
-	
+	for enemy_ref: WeakRef in chained_enemies:
+		if enemy_ref.get_ref() == enemy:
+			return
 	chained_enemies.append(weakref(enemy))
-	Global.spawn_floating_text(enemy.global_position, "CHAINED", Color.RED)
-	
+	Global.spawn_floating_text(enemy.global_position, "CHAINED", Color(1.0, 0.25, 0.25))
+
+	var impact_damage: int = int(round(_get_player_float("stake_impact_damage", 20.0)))
 	if enemy.has_node("HealthComponent"):
-		enemy.health_component.take_damage(player_ref.stake_impact_damage)
+		enemy.get_node("HealthComponent").take_damage(max(1, impact_damage))
 
 func _update_chains() -> void:
-	# 检查player_ref是否有效
 	if not is_instance_valid(player_ref):
 		queue_free()
 		return
-	
-	var valid_chains = []
-	var radius = player_ref.chain_radius
-	
-	for ref in chained_enemies:
-		var e = ref.get_ref()
-		if is_instance_valid(e):
-			valid_chains.append(ref)
-			
-			# 强制拉扯到范围内
-			if global_position.distance_to(e.global_position) > radius:
-				var dir = (e.global_position - global_position).normalized()
-				e.global_position = global_position + dir * radius
-	
-	chained_enemies = valid_chains
-	
+
+	var radius: float = _get_player_float("chain_radius", 250.0)
+	var valid_refs: Array[WeakRef] = []
+	for enemy_ref: WeakRef in chained_enemies:
+		var enemy_obj: Variant = enemy_ref.get_ref()
+		if enemy_obj == null or not is_instance_valid(enemy_obj):
+			continue
+		if not (enemy_obj is Node2D):
+			continue
+		var enemy: Node2D = enemy_obj
+		valid_refs.append(enemy_ref)
+		var dist: float = global_position.distance_to(enemy.global_position)
+		if dist > radius and dist > 0.001:
+			var dir: Vector2 = (enemy.global_position - global_position).normalized()
+			enemy.global_position = global_position + dir * radius
+
+	chained_enemies = valid_refs
+
 func _draw() -> void:
-	if not is_landed: return
-	if not is_instance_valid(player_ref): return
-	
-	# 绘制链条线
-	for ref in chained_enemies:
-		var e = ref.get_ref()
-		if is_instance_valid(e):
-			draw_line(Vector2.ZERO, to_local(e.global_position), 
-				player_ref.chain_color, 2.0)
+	if not is_landed:
+		return
+	if not is_instance_valid(player_ref):
+		return
+	var chain_col: Color = _get_player_color("chain_color", Color(0.3, 0.1, 0.1, 0.8))
+	for enemy_ref: WeakRef in chained_enemies:
+		var enemy_obj: Variant = enemy_ref.get_ref()
+		if enemy_obj == null or not is_instance_valid(enemy_obj):
+			continue
+		if not (enemy_obj is Node2D):
+			continue
+		var enemy: Node2D = enemy_obj
+		draw_line(Vector2.ZERO, to_local(enemy.global_position), chain_col, 2.0)
+
+func _get_player_float(property_name: String, default_value: float) -> float:
+	if is_instance_valid(player_ref) and (property_name in player_ref):
+		return float(player_ref.get(property_name))
+	return default_value
+
+func _get_player_color(property_name: String, default_value: Color) -> Color:
+	if is_instance_valid(player_ref) and (property_name in player_ref):
+		var value: Variant = player_ref.get(property_name)
+		if value is Color:
+			return value
+	return default_value

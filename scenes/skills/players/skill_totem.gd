@@ -1,199 +1,163 @@
-﻿extends SkillBase
+extends SkillBase
 class_name SkillTotem
 
-## ==============================================================================
-## 宸ュ叺E鎶€鑳?- 鍥捐吘
-## ==============================================================================
-## 
-## 鍔熻兘璇存槑:
-## - 鎸塃閿湪鐜╁浣嶇疆鐢熸垚鍥捐吘
-## - 鍥捐吘鍢茶闄勮繎鏁屼汉
-## - 鍥捐吘鏈夌敓鍛藉€硷紝琚嚮姣佸悗鐖嗙偢
-## - 鍥捐吘鎸佺画涓€瀹氭椂闂村悗鑷姩鐖嗙偢
-## 
-## 浣跨敤鏂规硶:
-##   - 鎸塃閿噴鏀?
-## 
-## ==============================================================================
-
-# ==============================================================================
-# 鎶€鑳藉弬鏁帮紙浠嶤SV鍔犺浇锛?
-# ==============================================================================
-
-## 鍥捐吘鎸佺画鏃堕棿
+# Sapper E: remote detonation command + decoy totem.
 var totem_duration: float = 8.0
-
-## 鍥捐吘鏈€澶х敓鍛藉€?
 var totem_max_health: float = 200.0
-
-## 鍥捐吘鍢茶鑼冨洿
 var totem_taunt_radius: float = 600.0
-
-## 鍥捐吘鐖嗙偢鍗婂緞
 var totem_explosion_radius: float = 120.0
-
-## 鍥捐吘鐖嗙偢浼ゅ
 var totem_explosion_damage: int = 150
 
-## 宸茬敓鎴愮殑鍥捐吘鍒楄〃锛堢敤浜庢竻鐞嗭級
-var spawned_totems: Array[Node] = []
+var active_totem: Node2D = null
 
-# ==============================================================================
-# 鐢熷懡鍛ㄦ湡
-# ==============================================================================
-
-func _ready() -> void:
-	super._ready()
-
-# ==============================================================================
-# 鎶€鑳芥墽琛?
-# ==============================================================================
-
-## 鎵ц鎶€鑳?
 func execute() -> void:
+	if not can_execute():
+		if is_on_cooldown and is_instance_valid(skill_owner):
+			Global.spawn_floating_text(skill_owner.global_position, "Cooldown!", Color.YELLOW)
+		return
 	if not consume_energy():
-		if skill_owner:
+		if is_instance_valid(skill_owner):
 			Global.spawn_floating_text(skill_owner.global_position, "No Energy!", Color.RED)
 		return
-	
-	if not skill_owner:
+	if not is_instance_valid(skill_owner):
 		return
-	
-	# 鐢熸垚鍥捐吘
-	var totem = _create_totem()
-	totem.global_position = skill_owner.global_position
-	get_tree().current_scene.add_child(totem)
-	spawned_totems.append(totem)  # 杩借釜鍥捐吘
-	
-	# 鍢茶闄勮繎鏁屼汉
-	var enemies = get_tree().get_nodes_in_group("enemies")
-	for e in enemies:
-		if e.global_position.distance_to(skill_owner.global_position) < totem_taunt_radius:
-			if e.has_method("set_taunt_target"):
-				e.set_taunt_target(totem)
-	
-	Global.spawn_floating_text(skill_owner.global_position, "Taunt!", Color.GREEN)
-	
-	# 寮€濮嬪喎鍗?
+
+	var detonated_count: int = _trigger_remote_detonation()
+	_spawn_or_refresh_totem()
+
+	if detonated_count > 0:
+		Global.spawn_floating_text(skill_owner.global_position, "REMOTE BOOM x%d" % detonated_count, Color(1.25, 0.72, 0.3))
+		Global.on_camera_shake.emit(6.0 + float(detonated_count) * 0.35, 0.14)
+	else:
+		Global.spawn_floating_text(skill_owner.global_position, "DECOY DEPLOY", Color(0.7, 1.0, 0.7))
+
 	start_cooldown()
 
-# ==============================================================================
-# 鍥捐吘鍒涘缓
-# ==============================================================================
+func _trigger_remote_detonation() -> int:
+	var skill_manager: Node = skill_owner.get_node_or_null("SkillManager")
+	if not is_instance_valid(skill_manager):
+		return 0
+	if not skill_manager.has_method("get_skill"):
+		return 0
 
-## 鍒涘缓鍥捐吘
-func _create_totem() -> Area2D:
-	var totem = Area2D.new()
+	var q_skill_var: Variant = skill_manager.call("get_skill", "q")
+	if q_skill_var == null:
+		return 0
+	if not (q_skill_var is Node):
+		return 0
+	var q_skill: Node = q_skill_var
+	if not q_skill.has_method("remote_detonate_all"):
+		return 0
+
+	var detonated: Variant = q_skill.call("remote_detonate_all")
+	return int(detonated)
+
+func _spawn_or_refresh_totem() -> void:
+	if is_instance_valid(active_totem):
+		active_totem.queue_free()
+		active_totem = null
+	active_totem = _create_totem()
+	active_totem.global_position = skill_owner.global_position
+	get_tree().current_scene.add_child(active_totem)
+
+func _create_totem() -> Node2D:
+	var totem: Node2D = Node2D.new()
+	totem.name = "SapperDecoyTotem"
 	totem.add_to_group("player")
 	totem.add_to_group("player_skill_effects")
-	
-	# 纰版挒褰㈢姸
-	var col = CollisionShape2D.new()
-	var shape = CircleShape2D.new()
-	shape.radius = 30.0
-	col.shape = shape
-	totem.add_child(col)
-	
-	# 瑙嗚鏁堟灉锛堜笁瑙掑舰锛?
-	var vis = Polygon2D.new()
-	vis.polygon = [Vector2(0, -30), Vector2(20, 10), Vector2(-20, 10)]
-	vis.color = Color.GREEN
-	totem.add_child(vis)
-	
-	# 鍙椾激鐩?
-	var hurtbox = HurtboxComponent.new()
-	var hb_col = CollisionShape2D.new()
-	hb_col.shape = shape
-	hurtbox.add_child(hb_col)
-	hurtbox.collision_layer = 1
-	totem.add_child(hurtbox)
-	
-	# 鍥捐吘鐘舵€?
-	var state = {"hp": totem_max_health}
-	
-	# 鍙椾激鍥炶皟
-	hurtbox.on_damaged.connect(func(hitbox):
-		if not is_instance_valid(totem):
-			return
-		state.hp -= hitbox.damage
-		Global.spawn_floating_text(totem.global_position, str(hitbox.damage), Color.WHITE)
-		
-		# 鍙椾激闂儊
-		var tween = totem.create_tween()
-		tween.tween_property(vis, "modulate", Color.RED, 0.1)
-		tween.tween_property(vis, "modulate", Color.WHITE, 0.1)
-		
-		# 鐢熷懡鍊艰€楀敖锛岀垎鐐?
-		if state.hp <= 0:
-			_explode_totem(totem)
-	)
-	
-	# 鎸佺画鏃堕棿瀹氭椂鍣?
-	var timer = Timer.new()
-	timer.wait_time = totem_duration
-	timer.one_shot = true
-	timer.autostart = true
-	totem.add_child(timer)
-	timer.timeout.connect(_on_totem_expired.bind(totem))
-	
+	totem.set_meta("hp", totem_max_health)
+	totem.set_meta("exploded", false)
+
+	var marker: Polygon2D = Polygon2D.new()
+	marker.polygon = PackedVector2Array([
+		Vector2(0, -26),
+		Vector2(22, 18),
+		Vector2(-22, 18)
+	])
+	marker.color = Color(0.35, 0.92, 0.35, 0.95)
+	totem.add_child(marker)
+
+	var taunt_timer: Timer = Timer.new()
+	taunt_timer.wait_time = 0.25
+	taunt_timer.one_shot = false
+	taunt_timer.autostart = true
+	totem.add_child(taunt_timer)
+	taunt_timer.timeout.connect(_on_taunt_tick.bind(weakref(totem)))
+
+	var life_timer: Timer = Timer.new()
+	life_timer.wait_time = max(0.5, totem_duration)
+	life_timer.one_shot = true
+	life_timer.autostart = true
+	totem.add_child(life_timer)
+	life_timer.timeout.connect(_on_totem_expired.bind(weakref(totem)))
+
 	return totem
 
-# ==============================================================================
-# 鍥捐吘鐖嗙偢
-# ==============================================================================
-
-## 鍥捐吘杩囨湡
-func _on_totem_expired(totem: Node2D) -> void:
-	if is_instance_valid(totem):
-		_explode_totem(totem)
-
-## 鍥捐吘鐖嗙偢
-func _explode_totem(totem: Node2D) -> void:
-	if not is_instance_valid(totem) or totem.is_queued_for_deletion():
+func _on_taunt_tick(totem_ref: WeakRef) -> void:
+	var totem_obj: Variant = totem_ref.get_ref()
+	if totem_obj == null or not is_instance_valid(totem_obj):
 		return
-	
-	# 瀵硅寖鍥村唴鏁屼汉閫犳垚浼ゅ
-	var enemies = get_tree().get_nodes_in_group("enemies")
-	var hit_count = 0
-	
-	for e in enemies:
-		if not is_instance_valid(e):
+	if not (totem_obj is Node2D):
+		return
+	var totem: Node2D = totem_obj
+	if bool(totem.get_meta("exploded", false)):
+		return
+
+	var enemies: Array = get_tree().get_nodes_in_group("enemies")
+	for enemy_obj: Variant in enemies:
+		if enemy_obj == null or not is_instance_valid(enemy_obj):
 			continue
-		if e.global_position.distance_to(totem.global_position) < totem_explosion_radius:
-			if e.has_node("HealthComponent"):
-				e.health_component.take_damage(totem_explosion_damage)
-				hit_count += 1
-				if e.has_method("apply_knockback"):
-					var dir = (e.global_position - totem.global_position).normalized()
-					e.apply_knockback(dir, 300.0)
-	
+		if not (enemy_obj is Node2D):
+			continue
+		var enemy: Node2D = enemy_obj
+		if enemy.global_position.distance_to(totem.global_position) > totem_taunt_radius:
+			continue
+		if enemy.has_method("set_taunt_target"):
+			enemy.call("set_taunt_target", totem)
+
+func _on_totem_expired(totem_ref: WeakRef) -> void:
+	var totem_obj: Variant = totem_ref.get_ref()
+	if totem_obj == null or not is_instance_valid(totem_obj):
+		return
+	if not (totem_obj is Node2D):
+		return
+	_explode_totem(totem_obj)
+
+func _explode_totem(totem: Node2D) -> void:
+	if not is_instance_valid(totem):
+		return
+	if bool(totem.get_meta("exploded", false)):
+		return
+	totem.set_meta("exploded", true)
+
+	var hit_count: int = 0
+	var enemies: Array = get_tree().get_nodes_in_group("enemies")
+	for enemy_obj: Variant in enemies:
+		if enemy_obj == null or not is_instance_valid(enemy_obj):
+			continue
+		if not (enemy_obj is Node2D):
+			continue
+		var enemy: Node2D = enemy_obj
+		if enemy.global_position.distance_to(totem.global_position) > totem_explosion_radius:
+			continue
+		if enemy.has_node("HealthComponent"):
+			enemy.get_node("HealthComponent").take_damage(max(1, totem_explosion_damage))
+		if enemy.has_method("apply_knockback"):
+			var dir: Vector2 = (enemy.global_position - totem.global_position).normalized()
+			enemy.call("apply_knockback", dir, 300.0)
+		hit_count += 1
+
+	spawn_skill_vfx(totem.global_position, Color(1.0, 0.55, 0.22, 0.85), 0.7)
 	if hit_count > 0:
-		Global.on_camera_shake.emit(3.0, 0.1)
-	
-	# 鐖嗙偢瑙嗚鏁堟灉
-	var flash = Polygon2D.new()
-	var points = PackedVector2Array()
-	for i in range(16):
-		var angle = i * TAU / 16
-		points.append(Vector2(cos(angle), sin(angle)) * totem_explosion_radius)
-	flash.polygon = points
-	flash.color = Color(1, 0.5, 0, 0.5)
-	flash.global_position = totem.global_position
-	get_tree().current_scene.add_child(flash)
-	
-	var tw = flash.create_tween()
-	tw.tween_property(flash, "modulate:a", 0.0, 0.3)
-	tw.tween_callback(func():
-		if is_instance_valid(flash):
-			flash.queue_free()
-	)
-	
-	totem.queue_free()
+		Global.spawn_floating_text(totem.global_position, "TOTEM BOOM x%d" % hit_count, Color(1.2, 0.7, 0.3))
+		Global.on_camera_shake.emit(4.0 + float(hit_count) * 0.3, 0.1)
 
-## 娓呯悊璧勬簮锛堣鑹插垏鎹㈡椂璋冪敤锛?
+	if is_instance_valid(totem):
+		totem.queue_free()
+	if totem == active_totem:
+		active_totem = null
+
 func cleanup() -> void:
-	for totem: Node in spawned_totems:
-		if is_instance_valid(totem):
-			totem.queue_free()
-	spawned_totems.clear()
-
+	if is_instance_valid(active_totem):
+		active_totem.queue_free()
+	active_totem = null
