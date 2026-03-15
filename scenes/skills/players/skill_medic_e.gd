@@ -1,4 +1,4 @@
-extends SkillBase
+﻿extends SkillEBase
 class_name SkillMedicE
 
 var station_radius: float = 170.0
@@ -102,3 +102,4 @@ func _build_circle_polygon(center: Vector2, radius: float, steps: int) -> Packed
 		var angle: float = TAU * float(i) / float(safe_steps)
 		points.append(center + Vector2(cos(angle), sin(angle)) * radius)
 	return points
+

@@ -1,4 +1,4 @@
-﻿extends SkillDrawingBase
+﻿extends SkillQBase
 class_name SkillNecroQ
 
 var wall_health: int = 3
@@ -515,3 +515,4 @@ func _get_line_color() -> Color:
 
 func _get_closure_color() -> Color:
 	return Color(0.3, 0.02, 0.4, 1.0)
+

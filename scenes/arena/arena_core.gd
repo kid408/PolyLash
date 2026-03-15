@@ -568,8 +568,16 @@ func _on_player_switch_requested(player_id: String) -> void:
 	# 图形继承羁绊的主要作用是：新角色可以引爆旧图形时造成额外伤害
 	# 这部分逻辑在 SkillDrawingBase 中实现
 
-	if player.has_method("_force_deactivate_ultimate_on_exit"):
-		player.call("_force_deactivate_ultimate_on_exit")
+	if is_instance_valid(player):
+		var runtime_profile: Dictionary = {}
+		if player.has_meta("f_runtime_profile"):
+			var runtime_var: Variant = player.get_meta("f_runtime_profile", {})
+			if runtime_var is Dictionary:
+				runtime_profile = (runtime_var as Dictionary).duplicate(true)
+		if not runtime_profile.is_empty() and bool(runtime_profile.get("active", false)):
+			player.set_meta("preserve_f_runtime_on_exit", true)
+		elif player.has_method("_force_deactivate_ultimate_on_exit"):
+			player.call("_force_deactivate_ultimate_on_exit")
 
 	# 销毁当前角色
 	print("[Arena] 调用 player.queue_free()")

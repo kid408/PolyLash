@@ -46,6 +46,9 @@ var dash_target: Vector2 = Vector2.ZERO
 ## 冲刺起始位置
 var dash_start_pos: Vector2 = Vector2.ZERO
 
+## 冲刺方向
+var dash_direction: Vector2 = Vector2.RIGHT
+
 # ==============================================================================
 # 节点引用
 # ==============================================================================
@@ -105,7 +108,10 @@ func execute() -> void:
 	# 计算冲刺目标位置
 	var mouse_pos = skill_owner.get_global_mouse_position()
 	var dir = (mouse_pos - skill_owner.global_position).normalized()
+	if dir.length_squared() <= 0.0001:
+		dir = Vector2.RIGHT
 	dash_start_pos = skill_owner.global_position
+	dash_direction = dir
 	dash_target = dash_start_pos + dir * dash_distance
 	
 	# 开始冲刺
@@ -135,6 +141,9 @@ func _start_dash() -> void:
 	
 	# 播放音效
 	SoundManager.play("player_dash")
+
+	if skill_owner and skill_owner.has_signal("dash_started") and "player_id" in skill_owner:
+		skill_owner.emit_signal("dash_started", str(skill_owner.get("player_id")), dash_start_pos, dash_direction)
 	
 	# 开始冷却
 	start_cooldown()
@@ -147,6 +156,17 @@ func _process_dash_movement(delta: float) -> void:
 	
 	# 向目标位置移动
 	skill_owner.position = skill_owner.position.move_toward(dash_target, dash_speed * delta)
+
+	if skill_owner.has_signal("dash_active") and "player_id" in skill_owner:
+		var travelled: float = dash_start_pos.distance_to(skill_owner.global_position)
+		var total: float = max(1.0, dash_start_pos.distance_to(dash_target))
+		skill_owner.emit_signal(
+			"dash_active",
+			str(skill_owner.get("player_id")),
+			skill_owner.global_position,
+			dash_direction,
+			clamp(travelled / total, 0.0, 1.0)
+		)
 	
 	# 检查是否到达目标
 	if skill_owner.position.distance_to(dash_target) < 10.0:
@@ -169,7 +189,10 @@ func _end_dash() -> void:
 	# 停止拖尾特效
 	if trail and trail.has_method("stop"):
 		trail.stop()
-	
+
+	if skill_owner and skill_owner.has_signal("dash_finished") and "player_id" in skill_owner:
+		skill_owner.emit_signal("dash_finished", str(skill_owner.get("player_id")), skill_owner.global_position, dash_direction)
+
 	# 调用完成回调
 	_on_dash_complete()
 

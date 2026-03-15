@@ -1,4 +1,4 @@
-extends SkillBase
+﻿extends SkillEBase
 class_name SkillBlacksmithE
 
 var forge_strike_damage: int = 46
@@ -145,3 +145,4 @@ func _apply_damage(enemy: Node2D, amount: int) -> void:
 		var hc: Node = enemy.get_node("HealthComponent")
 		if hc != null and hc.has_method("take_damage"):
 			hc.call("take_damage", max(1, amount))
+

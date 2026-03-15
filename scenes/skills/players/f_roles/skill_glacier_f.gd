@@ -1,15 +1,16 @@
-﻿extends "res://scenes/skills/players/skill_ultimate_qef_v3.gd"
+extends "res://scenes/skills/skill_f_base.gd"
 
 const ROLE_ID: String = "glacier"
 const GLACIER_E_SHATTER_META: String = "glacier_e_shatter_until_msec"
 
-func _resolve_mode_id() -> String:
+func _resolve_f_role_id() -> String:
 	return ROLE_ID
 
 func _apply_mode_signature(phase: String, packet: Dictionary, center: Vector2, _hit_count: int) -> void:
 	if not is_active:
 		return
 	_role_signature(phase, packet, center)
+	_spawn_glacier_pickups(phase, packet, center)
 
 func _apply_q_link_signature(phase: String, packet: Dictionary, center: Vector2) -> void:
 	if phase == "tick":
@@ -231,9 +232,23 @@ func _emit_glacier_shatter_lane(center: Vector2, aim_dir: Vector2, length: float
 		_knock_enemies_burst(center, half_len * 0.82, 6, 165.0)
 
 func _is_shatter_window() -> bool:
-	if not is_instance_valid(player_ref):
-		return false
-	if not player_ref.has_meta(GLACIER_E_SHATTER_META):
-		return false
-	var expire_msec: int = int(player_ref.get_meta(GLACIER_E_SHATTER_META))
-	return Time.get_ticks_msec() <= expire_msec
+	return _is_e_window_active("glacier_shatter_window", GLACIER_E_SHATTER_META)
+
+func _spawn_glacier_pickups(phase: String, packet: Dictionary, center: Vector2) -> void:
+	var radius: float = max(54.0, float(packet.get("radius", 140.0)) * 0.52)
+	var count: int = 1 if phase != "closure" else 2
+	_spawn_signature_pickup_burst(
+		center,
+		count,
+		radius,
+		Color(0.68, 0.96, 1.0, 0.95),
+		{
+			"effect_id": "glacier_wedge",
+			"pickup_text": "冰楔",
+			"radius": radius,
+			"text_color": Color(0.78, 0.98, 1.0),
+			"vfx_color": Color(0.62, 0.9, 1.0, 0.92),
+			"effect_scale": 0.58,
+		},
+		5.4 if phase == "tick" else 6.6
+	)

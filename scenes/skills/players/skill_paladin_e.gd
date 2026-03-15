@@ -1,4 +1,4 @@
-extends SkillBase
+﻿extends SkillEBase
 class_name SkillPaladinE
 
 var taunt_radius: float = 250.0
@@ -114,3 +114,4 @@ func _trigger_sanctuary_smite(base_damage: int, duration_amp: float) -> void:
 	if hit_count > 0:
 		Global.spawn_floating_text(center, "SMITE x%d" % hit_count, Color(1.0, 0.86, 0.42))
 		spawn_skill_vfx(center, Color(1.0, 0.88, 0.35, 0.78), 0.58)
+

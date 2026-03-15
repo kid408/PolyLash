@@ -1,4 +1,4 @@
-﻿extends SkillDrawingBase
+extends SkillQBase
 class_name SkillPaladinQ
 
 var wall_width: float = 16.0

@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://csquad_hud"]
+[gd_scene load_steps=3 format=3 uid="uid://csquad_hud"]
 
 [ext_resource type="Script" path="res://scenes/ui/squad_hud/squad_hud.gd" id="1_squad"]
+[ext_resource type="PackedScene" path="res://scenes/ui/squad_hud/f_window_panel.tscn" id="2_fpanel"]
 
 [node name="SquadHUD" type="Control"]
 layout_mode = 3
@@ -33,6 +34,9 @@ layout_mode = 2
 size_flags_vertical = 3
 alignment = 1
 theme_override_constants/separation = 15
+
+[node name="FWindowPanel" parent="VBoxContainer" instance=ExtResource("2_fpanel")]
+layout_mode = 2
 
 [node name="EnergyBar" type="ProgressBar" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 25)

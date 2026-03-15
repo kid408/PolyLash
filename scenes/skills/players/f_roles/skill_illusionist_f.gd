@@ -1,8 +1,8 @@
-extends "res://scenes/skills/players/skill_ultimate_qef_v3.gd"
+extends "res://scenes/skills/skill_f_base.gd"
 
 const ROLE_ID: String = "illusionist"
 
-func _resolve_mode_id() -> String:
+func _resolve_f_role_id() -> String:
 	return ROLE_ID
 
 func _apply_mode_signature(phase: String, packet: Dictionary, center: Vector2, _hit_count: int) -> void:
@@ -27,7 +27,7 @@ func _apply_q_link_signature(phase: String, packet: Dictionary, center: Vector2)
 	var q_line_len: float = q_radius * 1.18
 
 	if q_closed:
-		var mirror_target: Node2D = _pick_hunter_target(q_center, q_radius)
+		var mirror_target: Node2D = _pick_trapper_target(q_center, q_radius)
 		if mirror_target != null:
 			_on_illusionist_mirror_timeout(weakref(mirror_target), q_center + q_side * (q_radius * 0.26), 0.42)
 			get_tree().create_timer(0.16).timeout.connect(
@@ -74,7 +74,7 @@ func _apply_q_link_signature(phase: String, packet: Dictionary, center: Vector2)
 			false,
 			105.0
 		)
-		var mirror_target_b: Node2D = _pick_hunter_target(q_center + q_dir * 32.0, q_radius * 0.9)
+		var mirror_target_b: Node2D = _pick_trapper_target(q_center + q_dir * 32.0, q_radius * 0.9)
 		if mirror_target_b != null:
 			get_tree().create_timer(0.10).timeout.connect(
 				_on_illusionist_mirror_timeout.bind(weakref(mirror_target_b), q_center - q_dir * (q_radius * 0.22), 0.26)
@@ -92,7 +92,7 @@ func _apply_q_link_signature(phase: String, packet: Dictionary, center: Vector2)
 			60.0
 		)
 		if randf() < 0.45:
-			var skim_target: Node2D = _pick_hunter_target(q_center, q_radius * 0.7)
+			var skim_target: Node2D = _pick_trapper_target(q_center, q_radius * 0.7)
 			if skim_target != null:
 				_on_illusionist_mirror_timeout(weakref(skim_target), q_center + q_side * 22.0, 0.18)
 
@@ -101,7 +101,7 @@ func _role_signature(phase: String, packet: Dictionary, center: Vector2) -> void
 	var radius: float = max(88.0, float(packet.get("radius", 120.0)) * 0.90)
 	var aim_dir: Vector2 = _get_player_aim_direction()
 	var side_dir: Vector2 = Vector2(-aim_dir.y, aim_dir.x)
-	var target: Node2D = _pick_hunter_target(center, radius)
+	var target: Node2D = _pick_trapper_target(center, radius)
 	if phase == "line":
 		if target != null:
 			_on_illusionist_mirror_timeout(weakref(target), center + aim_dir * (radius * 0.22), 0.22)
@@ -167,7 +167,7 @@ func _role_signature(phase: String, packet: Dictionary, center: Vector2) -> void
 			false,
 			110.0
 		)
-		var target_c: Node2D = _pick_hunter_target(center + side_dir * 24.0, radius * 0.95)
+		var target_c: Node2D = _pick_trapper_target(center + side_dir * 24.0, radius * 0.95)
 		if target_c != null:
 			get_tree().create_timer(0.18).timeout.connect(
 				_on_illusionist_mirror_timeout.bind(weakref(target_c), center - side_dir * (radius * 0.18), 0.24)

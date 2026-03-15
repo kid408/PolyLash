@@ -1,0 +1,3091 @@
+{
+	"generated_at": "2026-03-15 16:06:37",
+	"passed": true,
+	"results": [
+		{
+			"checks": {
+				"e_after_closed_context": true,
+				"e_after_open_context": true,
+				"e_single_context": true,
+				"f_active": true,
+				"f_context": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_effect": true,
+				"q_open_context": true,
+				"q_open_effect": true
+			},
+			"kind": "top10_effect_selftest",
+			"passed": true,
+			"phases": {
+				"e_single": {
+					"counts_after": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"butcher:butcher_hook_window:1743"
+						],
+						"center": "(607.5127, 382.4532)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"control_duration": 1.8,
+							"damage": 31,
+							"pull_force": 1029.0
+						},
+						"polygon_count": 0,
+						"radius": 420.0,
+						"role_id": "butcher",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_butcher_e",
+						"skill_slot": "e",
+						"source_kind": "butcher_hook",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 1743
+					},
+					"e_context_ok": true,
+					"input_ok": true
+				},
+				"f_window": {
+					"counts_after": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"f_active_ok": true,
+					"f_context": {
+						"asset_ids": [],
+						"center": "(470.0, 282.0)",
+						"is_closed": false,
+						"metrics": {
+							"closure_events": 0,
+							"line_events": 0,
+							"tick_events": 0
+						},
+						"payload": {
+							"center": "(470.0, 282.0)",
+							"closure_events": 0,
+							"f_role_id": "butcher",
+							"line_events": 0,
+							"phase": "activate",
+							"radius": 209.914260864258,
+							"tick_events": 0
+						},
+						"polygon_count": 0,
+						"radius": 209.914260864258,
+						"role_id": "butcher",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "butcher_ult",
+						"skill_slot": "f",
+						"source_kind": "f_activate",
+						"tags": [
+							"f",
+							"butcher"
+						],
+						"timestamp_msec": 4140
+					},
+					"f_context_ok": true,
+					"f_role_id_ok": true,
+					"input_ok": true,
+					"ultimate_runtime": {
+						"active": true,
+						"runtime_profile": {
+							"active": true,
+							"bond_m_payload": "tag:architect|lv2:0.16|lv3:0.32|axis:closure",
+							"bond_o_payload": "tag:colossus|lv2:0.12|lv3:0.24|axis:line",
+							"bond_t_payload": "tag:vanguard|lv2:0.10|lv3:0.20|axis:tempo",
+							"closure_events": 0,
+							"duration": 10.0,
+							"f_role_id": "butcher",
+							"internal_cd": 0.9,
+							"line_events": 0,
+							"q_closure_amp": 2.05,
+							"q_line_amp": 1.55,
+							"special_1": 1.35,
+							"special_2": 220.0,
+							"special_3": 0.3,
+							"tick_events": 0,
+							"ult_id": "butcher_ult"
+						}
+					}
+				},
+				"q_closed_then_e": {
+					"counts_after_e": {
+						"active_effects": 0,
+						"player_effect_nodes": 2
+					},
+					"counts_after_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 2
+					},
+					"counts_before_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"butcher:butcher_hook_window:3747"
+						],
+						"center": "(587.341, 181.2835)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"control_duration": 1.8,
+							"damage": 31,
+							"pull_force": 1029.0
+						},
+						"polygon_count": 0,
+						"radius": 420.0,
+						"role_id": "butcher",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_butcher_e",
+						"skill_slot": "e",
+						"source_kind": "butcher_hook",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 3747
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"butcher:butcher_saw_cage:3539"
+						],
+						"center": "(470.0, 282.0)",
+						"is_closed": true,
+						"metrics": {
+							"polygon_count": 1,
+							"segment_count": 4
+						},
+						"payload": {
+							"role_id": "butcher",
+							"saw_name": "Saw_3539"
+						},
+						"polygon_count": 1,
+						"radius": 209.914260864258,
+						"role_id": "butcher",
+						"schema_version": 1,
+						"segment_count": 4,
+						"skill_id": "skill_butcher_q",
+						"skill_slot": "q",
+						"source_kind": "q_closed",
+						"tags": [
+							"q",
+							"butcher",
+							"closed"
+						],
+						"timestamp_msec": 3539
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 2
+					},
+					"q_effect_ok": true
+				},
+				"q_open_then_e": {
+					"counts_after_e": {
+						"active_effects": 0,
+						"player_effect_nodes": 2
+					},
+					"counts_after_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 2
+					},
+					"counts_before_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"butcher:butcher_hook_window:2740"
+						],
+						"center": "(556.4836, 220.1295)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"control_duration": 1.8,
+							"damage": 31,
+							"pull_force": 1029.0
+						},
+						"polygon_count": 0,
+						"radius": 420.0,
+						"role_id": "butcher",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_butcher_e",
+						"skill_slot": "e",
+						"source_kind": "butcher_hook",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 2740
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"butcher:butcher_saw_path:2532"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+							"polygon_count": 0,
+							"segment_count": 2
+						},
+						"payload": {
+							"role_id": "butcher",
+							"saw_name": "Saw_2532"
+						},
+						"polygon_count": 0,
+						"radius": 174.005126953125,
+						"role_id": "butcher",
+						"schema_version": 1,
+						"segment_count": 2,
+						"skill_id": "skill_butcher_q",
+						"skill_slot": "q",
+						"source_kind": "q_open",
+						"tags": [
+							"q",
+							"butcher",
+							"open"
+						],
+						"timestamp_msec": 2532
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 2
+					},
+					"q_effect_ok": true
+				}
+			},
+			"role_id": "butcher"
+		},
+		{
+			"checks": {
+				"e_after_closed_context": true,
+				"e_after_open_context": true,
+				"e_single_context": true,
+				"f_active": true,
+				"f_context": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_effect": true,
+				"q_open_context": true,
+				"q_open_effect": true
+			},
+			"kind": "top10_effect_selftest",
+			"passed": true,
+			"phases": {
+				"e_single": {
+					"counts_after": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"runeblazer:runeblazer_ignite_window:5121"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"hijack_count": 0,
+							"rune_count": 2,
+							"synergy_bonus": false
+						},
+						"polygon_count": 0,
+						"radius": 460.0,
+						"role_id": "runeblazer",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_runeblazer_e",
+						"skill_slot": "e",
+						"source_kind": "runeblazer_ignite",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 5121
+					},
+					"e_context_ok": true,
+					"input_ok": true
+				},
+				"f_window": {
+					"counts_after": {
+						"active_effects": 35,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 6,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 29,
+						"player_effect_nodes": 0
+					},
+					"f_active_ok": true,
+					"f_context": {
+						"asset_ids": [],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+							"closure_events": 0,
+							"line_events": 0,
+							"tick_events": 0
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"closure_events": 0,
+							"f_role_id": "runeblazer",
+							"line_events": 0,
+							"phase": "activate",
+							"radius": 174.928558349609,
+							"tick_events": 0
+						},
+						"polygon_count": 0,
+						"radius": 174.928558349609,
+						"role_id": "runeblazer",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "runeblazer_ult",
+						"skill_slot": "f",
+						"source_kind": "f_activate",
+						"tags": [
+							"f",
+							"runeblazer"
+						],
+						"timestamp_msec": 7524
+					},
+					"f_context_ok": true,
+					"f_role_id_ok": true,
+					"input_ok": true,
+					"ultimate_runtime": {
+						"active": true,
+						"runtime_profile": {
+							"active": true,
+							"bond_m_payload": "tag:blaster|lv2:0.16|lv3:0.32|axis:closure",
+							"bond_o_payload": "tag:inkborn|lv2:0.12|lv3:0.24|axis:line",
+							"bond_t_payload": "tag:vanguard|lv2:0.10|lv3:0.20|axis:tempo",
+							"closure_events": 0,
+							"duration": 10.0,
+							"f_role_id": "runeblazer",
+							"internal_cd": 0.88,
+							"line_events": 0,
+							"q_closure_amp": 2.08,
+							"q_line_amp": 1.58,
+							"special_1": 1.28,
+							"special_2": 245.0,
+							"special_3": 0.24,
+							"tick_events": 0,
+							"ult_id": "runeblazer_ult"
+						}
+					}
+				},
+				"q_closed_then_e": {
+					"counts_after_e": {
+						"active_effects": 37,
+						"player_effect_nodes": 0
+					},
+					"counts_after_q": {
+						"active_effects": 24,
+						"player_effect_nodes": 0
+					},
+					"counts_before_q": {
+						"active_effects": 6,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"runeblazer:runeblazer_ignite_window:7129"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"hijack_count": 1,
+							"rune_count": 3,
+							"synergy_bonus": true
+						},
+						"polygon_count": 0,
+						"radius": 460.0,
+						"role_id": "runeblazer",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_runeblazer_e",
+						"skill_slot": "e",
+						"source_kind": "runeblazer_ignite",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 7129
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 13,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"runeblazer:runeblazer_closure:6922"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": true,
+						"metrics": {
+							"polygon_count": 1,
+							"segment_count": 5
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"is_closed": true,
+							"polygon_count": 1,
+							"radius": 174.928558349609,
+							"role_id": "runeblazer",
+							"segment_count": 5
+						},
+						"polygon_count": 1,
+						"radius": 174.928558349609,
+						"role_id": "runeblazer",
+						"schema_version": 1,
+						"segment_count": 5,
+						"skill_id": "skill_runeblazer_q",
+						"skill_slot": "q",
+						"source_kind": "q_closed",
+						"tags": [
+							"q",
+							"runeblazer",
+							"closed"
+						],
+						"timestamp_msec": 6922
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 18,
+						"player_effect_nodes": 0
+					},
+					"q_effect_ok": true
+				},
+				"q_open_then_e": {
+					"counts_after_e": {
+						"active_effects": 28,
+						"player_effect_nodes": 2
+					},
+					"counts_after_q": {
+						"active_effects": 16,
+						"player_effect_nodes": 2
+					},
+					"counts_before_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"runeblazer:runeblazer_ignite_window:6121"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"hijack_count": 1,
+							"rune_count": 2,
+							"synergy_bonus": false
+						},
+						"polygon_count": 0,
+						"radius": 460.0,
+						"role_id": "runeblazer",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_runeblazer_e",
+						"skill_slot": "e",
+						"source_kind": "runeblazer_ignite",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 6121
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 12,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"runeblazer:runeblazer_line:5915"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+							"polygon_count": 0,
+							"segment_count": 2
+						},
+						"payload": {
+							"center": "(513.3333, 305.0)",
+							"is_closed": false,
+							"polygon_count": 0,
+							"radius": 174.005126953125,
+							"role_id": "runeblazer",
+							"segment_count": 2
+						},
+						"polygon_count": 0,
+						"radius": 174.005126953125,
+						"role_id": "runeblazer",
+						"schema_version": 1,
+						"segment_count": 2,
+						"skill_id": "skill_runeblazer_q",
+						"skill_slot": "q",
+						"source_kind": "q_open",
+						"tags": [
+							"q",
+							"runeblazer",
+							"open"
+						],
+						"timestamp_msec": 5915
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 16,
+						"player_effect_nodes": 2
+					},
+					"q_effect_ok": true
+				}
+			},
+			"role_id": "runeblazer"
+		},
+		{
+			"checks": {
+				"e_after_closed_context": true,
+				"e_after_open_context": true,
+				"e_single_context": true,
+				"f_active": true,
+				"f_context": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_effect": true,
+				"q_open_context": true,
+				"q_open_effect": true
+			},
+			"kind": "top10_effect_selftest",
+			"passed": true,
+			"phases": {
+				"e_single": {
+					"counts_after": {
+						"active_effects": 0,
+						"player_effect_nodes": 1
+					},
+					"counts_before": {
+						"active_effects": 0,
+						"player_effect_nodes": 1
+					},
+					"counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"lurewarden:lurewarden_pack_window:8481"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"burst_hits": 3,
+							"decoy_hits": 0,
+							"decoy_spawned": true,
+							"decoy_swap_used": false,
+							"lane_hits": 0,
+							"pen_hits": 0
+						},
+						"polygon_count": 0,
+						"radius": 220.0,
+						"role_id": "lurewarden",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_lurewarden_e",
+						"skill_slot": "e",
+						"source_kind": "lurewarden_pack",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 8481
+					},
+					"e_context_ok": true,
+					"input_ok": true
+				},
+				"f_window": {
+					"counts_after": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"f_active_ok": true,
+					"f_context": {
+						"asset_ids": [],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+							"closure_events": 0,
+							"line_events": 0,
+							"tick_events": 0
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"closure_events": 0,
+							"f_role_id": "lurewarden",
+							"line_events": 0,
+							"phase": "activate",
+							"radius": 174.928558349609,
+							"tick_events": 0
+						},
+						"polygon_count": 0,
+						"radius": 174.928558349609,
+						"role_id": "lurewarden",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "lurewarden_ult",
+						"skill_slot": "f",
+						"source_kind": "f_activate",
+						"tags": [
+							"f",
+							"lurewarden"
+						],
+						"timestamp_msec": 10886
+					},
+					"f_context_ok": true,
+					"f_role_id_ok": true,
+					"input_ok": true,
+					"ultimate_runtime": {
+						"active": true,
+						"runtime_profile": {
+							"active": true,
+							"bond_m_payload": "tag:architect|lv2:0.16|lv3:0.32|axis:closure",
+							"bond_o_payload": "tag:alchemist|lv2:0.12|lv3:0.24|axis:line",
+							"bond_t_payload": "tag:commander|lv2:0.10|lv3:0.20|axis:tempo",
+							"closure_events": 0,
+							"duration": 10.0,
+							"f_role_id": "lurewarden",
+							"internal_cd": 0.95,
+							"line_events": 0,
+							"q_closure_amp": 1.96,
+							"q_line_amp": 1.48,
+							"special_1": 1.18,
+							"special_2": 250.0,
+							"special_3": 0.3,
+							"tick_events": 0,
+							"ult_id": "lurewarden_ult"
+						}
+					}
+				},
+				"q_closed_then_e": {
+					"counts_after_e": {
+						"active_effects": 7,
+						"player_effect_nodes": 0
+					},
+					"counts_after_q": {
+						"active_effects": 7,
+						"player_effect_nodes": 1
+					},
+					"counts_before_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 1
+					},
+					"e_context": {
+						"asset_ids": [
+							"lurewarden:lurewarden_pack_window:10491"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"burst_hits": 3,
+							"decoy_hits": 3,
+							"decoy_spawned": false,
+							"decoy_swap_used": true,
+							"lane_hits": 0,
+							"pen_hits": 1
+						},
+						"polygon_count": 0,
+						"radius": 220.0,
+						"role_id": "lurewarden",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_lurewarden_e",
+						"skill_slot": "e",
+						"source_kind": "lurewarden_pack",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 10491
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": -1
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"lurewarden:lurewarden_pen:10281"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": true,
+						"metrics": {
+							"polygon_count": 1,
+							"segment_count": 5
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"is_closed": true,
+							"polygon_count": 1,
+							"radius": 174.928558349609,
+							"role_id": "lurewarden",
+							"segment_count": 5
+						},
+						"polygon_count": 1,
+						"radius": 174.928558349609,
+						"role_id": "lurewarden",
+						"schema_version": 1,
+						"segment_count": 5,
+						"skill_id": "skill_lurewarden_q",
+						"skill_slot": "q",
+						"source_kind": "q_closed",
+						"tags": [
+							"q",
+							"lurewarden",
+							"closed"
+						],
+						"timestamp_msec": 10281
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 7,
+						"player_effect_nodes": 0
+					},
+					"q_effect_ok": true
+				},
+				"q_open_then_e": {
+					"counts_after_e": {
+						"active_effects": 6,
+						"player_effect_nodes": 1
+					},
+					"counts_after_q": {
+						"active_effects": 6,
+						"player_effect_nodes": 2
+					},
+					"counts_before_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"lurewarden:lurewarden_pack_window:9482"
+						],
+						"center": "(458.8, 283.6)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"burst_hits": 3,
+							"decoy_hits": 3,
+							"decoy_spawned": false,
+							"decoy_swap_used": true,
+							"lane_hits": 0,
+							"pen_hits": 0
+						},
+						"polygon_count": 0,
+						"radius": 220.0,
+						"role_id": "lurewarden",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_lurewarden_e",
+						"skill_slot": "e",
+						"source_kind": "lurewarden_pack",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 9482
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": -1
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"lurewarden:lurewarden_lane:9274"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+							"polygon_count": 0,
+							"segment_count": 2
+						},
+						"payload": {
+							"center": "(513.3333, 305.0)",
+							"is_closed": false,
+							"polygon_count": 0,
+							"radius": 174.005126953125,
+							"role_id": "lurewarden",
+							"segment_count": 2
+						},
+						"polygon_count": 0,
+						"radius": 174.005126953125,
+						"role_id": "lurewarden",
+						"schema_version": 1,
+						"segment_count": 2,
+						"skill_id": "skill_lurewarden_q",
+						"skill_slot": "q",
+						"source_kind": "q_open",
+						"tags": [
+							"q",
+							"lurewarden",
+							"open"
+						],
+						"timestamp_msec": 9274
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 6,
+						"player_effect_nodes": 2
+					},
+					"q_effect_ok": true
+				}
+			},
+			"role_id": "lurewarden"
+		},
+		{
+			"checks": {
+				"e_after_closed_context": true,
+				"e_after_open_context": true,
+				"e_single_context": true,
+				"f_active": true,
+				"f_context": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_effect": true,
+				"q_open_context": true,
+				"q_open_effect": true
+			},
+			"kind": "top10_effect_selftest",
+			"passed": true,
+			"phases": {
+				"e_single": {
+					"counts_after": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 0,
+						"player_effect_nodes": 1
+					},
+					"counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": -1
+					},
+					"e_context": {
+						"asset_ids": [
+							"weaver:weaver_recall_window:11845"
+						],
+						"center": "(580.3367, 190.8371)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"bounce_count": 3,
+							"recall_triggered": false
+						},
+						"polygon_count": 0,
+						"radius": 320.0,
+						"role_id": "weaver",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_weaver_e",
+						"skill_slot": "e",
+						"source_kind": "weaver_recall",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 11845
+					},
+					"e_context_ok": true,
+					"input_ok": true
+				},
+				"f_window": {
+					"counts_after": {
+						"active_effects": 12,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 2,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 10,
+						"player_effect_nodes": 0
+					},
+					"f_active_ok": true,
+					"f_context": {
+						"asset_ids": [],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+							"closure_events": 0,
+							"line_events": 0,
+							"tick_events": 0
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"closure_events": 0,
+							"f_role_id": "weaver",
+							"line_events": 0,
+							"phase": "activate",
+							"radius": 174.928558349609,
+							"tick_events": 0
+						},
+						"polygon_count": 0,
+						"radius": 174.928558349609,
+						"role_id": "weaver",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "weaver_ult",
+						"skill_slot": "f",
+						"source_kind": "f_activate",
+						"tags": [
+							"f",
+							"weaver"
+						],
+						"timestamp_msec": 14273
+					},
+					"f_context_ok": true,
+					"f_role_id_ok": true,
+					"input_ok": true,
+					"ultimate_runtime": {
+						"active": true,
+						"runtime_profile": {
+							"active": true,
+							"bond_m_payload": "tag:hexer|lv2:0.16|lv3:0.32|axis:closure",
+							"bond_o_payload": "tag:inkborn|lv2:0.12|lv3:0.24|axis:line",
+							"bond_t_payload": "tag:assist|lv2:0.10|lv3:0.20|axis:tempo",
+							"closure_events": 0,
+							"duration": 10.0,
+							"f_role_id": "weaver",
+							"internal_cd": 1.0,
+							"line_events": 0,
+							"q_closure_amp": 1.92,
+							"q_line_amp": 1.42,
+							"special_1": 1.05,
+							"special_2": 250.0,
+							"special_3": 0.35,
+							"tick_events": 0,
+							"ult_id": "weaver_ult"
+						}
+					}
+				},
+				"q_closed_then_e": {
+					"counts_after_e": {
+						"active_effects": 11,
+						"player_effect_nodes": 0
+					},
+					"counts_after_q": {
+						"active_effects": 7,
+						"player_effect_nodes": 0
+					},
+					"counts_before_q": {
+						"active_effects": 1,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"weaver:weaver_recall_window:13866"
+						],
+						"center": "(585.332, 367.2925)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"bounce_count": 3,
+							"recall_triggered": true
+						},
+						"polygon_count": 0,
+						"radius": 320.0,
+						"role_id": "weaver",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_weaver_e",
+						"skill_slot": "e",
+						"source_kind": "weaver_recall",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 13866
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 4,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"weaver:weaver_web_closed:13659"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": true,
+						"metrics": {
+							"polygon_count": 1,
+							"segment_count": 4
+						},
+						"payload": {
+							"auto_recall_delay": 8.0,
+							"role_id": "weaver"
+						},
+						"polygon_count": 1,
+						"radius": 174.928558349609,
+						"role_id": "weaver",
+						"schema_version": 1,
+						"segment_count": 4,
+						"skill_id": "skill_weaver_q",
+						"skill_slot": "q",
+						"source_kind": "q_closed",
+						"tags": [
+							"q",
+							"weaver",
+							"closed"
+						],
+						"timestamp_msec": 13659
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 6,
+						"player_effect_nodes": 0
+					},
+					"q_effect_ok": true
+				},
+				"q_open_then_e": {
+					"counts_after_e": {
+						"active_effects": 9,
+						"player_effect_nodes": 0
+					},
+					"counts_after_q": {
+						"active_effects": 4,
+						"player_effect_nodes": 0
+					},
+					"counts_before_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 1
+					},
+					"e_context": {
+						"asset_ids": [
+							"weaver:weaver_recall_window:12845"
+						],
+						"center": "(562.2504, 203.9215)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"bounce_count": 3,
+							"recall_triggered": true
+						},
+						"polygon_count": 0,
+						"radius": 320.0,
+						"role_id": "weaver",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_weaver_e",
+						"skill_slot": "e",
+						"source_kind": "weaver_recall",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 12845
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 5,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"weaver:weaver_web_open:12637"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+							"polygon_count": 0,
+							"segment_count": 2
+						},
+						"payload": {
+							"auto_recall_delay": 8.0,
+							"role_id": "weaver"
+						},
+						"polygon_count": 0,
+						"radius": 174.005126953125,
+						"role_id": "weaver",
+						"schema_version": 1,
+						"segment_count": 2,
+						"skill_id": "skill_weaver_q",
+						"skill_slot": "q",
+						"source_kind": "q_open",
+						"tags": [
+							"q",
+							"weaver",
+							"open"
+						],
+						"timestamp_msec": 12637
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 4,
+						"player_effect_nodes": -1
+					},
+					"q_effect_ok": true
+				}
+			},
+			"role_id": "weaver"
+		},
+		{
+			"checks": {
+				"e_after_closed_context": true,
+				"e_after_open_context": true,
+				"e_single_context": true,
+				"f_active": true,
+				"f_context": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_effect": true,
+				"q_open_context": true,
+				"q_open_effect": true
+			},
+			"kind": "top10_effect_selftest",
+			"passed": true,
+			"phases": {
+				"e_single": {
+					"counts_after": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"glacier:glacier_shatter_window:15217"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"burst_hits": 2,
+							"q_combo_active": false,
+							"spike_hits": 0
+						},
+						"polygon_count": 0,
+						"radius": 145.0,
+						"role_id": "glacier",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_glacier_e",
+						"skill_slot": "e",
+						"source_kind": "glacier_shatter",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 15217
+					},
+					"e_context_ok": true,
+					"input_ok": true
+				},
+				"f_window": {
+					"counts_after": {
+						"active_effects": 24,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 4,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 20,
+						"player_effect_nodes": 0
+					},
+					"f_active_ok": true,
+					"f_context": {
+						"asset_ids": [],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+							"closure_events": 0,
+							"line_events": 0,
+							"tick_events": 0
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"closure_events": 0,
+							"f_role_id": "glacier",
+							"line_events": 0,
+							"phase": "activate",
+							"radius": 174.928558349609,
+							"tick_events": 0
+						},
+						"polygon_count": 0,
+						"radius": 174.928558349609,
+						"role_id": "glacier",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "glacier_ult",
+						"skill_slot": "f",
+						"source_kind": "f_activate",
+						"tags": [
+							"f",
+							"glacier"
+						],
+						"timestamp_msec": 17627
+					},
+					"f_context_ok": true,
+					"f_role_id_ok": true,
+					"input_ok": true,
+					"ultimate_runtime": {
+						"active": true,
+						"runtime_profile": {
+							"active": true,
+							"bond_m_payload": "tag:architect|lv2:0.16|lv3:0.32|axis:closure",
+							"bond_o_payload": "tag:colossus|lv2:0.12|lv3:0.24|axis:line",
+							"bond_t_payload": "tag:vanguard|lv2:0.10|lv3:0.20|axis:tempo",
+							"closure_events": 0,
+							"duration": 10.0,
+							"f_role_id": "glacier",
+							"internal_cd": 1.05,
+							"line_events": 0,
+							"q_closure_amp": 1.9,
+							"q_line_amp": 1.4,
+							"special_1": 1.1,
+							"special_2": 240.0,
+							"special_3": 0.34,
+							"tick_events": 0,
+							"ult_id": "glacier_ult"
+						}
+					}
+				},
+				"q_closed_then_e": {
+					"counts_after_e": {
+						"active_effects": 27,
+						"player_effect_nodes": 0
+					},
+					"counts_after_q": {
+						"active_effects": 19,
+						"player_effect_nodes": 0
+					},
+					"counts_before_q": {
+						"active_effects": 4,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"glacier:glacier_shatter_window:17233"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"burst_hits": 3,
+							"q_combo_active": true,
+							"spike_hits": 0
+						},
+						"polygon_count": 0,
+						"radius": 168.2,
+						"role_id": "glacier",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_glacier_e",
+						"skill_slot": "e",
+						"source_kind": "glacier_shatter",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 17233
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 8,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"glacier:glacier_blizzard:17024"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": true,
+						"metrics": {
+							"polygon_count": 1,
+							"segment_count": 5
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"is_closed": true,
+							"polygon_count": 1,
+							"radius": 174.928558349609,
+							"role_id": "glacier",
+							"segment_count": 5
+						},
+						"polygon_count": 1,
+						"radius": 174.928558349609,
+						"role_id": "glacier",
+						"schema_version": 1,
+						"segment_count": 5,
+						"skill_id": "skill_glacier_q",
+						"skill_slot": "q",
+						"source_kind": "q_closed",
+						"tags": [
+							"q",
+							"glacier",
+							"closed"
+						],
+						"timestamp_msec": 17024
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 15,
+						"player_effect_nodes": 0
+					},
+					"q_effect_ok": true
+				},
+				"q_open_then_e": {
+					"counts_after_e": {
+						"active_effects": 19,
+						"player_effect_nodes": 2
+					},
+					"counts_after_q": {
+						"active_effects": 8,
+						"player_effect_nodes": 2
+					},
+					"counts_before_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"glacier:glacier_shatter_window:16225"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"burst_hits": 1,
+							"q_combo_active": false,
+							"spike_hits": 0
+						},
+						"polygon_count": 0,
+						"radius": 145.0,
+						"role_id": "glacier",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_glacier_e",
+						"skill_slot": "e",
+						"source_kind": "glacier_shatter",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 16225
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 11,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"glacier:glacier_wall:16017"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+							"polygon_count": 0,
+							"segment_count": 2
+						},
+						"payload": {
+							"center": "(513.3333, 305.0)",
+							"is_closed": false,
+							"polygon_count": 0,
+							"radius": 174.005126953125,
+							"role_id": "glacier",
+							"segment_count": 2
+						},
+						"polygon_count": 0,
+						"radius": 174.005126953125,
+						"role_id": "glacier",
+						"schema_version": 1,
+						"segment_count": 2,
+						"skill_id": "skill_glacier_q",
+						"skill_slot": "q",
+						"source_kind": "q_open",
+						"tags": [
+							"q",
+							"glacier",
+							"open"
+						],
+						"timestamp_msec": 16017
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 8,
+						"player_effect_nodes": 2
+					},
+					"q_effect_ok": true
+				}
+			},
+			"role_id": "glacier"
+		},
+		{
+			"checks": {
+				"e_after_closed_context": true,
+				"e_after_open_context": true,
+				"e_single_context": true,
+				"f_active": true,
+				"f_context": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_effect": true,
+				"q_open_context": true,
+				"q_open_effect": true
+			},
+			"kind": "top10_effect_selftest",
+			"passed": true,
+			"phases": {
+				"e_single": {
+					"counts_after": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 0,
+						"player_effect_nodes": 1
+					},
+					"counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": -1
+					},
+					"e_context": {
+						"asset_ids": [
+							"wind:wind_e_window:18575"
+						],
+						"center": "(316.1522, 116.1522)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"auto_generated": true,
+							"role_id": "wind"
+						},
+						"polygon_count": 0,
+						"radius": 160.0,
+						"role_id": "wind",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_wind_e",
+						"skill_slot": "e",
+						"source_kind": "wind_action",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 18575
+					},
+					"e_context_ok": true,
+					"input_ok": true
+				},
+				"f_window": {
+					"counts_after": {
+						"active_effects": 21,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 4,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 17,
+						"player_effect_nodes": 0
+					},
+					"f_active_ok": true,
+					"f_context": {
+						"asset_ids": [],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+							"closure_events": 0,
+							"line_events": 0,
+							"tick_events": 0
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"closure_events": 0,
+							"f_role_id": "wind",
+							"line_events": 0,
+							"phase": "activate",
+							"radius": 174.928558349609,
+							"tick_events": 0
+						},
+						"polygon_count": 0,
+						"radius": 174.928558349609,
+						"role_id": "wind",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "wind_ult",
+						"skill_slot": "f",
+						"source_kind": "f_activate",
+						"tags": [
+							"f",
+							"wind"
+						],
+						"timestamp_msec": 20970
+					},
+					"f_context_ok": true,
+					"f_role_id_ok": true,
+					"input_ok": true,
+					"ultimate_runtime": {
+						"active": true,
+						"runtime_profile": {
+							"active": true,
+							"bond_m_payload": "tag:geometrist|lv2:0.16|lv3:0.32|axis:closure",
+							"bond_o_payload": "tag:nomad|lv2:0.12|lv3:0.24|axis:line",
+							"bond_t_payload": "tag:commander|lv2:0.10|lv3:0.20|axis:tempo",
+							"closure_events": 0,
+							"duration": 10.0,
+							"f_role_id": "wind",
+							"internal_cd": 0.95,
+							"line_events": 0,
+							"q_closure_amp": 1.95,
+							"q_line_amp": 1.5,
+							"special_1": 1.15,
+							"special_2": 260.0,
+							"special_3": 0.28,
+							"tick_events": 0,
+							"ult_id": "wind_ult"
+						}
+					}
+				},
+				"q_closed_then_e": {
+					"counts_after_e": {
+						"active_effects": 24,
+						"player_effect_nodes": 2
+					},
+					"counts_after_q": {
+						"active_effects": 18,
+						"player_effect_nodes": 1
+					},
+					"counts_before_q": {
+						"active_effects": 4,
+						"player_effect_nodes": 1
+					},
+					"e_context": {
+						"asset_ids": [
+							"wind:wind_e_window:20576"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"auto_generated": true,
+							"polygon_count": 1,
+							"q_asset_kind": "wind_closure",
+							"q_closed": true,
+							"role_id": "wind",
+							"segment_count": 5,
+							"used_q_context": true
+						},
+						"polygon_count": 0,
+						"radius": 160.0,
+						"role_id": "wind",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_wind_e",
+						"skill_slot": "e",
+						"source_kind": "wind_action",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 20576
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 6,
+						"player_effect_nodes": 1
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"wind:wind_closure:20369"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": true,
+						"metrics": {
+							"polygon_count": 1,
+							"segment_count": 5
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"is_closed": true,
+							"polygon_count": 1,
+							"radius": 174.928558349609,
+							"role_id": "wind",
+							"segment_count": 5
+						},
+						"polygon_count": 1,
+						"radius": 174.928558349609,
+						"role_id": "wind",
+						"schema_version": 1,
+						"segment_count": 5,
+						"skill_id": "skill_wind_q",
+						"skill_slot": "q",
+						"source_kind": "q_closed",
+						"tags": [
+							"q",
+							"wind",
+							"closed"
+						],
+						"timestamp_msec": 20369
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 14,
+						"player_effect_nodes": 0
+					},
+					"q_effect_ok": true
+				},
+				"q_open_then_e": {
+					"counts_after_e": {
+						"active_effects": 22,
+						"player_effect_nodes": 0
+					},
+					"counts_after_q": {
+						"active_effects": 10,
+						"player_effect_nodes": 0
+					},
+					"counts_before_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"wind:wind_e_window:19575"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"auto_generated": true,
+							"polygon_count": 0,
+							"q_asset_kind": "wind_line",
+							"q_closed": false,
+							"role_id": "wind",
+							"segment_count": 2,
+							"used_q_context": true
+						},
+						"polygon_count": 0,
+						"radius": 160.0,
+						"role_id": "wind",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_wind_e",
+						"skill_slot": "e",
+						"source_kind": "wind_action",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 19575
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 12,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"wind:wind_line:19368"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+							"polygon_count": 0,
+							"segment_count": 2
+						},
+						"payload": {
+							"center": "(513.3333, 305.0)",
+							"is_closed": false,
+							"polygon_count": 0,
+							"radius": 174.005126953125,
+							"role_id": "wind",
+							"segment_count": 2
+						},
+						"polygon_count": 0,
+						"radius": 174.005126953125,
+						"role_id": "wind",
+						"schema_version": 1,
+						"segment_count": 2,
+						"skill_id": "skill_wind_q",
+						"skill_slot": "q",
+						"source_kind": "q_open",
+						"tags": [
+							"q",
+							"wind",
+							"open"
+						],
+						"timestamp_msec": 19368
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 10,
+						"player_effect_nodes": 0
+					},
+					"q_effect_ok": true
+				}
+			},
+			"role_id": "wind"
+		},
+		{
+			"checks": {
+				"e_after_closed_context": true,
+				"e_after_open_context": true,
+				"e_single_context": true,
+				"f_active": true,
+				"f_context": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_effect": true,
+				"q_open_context": true,
+				"q_open_effect": true
+			},
+			"kind": "top10_effect_selftest",
+			"passed": true,
+			"phases": {
+				"e_single": {
+					"counts_after": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"breachmarshal:breachmarshal_e_window:21920"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"auto_generated": true,
+							"role_id": "breachmarshal"
+						},
+						"polygon_count": 0,
+						"radius": 160.0,
+						"role_id": "breachmarshal",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_breachmarshal_e",
+						"skill_slot": "e",
+						"source_kind": "breachmarshal_action",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 21920
+					},
+					"e_context_ok": true,
+					"input_ok": true
+				},
+				"f_window": {
+					"counts_after": {
+						"active_effects": 23,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 5,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 18,
+						"player_effect_nodes": 0
+					},
+					"f_active_ok": true,
+					"f_context": {
+						"asset_ids": [],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+							"closure_events": 0,
+							"line_events": 0,
+							"tick_events": 0
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"closure_events": 0,
+							"f_role_id": "breachmarshal",
+							"line_events": 0,
+							"phase": "activate",
+							"radius": 174.928558349609,
+							"tick_events": 0
+						},
+						"polygon_count": 0,
+						"radius": 174.928558349609,
+						"role_id": "breachmarshal",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "breachmarshal_ult",
+						"skill_slot": "f",
+						"source_kind": "f_activate",
+						"tags": [
+							"f",
+							"breachmarshal"
+						],
+						"timestamp_msec": 24326
+					},
+					"f_context_ok": true,
+					"f_role_id_ok": true,
+					"input_ok": true,
+					"ultimate_runtime": {
+						"active": true,
+						"runtime_profile": {
+							"active": true,
+							"bond_m_payload": "tag:blaster|lv2:0.16|lv3:0.32|axis:closure",
+							"bond_o_payload": "tag:colossus|lv2:0.12|lv3:0.24|axis:line",
+							"bond_t_payload": "tag:commander|lv2:0.10|lv3:0.20|axis:tempo",
+							"closure_events": 0,
+							"duration": 10.0,
+							"f_role_id": "breachmarshal",
+							"internal_cd": 0.9,
+							"line_events": 0,
+							"q_closure_amp": 2.06,
+							"q_line_amp": 1.58,
+							"special_1": 1.32,
+							"special_2": 270.0,
+							"special_3": 0.21,
+							"tick_events": 0,
+							"ult_id": "breachmarshal_ult"
+						}
+					}
+				},
+				"q_closed_then_e": {
+					"counts_after_e": {
+						"active_effects": 24,
+						"player_effect_nodes": 0
+					},
+					"counts_after_q": {
+						"active_effects": 17,
+						"player_effect_nodes": 0
+					},
+					"counts_before_q": {
+						"active_effects": 4,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"breachmarshal:breachmarshal_e_window:23929"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"auto_generated": true,
+							"polygon_count": 1,
+							"q_asset_kind": "breachmarshal_closure",
+							"q_closed": true,
+							"role_id": "breachmarshal",
+							"segment_count": 5,
+							"used_q_context": true
+						},
+						"polygon_count": 0,
+						"radius": 160.0,
+						"role_id": "breachmarshal",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_breachmarshal_e",
+						"skill_slot": "e",
+						"source_kind": "breachmarshal_action",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 23929
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 7,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"breachmarshal:breachmarshal_closure:23721"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": true,
+						"metrics": {
+							"polygon_count": 1,
+							"segment_count": 5
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"is_closed": true,
+							"polygon_count": 1,
+							"radius": 174.928558349609,
+							"role_id": "breachmarshal",
+							"segment_count": 5
+						},
+						"polygon_count": 1,
+						"radius": 174.928558349609,
+						"role_id": "breachmarshal",
+						"schema_version": 1,
+						"segment_count": 5,
+						"skill_id": "skill_breachmarshal_q",
+						"skill_slot": "q",
+						"source_kind": "q_closed",
+						"tags": [
+							"q",
+							"breachmarshal",
+							"closed"
+						],
+						"timestamp_msec": 23721
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 13,
+						"player_effect_nodes": 0
+					},
+					"q_effect_ok": true
+				},
+				"q_open_then_e": {
+					"counts_after_e": {
+						"active_effects": 20,
+						"player_effect_nodes": 2
+					},
+					"counts_after_q": {
+						"active_effects": 10,
+						"player_effect_nodes": 2
+					},
+					"counts_before_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"breachmarshal:breachmarshal_e_window:22921"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"auto_generated": true,
+							"polygon_count": 0,
+							"q_asset_kind": "breachmarshal_line",
+							"q_closed": false,
+							"role_id": "breachmarshal",
+							"segment_count": 2,
+							"used_q_context": true
+						},
+						"polygon_count": 0,
+						"radius": 160.0,
+						"role_id": "breachmarshal",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_breachmarshal_e",
+						"skill_slot": "e",
+						"source_kind": "breachmarshal_action",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 22921
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 10,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"breachmarshal:breachmarshal_line:22714"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+							"polygon_count": 0,
+							"segment_count": 2
+						},
+						"payload": {
+							"center": "(513.3333, 305.0)",
+							"is_closed": false,
+							"polygon_count": 0,
+							"radius": 174.005126953125,
+							"role_id": "breachmarshal",
+							"segment_count": 2
+						},
+						"polygon_count": 0,
+						"radius": 174.005126953125,
+						"role_id": "breachmarshal",
+						"schema_version": 1,
+						"segment_count": 2,
+						"skill_id": "skill_breachmarshal_q",
+						"skill_slot": "q",
+						"source_kind": "q_open",
+						"tags": [
+							"q",
+							"breachmarshal",
+							"open"
+						],
+						"timestamp_msec": 22714
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 10,
+						"player_effect_nodes": 2
+					},
+					"q_effect_ok": true
+				}
+			},
+			"role_id": "breachmarshal"
+		},
+		{
+			"checks": {
+				"e_after_closed_context": true,
+				"e_after_open_context": true,
+				"e_single_context": true,
+				"f_active": true,
+				"f_context": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_effect": true,
+				"q_open_context": true,
+				"q_open_effect": true
+			},
+			"kind": "top10_effect_selftest",
+			"passed": true,
+			"phases": {
+				"e_single": {
+					"counts_after": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"executioner:executioner_e_window:25261"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"auto_generated": true,
+							"role_id": "executioner"
+						},
+						"polygon_count": 0,
+						"radius": 160.0,
+						"role_id": "executioner",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_executioner_e",
+						"skill_slot": "e",
+						"source_kind": "executioner_action",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 25261
+					},
+					"e_context_ok": true,
+					"input_ok": true
+				},
+				"f_window": {
+					"counts_after": {
+						"active_effects": 21,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 4,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 17,
+						"player_effect_nodes": 0
+					},
+					"f_active_ok": true,
+					"f_context": {
+						"asset_ids": [],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+							"closure_events": 0,
+							"line_events": 0,
+							"tick_events": 0
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"closure_events": 0,
+							"f_role_id": "executioner",
+							"line_events": 0,
+							"phase": "activate",
+							"radius": 174.928558349609,
+							"tick_events": 0
+						},
+						"polygon_count": 0,
+						"radius": 174.928558349609,
+						"role_id": "executioner",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "executioner_ult",
+						"skill_slot": "f",
+						"source_kind": "f_activate",
+						"tags": [
+							"f",
+							"executioner"
+						],
+						"timestamp_msec": 27663
+					},
+					"f_context_ok": true,
+					"f_role_id_ok": true,
+					"input_ok": true,
+					"ultimate_runtime": {
+						"active": true,
+						"runtime_profile": {
+							"active": true,
+							"bond_m_payload": "tag:hexer|lv2:0.16|lv3:0.32|axis:closure",
+							"bond_o_payload": "tag:colossus|lv2:0.12|lv3:0.24|axis:line",
+							"bond_t_payload": "tag:vanguard|lv2:0.10|lv3:0.20|axis:tempo",
+							"closure_events": 0,
+							"duration": 10.0,
+							"f_role_id": "executioner",
+							"internal_cd": 1.0,
+							"line_events": 0,
+							"q_closure_amp": 2.06,
+							"q_line_amp": 1.5,
+							"special_1": 1.27,
+							"special_2": 230.0,
+							"special_3": 0.32,
+							"tick_events": 0,
+							"ult_id": "executioner_ult"
+						}
+					}
+				},
+				"q_closed_then_e": {
+					"counts_after_e": {
+						"active_effects": 23,
+						"player_effect_nodes": 0
+					},
+					"counts_after_q": {
+						"active_effects": 17,
+						"player_effect_nodes": 0
+					},
+					"counts_before_q": {
+						"active_effects": 4,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"executioner:executioner_e_window:27270"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"auto_generated": true,
+							"polygon_count": 1,
+							"q_asset_kind": "executioner_closure",
+							"q_closed": true,
+							"role_id": "executioner",
+							"segment_count": 5,
+							"used_q_context": true
+						},
+						"polygon_count": 0,
+						"radius": 160.0,
+						"role_id": "executioner",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_executioner_e",
+						"skill_slot": "e",
+						"source_kind": "executioner_action",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 27270
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 6,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"executioner:executioner_closure:27063"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": true,
+						"metrics": {
+							"polygon_count": 1,
+							"segment_count": 5
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"is_closed": true,
+							"polygon_count": 1,
+							"radius": 174.928558349609,
+							"role_id": "executioner",
+							"segment_count": 5
+						},
+						"polygon_count": 1,
+						"radius": 174.928558349609,
+						"role_id": "executioner",
+						"schema_version": 1,
+						"segment_count": 5,
+						"skill_id": "skill_executioner_q",
+						"skill_slot": "q",
+						"source_kind": "q_closed",
+						"tags": [
+							"q",
+							"executioner",
+							"closed"
+						],
+						"timestamp_msec": 27063
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 13,
+						"player_effect_nodes": 0
+					},
+					"q_effect_ok": true
+				},
+				"q_open_then_e": {
+					"counts_after_e": {
+						"active_effects": 22,
+						"player_effect_nodes": 0
+					},
+					"counts_after_q": {
+						"active_effects": 12,
+						"player_effect_nodes": 0
+					},
+					"counts_before_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"executioner:executioner_e_window:26264"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"auto_generated": true,
+							"polygon_count": 0,
+							"q_asset_kind": "executioner_line",
+							"q_closed": false,
+							"role_id": "executioner",
+							"segment_count": 2,
+							"used_q_context": true
+						},
+						"polygon_count": 0,
+						"radius": 160.0,
+						"role_id": "executioner",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_executioner_e",
+						"skill_slot": "e",
+						"source_kind": "executioner_action",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 26264
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 10,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"executioner:executioner_line:26055"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+							"polygon_count": 0,
+							"segment_count": 2
+						},
+						"payload": {
+							"center": "(513.3333, 305.0)",
+							"is_closed": false,
+							"polygon_count": 0,
+							"radius": 174.005126953125,
+							"role_id": "executioner",
+							"segment_count": 2
+						},
+						"polygon_count": 0,
+						"radius": 174.005126953125,
+						"role_id": "executioner",
+						"schema_version": 1,
+						"segment_count": 2,
+						"skill_id": "skill_executioner_q",
+						"skill_slot": "q",
+						"source_kind": "q_open",
+						"tags": [
+							"q",
+							"executioner",
+							"open"
+						],
+						"timestamp_msec": 26055
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 12,
+						"player_effect_nodes": 0
+					},
+					"q_effect_ok": true
+				}
+			},
+			"role_id": "executioner"
+		},
+		{
+			"checks": {
+				"e_after_closed_context": true,
+				"e_after_open_context": true,
+				"e_single_context": true,
+				"f_active": true,
+				"f_context": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_effect": true,
+				"q_open_context": true,
+				"q_open_effect": true
+			},
+			"kind": "top10_effect_selftest",
+			"passed": true,
+			"phases": {
+				"e_single": {
+					"counts_after": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"singularist:singularist_e_window:28614"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"auto_generated": true,
+							"role_id": "singularist"
+						},
+						"polygon_count": 0,
+						"radius": 160.0,
+						"role_id": "singularist",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_singularist_e",
+						"skill_slot": "e",
+						"source_kind": "singularist_action",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 28614
+					},
+					"e_context_ok": true,
+					"input_ok": true
+				},
+				"f_window": {
+					"counts_after": {
+						"active_effects": 26,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 4,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 22,
+						"player_effect_nodes": 0
+					},
+					"f_active_ok": true,
+					"f_context": {
+						"asset_ids": [],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+							"closure_events": 0,
+							"line_events": 0,
+							"tick_events": 0
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"closure_events": 0,
+							"f_role_id": "singularist",
+							"line_events": 0,
+							"phase": "activate",
+							"radius": 174.928558349609,
+							"tick_events": 0
+						},
+						"polygon_count": 0,
+						"radius": 174.928558349609,
+						"role_id": "singularist",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "singularist_ult",
+						"skill_slot": "f",
+						"source_kind": "f_activate",
+						"tags": [
+							"f",
+							"singularist"
+						],
+						"timestamp_msec": 31014
+					},
+					"f_context_ok": true,
+					"f_role_id_ok": true,
+					"input_ok": true,
+					"ultimate_runtime": {
+						"active": true,
+						"runtime_profile": {
+							"active": true,
+							"bond_m_payload": "tag:blaster|lv2:0.16|lv3:0.32|axis:closure",
+							"bond_o_payload": "tag:nomad|lv2:0.12|lv3:0.24|axis:line",
+							"bond_t_payload": "tag:commander|lv2:0.10|lv3:0.20|axis:tempo",
+							"closure_events": 0,
+							"duration": 10.0,
+							"f_role_id": "singularist",
+							"internal_cd": 0.9,
+							"line_events": 0,
+							"q_closure_amp": 2.04,
+							"q_line_amp": 1.57,
+							"special_1": 1.26,
+							"special_2": 265.0,
+							"special_3": 0.28,
+							"tick_events": 0,
+							"ult_id": "singularist_ult"
+						}
+					}
+				},
+				"q_closed_then_e": {
+					"counts_after_e": {
+						"active_effects": 28,
+						"player_effect_nodes": 0
+					},
+					"counts_after_q": {
+						"active_effects": 19,
+						"player_effect_nodes": 0
+					},
+					"counts_before_q": {
+						"active_effects": 4,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"singularist:singularist_e_window:30622"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"auto_generated": true,
+							"polygon_count": 1,
+							"q_asset_kind": "singularist_closure",
+							"q_closed": true,
+							"role_id": "singularist",
+							"segment_count": 5,
+							"used_q_context": true
+						},
+						"polygon_count": 0,
+						"radius": 160.0,
+						"role_id": "singularist",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_singularist_e",
+						"skill_slot": "e",
+						"source_kind": "singularist_action",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 30622
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 9,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"singularist:singularist_closure:30414"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": true,
+						"metrics": {
+							"polygon_count": 1,
+							"segment_count": 5
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"is_closed": true,
+							"polygon_count": 1,
+							"radius": 174.928558349609,
+							"role_id": "singularist",
+							"segment_count": 5
+						},
+						"polygon_count": 1,
+						"radius": 174.928558349609,
+						"role_id": "singularist",
+						"schema_version": 1,
+						"segment_count": 5,
+						"skill_id": "skill_singularist_q",
+						"skill_slot": "q",
+						"source_kind": "q_closed",
+						"tags": [
+							"q",
+							"singularist",
+							"closed"
+						],
+						"timestamp_msec": 30414
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 15,
+						"player_effect_nodes": 0
+					},
+					"q_effect_ok": true
+				},
+				"q_open_then_e": {
+					"counts_after_e": {
+						"active_effects": 20,
+						"player_effect_nodes": 2
+					},
+					"counts_after_q": {
+						"active_effects": 12,
+						"player_effect_nodes": 2
+					},
+					"counts_before_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"singularist:singularist_e_window:29613"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"auto_generated": true,
+							"polygon_count": 0,
+							"q_asset_kind": "singularist_line",
+							"q_closed": false,
+							"role_id": "singularist",
+							"segment_count": 2,
+							"used_q_context": true
+						},
+						"polygon_count": 0,
+						"radius": 160.0,
+						"role_id": "singularist",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_singularist_e",
+						"skill_slot": "e",
+						"source_kind": "singularist_action",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 29613
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 8,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"singularist:singularist_line:29407"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+							"polygon_count": 0,
+							"segment_count": 2
+						},
+						"payload": {
+							"center": "(513.3333, 305.0)",
+							"is_closed": false,
+							"polygon_count": 0,
+							"radius": 174.005126953125,
+							"role_id": "singularist",
+							"segment_count": 2
+						},
+						"polygon_count": 0,
+						"radius": 174.005126953125,
+						"role_id": "singularist",
+						"schema_version": 1,
+						"segment_count": 2,
+						"skill_id": "skill_singularist_q",
+						"skill_slot": "q",
+						"source_kind": "q_open",
+						"tags": [
+							"q",
+							"singularist",
+							"open"
+						],
+						"timestamp_msec": 29407
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 12,
+						"player_effect_nodes": 2
+					},
+					"q_effect_ok": true
+				}
+			},
+			"role_id": "singularist"
+		},
+		{
+			"checks": {
+				"e_after_closed_context": true,
+				"e_after_open_context": true,
+				"e_single_context": true,
+				"f_active": true,
+				"f_context": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_effect": true,
+				"q_open_context": true,
+				"q_open_effect": true
+			},
+			"kind": "top10_effect_selftest",
+			"passed": true,
+			"phases": {
+				"e_single": {
+					"counts_after": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"quartermaster:quartermaster_resupply:31969"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"overclock_bonus": 0.18,
+							"synergy_used": false
+						},
+						"polygon_count": 0,
+						"radius": 180.0,
+						"role_id": "quartermaster",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_quartermaster_e",
+						"skill_slot": "e",
+						"source_kind": "quartermaster_resupply",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 31969
+					},
+					"e_context_ok": true,
+					"input_ok": true
+				},
+				"f_window": {
+					"counts_after": {
+						"active_effects": 33,
+						"player_effect_nodes": 0
+					},
+					"counts_before": {
+						"active_effects": 7,
+						"player_effect_nodes": 0
+					},
+					"counts_delta": {
+						"active_effects": 26,
+						"player_effect_nodes": 0
+					},
+					"f_active_ok": true,
+					"f_context": {
+						"asset_ids": [],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+							"closure_events": 0,
+							"line_events": 0,
+							"tick_events": 0
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"closure_events": 0,
+							"f_role_id": "quartermaster",
+							"line_events": 0,
+							"phase": "activate",
+							"radius": 174.928558349609,
+							"tick_events": 0
+						},
+						"polygon_count": 0,
+						"radius": 174.928558349609,
+						"role_id": "quartermaster",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "quartermaster_ult",
+						"skill_slot": "f",
+						"source_kind": "f_activate",
+						"tags": [
+							"f",
+							"quartermaster"
+						],
+						"timestamp_msec": 34378
+					},
+					"f_context_ok": true,
+					"f_role_id_ok": true,
+					"input_ok": true,
+					"ultimate_runtime": {
+						"active": true,
+						"runtime_profile": {
+							"active": true,
+							"bond_m_payload": "tag:blaster|lv2:0.16|lv3:0.32|axis:closure",
+							"bond_o_payload": "tag:alchemist|lv2:0.12|lv3:0.24|axis:line",
+							"bond_t_payload": "tag:assist|lv2:0.10|lv3:0.20|axis:tempo",
+							"closure_events": 0,
+							"duration": 10.0,
+							"f_role_id": "quartermaster",
+							"internal_cd": 0.95,
+							"line_events": 0,
+							"q_closure_amp": 1.98,
+							"q_line_amp": 1.52,
+							"special_1": 1.18,
+							"special_2": 240.0,
+							"special_3": 0.31,
+							"tick_events": 0,
+							"ult_id": "quartermaster_ult"
+						}
+					}
+				},
+				"q_closed_then_e": {
+					"counts_after_e": {
+						"active_effects": 37,
+						"player_effect_nodes": 0
+					},
+					"counts_after_q": {
+						"active_effects": 25,
+						"player_effect_nodes": 0
+					},
+					"counts_before_q": {
+						"active_effects": 4,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"quartermaster:quartermaster_resupply:33978"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"overclock_bonus": 0.18,
+							"synergy_used": true
+						},
+						"polygon_count": 0,
+						"radius": 180.0,
+						"role_id": "quartermaster",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_quartermaster_e",
+						"skill_slot": "e",
+						"source_kind": "quartermaster_resupply",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 33978
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 12,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"quartermaster:quartermaster_supply_hub:33772"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": true,
+						"metrics": {
+							"polygon_count": 1,
+							"segment_count": 5
+						},
+						"payload": {
+							"center": "(500.0, 300.0)",
+							"is_closed": true,
+							"polygon_count": 1,
+							"radius": 174.928558349609,
+							"role_id": "quartermaster",
+							"segment_count": 5
+						},
+						"polygon_count": 1,
+						"radius": 174.928558349609,
+						"role_id": "quartermaster",
+						"schema_version": 1,
+						"segment_count": 5,
+						"skill_id": "skill_quartermaster_q",
+						"skill_slot": "q",
+						"source_kind": "q_closed",
+						"tags": [
+							"q",
+							"quartermaster",
+							"closed"
+						],
+						"timestamp_msec": 33772
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 21,
+						"player_effect_nodes": 0
+					},
+					"q_effect_ok": true
+				},
+				"q_open_then_e": {
+					"counts_after_e": {
+						"active_effects": 38,
+						"player_effect_nodes": 0
+					},
+					"counts_after_q": {
+						"active_effects": 26,
+						"player_effect_nodes": 0
+					},
+					"counts_before_q": {
+						"active_effects": 0,
+						"player_effect_nodes": 0
+					},
+					"e_context": {
+						"asset_ids": [
+							"quartermaster:quartermaster_resupply:32970"
+						],
+						"center": "(500.0, 300.0)",
+						"is_closed": false,
+						"metrics": {
+
+						},
+						"payload": {
+							"overclock_bonus": 0.18,
+							"synergy_used": false
+						},
+						"polygon_count": 0,
+						"radius": 180.0,
+						"role_id": "quartermaster",
+						"schema_version": 1,
+						"segment_count": 0,
+						"skill_id": "skill_quartermaster_e",
+						"skill_slot": "e",
+						"source_kind": "quartermaster_resupply",
+						"tags": [
+							"e"
+						],
+						"timestamp_msec": 32970
+					},
+					"e_context_ok": true,
+					"e_counts_delta": {
+						"active_effects": 12,
+						"player_effect_nodes": 0
+					},
+					"e_input_ok": true,
+					"input_ok": true,
+					"q_context": {
+						"asset_ids": [
+							"quartermaster:quartermaster_supply_link:32768"
+						],
+						"center": "(513.3333, 305.0)",
+						"is_closed": false,
+						"metrics": {
+							"polygon_count": 0,
+							"segment_count": 2
+						},
+						"payload": {
+							"center": "(513.3333, 305.0)",
+							"is_closed": false,
+							"polygon_count": 0,
+							"radius": 174.005126953125,
+							"role_id": "quartermaster",
+							"segment_count": 2
+						},
+						"polygon_count": 0,
+						"radius": 174.005126953125,
+						"role_id": "quartermaster",
+						"schema_version": 1,
+						"segment_count": 2,
+						"skill_id": "skill_quartermaster_q",
+						"skill_slot": "q",
+						"source_kind": "q_open",
+						"tags": [
+							"q",
+							"quartermaster",
+							"open"
+						],
+						"timestamp_msec": 32768
+					},
+					"q_context_ok": true,
+					"q_counts_delta": {
+						"active_effects": 26,
+						"player_effect_nodes": 0
+					},
+					"q_effect_ok": true
+				}
+			},
+			"role_id": "quartermaster"
+		}
+	]
+}

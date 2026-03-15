@@ -1,11 +1,11 @@
-﻿extends "res://scenes/skills/players/skill_ultimate_qef_v3.gd"
+extends "res://scenes/skills/skill_f_base.gd"
 
 const ROLE_ID: String = "necro"
 const GRAVE_META_CENTER: String = "necro_grave_center"
 const GRAVE_META_RADIUS: String = "necro_grave_radius"
 const GRAVE_META_EXPIRE_MSEC: String = "necro_grave_expire_msec"
 
-func _resolve_mode_id() -> String:
+func _resolve_f_role_id() -> String:
 	return ROLE_ID
 
 func _apply_mode_signature(phase: String, packet: Dictionary, center: Vector2, _hit_count: int) -> void:

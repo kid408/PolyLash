@@ -1,4 +1,4 @@
-extends SkillBase
+﻿extends SkillEBase
 class_name SkillJailerE
 
 var knockback_force: float = 600.0
@@ -172,3 +172,4 @@ func _knock_enemy(enemy: Node, center: Vector2, power: float) -> void:
 		var enemy_node2: Node2D = enemy
 		var push_dir: Vector2 = center.direction_to(enemy_node2.global_position)
 		enemy_node2.global_position += push_dir * power * 0.02
+

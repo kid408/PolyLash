@@ -1,4 +1,4 @@
-﻿extends SkillDrawingBase
+﻿extends SkillQBase
 class_name SkillJailerQ
 
 var wall_contact_damage: int = 22
@@ -449,3 +449,4 @@ func _get_line_color() -> Color:
 
 func _get_closure_color() -> Color:
 	return Color(0.9, 0.8, 0.2, 1.0)
+

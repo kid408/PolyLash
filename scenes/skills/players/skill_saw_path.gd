@@ -249,6 +249,10 @@ func _launch_saw_construct() -> void:
 	if not is_instance_valid(skill_owner):
 		return
 
+	var executed_points: Array[Vector2] = path_points.duplicate()
+	var executed_segments: int = path_segments.size()
+	var was_closed: bool = is_path_closed
+
 	var player_pos: Vector2 = skill_owner.global_position
 	var path_center: Vector2 = Vector2.ZERO
 	for point: Vector2 in path_points:
@@ -276,6 +280,7 @@ func _launch_saw_construct() -> void:
 	active_saw = saw
 	is_dashing = true
 	Global.on_camera_shake.emit(5.0, 0.16)
+	_publish_semantic_q_context(executed_points, executed_segments, was_closed, saw)
 
 	path_points.clear()
 	path_segments.clear()
@@ -366,3 +371,60 @@ func cleanup() -> void:
 	path_segments.clear()
 	total_distance_drawn = 0.0
 	is_path_closed = false
+
+func _publish_semantic_q_context(points: Array[Vector2], segment_count: int, is_closed_path: bool, saw_node: Node2D) -> void:
+	if not is_instance_valid(skill_owner) or points.is_empty():
+		return
+	var center := _calculate_points_center(points)
+	var radius := _calculate_points_radius(points, center)
+	var packet := SkillContextBridge.build_packet(
+		skill_owner,
+		"q",
+		skill_id,
+		"q_closed" if is_closed_path else "q_open",
+		center,
+		radius,
+		{
+			"role_id": "butcher",
+			"saw_name": saw_node.name if saw_node != null else "",
+		},
+		{
+			"segment_count": max(0, segment_count),
+			"polygon_count": 1 if is_closed_path else 0,
+		},
+		["q", "butcher", "closed" if is_closed_path else "open"]
+	)
+	packet.is_closed = is_closed_path
+	packet.segment_count = max(0, segment_count)
+	packet.polygon_count = 1 if is_closed_path else 0
+
+	SkillContextBridge.publish_q_context(
+		skill_owner,
+		packet,
+		"butcher_saw_cage" if is_closed_path else "butcher_saw_path",
+		max(closure_duration, 4.0),
+		{
+			"segment_count": max(0, segment_count),
+			"polygon_count": 1 if is_closed_path else 0,
+		},
+		saw_node
+	)
+
+	if "player_id" in skill_owner:
+		Global.cache_recent_draw_path(skill_owner.player_id, points, is_closed_path)
+	if skill_owner.has_method("notify_q_path_executed"):
+		skill_owner.notify_q_path_executed(is_closed_path, max(0, segment_count), 1 if is_closed_path else 0)
+
+func _calculate_points_center(points: Array[Vector2]) -> Vector2:
+	if points.is_empty():
+		return Vector2.ZERO
+	var center := Vector2.ZERO
+	for point in points:
+		center += point
+	return center / float(points.size())
+
+func _calculate_points_radius(points: Array[Vector2], center: Vector2) -> float:
+	var radius := 0.0
+	for point in points:
+		radius = max(radius, center.distance_to(point))
+	return max(60.0, radius)

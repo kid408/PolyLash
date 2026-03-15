@@ -1,14 +1,15 @@
-extends "res://scenes/skills/players/skill_ultimate_qef_v3.gd"
+extends "res://scenes/skills/skill_f_base.gd"
 
 const ROLE_ID: String = "executioner"
 
-func _resolve_mode_id() -> String:
+func _resolve_f_role_id() -> String:
 	return ROLE_ID
 
 func _apply_mode_signature(phase: String, packet: Dictionary, center: Vector2, _hit_count: int) -> void:
 	if not is_active:
 		return
 	_role_signature(phase, packet, center)
+	_spawn_executioner_pickups(phase, packet, center)
 
 func _apply_q_link_signature(phase: String, packet: Dictionary, center: Vector2) -> void:
 	if phase == "tick":
@@ -116,3 +117,22 @@ func _role_signature(phase: String, packet: Dictionary, center: Vector2) -> void
 			140.0
 		)
 		_apply_temp_attack_boost(1.6, 0.14)
+
+func _spawn_executioner_pickups(phase: String, packet: Dictionary, center: Vector2) -> void:
+	var radius: float = max(54.0, float(packet.get("radius", 140.0)) * 0.52)
+	var count: int = 1 if phase != "closure" else 2
+	_spawn_signature_pickup_burst(
+		center,
+		count,
+		radius,
+		Color(1.0, 0.26, 0.26, 0.95),
+		{
+			"effect_id": "executioner_order",
+			"pickup_text": "断罪令",
+			"radius": radius,
+			"text_color": Color(1.0, 0.42, 0.42),
+			"vfx_color": Color(1.0, 0.22, 0.22, 0.92),
+			"effect_scale": 0.58,
+		},
+		5.2 if phase == "tick" else 6.2
+	)

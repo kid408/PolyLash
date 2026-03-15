@@ -1,8 +1,8 @@
-﻿extends "res://scenes/skills/players/skill_ultimate_qef_v3.gd"
+extends "res://scenes/skills/skill_f_base.gd"
 
 const ROLE_ID: String = "pyro"
 
-func _resolve_mode_id() -> String:
+func _resolve_f_role_id() -> String:
 	return ROLE_ID
 
 func _apply_mode_signature(phase: String, packet: Dictionary, center: Vector2, _hit_count: int) -> void:
@@ -171,3 +171,4 @@ func _emit_fire_funnel(center: Vector2, aim_dir: Vector2, length: float, closure
 			false,
 			220.0
 		)
+

@@ -460,7 +460,15 @@ func _start_input_recording(trigger: String) -> void:
 		int(dt.get("minute", 0)),
 		int(dt.get("second", 0))
 	]
-	_input_recording_path = "%s/%s%s.json" % [INPUT_RECORDING_DIR, INPUT_RECORDING_PREFIX, timestamp]
+	var active_player_tag: String = active_player_id.replace(" ", "_")
+	var msec_tag: String = "%03d" % int(Time.get_ticks_msec() % 1000)
+	_input_recording_path = "%s/%s%s_%s_%s.json" % [
+		INPUT_RECORDING_DIR,
+		INPUT_RECORDING_PREFIX,
+		timestamp,
+		msec_tag,
+		active_player_tag
+	]
 	_input_recording_started_msec = Time.get_ticks_msec()
 	_input_recording_started_at = Time.get_datetime_string_from_system(false, true)
 	_input_recording_events.clear()
@@ -541,12 +549,19 @@ func _build_recording_initial_squad_snapshot() -> Dictionary:
 
 func _build_recording_initial_runtime_snapshot() -> Dictionary:
 	var snapshot: Dictionary = {
-		"mouse_position": _serialize_vec2(get_viewport().get_mouse_position())
+		"mouse_position": _serialize_vec2(get_viewport().get_mouse_position()),
+		"role_info": _build_active_role_info(),
 	}
 	var player_2d: Node2D = Global.player as Node2D
 	if is_instance_valid(player_2d):
 		snapshot["player_position"] = _serialize_vec2(player_2d.global_position)
 		snapshot["player_rotation"] = player_2d.global_rotation
+		if player_2d.has_method("get_skill_runtime_snapshot"):
+			snapshot["skill_runtime"] = player_2d.call("get_skill_runtime_snapshot")
+		if player_2d.has_node("SkillManager"):
+			var skill_manager: Node = player_2d.get_node("SkillManager")
+			if skill_manager != null and skill_manager.has_method("get_semantic_runtime_snapshot"):
+				snapshot["skill_manager_runtime"] = skill_manager.call("get_semantic_runtime_snapshot")
 	return snapshot
 
 func _record_input_event(event: InputEvent) -> void:
@@ -648,7 +663,8 @@ func _record_input_sample() -> void:
 				"energy": player_base.energy,
 				"max_energy": player_base.max_energy,
 				"armor": player_base.armor,
-				"skill_cooldowns": player_base.get_skill_cooldowns_snapshot()
+				"skill_cooldowns": player_base.get_skill_cooldowns_snapshot(),
+				"skill_runtime": player_base.get_skill_runtime_snapshot(),
 			}
 	_append_input_record_event("sample", {
 		"move": _serialize_vec2(move_vec),
@@ -687,8 +703,13 @@ func _append_input_record_event(event_kind: String, data: Dictionary) -> void:
 		"event_kind": event_kind,
 		"player_id": str(role_info.get("player_id", "")),
 		"display_name": str(role_info.get("display_name", "")),
+		"skill_q": str(role_info.get("skill_q", "")),
 		"skill_e": str(role_info.get("skill_e", "")),
+		"skill_f": str(role_info.get("skill_f", "")),
+		"f_role_id": str(role_info.get("f_role_id", "")),
+		"ult_id": str(role_info.get("ult_id", "")),
 		"desc_e": str(role_info.get("desc_e", "")),
+		"desc_f": str(role_info.get("desc_f", "")),
 		"data": data
 	})
 
@@ -1282,8 +1303,10 @@ func _build_role_info_by_id(player_id: String) -> Dictionary:
 
 	var config: Dictionary = ConfigManager.get_player_config(normalized_id)
 	var bindings: Dictionary = ConfigManager.get_player_skill_bindings(normalized_id)
+	var ult_config: Dictionary = ConfigRepository.get_ult_config_for_player(normalized_id)
 	var q_skill_id: String = str(bindings.get("slot_q", "")).strip_edges()
 	var e_skill_id: String = str(bindings.get("slot_e", "")).strip_edges()
+	var f_skill_id: String = "skill_%s_f" % normalized_id
 
 	var q_params: Dictionary = {}
 	if not q_skill_id.is_empty():
@@ -1300,8 +1323,12 @@ func _build_role_info_by_id(player_id: String) -> Dictionary:
 		"display_name": str(config.get("display_name", normalized_id)),
 		"skill_q": q_skill_id,
 		"skill_e": e_skill_id,
+		"skill_f": f_skill_id,
+		"ult_id": str(ult_config.get("ult_id", "%s_ult" % normalized_id)).strip_edges(),
+		"f_role_id": str(ult_config.get("f_role_id", normalized_id)).strip_edges(),
 		"desc_q": desc_q,
 		"desc_e": desc_e,
+		"desc_f": str(ult_config.get("description", "")).strip_edges(),
 		"ultimate": _get_player_ultimate_label(normalized_id)
 	}
 
@@ -1375,6 +1402,31 @@ func _refresh_runtime_info_overlay() -> void:
 		lines.append("E技能ID：%s" % str(role_info.get("skill_e", "")))
 		lines.append("E技能描述：%s" % str(role_info.get("desc_e", "")))
 		lines.append("F技能：%s" % str(role_info.get("ultimate", "")))
+		if is_instance_valid(Global.player) and Global.player.has_method("get_skill_context_snapshot"):
+			var runtime_snapshot: Dictionary = Global.player.get_skill_context_snapshot()
+			var q_ctx: Dictionary = runtime_snapshot.get("q_context", {})
+			var f_ctx: Dictionary = runtime_snapshot.get("f_context", {})
+			var assets: Array = runtime_snapshot.get("assets", [])
+			if not q_ctx.is_empty():
+				lines.append(
+					"Q上下文：%s r=%.0f seg=%d poly=%d" % [
+						"闭合" if bool(q_ctx.get("is_closed", false)) else "开线",
+						float(q_ctx.get("radius", 0.0)),
+						int(q_ctx.get("segment_count", 0)),
+						int(q_ctx.get("polygon_count", 0))
+					]
+				)
+			if not f_ctx.is_empty():
+				var f_payload: Dictionary = f_ctx.get("payload", {})
+				lines.append(
+					"F上下文：%s line=%d closure=%d tick=%d" % [
+						str(f_payload.get("f_role_id", f_ctx.get("role_id", ""))),
+						int(f_payload.get("line_events", 0)),
+						int(f_payload.get("closure_events", 0)),
+						int(f_payload.get("tick_events", 0))
+					]
+				)
+			lines.append("留场资产：%d" % assets.size())
 	if _test_mode_active and not _recording_role_pool.is_empty():
 		var group_count: int = _get_record_group_count()
 		var group_label: String = "%d/%d" % [_recording_group_index + 1, max(1, group_count)]
@@ -1500,8 +1552,12 @@ func _append_feedback_log_entry(
 			"display_name",
 			"skill_q",
 			"skill_e",
+			"skill_f",
+			"ult_id",
+			"f_role_id",
 			"desc_q",
 			"desc_e",
+			"desc_f",
 			"ultimate",
 			"preset_conclusions",
 			"ratings",
@@ -1520,8 +1576,12 @@ func _append_feedback_log_entry(
 		str(role_info.get("display_name", "")),
 		str(role_info.get("skill_q", "")),
 		str(role_info.get("skill_e", "")),
+		str(role_info.get("skill_f", "")),
+		str(role_info.get("ult_id", "")),
+		str(role_info.get("f_role_id", "")),
 		str(role_info.get("desc_q", "")),
 		str(role_info.get("desc_e", "")),
+		str(role_info.get("desc_f", "")),
 		str(role_info.get("ultimate", "")),
 		";".join(presets),
 		";".join(ratings),
@@ -1600,9 +1660,9 @@ func _ensure_feedback_ui() -> void:
 	)
 	_feedback_skill_checks = _build_feedback_checkbox_group(
 		root_vbox,
-		"关注维度",
-		["伤害", "范围", "前摇", "后摇", "打击感", "生存", "连招流畅度"],
-		4
+		"Skill Focus",
+		["Q-open feel", "Q-close feel", "E follow-up", "F pressure", "Highlight", "Swap clarity"],
+		3
 	)
 	_feedback_issue_checks = _build_feedback_checkbox_group(
 		root_vbox,

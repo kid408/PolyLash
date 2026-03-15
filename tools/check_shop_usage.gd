@@ -16,7 +16,7 @@ extends EditorScript
 # 3. 查看输出面板
 # ============================================================================
 
-const REQUIRED_FILES := {
+const REQUIRED_FILES: Dictionary = {
 	"商店管理器": "res://autoloads/shop_manager.gd",
 	"属性商店管理器": "res://autoloads/shop_attribute_manager.gd",
 	"波次奖励系统": "res://scenes/arena/wave_reward_system.gd",
@@ -27,13 +27,13 @@ const REQUIRED_FILES := {
 	"竞技场核心": "res://scenes/arena/arena_core.gd"
 }
 
-const REQUIRED_CONFIGS := {
+const REQUIRED_CONFIGS: Dictionary = {
 	"物品商店配置": "res://config/item/shop_item_config.csv",
 	"属性商店配置": "res://config/wave/shop_attribute_config.csv",
 	"属性商店波次配置": "res://config/wave/shop_wave_config.csv"
 }
 
-const KEYWORDS := [
+const KEYWORDS: Array[String] = [
 	"ShopManager",
 	"ShopAttributeManager",
 	"WaveRewardSystem",
@@ -48,7 +48,7 @@ func _run() -> void:
 	print("商店/奖励流程检查（当前流程版）")
 	print("=".repeat(72) + "\n")
 
-	var ok := true
+	var ok: bool = true
 	ok = _check_required_files() and ok
 	ok = _check_required_configs() and ok
 	ok = _check_autoloads() and ok
@@ -63,9 +63,10 @@ func _run() -> void:
 
 func _check_required_files() -> bool:
 	print("【1/4】关键脚本检查")
-	var all_ok := true
-	for display_name in REQUIRED_FILES.keys():
-		var path := REQUIRED_FILES[display_name]
+	var all_ok: bool = true
+	for display_name_variant: Variant in REQUIRED_FILES.keys():
+		var display_name: String = str(display_name_variant)
+		var path: String = str(REQUIRED_FILES.get(display_name, ""))
 		if FileAccess.file_exists(path):
 			print("  ✅ %s: %s" % [display_name, path])
 		else:
@@ -75,9 +76,10 @@ func _check_required_files() -> bool:
 
 func _check_required_configs() -> bool:
 	print("\n【2/4】关键配置检查")
-	var all_ok := true
-	for display_name in REQUIRED_CONFIGS.keys():
-		var path := REQUIRED_CONFIGS[display_name]
+	var all_ok: bool = true
+	for display_name_variant: Variant in REQUIRED_CONFIGS.keys():
+		var display_name: String = str(display_name_variant)
+		var path: String = str(REQUIRED_CONFIGS.get(display_name, ""))
 		if FileAccess.file_exists(path):
 			print("  ✅ %s: %s" % [display_name, path])
 			_print_csv_row_count(path)
@@ -88,19 +90,23 @@ func _check_required_configs() -> bool:
 
 func _check_autoloads() -> bool:
 	print("\n【3/4】Autoload 检查")
-	var all_ok := true
-	var autoloads := ProjectSettings.get_setting("autoload", {})
-	var autoload_text := str(autoloads)
+	var all_ok: bool = true
+	var autoload_setting: Variant = ProjectSettings.get_setting("autoload", {})
+	var autoloads: Dictionary = {}
+	if autoload_setting is Dictionary:
+		autoloads = autoload_setting
+	var autoload_text: String = str(autoloads)
 
-	var required_autoloads := {
+	var required_autoloads: Dictionary = {
 		"ShopManager": "res://autoloads/shop_manager.gd",
 		"ShopAttributeManager": "res://autoloads/shop_attribute_manager.gd"
 	}
 
-	for name in required_autoloads.keys():
-		var path := required_autoloads[name]
-		var has_name := name in autoload_text
-		var has_path := path in autoload_text
+	for name_variant: Variant in required_autoloads.keys():
+		var name: String = str(name_variant)
+		var path: String = str(required_autoloads.get(name, ""))
+		var has_name: bool = name in autoload_text
+		var has_path: bool = path in autoload_text
 		if has_name and has_path:
 			print("  ✅ %s 已注册" % name)
 		else:
@@ -124,10 +130,10 @@ func _print_keyword_usage() -> void:
 				print("     ... 其余 %d 个文件省略" % (found_files.size() - 5))
 
 func _print_csv_row_count(path: String) -> void:
-	var file := FileAccess.open(path, FileAccess.READ)
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return
-	var rows := 0
+	var rows: int = 0
 	while not file.eof_reached():
 		file.get_line()
 		rows += 1
@@ -135,14 +141,14 @@ func _print_csv_row_count(path: String) -> void:
 	print("     行数: %d" % rows)
 
 func _search_gd_usage(dir_path: String, keyword: String, found_files: Array[String]) -> void:
-	var dir := DirAccess.open(dir_path)
+	var dir: DirAccess = DirAccess.open(dir_path)
 	if dir == null:
 		return
 
 	dir.list_dir_begin()
-	var file_name := dir.get_next()
+	var file_name: String = dir.get_next()
 	while file_name != "":
-		var full_path := dir_path.path_join(file_name)
+		var full_path: String = dir_path.path_join(file_name)
 		if dir.current_is_dir():
 			if not file_name.begins_with("."):
 				_search_gd_usage(full_path, keyword, found_files)
@@ -153,9 +159,9 @@ func _search_gd_usage(dir_path: String, keyword: String, found_files: Array[Stri
 	dir.list_dir_end()
 
 func _gd_contains_keyword(file_path: String, keyword: String) -> bool:
-	var file := FileAccess.open(file_path, FileAccess.READ)
+	var file: FileAccess = FileAccess.open(file_path, FileAccess.READ)
 	if file == null:
 		return false
-	var content := file.get_as_text()
+	var content: String = file.get_as_text()
 	file.close()
 	return keyword in content

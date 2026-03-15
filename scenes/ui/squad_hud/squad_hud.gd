@@ -5,6 +5,7 @@ signal slot_clicked(index: int)
 
 # UI 节点引用
 @onready var slots_container: HBoxContainer = $VBoxContainer/SlotsContainer
+@onready var f_window_panel: FWindowPanel = $VBoxContainer/FWindowPanel
 @onready var energy_bar: ProgressBar = $VBoxContainer/EnergyBar
 @onready var energy_label: Label = $VBoxContainer/EnergyBar/EnergyLabel
 
@@ -19,6 +20,7 @@ func _ready() -> void:
 	Global.on_active_character_changed.connect(_on_active_character_changed)
 	Global.on_switch_rejected.connect(_on_switch_rejected)
 	Global.on_squad_state_changed.connect(_on_squad_state_changed)
+	Global.on_f_runtime_changed.connect(_on_f_runtime_changed)
 
 func _process(_delta: float) -> void:
 	# 实时更新当前角色的能量条
@@ -66,6 +68,13 @@ func update_character_state(index: int, health: float, max_health: float, energy
 	slot.update_health(health, max_health)
 	slot.update_energy(energy, max_energy)
 	slot.set_dead(is_dead)
+
+func update_character_f_runtime(index: int, f_runtime: Dictionary) -> void:
+	if index < 0 or index >= character_slots.size():
+		return
+	var slot = character_slots[index]
+	if is_instance_valid(slot):
+		slot.update_f_runtime(f_runtime)
 
 # 设置当前激活角色
 func set_active_character(index: int) -> void:
@@ -121,10 +130,23 @@ func _update_all_character_states() -> void:
 		var is_dead = health <= 0
 		
 		update_character_state(i, health, max_health, energy, max_energy, is_dead)
+		update_character_f_runtime(i, state.get("f_runtime", {}) if state.get("f_runtime", {}) is Dictionary else {})
+
+	_update_active_f_window()
+
+func _update_active_f_window() -> void:
+	if not is_instance_valid(f_window_panel):
+		return
+	var active_id: String = Global.get_current_player_id()
+	if active_id.is_empty():
+		f_window_panel.visible = false
+		return
+	f_window_panel.update_runtime(active_id, Global.get_player_f_runtime(active_id))
 
 # 信号处理
 func _on_active_character_changed(index: int) -> void:
 	set_active_character(index)
+	_update_active_f_window()
 
 func _on_switch_rejected(index: int, reason: String) -> void:
 	if reason == "dead":
@@ -137,6 +159,15 @@ func _on_squad_state_changed(index: int, state: Dictionary) -> void:
 	var max_energy = float(state.get("max_energy", 999))
 	var is_dead = health <= 0
 	update_character_state(index, health, max_health, energy, max_energy, is_dead)
+	update_character_f_runtime(index, state.get("f_runtime", {}) if state.get("f_runtime", {}) is Dictionary else {})
+	_update_active_f_window()
+
+func _on_f_runtime_changed(player_id: String, f_runtime: Dictionary) -> void:
+	var index: int = Global.selected_player_ids.find(player_id)
+	if index >= 0:
+		update_character_f_runtime(index, f_runtime)
+	if player_id == Global.get_current_player_id():
+		_update_active_f_window()
 
 func _on_slot_clicked(index: int) -> void:
 	emit_signal("slot_clicked", index)

@@ -1,4 +1,4 @@
-extends SkillBase
+﻿extends SkillEBase
 class_name SkillNecroE
 
 var fear_radius: float = 200.0
@@ -197,3 +197,4 @@ func _apply_status(enemy: Node, status_name: String, duration: float, value: flo
 		return
 	if enemy.has_method("apply_status"):
 		enemy.apply_status(status_name, max(0.1, duration), value, max(1, stacks), max(0.05, tick_interval))
+

@@ -1,0 +1,3757 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2570)
+=== 配置管理器初始化 ===
+[ConfigManager] 加载配置: res://config/player/player_config.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_visual.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_weapons.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_skill_bindings.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_available_weapons.csv - 32 条记录
+[ConfigManager] 加载宽表技能参数: res://config/player/skill_params_wide.csv - 71 个技能, 102 条描述
+[ConfigManager] 加载配置: res://config/enemy/enemy_config.csv - 12 条记录
+[ConfigManager] 加载配置: res://config/enemy/enemy_visual.csv - 12 条记录
+[ConfigManager] 加载配置: res://config/enemy/enemy_weapons.csv - 5 条记录
+[ConfigManager] 加载配置: res://config/weapon/weapon_config_optimized.csv - 35 条记录
+[ConfigManager] 加载配置: res://config/wave/wave_config.csv - 4 条记录
+[ConfigManager] 加载波次单位配置: res://config/wave/wave_units_config.csv - 4 个波次
+[ConfigManager] 加载配置: res://config/system/input_config.csv - 16 条记录
+[ConfigManager] 加载配置: res://config/item/upgrade_attributes.csv - 4 条记录
+[ConfigManager] 加载配置: res://config/item/chest_config.csv - 4 条记录
+[ConfigManager] 加载配置: res://config/wave/wave_chest_config.csv - 5 条记录
+[ConfigManager] 加载 key-value 配置: res://config/system/game_config.csv - 53 条记录
+[ConfigManager] 加载 key-value 配置: res://config/system/camera_config.csv - 8 条记录
+[ConfigManager] 加载 key-value 配置: res://config/system/map_config.csv - 15 条记录
+[ConfigManager] 加载新格式道具配置: res://config/item/item_config.csv - 59 条记录
+[ConfigManager] 加载护符配置: res://config/item/emblem_config.csv - 14 条记录
+[ConfigManager] 加载致谢配置: res://config/system/credits_config.csv - 4 条记录
+=== 配置加载完成 ===
+[ConfigManager] 加载配置: res://config/audio/ui_sounds.csv - 12 条记录
+[ConfigManager] 加载配置: res://config/audio/combat_sounds.csv - 18 条记录
+[ConfigManager] 加载配置: res://config/audio/skill_sounds.csv - 10 条记录
+[ConfigManager] 加载配置: res://config/audio/environment_sounds.csv - 25 条记录
+[SoundManager] 初始化完成: 65 条配置, 93 个音频缓存, 1 个音效组
+=== 升级管理器初始化 ===
+[EliteConfigManager] 加载精英敌人: EliteConfig(enemy_glutton: 吞噬者)
+[EliteConfigManager] 加载精英能力配置: EliteAbilityConfig(enemy_glutton)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 1)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 2)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 3)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 4)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 5)
+[EliteConfigManager] 加载波次精英配置: WaveEliteConfig(wave_1_to_5: enemy_glutton x0)
+[EliteConfigManager] 加载波次精英配置: WaveEliteConfig(wave_6_to_10: enemy_glutton x1)
+[EliteConfigManager] 加载波次精英配置: WaveEliteConfig(wave_11_to_15: enemy_glutton x2)
+[EliteConfigManager] 加载波次精英配置: WaveEliteConfig(wave_16_to_20: enemy_glutton x3)
+[EliteConfigManager] 加载精英生成配置: EliteSpawnConfig(wave_1_to_5: enemy_glutton, 间隔999.0-999.0s, 最多0个)
+[EliteConfigManager] 加载精英生成配置: EliteSpawnConfig(wave_6_to_10: enemy_glutton, 间隔20.0-30.0s, 最多1个)
+[EliteConfigManager] 加载精英生成配置: EliteSpawnConfig(wave_11_to_15: enemy_glutton, 间隔15.0-25.0s, 最多2个)
+[EliteConfigManager] 加载精英生成配置: EliteSpawnConfig(wave_16_to_20: enemy_glutton, 间隔12.0-22.0s, 最多3个)
+[EliteConfigManager] 初始化完成
+
+=== 精英敌人配置 ===
+  enemy_glutton: 吞噬者 (血量88, 伤害9, 护甲0.0, 速度158.0)
+
+=== 进化阶段配置 ===
+  enemy_glutton:
+    Stage 1: 血量x1.00, 伤害x1.00, 护甲x1.00, 速度x1.00, 吞噬1个敌人 - 初始阶段
+    Stage 2: 血量x1.00, 伤害x1.20, 护甲x1.00, 速度x1.07, 吞噬5个敌人 - 酸液射手
+    Stage 3: 血量x1.40, 伤害x1.44, 护甲x1.00, 速度x1.13, 吞噬5个敌人 - 巨型怪物
+    Stage 4: 血量x1.88, 伤害x1.73, 护甲x1.00, 速度x1.20, 吞噬5个敌人 - 过度进食
+    Stage 5: 血量x1.46, 伤害x2.07, 护甲x1.00, 速度x1.27, 吞噬5个敌人 - 终极形态
+
+=== 波次精英配置 ===
+  wave_1_to_5:
+    enemy_glutton: 生成0个, 权重0.0, 初始阶段1, 允许进化false
+  wave_6_to_10:
+    enemy_glutton: 生成1个, 权重2.0, 初始阶段1, 允许进化true
+  wave_11_to_15:
+    enemy_glutton: 生成2个, 权重3.0, 初始阶段1, 允许进化true
+  wave_16_to_20:
+    enemy_glutton: 生成3个, 权重4.0, 初始阶段1, 允许进化true
+
+=== 精英生成配置 ===
+  wave_1_to_5:
+    enemy_glutton: 生成间隔999.0-999.0s, 最多0个 [禁用]
+  wave_6_to_10:
+    enemy_glutton: 生成间隔20.0-30.0s, 最多1个 [启用]
+  wave_11_to_15:
+    enemy_glutton: 生成间隔15.0-25.0s, 最多2个 [启用]
+  wave_16_to_20:
+    enemy_glutton: 生成间隔12.0-22.0s, 最多3个 [启用]
+[PlayerFactory] 已初始化
+[EquipmentManager] 装备数据文件不存在，使用默认值
+[EquipmentManager] 初始化完成
+[WarehouseManager] 加载了 59 个道具配置（委托 ConfigManager）
+[WarehouseManager] 初始化完成（局内模式），容量: 48
+[BondUILoader] 加载了 11 个羁绊配置
+[BondUILoader] 初始化完成，加载了 11 个羁绊配置
+[ResonanceRuntimeService] init complete, players=32
+[RunTelemetryService] 恢复采样 run_id=run_1773551777_1533
+[ShopManager] 通过 ConfigRepository 加载了 18 行商店配置数据
+[ShopManager] 初始化完成，加载了 13 个商店配置项
+[ShopAttributeManager] 通过 ConfigRepository 加载了 32 个属性配置
+[ShopAttributeManager] 通过 ConfigRepository 加载了 5 个波次配置
+[ShopAttributeManager] 初始化完成: 32个属性, 5个波次配置
+[AbilityManager] 加载了 5 个敌人的能力配置
+[AbilityManager] 初始化完成，已注册 3 个能力类型
+[WeaponConfigLoader] 加载表头: 46 个字段
+[WeaponConfigLoader] 加载完成: 35 个武器基础配置
+[BackgroundManager] 地图纹理大小: (994.000000, 460.000000)
+[BackgroundManager] 初始化完成 - 瓦片大小: 2000, 已生成: 25 个瓦片
+[ChestManager] 初始化完成 - 生成 2 个宝箱（分散布局）
+[ChestManager] 初始化完成 - 预生成 2 个宝箱位置
+[ChestIndicator] indicator_show_range = 3000 (from map_config.csv)
+[ExitConfirmDialog] _ready() called
+[Arena] _ready() 开始
+[Arena] 已添加到 arena 组
+[Arena] 已启用波末战利品模式，禁用旧宝箱流程
+[Arena] 暂停菜单已初始化
+[Arena] 商店面板已连接
+[Arena] WaveRewardSystem 已创建
+[Arena] WaveRewardPanel 已添加到 GameUI
+[Arena] WildcardPanel 已添加到 GameUI
+[Arena] BattleFlowController 已初始化
+[Arena] Spawner 波次完成信号已连接
+[Arena] 准备初始化玩家...
+[Arena] _init_player_from_selection 开始
+[Arena] selected_player_ids: ["butcher"]
+[Arena] selected_player_weapons: { "butcher": "punch" }
+WARNING: [ConfigManager] game_config 缺少键 'enable_wave_recruit_mode'，使用默认值: 1
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] get_game_setting (res://autoloads/config_manager.gd:590)
+       [1] is_wave_recruit_mode_enabled (res://autoloads/global.gd:298)
+       [2] enter_wave_recruit_mode (res://autoloads/global.gd:303)
+       [3] _init_player_from_selection (res://scenes/arena/arena_core.gd:467)
+       [4] _ready (res://scenes/arena/arena_core.gd:117)
+[Arena] 场景中没有默认玩家，直接生成选择的角色
+[Arena] _spawn_player 开始: player_id=butcher, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "butcher": "punch" }
+[Arena] visual_config: { "player_id": "butcher", "sprite_path": "res://assets/sprites/Players/Player_5.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: butcher
+[PlayerFactory] 设置 player_id: butcher
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_butcher.gd (player_id=butcher)
+[PlayerFactory] 成功创建角色: butcher
+[Arena] 警告: player_id 不匹配，重新设置:  -> butcher
+[PlayerBase] player butcher has no equipped item
+[WeaponConfigLoader] DEBUG punch row keys:
+  - weapon_base_id: punch
+  - display_name_template: 拳头%d级
+  - type: melee
+  - max_level: 4
+  - base_damage: 10
+  - base_accuracy: 1
+  - base_cooldown: 0.8
+  - base_crit_chance: 0.05
+  - base_crit_damage: 1.5
+  - base_max_range: 180
+  - base_knockback: 1.5
+  - base_life_steal: 0
+  - base_recoil: 15
+  - base_recoil_duration: 0.08
+  - base_attack_duration: 0.3
+  - base_back_duration: 0.15
+  - base_projectile_speed: 0
+  - base_scene_path: res://scenes/weapons/melee/weapon_melee_point.tscn
+  - projectile_scene: 
+  - sprite_texture_template: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+  - icon_path_template: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+  - muzzle_offset: 0|0
+  - hitbox_offset: 30|0
+  - hitbox_scale: 1.2|1.0
+  - animation_frames_path: res://anims/punch_frames.tres
+  - vfx_attack_scene: res://scenes/vfx/melee_punch_attack.tscn
+  - vfx_hit_scene: res://scenes/vfx/melee_punch_hit.tscn
+  - audio_attack: res://assets/audio/Punch.mp3
+  - shape_type: point
+  - bullet_mode: 
+  - effect_type: 
+  - base_sector_angle: 0
+  - base_bullet_count: 1
+  - base_spread_angle: 0
+  - base_pierce_count: 0
+  - param1: 0
+  - param2: 0
+  - param3: 0
+  - item_cost_base: 1
+  - resource_path: 
+  - damage_scale: 0.5
+  - cooldown_scale: -0.1
+  - range_scale: 10
+  - knockback_scale: 0.1
+  - pierce_scale: 0
+  - bullet_count_scale: 0
+[WeaponConfigLoader] DEBUG punch:
+  - base_max_range: 180.0
+  - range_scale: 10.0
+  - level: 1
+  - max_range: 180.0
+  - row['base_max_range']: 180
+[WeaponConfigLoader] 创建武器 Stats: punch_1 (punch Lv.1)
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player butcher loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = butcher
+[PlayerBase] ultimate config loaded: { "ult_id": "butcher_ult", "name": "血之狂怒", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "vanguard", "visual_color_hex": "#FF3333", "scale_multiplier": 1.2, "explosion_radius": 220.0, "explosion_damage_scale": 1.3, "description": "屠夫进入血锯屠场窗口并强化画线屠杀", "f_role_id": "butcher", "f_internal_cd": 0.9, "f_q_line_amp": 1.55, "f_q_closure_amp": 2.05, "f_special_value_1": 1.35, "f_special_value_2": 220.0, "f_special_value_3": 0.3, "f_bond_o_payload": "tag:colossus|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:architect|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:vanguard|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_butcher_f.gd):<GDScript#-9223371857288230535>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 血之狂怒
+[Arena] 生成角色成功: butcher 在位置 (500.0, 300.0)
+[Arena] 玩家初始化完成
+[CharacterSlot] 加载角色图标: butcher -> res://assets/sprites/Players/Player_5.png
+[SquadHUD] 初始化 1 个角色卡槽
+[Arena] 小队 HUD 初始化完成
+[Arena] ===== _init_bond_hud() 开始 =====
+[Arena] ✅ 找到 GameUI 节点: /root/Arena/GameUI
+[Arena] ✅ BondHUD 场景加载成功
+[Arena] ✅ BondHUD 实例化成功
+[Arena] ✅ BondHUD 已添加到 GameUI
+[Arena] BondHUD 路径: /root/Arena/GameUI/BondHUD
+[Arena] BondHUD 可见性: true
+[Arena] _ready() 完成，飘字保护已解除
+[PlayerBase] SkillManager already exists (created by child: @Node@116), loaded=3, skip auto create
+[Arena] ===== 角色切换开始 =====
+[Arena] 收到角色切换请求: butcher
+[Arena] 跳过自动保存（QEF测试模式）: character_switch
+[Arena] 当前玩家: butcher
+[Arena] 当前玩家位置: (500.0, 300.0)
+[Arena] 不清理旧玩家的技能效果（默认行为）
+[Arena] 调用 player.queue_free()
+[Arena] 等待一帧...
+[DebugSwitcher] test mode enabled: wave_time=999, key8 toggles recording
+[Arena] 玩家死亡信号已连接
+[Arena] 触发 BondManager 重新计算羁绊...
+[Arena] 当前队伍: ["butcher", "pyro", "weaver"]
+[Arena] ✅ 羁绊计算完成
+[PlayerBase] Bond stat modifiers applied:
+  HP: 158 -> 158
+  Speed: 450
+  EnergyRegen: 0.7
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 羁绊属性已应用到玩家
+[Arena] ===== _init_bond_hud() 完成 =====
+[Arena] 玩家死亡信号已连接
+[Arena] 等待完成，开始生成新角色
+[Arena] _spawn_player 开始: player_id=butcher, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "butcher": "punch", "pyro": "laser", "weaver": "laser" }
+[Arena] visual_config: { "player_id": "butcher", "sprite_path": "res://assets/sprites/Players/Player_5.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: butcher
+[PlayerFactory] 设置 player_id: butcher
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_butcher.gd (player_id=butcher)
+[PlayerFactory] 成功创建角色: butcher
+[Arena] 警告: player_id 不匹配，重新设置:  -> butcher
+[PlayerBase] player butcher has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player butcher loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = butcher
+[PlayerBase] ultimate config loaded: { "ult_id": "butcher_ult", "name": "血之狂怒", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "vanguard", "visual_color_hex": "#FF3333", "scale_multiplier": 1.2, "explosion_radius": 220.0, "explosion_damage_scale": 1.3, "description": "屠夫进入血锯屠场窗口并强化画线屠杀", "f_role_id": "butcher", "f_internal_cd": 0.9, "f_q_line_amp": 1.55, "f_q_closure_amp": 2.05, "f_special_value_1": 1.35, "f_special_value_2": 220.0, "f_special_value_3": 0.3, "f_bond_o_payload": "tag:colossus|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:architect|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:vanguard|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_butcher_f.gd):<GDScript#-9223371857288230535>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 血之狂怒
+[Arena] 生成角色成功: butcher 在位置 (500.0, 300.0)
+[PlayerBase] Bond stat modifiers applied:
+  HP: 158 -> 158
+  Speed: 450
+  EnergyRegen: 0.7
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 角色切换后羁绊属性已重新应用
+[Arena] ===== 角色切换结束 =====
+[PlayerBase] SkillManager already exists (created by child: @Node@129), loaded=3, skip auto create
+[Arena] 玩家死亡信号已连接
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 1 个敌人
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 1 个敌人
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[PlayerBase] F pressed, ultimate_skill = UltimateSkill:<Node#195387459955>
+[PlayerBase] try activate ultimate, energy: 100.0%
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 26.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 26.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 26.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 3 个敌人
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 26.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 26.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 26.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 3 个敌人
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 26.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 26.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 26.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 3 个敌人
+[DebugSwitcher] test mode disabled
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+[BackgroundManager] 地图纹理大小: (994.000000, 460.000000)
+[BackgroundManager] 初始化完成 - 瓦片大小: 2000, 已生成: 25 个瓦片
+[ChestManager] 初始化完成 - 生成 2 个宝箱（分散布局）
+[ChestManager] 初始化完成 - 预生成 2 个宝箱位置
+[ChestIndicator] indicator_show_range = 3000 (from map_config.csv)
+[ExitConfirmDialog] _ready() called
+[Arena] _ready() 开始
+[Arena] 已添加到 arena 组
+[Arena] 已启用波末战利品模式，禁用旧宝箱流程
+[Arena] 暂停菜单已初始化
+[Arena] 商店面板已连接
+[Arena] WaveRewardSystem 已创建
+[Arena] WaveRewardPanel 已添加到 GameUI
+[Arena] WildcardPanel 已添加到 GameUI
+[Arena] BattleFlowController 已初始化
+[Arena] Spawner 波次完成信号已连接
+[Arena] 准备初始化玩家...
+[Arena] _init_player_from_selection 开始
+[Arena] selected_player_ids: ["runeblazer"]
+[Arena] selected_player_weapons: { "runeblazer": "punch" }
+WARNING: [ConfigManager] game_config 缺少键 'enable_wave_recruit_mode'，使用默认值: 1
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] get_game_setting (res://autoloads/config_manager.gd:590)
+       [1] is_wave_recruit_mode_enabled (res://autoloads/global.gd:298)
+       [2] enter_wave_recruit_mode (res://autoloads/global.gd:303)
+       [3] _init_player_from_selection (res://scenes/arena/arena_core.gd:467)
+       [4] _ready (res://scenes/arena/arena_core.gd:117)
+[Arena] 场景中没有默认玩家，直接生成选择的角色
+[Arena] _spawn_player 开始: player_id=runeblazer, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "runeblazer": "punch" }
+[Arena] visual_config: { "player_id": "runeblazer", "sprite_path": "res://assets/sprites/Players/Player_6.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: runeblazer
+[PlayerFactory] 设置 player_id: runeblazer
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_runeblazer.gd (player_id=runeblazer)
+[PlayerFactory] 成功创建角色: runeblazer
+[Arena] 警告: player_id 不匹配，重新设置:  -> runeblazer
+[PlayerBase] player runeblazer has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player runeblazer loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = runeblazer
+[PlayerBase] ultimate config loaded: { "ult_id": "runeblazer_ult", "name": "符炎圣典", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "vanguard", "visual_color_hex": "#FF6600", "scale_multiplier": 1.2, "explosion_radius": 250.0, "explosion_damage_scale": 1.1, "description": "符焰师展开符炎圣典并触发顶点齐射", "f_role_id": "runeblazer", "f_internal_cd": 0.88, "f_q_line_amp": 1.58, "f_q_closure_amp": 2.08, "f_special_value_1": 1.28, "f_special_value_2": 245.0, "f_special_value_3": 0.24, "f_bond_o_payload": "tag:inkborn|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:blaster|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:vanguard|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_runeblazer_f.gd):<GDScript#-9223371797729113682>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 符炎圣典
+[SkillDrawingBase] _ready(): skill_runeblazer_q, skill_owner=PlayerGeneric:<Area2D#236827183282>
+[SkillDrawingBase] Line2D 创建成功: skill_runeblazer_q
+[Arena] 生成角色成功: runeblazer 在位置 (500.0, 300.0)
+[Arena] 玩家初始化完成
+[CharacterSlot] 加载角色图标: runeblazer -> res://assets/sprites/Players/Player_6.png
+[SquadHUD] 初始化 1 个角色卡槽
+[Arena] 小队 HUD 初始化完成
+[Arena] ===== _init_bond_hud() 开始 =====
+[Arena] ✅ 找到 GameUI 节点: /root/Arena/GameUI
+[Arena] ✅ BondHUD 场景加载成功
+[Arena] ✅ BondHUD 实例化成功
+[Arena] ✅ BondHUD 已添加到 GameUI
+[Arena] BondHUD 路径: /root/Arena/GameUI/BondHUD
+[Arena] BondHUD 可见性: true
+[Arena] _ready() 完成，飘字保护已解除
+[PlayerBase] SkillManager already exists (created by child: @Node@253), loaded=3, skip auto create
+[Arena] ===== 角色切换开始 =====
+[Arena] 收到角色切换请求: runeblazer
+[Arena] 跳过自动保存（QEF测试模式）: character_switch
+[Arena] 当前玩家: runeblazer
+[Arena] 当前玩家位置: (500.0, 300.0)
+[Arena] 不清理旧玩家的技能效果（默认行为）
+[Arena] 调用 player.queue_free()
+[Arena] 等待一帧...
+[DebugSwitcher] test mode enabled: wave_time=999, key8 toggles recording
+[Arena] 玩家死亡信号已连接
+[Arena] 触发 BondManager 重新计算羁绊...
+[Arena] 当前队伍: ["glacier", "arcstriker", "runeblazer"]
+[Arena] ✅ 羁绊计算完成
+[PlayerBase] Bond stat modifiers applied:
+  HP: 98 -> 98
+  Speed: 500
+  EnergyRegen: 1.0
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 羁绊属性已应用到玩家
+[Arena] ===== _init_bond_hud() 完成 =====
+[Arena] 玩家死亡信号已连接
+[Arena] 等待完成，开始生成新角色
+[Arena] _spawn_player 开始: player_id=runeblazer, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "glacier": "punch", "arcstriker": "punch", "runeblazer": "punch" }
+[Arena] visual_config: { "player_id": "runeblazer", "sprite_path": "res://assets/sprites/Players/Player_6.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: runeblazer
+[PlayerFactory] 设置 player_id: runeblazer
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_runeblazer.gd (player_id=runeblazer)
+[PlayerFactory] 成功创建角色: runeblazer
+[Arena] 警告: player_id 不匹配，重新设置:  -> runeblazer
+[PlayerBase] player runeblazer has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player runeblazer loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = runeblazer
+[PlayerBase] ultimate config loaded: { "ult_id": "runeblazer_ult", "name": "符炎圣典", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "vanguard", "visual_color_hex": "#FF6600", "scale_multiplier": 1.2, "explosion_radius": 250.0, "explosion_damage_scale": 1.1, "description": "符焰师展开符炎圣典并触发顶点齐射", "f_role_id": "runeblazer", "f_internal_cd": 0.88, "f_q_line_amp": 1.58, "f_q_closure_amp": 2.08, "f_special_value_1": 1.28, "f_special_value_2": 245.0, "f_special_value_3": 0.24, "f_bond_o_payload": "tag:inkborn|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:blaster|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:vanguard|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_runeblazer_f.gd):<GDScript#-9223371797729113682>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 符炎圣典
+[SkillDrawingBase] _ready(): skill_runeblazer_q, skill_owner=PlayerGeneric:<Area2D#250584501013>
+[SkillDrawingBase] Line2D 创建成功: skill_runeblazer_q
+[Arena] 生成角色成功: runeblazer 在位置 (500.0, 300.0)
+[PlayerBase] Bond stat modifiers applied:
+  HP: 98 -> 98
+  Speed: 500
+  EnergyRegen: 1.0
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 角色切换后羁绊属性已重新应用
+[Arena] ===== 角色切换结束 =====
+[PlayerBase] SkillManager already exists (created by child: @Node@268), loaded=3, skip auto create
+[Arena] 玩家死亡信号已连接
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 1 个敌人
+[skill_runeblazer_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-698.6328, -900.4312), line_2d閺堝鏅? true
+[skill_runeblazer_q] ===== 退出规划模式 ===== 点数: 3, 闭合: false
+[skill_runeblazer_q] 最终闭合判定: false
+[skill_runeblazer_q] 閻㈢喐鍨氬鈧弨鎹愮熅瀵板嫭鏅ラ弸婊愮礉閸樼喎顫愰悙瑙勬殶: 3, 閸氬牆鑻熺痪鎸庮唽閺? 2
+[skill_runeblazer_q] open-path effects spawned
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[skill_runeblazer_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-699.5264, -899.8498), line_2d閺堝鏅? true
+[skill_runeblazer_q] ===== 退出规划模式 ===== 点数: 5, 闭合: true
+[skill_runeblazer_q] 最终闭合判定: true
+[PolygonUtils] 交叉点数量: 1
+[PolygonUtils] 排序后: ["[0,4]"]
+[PolygonUtils] 单交叉点区域: 点数=4
+[PolygonUtils] 提取完成，共 1 个区域
+[skill_runeblazer_q] detected 1 closed polygons
+[PlayerBase] E pressed -> execute_skill('e')
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[PlayerBase] F pressed, ultimate_skill = UltimateSkill:<Node#252312553696>
+[PlayerBase] try activate ultimate, energy: 100.0%
+[ExplosionArea] 检测到 4 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> EnemyGeneric
+[ExplosionArea] 区域 4: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 4 个敌人
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> EnemyGeneric
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 2 个敌人
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[DebugSwitcher] test mode disabled
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+[BackgroundManager] 地图纹理大小: (994.000000, 460.000000)
+[BackgroundManager] 初始化完成 - 瓦片大小: 2000, 已生成: 25 个瓦片
+[ChestManager] 初始化完成 - 生成 2 个宝箱（分散布局）
+[ChestManager] 初始化完成 - 预生成 2 个宝箱位置
+[ChestIndicator] indicator_show_range = 3000 (from map_config.csv)
+[ExitConfirmDialog] _ready() called
+[Arena] _ready() 开始
+[Arena] 已添加到 arena 组
+[Arena] 已启用波末战利品模式，禁用旧宝箱流程
+[Arena] 暂停菜单已初始化
+[Arena] 商店面板已连接
+[Arena] WaveRewardSystem 已创建
+[Arena] WaveRewardPanel 已添加到 GameUI
+[Arena] WildcardPanel 已添加到 GameUI
+[Arena] BattleFlowController 已初始化
+[Arena] Spawner 波次完成信号已连接
+[Arena] 准备初始化玩家...
+[Arena] _init_player_from_selection 开始
+[Arena] selected_player_ids: ["lurewarden"]
+[Arena] selected_player_weapons: { "lurewarden": "pistol" }
+WARNING: [ConfigManager] game_config 缺少键 'enable_wave_recruit_mode'，使用默认值: 1
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] get_game_setting (res://autoloads/config_manager.gd:590)
+       [1] is_wave_recruit_mode_enabled (res://autoloads/global.gd:298)
+       [2] enter_wave_recruit_mode (res://autoloads/global.gd:303)
+       [3] _init_player_from_selection (res://scenes/arena/arena_core.gd:467)
+       [4] _ready (res://scenes/arena/arena_core.gd:117)
+[Arena] 场景中没有默认玩家，直接生成选择的角色
+[Arena] _spawn_player 开始: player_id=lurewarden, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "lurewarden": "pistol" }
+[Arena] visual_config: { "player_id": "lurewarden", "sprite_path": "res://assets/sprites/Players/Player_7.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: lurewarden
+[PlayerFactory] 设置 player_id: lurewarden
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_lurewarden.gd (player_id=lurewarden)
+[PlayerFactory] 成功创建角色: lurewarden
+[Arena] 警告: player_id 不匹配，重新设置:  -> lurewarden
+[PlayerBase] player lurewarden has no equipped item
+[WeaponConfigLoader] 创建武器 Stats: pistol_1 (pistol Lv.1)
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/range/weapon_range_physical.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/range/weapon_range_physical.tscn
+[Player] weapon added: 手枪1级 (pistol_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Range/WeaponPistol.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 动态创建枪口节点，偏移: (20.0, -2.0)
+[Weapon] 武器设置完成: 手枪1级 (pistol_1)
+  - 类型: RANGE
+  - 等级: 1
+  - 形状类型: straight
+  - 子弹模式: single
+  - 碰撞体位置/缩放: (0.0, 0.0) / (1.0, 1.0)
+  - 基础场景: res://scenes/weapons/range/weapon_range_physical.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player lurewarden loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = lurewarden
+[PlayerBase] ultimate config loaded: { "ult_id": "lurewarden_ult", "name": "诱猎号令", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "commander", "visual_color_hex": "#66FF33", "scale_multiplier": 1.2, "explosion_radius": 280.0, "explosion_damage_scale": 1.0, "description": "诱猎师开启诱猎号令并强化诱饵围捕", "f_role_id": "lurewarden", "f_internal_cd": 0.95, "f_q_line_amp": 1.48, "f_q_closure_amp": 1.96, "f_special_value_1": 1.18, "f_special_value_2": 250.0, "f_special_value_3": 0.3, "f_bond_o_payload": "tag:alchemist|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:architect|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:commander|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_lurewarden_f.gd):<GDScript#-9223371654216807479>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 诱猎号令
+[SkillDrawingBase] _ready(): skill_lurewarden_q, skill_owner=PlayerGeneric:<Area2D#378863093778>
+[SkillDrawingBase] Line2D 创建成功: skill_lurewarden_q
+[Arena] 生成角色成功: lurewarden 在位置 (500.0, 300.0)
+[Arena] 玩家初始化完成
+[CharacterSlot] 加载角色图标: lurewarden -> res://assets/sprites/Players/Player_7.png
+[SquadHUD] 初始化 1 个角色卡槽
+[Arena] 小队 HUD 初始化完成
+[Arena] ===== _init_bond_hud() 开始 =====
+[Arena] ✅ 找到 GameUI 节点: /root/Arena/GameUI
+[Arena] ✅ BondHUD 场景加载成功
+[Arena] ✅ BondHUD 实例化成功
+[Arena] ✅ BondHUD 已添加到 GameUI
+[Arena] BondHUD 路径: /root/Arena/GameUI/BondHUD
+[Arena] BondHUD 可见性: true
+[Arena] _ready() 完成，飘字保护已解除
+[PlayerBase] SkillManager already exists (created by child: @Node@888), loaded=3, skip auto create
+[Arena] ===== 角色切换开始 =====
+[Arena] 收到角色切换请求: lurewarden
+[Arena] 跳过自动保存（QEF测试模式）: character_switch
+[Arena] 当前玩家: lurewarden
+[Arena] 当前玩家位置: (500.0, 300.0)
+[Arena] 不清理旧玩家的技能效果（默认行为）
+[Arena] 调用 player.queue_free()
+[Arena] 等待一帧...
+[DebugSwitcher] test mode enabled: wave_time=999, key8 toggles recording
+[Arena] 玩家死亡信号已连接
+[Arena] 触发 BondManager 重新计算羁绊...
+[Arena] 当前队伍: ["sapper", "spiritcaller", "lurewarden"]
+[Arena] ✅ 羁绊计算完成
+[PlayerBase] Bond stat modifiers applied:
+  HP: 108 -> 141
+  Speed: 640
+  EnergyRegen: 0.7
+  PickupRange: 225
+  Damage: 10
+[Arena] ✅ 羁绊属性已应用到玩家
+[Arena] ===== _init_bond_hud() 完成 =====
+[Arena] 玩家死亡信号已连接
+[Arena] 等待完成，开始生成新角色
+[Arena] _spawn_player 开始: player_id=lurewarden, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "sapper": "pistol", "spiritcaller": "punch", "lurewarden": "pistol" }
+[Arena] visual_config: { "player_id": "lurewarden", "sprite_path": "res://assets/sprites/Players/Player_7.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: lurewarden
+[PlayerFactory] 设置 player_id: lurewarden
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_lurewarden.gd (player_id=lurewarden)
+[PlayerFactory] 成功创建角色: lurewarden
+[Arena] 警告: player_id 不匹配，重新设置:  -> lurewarden
+[PlayerBase] player lurewarden has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/range/weapon_range_physical.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/range/weapon_range_physical.tscn
+[Player] weapon added: 手枪1级 (pistol_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Range/WeaponPistol.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 动态创建枪口节点，偏移: (20.0, -2.0)
+[Weapon] 武器设置完成: 手枪1级 (pistol_1)
+  - 类型: RANGE
+  - 等级: 1
+  - 形状类型: straight
+  - 子弹模式: single
+  - 碰撞体位置/缩放: (0.0, 0.0) / (1.0, 1.0)
+  - 基础场景: res://scenes/weapons/range/weapon_range_physical.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player lurewarden loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = lurewarden
+[PlayerBase] ultimate config loaded: { "ult_id": "lurewarden_ult", "name": "诱猎号令", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "commander", "visual_color_hex": "#66FF33", "scale_multiplier": 1.2, "explosion_radius": 280.0, "explosion_damage_scale": 1.0, "description": "诱猎师开启诱猎号令并强化诱饵围捕", "f_role_id": "lurewarden", "f_internal_cd": 0.95, "f_q_line_amp": 1.48, "f_q_closure_amp": 1.96, "f_special_value_1": 1.18, "f_special_value_2": 250.0, "f_special_value_3": 0.3, "f_bond_o_payload": "tag:alchemist|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:architect|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:commander|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_lurewarden_f.gd):<GDScript#-9223371654216807479>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 诱猎号令
+[SkillDrawingBase] _ready(): skill_lurewarden_q, skill_owner=PlayerGeneric:<Area2D#392955956904>
+[SkillDrawingBase] Line2D 创建成功: skill_lurewarden_q
+[Arena] 生成角色成功: lurewarden 在位置 (500.0, 300.0)
+[PlayerBase] Bond stat modifiers applied:
+  HP: 108 -> 141
+  Speed: 640
+  EnergyRegen: 0.7
+  PickupRange: 225
+  Damage: 10
+[Arena] ✅ 角色切换后羁绊属性已重新应用
+[Arena] ===== 角色切换结束 =====
+[PlayerBase] SkillManager already exists (created by child: @Node@903), loaded=3, skip auto create
+[Arena] 玩家死亡信号已连接
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 手枪1级
+[RangeBehavior] 武器位置: (500.0, 285.0)
+[RangeBehavior] 武器旋转: -49.1631962117532度
+[RangeBehavior] Muzzle 位置: (532.6953, 247.1712)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_pistol.tscn
+  - 生成位置: (532.6953, 247.1712)
+  - 角度偏移: 0.0度
+  - 速度: (1177.032, -1361.835)
+  - 伤害: 17.0
+[Projectile] 子弹初始化:
+  - 位置: (532.6953, 247.1712)
+  - 速度: (1177.032, -1361.835)
+  - 伤害: 11.0
+  - 暴击: true
+  - 击退: 1.0
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[PlayerBase] E pressed -> execute_skill('e')
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (598.1406, 171.4505)
+[Projectile] 目标: CLIEnemy_(90_0, -120_0)
+[Projectile] 目标位置: (580.3133, 190.8679)
+[Projectile] 子弹销毁
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[RangeBehavior] 攻击结束
+[skill_lurewarden_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-699.3124, -901.0809), line_2d閺堝鏅? true
+[skill_lurewarden_q] ===== 退出规划模式 ===== 点数: 3, 闭合: false
+[skill_lurewarden_q] 最终闭合判定: false
+[skill_lurewarden_q] 閻㈢喐鍨氬鈧弨鎹愮熅瀵板嫭鏅ラ弸婊愮礉閸樼喎顫愰悙瑙勬殶: 3, 閸氬牆鑻熺痪鎸庮唽閺? 2
+[skill_lurewarden_q] [P0-2] 线段持续加成: 5.0s -> 8.0s (+3.0s)
+[skill_lurewarden_q] [P0-2] 线段持续加成: 5.0s -> 8.0s (+3.0s)
+[skill_lurewarden_q] [P0-2] 线段持续加成: 5.0s -> 8.0s (+3.0s)
+[skill_lurewarden_q] open-path effects spawned
+[skill_lurewarden_q] [P0-2] 线段持续加成: 5.0s -> 8.0s (+3.0s)
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 手枪1级
+[RangeBehavior] 武器位置: (500.0, 285.0)
+[RangeBehavior] 武器旋转: -48.7077933488426度
+[RangeBehavior] Muzzle 位置: (532.995, 247.4323)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_pistol.tscn
+  - 生成位置: (532.995, 247.4323)
+  - 角度偏移: 0.0度
+  - 速度: (1187.819, -1352.437)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (532.995, 247.4323)
+  - 速度: (1187.819, -1352.437)
+  - 伤害: 11.0
+  - 暴击: false
+  - 击退: 1.0
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (596.5101, 175.1145)
+[Projectile] 目标: CLIEnemy_(90_0, -120_0)
+[Projectile] 目标位置: (561.5858, 210.2617)
+[Projectile] 子弹销毁
+[RangeBehavior] 攻击结束
+[PlayerBase] E pressed -> execute_skill('e')
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 手枪1级
+[RangeBehavior] 武器位置: (500.0, 285.0)
+[RangeBehavior] 武器旋转: -46.8323907423918度
+[RangeBehavior] Muzzle 位置: (534.2067, 248.5322)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_pistol.tscn
+  - 生成位置: (534.2067, 248.5322)
+  - 角度偏移: 0.0度
+  - 速度: (1231.443, -1312.84)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (534.2067, 248.5322)
+  - 速度: (1231.443, -1312.84)
+  - 伤害: 11.0
+  - 暴击: false
+  - 击退: 1.0
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[skill_lurewarden_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-700.1413, -900.2529), line_2d閺堝鏅? true
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (578.3651, 201.4548)
+[Projectile] 目标: CLIEnemy_(90_0, -120_0)
+[Projectile] 目标位置: (579.9105, 191.2701)
+[Projectile] 子弹销毁
+[skill_lurewarden_q] ===== 退出规划模式 ===== 点数: 5, 闭合: true
+[skill_lurewarden_q] 最终闭合判定: true
+[PolygonUtils] 交叉点数量: 1
+[PolygonUtils] 排序后: ["[0,4]"]
+[PolygonUtils] 单交叉点区域: 点数=4
+[PolygonUtils] 提取完成，共 1 个区域
+[skill_lurewarden_q] detected 1 closed polygons
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[RangeBehavior] 攻击结束
+[PlayerBase] E pressed -> execute_skill('e')
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 手枪1级
+[RangeBehavior] 武器位置: (500.0, 285.0)
+[RangeBehavior] 武器旋转: 50.5013805343204度
+[RangeBehavior] Muzzle 位置: (531.803, 323.582)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_pistol.tscn
+  - 生成位置: (531.803, 323.582)
+  - 角度偏移: 0.0度
+  - 速度: (1144.907, 1388.952)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (531.803, 323.582)
+  - 速度: (1144.907, 1388.952)
+  - 伤害: 11.0
+  - 暴击: false
+  - 击退: 1.0
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (545.2249, 339.865)
+[Projectile] 目标: CLIEnemy_(120_0, 90_0)
+[Projectile] 目标位置: (548.0674, 341.2432)
+[Projectile] 子弹销毁
+[RangeBehavior] 攻击结束
+[PlayerBase] F pressed, ultimate_skill = UltimateSkill:<Node#394751117437>
+[PlayerBase] try activate ultimate, energy: 100.0%
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 手枪1级
+[RangeBehavior] 武器位置: (500.0, 282.0)
+[RangeBehavior] 武器旋转: -52.9553992012143度
+[RangeBehavior] Muzzle 位置: (536.1462, 234.11)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_pistol.tscn
+  - 生成位置: (536.1462, 234.11)
+  - 角度偏移: 0.0度
+  - 速度: (1084.386, -1436.7)
+  - 伤害: 17.0
+[Projectile] 子弹初始化:
+  - 位置: (536.1462, 234.11)
+  - 速度: (1084.386, -1436.7)
+  - 伤害: 11.0
+  - 暴击: true
+  - 击退: 1.0
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (556.3365, 207.3598)
+[Projectile] 目标: CLIEnemy_(90_0, -120_0)
+[Projectile] 目标位置: (530.5811, 237.7534)
+[Projectile] 子弹销毁
+[Projectile] ✓ 生成爆炸: 伤害=1.0, 半径=280.0
+[Projectile] 爆炸伤害: 11.0 (基础:11.0 × 倍率:1.0)
+[ExplosionArea] 检测到 4 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 11.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 11.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 11.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 区域 4: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 11.0 -> EnemyGeneric
+[ExplosionArea] 共击中 4 个敌人
+[RangeBehavior] 攻击结束
+[DebugSwitcher] test mode disabled
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+[BackgroundManager] 地图纹理大小: (994.000000, 460.000000)
+[BackgroundManager] 初始化完成 - 瓦片大小: 2000, 已生成: 25 个瓦片
+[ChestManager] 初始化完成 - 生成 2 个宝箱（分散布局）
+[ChestManager] 初始化完成 - 预生成 2 个宝箱位置
+[ChestIndicator] indicator_show_range = 3000 (from map_config.csv)
+[ExitConfirmDialog] _ready() called
+[Arena] _ready() 开始
+[Arena] 已添加到 arena 组
+[Arena] 已启用波末战利品模式，禁用旧宝箱流程
+[Arena] 暂停菜单已初始化
+[Arena] 商店面板已连接
+[Arena] WaveRewardSystem 已创建
+[Arena] WaveRewardPanel 已添加到 GameUI
+[Arena] WildcardPanel 已添加到 GameUI
+[Arena] BattleFlowController 已初始化
+[Arena] Spawner 波次完成信号已连接
+[Arena] 准备初始化玩家...
+[Arena] _init_player_from_selection 开始
+[Arena] selected_player_ids: ["weaver"]
+[Arena] selected_player_weapons: { "weaver": "laser" }
+WARNING: [ConfigManager] game_config 缺少键 'enable_wave_recruit_mode'，使用默认值: 1
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] get_game_setting (res://autoloads/config_manager.gd:590)
+       [1] is_wave_recruit_mode_enabled (res://autoloads/global.gd:298)
+       [2] enter_wave_recruit_mode (res://autoloads/global.gd:303)
+       [3] _init_player_from_selection (res://scenes/arena/arena_core.gd:467)
+       [4] _ready (res://scenes/arena/arena_core.gd:117)
+[Arena] 场景中没有默认玩家，直接生成选择的角色
+[Arena] _spawn_player 开始: player_id=weaver, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "weaver": "laser" }
+[Arena] visual_config: { "player_id": "weaver", "sprite_path": "res://assets/sprites/Players/Player_8.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: weaver
+[PlayerFactory] 设置 player_id: weaver
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_weaver.gd (player_id=weaver)
+[PlayerFactory] 成功创建角色: weaver
+[Arena] 警告: player_id 不匹配，重新设置:  -> weaver
+[PlayerBase] player weaver has no equipped item
+[WeaponConfigLoader] 创建武器 Stats: laser_1 (laser Lv.1)
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/range/weapon_range_beam.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/range/weapon_range_beam.tscn
+[Player] weapon added: 激光1级 (laser_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Range/WeaponLaser.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 动态创建枪口节点，偏移: (24.0, 0.0)
+[Weapon] 武器设置完成: 激光1级 (laser_1)
+  - 类型: RANGE
+  - 等级: 1
+  - 形状类型: straight
+  - 子弹模式: single
+  - 碰撞体位置/缩放: (0.0, 0.0) / (1.0, 1.0)
+  - 基础场景: res://scenes/weapons/range/weapon_range_beam.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player weaver loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = weaver
+[PlayerBase] ultimate config loaded: { "ult_id": "weaver_ult", "name": "万丝归巢", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "assist", "visual_color_hex": "#FFAA33", "scale_multiplier": 1.3, "explosion_radius": 200.0, "explosion_damage_scale": 1.2, "description": "织网者启动万丝归巢并强化闭合禁行", "f_role_id": "weaver", "f_internal_cd": 1.0, "f_q_line_amp": 1.42, "f_q_closure_amp": 1.92, "f_special_value_1": 1.05, "f_special_value_2": 250.0, "f_special_value_3": 0.35, "f_bond_o_payload": "tag:inkborn|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:hexer|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:assist|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_weaver_f.gd):<GDScript#-9223371576538297672>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 万丝归巢
+[Arena] 生成角色成功: weaver 在位置 (500.0, 300.0)
+[Arena] 玩家初始化完成
+[CharacterSlot] 加载角色图标: weaver -> res://assets/sprites/Players/Player_8.png
+[SquadHUD] 初始化 1 个角色卡槽
+[Arena] 小队 HUD 初始化完成
+[Arena] ===== _init_bond_hud() 开始 =====
+[Arena] ✅ 找到 GameUI 节点: /root/Arena/GameUI
+[Arena] ✅ BondHUD 场景加载成功
+[Arena] ✅ BondHUD 实例化成功
+[Arena] ✅ BondHUD 已添加到 GameUI
+[Arena] BondHUD 路径: /root/Arena/GameUI/BondHUD
+[Arena] BondHUD 可见性: true
+[Arena] _ready() 完成，飘字保护已解除
+[PlayerBase] SkillManager already exists (created by child: @Node@1133), loaded=3, skip auto create
+[Arena] ===== 角色切换开始 =====
+[Arena] 收到角色切换请求: weaver
+[Arena] 跳过自动保存（QEF测试模式）: character_switch
+[Arena] 当前玩家: weaver
+[Arena] 当前玩家位置: (500.0, 300.0)
+[Arena] 不清理旧玩家的技能效果（默认行为）
+[Arena] 调用 player.queue_free()
+[Arena] 等待一帧...
+[DebugSwitcher] test mode enabled: wave_time=999, key8 toggles recording
+[Arena] 玩家死亡信号已连接
+[Arena] 触发 BondManager 重新计算羁绊...
+[Arena] 当前队伍: ["butcher", "pyro", "weaver"]
+[Arena] ✅ 羁绊计算完成
+[PlayerBase] Bond stat modifiers applied:
+  HP: 103 -> 103
+  Speed: 510
+  EnergyRegen: 1.0
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 羁绊属性已应用到玩家
+[Arena] ===== _init_bond_hud() 完成 =====
+[Arena] 玩家死亡信号已连接
+[Arena] 等待完成，开始生成新角色
+[Arena] _spawn_player 开始: player_id=weaver, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "butcher": "punch", "pyro": "laser", "weaver": "laser" }
+[Arena] visual_config: { "player_id": "weaver", "sprite_path": "res://assets/sprites/Players/Player_8.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: weaver
+[PlayerFactory] 设置 player_id: weaver
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_weaver.gd (player_id=weaver)
+[PlayerFactory] 成功创建角色: weaver
+[Arena] 警告: player_id 不匹配，重新设置:  -> weaver
+[PlayerBase] player weaver has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/range/weapon_range_beam.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/range/weapon_range_beam.tscn
+[Player] weapon added: 激光1级 (laser_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Range/WeaponLaser.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 动态创建枪口节点，偏移: (24.0, 0.0)
+[Weapon] 武器设置完成: 激光1级 (laser_1)
+  - 类型: RANGE
+  - 等级: 1
+  - 形状类型: straight
+  - 子弹模式: single
+  - 碰撞体位置/缩放: (0.0, 0.0) / (1.0, 1.0)
+  - 基础场景: res://scenes/weapons/range/weapon_range_beam.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player weaver loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = weaver
+[PlayerBase] ultimate config loaded: { "ult_id": "weaver_ult", "name": "万丝归巢", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "assist", "visual_color_hex": "#FFAA33", "scale_multiplier": 1.3, "explosion_radius": 200.0, "explosion_damage_scale": 1.2, "description": "织网者启动万丝归巢并强化闭合禁行", "f_role_id": "weaver", "f_internal_cd": 1.0, "f_q_line_amp": 1.42, "f_q_closure_amp": 1.92, "f_special_value_1": 1.05, "f_special_value_2": 250.0, "f_special_value_3": 0.35, "f_bond_o_payload": "tag:inkborn|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:hexer|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:assist|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_weaver_f.gd):<GDScript#-9223371576538297672>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 万丝归巢
+[Arena] 生成角色成功: weaver 在位置 (500.0, 300.0)
+[PlayerBase] Bond stat modifiers applied:
+  HP: 103 -> 103
+  Speed: 510
+  EnergyRegen: 1.0
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 角色切换后羁绊属性已重新应用
+[Arena] ===== 角色切换结束 =====
+[PlayerBase] SkillManager already exists (created by child: @Node@1149), loaded=3, skip auto create
+[Arena] 玩家死亡信号已连接
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 激光1级
+[RangeBehavior] 武器位置: (500.0, 285.0)
+[RangeBehavior] 武器旋转: -49.9859232331325度
+[RangeBehavior] Muzzle 位置: (538.5786, 239.0468)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_laser.tscn
+  - 生成位置: (538.5786, 239.0468)
+  - 角度偏移: 0.0度
+  - 速度: (1285.952, -1531.773)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (538.5786, 239.0468)
+  - 速度: (1285.952, -1531.773)
+  - 伤害: 11.0
+  - 暴击: false
+  - 击退: 0.5
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[PlayerBase] E pressed -> execute_skill('e')
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (598.4111, 167.7768)
+[Projectile] 目标: CLIEnemy_(90_0, -120_0)
+[Projectile] 目标位置: (580.3367, 190.8371)
+[Projectile] 子弹销毁
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 2 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 1 个敌人
+[RangeBehavior] 攻击结束
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 激光1级
+[RangeBehavior] 武器位置: (500.0, 285.0)
+[RangeBehavior] 武器旋转: -49.9307284744496度
+[RangeBehavior] Muzzle 位置: (538.6228, 239.084)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_laser.tscn
+  - 生成位置: (538.6228, 239.084)
+  - 角度偏移: 0.0度
+  - 速度: (1287.427, -1530.533)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (538.6228, 239.084)
+  - 速度: (1287.427, -1530.533)
+  - 伤害: 11.0
+  - 暴击: false
+  - 击退: 0.5
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (575.2787, 195.5063)
+[Projectile] 目标: CLIEnemy_(90_0, -120_0)
+[Projectile] 目标位置: (580.0411, 191.3969)
+[Projectile] 子弹销毁
+[RangeBehavior] 攻击结束
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 2 个敌人
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 2 个敌人
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 激光1级
+[RangeBehavior] 武器位置: (500.0, 285.0)
+[RangeBehavior] 武器旋转: 51.8190333082426度
+[RangeBehavior] Muzzle 位置: (537.0889, 332.1637)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_laser.tscn
+  - 生成位置: (537.0889, 332.1637)
+  - 角度偏移: 0.0度
+  - 速度: (1236.295, 1572.125)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (537.0889, 332.1637)
+  - 速度: (1236.295, 1572.125)
+  - 伤害: 11.0
+  - 暴击: false
+  - 击退: 0.5
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (560.2694, 361.6411)
+[Projectile] 目标: CLIEnemy_(120_0, 90_0)
+[Projectile] 目标位置: (541.5493, 338.6294)
+[Projectile] 子弹销毁
+[RangeBehavior] 攻击结束
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[PolygonUtils] 交叉点数量: 1
+[PolygonUtils] 排序后: ["[0,4]"]
+[PolygonUtils] 单交叉点区域: 点数=4
+[PolygonUtils] 提取完成，共 1 个区域
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 激光1级
+[RangeBehavior] 武器位置: (500.0, 285.0)
+[RangeBehavior] 武器旋转: -49.8159266548801度
+[RangeBehavior] Muzzle 位置: (538.7147, 239.1615)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_laser.tscn
+  - 生成位置: (538.7147, 239.1615)
+  - 角度偏移: 0.0度
+  - 速度: (1290.491, -1527.951)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (538.7147, 239.1615)
+  - 速度: (1290.491, -1527.951)
+  - 伤害: 11.0
+  - 暴击: false
+  - 击退: 0.5
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (589.4403, 179.102)
+[Projectile] 目标: CLIEnemy_(90_0, -120_0)
+[Projectile] 目标位置: (553.2728, 218.9231)
+[Projectile] 子弹销毁
+[PlayerBase] E pressed -> execute_skill('e')
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[RangeBehavior] 攻击结束
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 共击中 2 个敌人
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 共击中 2 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 激光1级
+[RangeBehavior] 武器位置: (500.0, 285.0)
+[RangeBehavior] 武器旋转: 27.5044085140016度
+[RangeBehavior] Muzzle 位置: (553.2185, 312.709)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_laser.tscn
+  - 生成位置: (553.2185, 312.709)
+  - 角度偏移: 0.0度
+  - 速度: (1773.951, 923.6337)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (553.2185, 312.709)
+  - 速度: (1773.951, 923.6337)
+  - 伤害: 11.0
+  - 暴击: false
+  - 击退: 0.5
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (635.1807, 355.3839)
+[Projectile] 目标: CLIEnemy_(120_0, 90_0)
+[Projectile] 目标位置: (609.6711, 383.8812)
+[Projectile] 子弹销毁
+[PlayerBase] F pressed, ultimate_skill = UltimateSkill:<Node#471808870684>
+[PlayerBase] try activate ultimate, energy: 100.0%
+[RangeBehavior] 攻击结束
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 激光1级
+[RangeBehavior] 武器位置: (500.0, 280.5)
+[RangeBehavior] 武器旋转: -47.1872122395848度
+[RangeBehavior] Muzzle 位置: (553.0092, 223.2809)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_laser.tscn
+  - 生成位置: (553.0092, 223.2809)
+  - 角度偏移: 0.0度
+  - 速度: (1359.21, -1467.156)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (553.0092, 223.2809)
+  - 速度: (1359.21, -1467.156)
+  - 伤害: 11.0
+  - 暴击: false
+  - 击退: 0.5
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (568.9435, 206.0811)
+[Projectile] 目标: CLIEnemy_(90_0, -120_0)
+[Projectile] 目标位置: (529.5938, 248.873)
+[Projectile] 子弹销毁
+[Projectile] ✓ 生成爆炸: 伤害=1.0, 半径=200.0
+[Projectile] 爆炸伤害: 13.2 (基础:11.0 × 倍率:1.2)
+[ExplosionArea] 检测到 4 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 13.2 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 13.2 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 13.2 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 4: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 13.2 -> EnemyGeneric
+[ExplosionArea] 共击中 4 个敌人
+[RangeBehavior] 攻击结束
+[HealthComponent] 血量归零，触发死亡信号
+[DebugSwitcher] test mode disabled
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+[BackgroundManager] 地图纹理大小: (994.000000, 460.000000)
+[BackgroundManager] 初始化完成 - 瓦片大小: 2000, 已生成: 25 个瓦片
+[ChestManager] 初始化完成 - 生成 2 个宝箱（分散布局）
+[ChestManager] 初始化完成 - 预生成 2 个宝箱位置
+[ChestIndicator] indicator_show_range = 3000 (from map_config.csv)
+[ExitConfirmDialog] _ready() called
+[Arena] _ready() 开始
+[Arena] 已添加到 arena 组
+[Arena] 已启用波末战利品模式，禁用旧宝箱流程
+[Arena] 暂停菜单已初始化
+[Arena] 商店面板已连接
+[Arena] WaveRewardSystem 已创建
+[Arena] WaveRewardPanel 已添加到 GameUI
+[Arena] WildcardPanel 已添加到 GameUI
+[Arena] BattleFlowController 已初始化
+[Arena] Spawner 波次完成信号已连接
+[Arena] 准备初始化玩家...
+[Arena] _init_player_from_selection 开始
+[Arena] selected_player_ids: ["glacier"]
+[Arena] selected_player_weapons: { "glacier": "punch" }
+WARNING: [ConfigManager] game_config 缺少键 'enable_wave_recruit_mode'，使用默认值: 1
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] get_game_setting (res://autoloads/config_manager.gd:590)
+       [1] is_wave_recruit_mode_enabled (res://autoloads/global.gd:298)
+       [2] enter_wave_recruit_mode (res://autoloads/global.gd:303)
+       [3] _init_player_from_selection (res://scenes/arena/arena_core.gd:467)
+       [4] _ready (res://scenes/arena/arena_core.gd:117)
+[Arena] 场景中没有默认玩家，直接生成选择的角色
+[Arena] _spawn_player 开始: player_id=glacier, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "glacier": "punch" }
+[Arena] visual_config: { "player_id": "glacier", "sprite_path": "res://assets/sprites/Players/Player_1.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: glacier
+[PlayerFactory] 设置 player_id: glacier
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_glacier.gd (player_id=glacier)
+[PlayerFactory] 成功创建角色: glacier
+[Arena] 警告: player_id 不匹配，重新设置:  -> glacier
+[PlayerBase] player glacier has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player glacier loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = glacier
+[PlayerBase] ultimate config loaded: { "ult_id": "glacier_ult", "name": "极夜冰环", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "vanguard", "visual_color_hex": "#66CCFF", "scale_multiplier": 1.2, "explosion_radius": 230.0, "explosion_damage_scale": 1.1, "description": "冰河释放极夜冰环并强化冻结碎裂", "f_role_id": "glacier", "f_internal_cd": 1.05, "f_q_line_amp": 1.4, "f_q_closure_amp": 1.9, "f_special_value_1": 1.1, "f_special_value_2": 240.0, "f_special_value_3": 0.34, "f_bond_o_payload": "tag:colossus|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:architect|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:vanguard|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_glacier_f.gd):<GDScript#-9223371485488345521>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 极夜冰环
+[SkillDrawingBase] _ready(): skill_glacier_q, skill_owner=PlayerGeneric:<Area2D#549269278056>
+[SkillDrawingBase] Line2D 创建成功: skill_glacier_q
+[Arena] 生成角色成功: glacier 在位置 (500.0, 300.0)
+[Arena] 玩家初始化完成
+[CharacterSlot] 加载角色图标: glacier -> res://assets/sprites/Players/Player_1.png
+[SquadHUD] 初始化 1 个角色卡槽
+[Arena] 小队 HUD 初始化完成
+[Arena] ===== _init_bond_hud() 开始 =====
+[Arena] ✅ 找到 GameUI 节点: /root/Arena/GameUI
+[Arena] ✅ BondHUD 场景加载成功
+[Arena] ✅ BondHUD 实例化成功
+[Arena] ✅ BondHUD 已添加到 GameUI
+[Arena] BondHUD 路径: /root/Arena/GameUI/BondHUD
+[Arena] BondHUD 可见性: true
+[Arena] _ready() 完成，飘字保护已解除
+[PlayerBase] SkillManager already exists (created by child: @Node@1469), loaded=3, skip auto create
+[Arena] ===== 角色切换开始 =====
+[Arena] 收到角色切换请求: glacier
+[Arena] 跳过自动保存（QEF测试模式）: character_switch
+[Arena] 当前玩家: glacier
+[Arena] 当前玩家位置: (500.0, 300.0)
+[Arena] 不清理旧玩家的技能效果（默认行为）
+[Arena] 调用 player.queue_free()
+[Arena] 等待一帧...
+[DebugSwitcher] test mode enabled: wave_time=999, key8 toggles recording
+[Arena] 玩家死亡信号已连接
+[Arena] 触发 BondManager 重新计算羁绊...
+[Arena] 当前队伍: ["glacier", "arcstriker", "runeblazer"]
+[Arena] ✅ 羁绊计算完成
+[PlayerBase] Bond stat modifiers applied:
+  HP: 158 -> 158
+  Speed: 400
+  EnergyRegen: 0.5
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 羁绊属性已应用到玩家
+[Arena] ===== _init_bond_hud() 完成 =====
+[Arena] 玩家死亡信号已连接
+[Arena] 等待完成，开始生成新角色
+[Arena] _spawn_player 开始: player_id=glacier, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "glacier": "punch", "arcstriker": "punch", "runeblazer": "punch" }
+[Arena] visual_config: { "player_id": "glacier", "sprite_path": "res://assets/sprites/Players/Player_1.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: glacier
+[PlayerFactory] 设置 player_id: glacier
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_glacier.gd (player_id=glacier)
+[PlayerFactory] 成功创建角色: glacier
+[Arena] 警告: player_id 不匹配，重新设置:  -> glacier
+[PlayerBase] player glacier has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player glacier loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = glacier
+[PlayerBase] ultimate config loaded: { "ult_id": "glacier_ult", "name": "极夜冰环", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "vanguard", "visual_color_hex": "#66CCFF", "scale_multiplier": 1.2, "explosion_radius": 230.0, "explosion_damage_scale": 1.1, "description": "冰河释放极夜冰环并强化冻结碎裂", "f_role_id": "glacier", "f_internal_cd": 1.05, "f_q_line_amp": 1.4, "f_q_closure_amp": 1.9, "f_special_value_1": 1.1, "f_special_value_2": 240.0, "f_special_value_3": 0.34, "f_bond_o_payload": "tag:colossus|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:architect|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:vanguard|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_glacier_f.gd):<GDScript#-9223371485488345521>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 极夜冰环
+[SkillDrawingBase] _ready(): skill_glacier_q, skill_owner=PlayerGeneric:<Area2D#560107358540>
+[SkillDrawingBase] Line2D 创建成功: skill_glacier_q
+[Arena] 生成角色成功: glacier 在位置 (500.0, 300.0)
+[PlayerBase] Bond stat modifiers applied:
+  HP: 158 -> 158
+  Speed: 400
+  EnergyRegen: 0.5
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 角色切换后羁绊属性已重新应用
+[Arena] ===== 角色切换结束 =====
+[PlayerBase] SkillManager already exists (created by child: @Node@1484), loaded=3, skip auto create
+[Arena] 玩家死亡信号已连接
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[skill_glacier_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-698.6523, -899.6569), line_2d閺堝鏅? true
+[skill_glacier_q] ===== 退出规划模式 ===== 点数: 3, 闭合: false
+[skill_glacier_q] 最终闭合判定: false
+[skill_glacier_q] 閻㈢喐鍨氬鈧弨鎹愮熅瀵板嫭鏅ラ弸婊愮礉閸樼喎顫愰悙瑙勬殶: 3, 閸氬牆鑻熺痪鎸庮唽閺? 2
+[skill_glacier_q] open-path effects spawned
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[skill_glacier_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-698.6673, -899.2609), line_2d閺堝鏅? true
+[skill_glacier_q] ===== 退出规划模式 ===== 点数: 5, 闭合: true
+[skill_glacier_q] 最终闭合判定: true
+[PolygonUtils] 交叉点数量: 1
+[PolygonUtils] 排序后: ["[0,4]"]
+[PolygonUtils] 单交叉点区域: 点数=4
+[PolygonUtils] 提取完成，共 1 个区域
+[skill_glacier_q] detected 1 closed polygons
+[PlayerBase] E pressed -> execute_skill('e')
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[PlayerBase] F pressed, ultimate_skill = UltimateSkill:<Node#561835412463>
+[PlayerBase] try activate ultimate, energy: 100.0%
+[ExplosionArea] 检测到 4 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> EnemyGeneric
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 4: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 4 个敌人
+[ExplosionArea] 检测到 4 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> EnemyGeneric
+[ExplosionArea] 区域 4: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 4 个敌人
+[ExplosionArea] 检测到 4 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 区域 4: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> EnemyGeneric
+[ExplosionArea] 共击中 4 个敌人
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea] 检测到 4 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> EnemyGeneric
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 区域 4: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 4 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[DebugSwitcher] test mode disabled
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+[BackgroundManager] 地图纹理大小: (994.000000, 460.000000)
+[BackgroundManager] 初始化完成 - 瓦片大小: 2000, 已生成: 25 个瓦片
+[ChestManager] 初始化完成 - 生成 2 个宝箱（分散布局）
+[ChestManager] 初始化完成 - 预生成 2 个宝箱位置
+[ChestIndicator] indicator_show_range = 3000 (from map_config.csv)
+[ExitConfirmDialog] _ready() called
+[Arena] _ready() 开始
+[Arena] 已添加到 arena 组
+[Arena] 已启用波末战利品模式，禁用旧宝箱流程
+[Arena] 暂停菜单已初始化
+[Arena] 商店面板已连接
+[Arena] WaveRewardSystem 已创建
+[Arena] WaveRewardPanel 已添加到 GameUI
+[Arena] WildcardPanel 已添加到 GameUI
+[Arena] BattleFlowController 已初始化
+[Arena] Spawner 波次完成信号已连接
+[Arena] 准备初始化玩家...
+[Arena] _init_player_from_selection 开始
+[Arena] selected_player_ids: ["wind"]
+[Arena] selected_player_weapons: { "wind": "pistol" }
+WARNING: [ConfigManager] game_config 缺少键 'enable_wave_recruit_mode'，使用默认值: 1
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] get_game_setting (res://autoloads/config_manager.gd:590)
+       [1] is_wave_recruit_mode_enabled (res://autoloads/global.gd:298)
+       [2] enter_wave_recruit_mode (res://autoloads/global.gd:303)
+       [3] _init_player_from_selection (res://scenes/arena/arena_core.gd:467)
+       [4] _ready (res://scenes/arena/arena_core.gd:117)
+[Arena] 场景中没有默认玩家，直接生成选择的角色
+[Arena] _spawn_player 开始: player_id=wind, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "wind": "pistol" }
+[Arena] visual_config: { "player_id": "wind", "sprite_path": "res://assets/sprites/Players/Player_2.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: wind
+[PlayerFactory] 设置 player_id: wind
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_wind.gd (player_id=wind)
+[PlayerFactory] 成功创建角色: wind
+[Arena] 警告: player_id 不匹配，重新设置:  -> wind
+[PlayerBase] player wind has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/range/weapon_range_physical.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/range/weapon_range_physical.tscn
+[Player] weapon added: 手枪1级 (pistol_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Range/WeaponPistol.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 动态创建枪口节点，偏移: (20.0, -2.0)
+[Weapon] 武器设置完成: 手枪1级 (pistol_1)
+  - 类型: RANGE
+  - 等级: 1
+  - 形状类型: straight
+  - 子弹模式: single
+  - 碰撞体位置/缩放: (0.0, 0.0) / (1.0, 1.0)
+  - 基础场景: res://scenes/weapons/range/weapon_range_physical.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player wind loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = wind
+[PlayerBase] ultimate config loaded: { "ult_id": "wind_ult", "name": "风之升华", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "commander", "visual_color_hex": "#33FF99", "scale_multiplier": 1.2, "explosion_radius": 260.0, "explosion_damage_scale": 0.9, "description": "风行者开启飓眼迁跃并强化牵引风切", "f_role_id": "wind", "f_internal_cd": 0.95, "f_q_line_amp": 1.5, "f_q_closure_amp": 1.95, "f_special_value_1": 1.15, "f_special_value_2": 260.0, "f_special_value_3": 0.28, "f_bond_o_payload": "tag:nomad|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:geometrist|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:commander|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_wind_f.gd):<GDScript#-9223371365950681649>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 风之升华
+[SkillDrawingBase] _ready(): skill_wind_q, skill_owner=PlayerGeneric:<Area2D#668538506463>
+[SkillDrawingBase] Line2D 创建成功: skill_wind_q
+[Arena] 生成角色成功: wind 在位置 (500.0, 300.0)
+[Arena] 玩家初始化完成
+[CharacterSlot] 加载角色图标: wind -> res://assets/sprites/Players/Player_2.png
+[SquadHUD] 初始化 1 个角色卡槽
+[Arena] 小队 HUD 初始化完成
+[Arena] ===== _init_bond_hud() 开始 =====
+[Arena] ✅ 找到 GameUI 节点: /root/Arena/GameUI
+[Arena] ✅ BondHUD 场景加载成功
+[Arena] ✅ BondHUD 实例化成功
+[Arena] ✅ BondHUD 已添加到 GameUI
+[Arena] BondHUD 路径: /root/Arena/GameUI/BondHUD
+[Arena] BondHUD 可见性: true
+[Arena] _ready() 完成，飘字保护已解除
+[PlayerBase] SkillManager already exists (created by child: @Node@1963), loaded=3, skip auto create
+[Arena] ===== 角色切换开始 =====
+[Arena] 收到角色切换请求: wind
+[Arena] 跳过自动保存（QEF测试模式）: character_switch
+[Arena] 当前玩家: wind
+[Arena] 当前玩家位置: (500.0, 300.0)
+[Arena] 不清理旧玩家的技能效果（默认行为）
+[Arena] 调用 player.queue_free()
+[Arena] 等待一帧...
+[DebugSwitcher] test mode enabled: wave_time=999, key8 toggles recording
+[Arena] 玩家死亡信号已连接
+[Arena] 触发 BondManager 重新计算羁绊...
+[Arena] 当前队伍: ["blacksmith", "medic", "wind"]
+[Arena] ✅ 羁绊计算完成
+[PlayerBase] Bond stat modifiers applied:
+  HP: 93 -> 93
+  Speed: 600
+  EnergyRegen: 0.6
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 羁绊属性已应用到玩家
+[Arena] ===== _init_bond_hud() 完成 =====
+[Arena] 玩家死亡信号已连接
+[Arena] 等待完成，开始生成新角色
+[Arena] _spawn_player 开始: player_id=wind, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "blacksmith": "punch", "medic": "punch", "wind": "pistol" }
+[Arena] visual_config: { "player_id": "wind", "sprite_path": "res://assets/sprites/Players/Player_2.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: wind
+[PlayerFactory] 设置 player_id: wind
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_wind.gd (player_id=wind)
+[PlayerFactory] 成功创建角色: wind
+[Arena] 警告: player_id 不匹配，重新设置:  -> wind
+[PlayerBase] player wind has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/range/weapon_range_physical.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/range/weapon_range_physical.tscn
+[Player] weapon added: 手枪1级 (pistol_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Range/WeaponPistol.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 动态创建枪口节点，偏移: (20.0, -2.0)
+[Weapon] 武器设置完成: 手枪1级 (pistol_1)
+  - 类型: RANGE
+  - 等级: 1
+  - 形状类型: straight
+  - 子弹模式: single
+  - 碰撞体位置/缩放: (0.0, 0.0) / (1.0, 1.0)
+  - 基础场景: res://scenes/weapons/range/weapon_range_physical.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player wind loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = wind
+[PlayerBase] ultimate config loaded: { "ult_id": "wind_ult", "name": "风之升华", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "commander", "visual_color_hex": "#33FF99", "scale_multiplier": 1.2, "explosion_radius": 260.0, "explosion_damage_scale": 0.9, "description": "风行者开启飓眼迁跃并强化牵引风切", "f_role_id": "wind", "f_internal_cd": 0.95, "f_q_line_amp": 1.5, "f_q_closure_amp": 1.95, "f_special_value_1": 1.15, "f_special_value_2": 260.0, "f_special_value_3": 0.28, "f_bond_o_payload": "tag:nomad|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:geometrist|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:commander|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_wind_f.gd):<GDScript#-9223371365950681649>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 风之升华
+[SkillDrawingBase] _ready(): skill_wind_q, skill_owner=PlayerGeneric:<Area2D#681675066700>
+[SkillDrawingBase] Line2D 创建成功: skill_wind_q
+[Arena] 生成角色成功: wind 在位置 (500.0, 300.0)
+[PlayerBase] Bond stat modifiers applied:
+  HP: 93 -> 93
+  Speed: 600
+  EnergyRegen: 0.6
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 角色切换后羁绊属性已重新应用
+[Arena] ===== 角色切换结束 =====
+[PlayerBase] SkillManager already exists (created by child: @Node@1979), loaded=3, skip auto create
+[Arena] 玩家死亡信号已连接
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 手枪1级
+[RangeBehavior] 武器位置: (500.0, 285.0)
+[RangeBehavior] 武器旋转: -48.1091716643206度
+[RangeBehavior] Muzzle 位置: (533.3857, 247.7791)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_pistol.tscn
+  - 生成位置: (533.3857, 247.7791)
+  - 角度偏移: 0.0度
+  - 速度: (1201.884, -1339.953)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (533.3857, 247.7791)
+  - 速度: (1201.884, -1339.953)
+  - 伤害: 11.0
+  - 暴击: false
+  - 击退: 1.0
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[PlayerBase] E pressed -> execute_skill('e')
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (605.6678, 167.1936)
+[Projectile] 目标: CLIEnemy_(90_0, -120_0)
+[Projectile] 目标位置: (577.3458, 189.5903)
+[Projectile] 子弹销毁
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[RangeBehavior] 攻击结束
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[skill_wind_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-700.0, -900.0), line_2d閺堝鏅? true
+[skill_wind_q] ===== 退出规划模式 ===== 点数: 3, 闭合: false
+[skill_wind_q] 最终闭合判定: false
+[skill_wind_q] 閻㈢喐鍨氬鈧弨鎹愮熅瀵板嫭鏅ラ弸婊愮礉閸樼喎顫愰悙瑙勬殶: 3, 閸氬牆鑻熺痪鎸庮唽閺? 2
+[skill_wind_q] open-path effects spawned
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 手枪1级
+[RangeBehavior] 武器位置: (500.0, 285.0)
+[RangeBehavior] 武器旋转: -52.8261515315502度
+[RangeBehavior] Muzzle 位置: (530.2118, 245.1597)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_pistol.tscn
+  - 生成位置: (530.2118, 245.1597)
+  - 角度偏移: 0.0度
+  - 速度: (1087.624, -1434.25)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (530.2118, 245.1597)
+  - 速度: (1087.624, -1434.25)
+  - 伤害: 11.0
+  - 暴击: false
+  - 击退: 1.0
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (580.8163, 178.4273)
+[Projectile] 目标: CLIEnemy_(90_0, -120_0)
+[Projectile] 目标位置: (564.3337, 207.2187)
+[Projectile] 子弹销毁
+[RangeBehavior] 攻击结束
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 手枪1级
+[RangeBehavior] 武器位置: (500.0, 285.0)
+[RangeBehavior] 武器旋转: -162.767478714149度
+[RangeBehavior] Muzzle 位置: (452.2445, 270.1875)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_pistol.tscn
+  - 生成位置: (452.2445, 270.1875)
+  - 角度偏移: 0.0度
+  - 速度: (-1719.199, -533.2504)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (452.2445, 270.1875)
+  - 速度: (-1719.199, -533.2504)
+  - 伤害: 17.0
+  - 暴击: true
+  - 击退: 1.0
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[skill_wind_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-700.0, -900.0), line_2d閺堝鏅? true
+[skill_wind_q] ===== 退出规划模式 ===== 点数: 5, 闭合: true
+[skill_wind_q] 最终闭合判定: true
+[PolygonUtils] 交叉点数量: 1
+[PolygonUtils] 排序后: ["[0,4]"]
+[PolygonUtils] 单交叉点区域: 点数=4
+[PolygonUtils] 提取完成，共 1 个区域
+[skill_wind_q] detected 1 closed polygons
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[RangeBehavior] 攻击结束
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 共击中 1 个敌人
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 共击中 1 个敌人
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 手枪1级
+[RangeBehavior] 武器位置: (316.1522, 101.1522)
+[RangeBehavior] 武器旋转: 28.7075753646033度
+[RangeBehavior] Muzzle 位置: (360.0063, 125.1692)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_pistol.tscn
+  - 生成位置: (360.0063, 125.1692)
+  - 角度偏移: 0.0度
+  - 速度: (1578.749, 864.611)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (360.0063, 125.1692)
+  - 速度: (1578.749, 864.611)
+  - 伤害: 11.0
+  - 暴击: false
+  - 击退: 1.0
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[HealthComponent] 已经死亡，忽略伤害
+[RangeBehavior] 攻击结束
+[PlayerBase] F pressed, ultimate_skill = UltimateSkill:<Node#683470227528>
+[PlayerBase] try activate ultimate, energy: 100.0%
+[RangeBehavior] ========== 开始远程攻击 ==========
+[RangeBehavior] 武器名称: 手枪1级
+[RangeBehavior] 武器位置: (500.0, 282.0)
+[RangeBehavior] 武器旋转: -53.5445132624117度
+[RangeBehavior] Muzzle 位置: (535.6519, 233.7409)
+[RangeBehavior] 生成子弹:
+  - 子弹场景: res://scenes/projectiles/projectile_pistol.tscn
+  - 生成位置: (535.6519, 233.7409)
+  - 角度偏移: 0.0度
+  - 速度: (1069.557, -1447.774)
+  - 伤害: 11.0
+[Projectile] 子弹初始化:
+  - 位置: (535.6519, 233.7409)
+  - 速度: (1069.557, -1447.774)
+  - 伤害: 11.0
+  - 暴击: false
+  - 击退: 1.0
+  - 发射者: PlayerGeneric
+  - Hitbox 碰撞层: 4
+  - Hitbox 碰撞掩码: 8
+[RangeBehavior] 发射 single x1
+[Projectile] ========== 子弹命中！==========
+[Projectile] 子弹位置: (548.1905, 216.7683)
+[Projectile] 目标: CLIEnemy_(90_0, -120_0)
+[Projectile] 目标位置: (534.1802, 231.97)
+[Projectile] 子弹销毁
+[Projectile] ✓ 生成爆炸: 伤害=1.0, 半径=260.0
+[Projectile] 爆炸伤害: 9.9 (基础:11.0 × 倍率:0.9)
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea]   ✅ 造成伤害(备用): 9.9 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 9.9 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 9.9 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 3 个敌人
+[RangeBehavior] 攻击结束
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[DebugSwitcher] test mode disabled
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+[BackgroundManager] 地图纹理大小: (994.000000, 460.000000)
+[BackgroundManager] 初始化完成 - 瓦片大小: 2000, 已生成: 25 个瓦片
+[ChestManager] 初始化完成 - 生成 2 个宝箱（分散布局）
+[ChestManager] 初始化完成 - 预生成 2 个宝箱位置
+[ChestIndicator] indicator_show_range = 3000 (from map_config.csv)
+[ExitConfirmDialog] _ready() called
+[Arena] _ready() 开始
+[Arena] 已添加到 arena 组
+[Arena] 已启用波末战利品模式，禁用旧宝箱流程
+[Arena] 暂停菜单已初始化
+[Arena] 商店面板已连接
+[Arena] WaveRewardSystem 已创建
+[Arena] WaveRewardPanel 已添加到 GameUI
+[Arena] WildcardPanel 已添加到 GameUI
+[Arena] BattleFlowController 已初始化
+[Arena] Spawner 波次完成信号已连接
+[Arena] 准备初始化玩家...
+[Arena] _init_player_from_selection 开始
+[Arena] selected_player_ids: ["breachmarshal"]
+[Arena] selected_player_weapons: { "breachmarshal": "punch" }
+WARNING: [ConfigManager] game_config 缺少键 'enable_wave_recruit_mode'，使用默认值: 1
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] get_game_setting (res://autoloads/config_manager.gd:590)
+       [1] is_wave_recruit_mode_enabled (res://autoloads/global.gd:298)
+       [2] enter_wave_recruit_mode (res://autoloads/global.gd:303)
+       [3] _init_player_from_selection (res://scenes/arena/arena_core.gd:467)
+       [4] _ready (res://scenes/arena/arena_core.gd:117)
+[Arena] 场景中没有默认玩家，直接生成选择的角色
+[Arena] _spawn_player 开始: player_id=breachmarshal, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "breachmarshal": "punch" }
+[Arena] visual_config: { "player_id": "breachmarshal", "sprite_path": "res://assets/sprites/Players/Player_19.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: breachmarshal
+[PlayerFactory] 设置 player_id: breachmarshal
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_breachmarshal.gd (player_id=breachmarshal)
+[PlayerFactory] 成功创建角色: breachmarshal
+[Arena] 警告: player_id 不匹配，重新设置:  -> breachmarshal
+[PlayerBase] player breachmarshal has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player breachmarshal loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = breachmarshal
+[PlayerBase] ultimate config loaded: { "ult_id": "breachmarshal_ult", "name": "破阵军令", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "commander", "visual_color_hex": "#996633", "scale_multiplier": 1.2, "explosion_radius": 280.0, "explosion_damage_scale": 1.2, "description": "破阵督军进入破阵军令并强化震线开口", "f_role_id": "breachmarshal", "f_internal_cd": 0.9, "f_q_line_amp": 1.58, "f_q_closure_amp": 2.06, "f_special_value_1": 1.32, "f_special_value_2": 270.0, "f_special_value_3": 0.21, "f_bond_o_payload": "tag:colossus|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:blaster|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:commander|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_breachmarshal_f.gd):<GDScript#-9223371251764950044>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 破阵军令
+[SkillDrawingBase] _ready(): skill_breachmarshal_q, skill_owner=PlayerGeneric:<Area2D#782791346682>
+[SkillDrawingBase] Line2D 创建成功: skill_breachmarshal_q
+[Arena] 生成角色成功: breachmarshal 在位置 (500.0, 300.0)
+[Arena] 玩家初始化完成
+[CharacterSlot] 加载角色图标: breachmarshal -> res://assets/sprites/Players/Player_19.png
+[SquadHUD] 初始化 1 个角色卡槽
+[Arena] 小队 HUD 初始化完成
+[Arena] ===== _init_bond_hud() 开始 =====
+[Arena] ✅ 找到 GameUI 节点: /root/Arena/GameUI
+[Arena] ✅ BondHUD 场景加载成功
+[Arena] ✅ BondHUD 实例化成功
+[Arena] ✅ BondHUD 已添加到 GameUI
+[Arena] BondHUD 路径: /root/Arena/GameUI/BondHUD
+[Arena] BondHUD 可见性: true
+[Arena] _ready() 完成，飘字保护已解除
+[PlayerBase] SkillManager already exists (created by child: @Node@2384), loaded=3, skip auto create
+[Arena] ===== 角色切换开始 =====
+[Arena] 收到角色切换请求: breachmarshal
+[Arena] 跳过自动保存（QEF测试模式）: character_switch
+[Arena] 当前玩家: breachmarshal
+[Arena] 当前玩家位置: (500.0, 300.0)
+[Arena] 不清理旧玩家的技能效果（默认行为）
+[Arena] 调用 player.queue_free()
+[Arena] 等待一帧...
+[DebugSwitcher] test mode enabled: wave_time=999, key8 toggles recording
+[Arena] 玩家死亡信号已连接
+[Arena] 触发 BondManager 重新计算羁绊...
+[Arena] 当前队伍: ["banner", "breachmarshal", "swarm"]
+[Arena] ✅ 羁绊计算完成
+[PlayerBase] Bond stat modifiers applied:
+  HP: 118 -> 150
+  Speed: 650
+  EnergyRegen: 0.8
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 羁绊属性已应用到玩家
+[Arena] ===== _init_bond_hud() 完成 =====
+[Arena] 玩家死亡信号已连接
+[Arena] 等待完成，开始生成新角色
+[Arena] _spawn_player 开始: player_id=breachmarshal, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "banner": "punch", "breachmarshal": "punch", "swarm": "punch" }
+[Arena] visual_config: { "player_id": "breachmarshal", "sprite_path": "res://assets/sprites/Players/Player_19.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: breachmarshal
+[PlayerFactory] 设置 player_id: breachmarshal
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_breachmarshal.gd (player_id=breachmarshal)
+[PlayerFactory] 成功创建角色: breachmarshal
+[Arena] 警告: player_id 不匹配，重新设置:  -> breachmarshal
+[PlayerBase] player breachmarshal has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player breachmarshal loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = breachmarshal
+[PlayerBase] ultimate config loaded: { "ult_id": "breachmarshal_ult", "name": "破阵军令", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "commander", "visual_color_hex": "#996633", "scale_multiplier": 1.2, "explosion_radius": 280.0, "explosion_damage_scale": 1.2, "description": "破阵督军进入破阵军令并强化震线开口", "f_role_id": "breachmarshal", "f_internal_cd": 0.9, "f_q_line_amp": 1.58, "f_q_closure_amp": 2.06, "f_special_value_1": 1.32, "f_special_value_2": 270.0, "f_special_value_3": 0.21, "f_bond_o_payload": "tag:colossus|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:blaster|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:commander|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_breachmarshal_f.gd):<GDScript#-9223371251764950044>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 破阵军令
+[SkillDrawingBase] _ready(): skill_breachmarshal_q, skill_owner=PlayerGeneric:<Area2D#794451512182>
+[SkillDrawingBase] Line2D 创建成功: skill_breachmarshal_q
+[Arena] 生成角色成功: breachmarshal 在位置 (500.0, 300.0)
+[PlayerBase] Bond stat modifiers applied:
+  HP: 118 -> 150
+  Speed: 650
+  EnergyRegen: 0.8
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 角色切换后羁绊属性已重新应用
+[Arena] ===== 角色切换结束 =====
+[PlayerBase] SkillManager already exists (created by child: @Node@2399), loaded=3, skip auto create
+[Arena] 玩家死亡信号已连接
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[skill_breachmarshal_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-700.119, -898.6939), line_2d閺堝鏅? true
+[skill_breachmarshal_q] ===== 退出规划模式 ===== 点数: 3, 闭合: false
+[skill_breachmarshal_q] 最终闭合判定: false
+[skill_breachmarshal_q] 閻㈢喐鍨氬鈧弨鎹愮熅瀵板嫭鏅ラ弸婊愮礉閸樼喎顫愰悙瑙勬殶: 3, 閸氬牆鑻熺痪鎸庮唽閺? 2
+[skill_breachmarshal_q] open-path effects spawned
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[skill_breachmarshal_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-701.0478, -900.3494), line_2d閺堝鏅? true
+[skill_breachmarshal_q] ===== 退出规划模式 ===== 点数: 5, 闭合: true
+[skill_breachmarshal_q] 最终闭合判定: true
+[PolygonUtils] 交叉点数量: 1
+[PolygonUtils] 排序后: ["[0,4]"]
+[PolygonUtils] 单交叉点区域: 点数=4
+[PolygonUtils] 提取完成，共 1 个区域
+[skill_breachmarshal_q] detected 1 closed polygons
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[PlayerBase] F pressed, ultimate_skill = UltimateSkill:<Node#796179565132>
+[PlayerBase] try activate ultimate, energy: 100.0%
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> EnemyGeneric
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 3 个敌人
+[ExplosionArea] 检测到 4 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> EnemyGeneric
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 4: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 4 个敌人
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea] 检测到 5 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> EnemyGeneric
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: @Area2D@2676 (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> @Area2D@2676
+[ExplosionArea] 区域 4: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 5: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 5 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea] 检测到 5 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 4: HurtboxComponent -> 父节点: @Area2D@2676 (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> @Area2D@2676
+[ExplosionArea] 区域 5: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 24.0 -> EnemyGeneric
+[ExplosionArea] 共击中 5 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[DebugSwitcher] test mode disabled
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+[BackgroundManager] 地图纹理大小: (994.000000, 460.000000)
+[BackgroundManager] 初始化完成 - 瓦片大小: 2000, 已生成: 25 个瓦片
+[ChestManager] 初始化完成 - 生成 2 个宝箱（分散布局）
+[ChestManager] 初始化完成 - 预生成 2 个宝箱位置
+[ChestIndicator] indicator_show_range = 3000 (from map_config.csv)
+[ExitConfirmDialog] _ready() called
+[Arena] _ready() 开始
+[Arena] 已添加到 arena 组
+[Arena] 已启用波末战利品模式，禁用旧宝箱流程
+[Arena] 暂停菜单已初始化
+[Arena] 商店面板已连接
+[Arena] WaveRewardSystem 已创建
+[Arena] WaveRewardPanel 已添加到 GameUI
+[Arena] WildcardPanel 已添加到 GameUI
+[Arena] BattleFlowController 已初始化
+[Arena] Spawner 波次完成信号已连接
+[Arena] 准备初始化玩家...
+[Arena] _init_player_from_selection 开始
+[Arena] selected_player_ids: ["executioner"]
+[Arena] selected_player_weapons: { "executioner": "punch" }
+WARNING: [ConfigManager] game_config 缺少键 'enable_wave_recruit_mode'，使用默认值: 1
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] get_game_setting (res://autoloads/config_manager.gd:590)
+       [1] is_wave_recruit_mode_enabled (res://autoloads/global.gd:298)
+       [2] enter_wave_recruit_mode (res://autoloads/global.gd:303)
+       [3] _init_player_from_selection (res://scenes/arena/arena_core.gd:467)
+       [4] _ready (res://scenes/arena/arena_core.gd:117)
+[Arena] 场景中没有默认玩家，直接生成选择的角色
+[Arena] _spawn_player 开始: player_id=executioner, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "executioner": "punch" }
+[Arena] visual_config: { "player_id": "executioner", "sprite_path": "res://assets/sprites/Players/Player_5.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: executioner
+[PlayerFactory] 设置 player_id: executioner
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_executioner.gd (player_id=executioner)
+[PlayerFactory] 成功创建角色: executioner
+[Arena] 警告: player_id 不匹配，重新设置:  -> executioner
+[PlayerBase] player executioner has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player executioner loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = executioner
+[PlayerBase] ultimate config loaded: { "ult_id": "executioner_ult", "name": "断罪时刻", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "vanguard", "visual_color_hex": "#8B0000", "scale_multiplier": 1.3, "explosion_radius": 230.0, "explosion_damage_scale": 1.5, "description": "处刑人进入断罪时刻并提升处决阈值", "f_role_id": "executioner", "f_internal_cd": 1.0, "f_q_line_amp": 1.5, "f_q_closure_amp": 2.06, "f_special_value_1": 1.27, "f_special_value_2": 230.0, "f_special_value_3": 0.32, "f_bond_o_payload": "tag:colossus|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:hexer|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:vanguard|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_executioner_f.gd):<GDScript#-9223371131824632982>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 断罪时刻
+[SkillDrawingBase] _ready(): skill_executioner_q, skill_owner=PlayerGeneric:<Area2D#902731664924>
+[SkillDrawingBase] Line2D 创建成功: skill_executioner_q
+[Arena] 生成角色成功: executioner 在位置 (500.0, 300.0)
+[Arena] 玩家初始化完成
+[CharacterSlot] 加载角色图标: executioner -> res://assets/sprites/Players/Player_5.png
+[SquadHUD] 初始化 1 个角色卡槽
+[Arena] 小队 HUD 初始化完成
+[Arena] ===== _init_bond_hud() 开始 =====
+[Arena] ✅ 找到 GameUI 节点: /root/Arena/GameUI
+[Arena] ✅ BondHUD 场景加载成功
+[Arena] ✅ BondHUD 实例化成功
+[Arena] ✅ BondHUD 已添加到 GameUI
+[Arena] BondHUD 路径: /root/Arena/GameUI/BondHUD
+[Arena] BondHUD 可见性: true
+[Arena] _ready() 完成，飘字保护已解除
+[PlayerBase] SkillManager already exists (created by child: @Node@2824), loaded=3, skip auto create
+[Arena] ===== 角色切换开始 =====
+[Arena] 收到角色切换请求: executioner
+[Arena] 跳过自动保存（QEF测试模式）: character_switch
+[Arena] 当前玩家: executioner
+[Arena] 当前玩家位置: (500.0, 300.0)
+[Arena] 不清理旧玩家的技能效果（默认行为）
+[Arena] 调用 player.queue_free()
+[Arena] 等待一帧...
+[DebugSwitcher] test mode enabled: wave_time=999, key8 toggles recording
+[Arena] 玩家死亡信号已连接
+[Arena] 触发 BondManager 重新计算羁绊...
+[Arena] 当前队伍: ["gildhand", "singularist", "executioner"]
+[Arena] ✅ 羁绊计算完成
+[PlayerBase] Bond stat modifiers applied:
+  HP: 118 -> 118
+  Speed: 470
+  EnergyRegen: 0.7
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 羁绊属性已应用到玩家
+[Arena] ===== _init_bond_hud() 完成 =====
+[Arena] 玩家死亡信号已连接
+[Arena] 等待完成，开始生成新角色
+[Arena] _spawn_player 开始: player_id=executioner, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "gildhand": "punch", "singularist": "punch", "executioner": "punch" }
+[Arena] visual_config: { "player_id": "executioner", "sprite_path": "res://assets/sprites/Players/Player_5.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: executioner
+[PlayerFactory] 设置 player_id: executioner
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_executioner.gd (player_id=executioner)
+[PlayerFactory] 成功创建角色: executioner
+[Arena] 警告: player_id 不匹配，重新设置:  -> executioner
+[PlayerBase] player executioner has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player executioner loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = executioner
+[PlayerBase] ultimate config loaded: { "ult_id": "executioner_ult", "name": "断罪时刻", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "vanguard", "visual_color_hex": "#8B0000", "scale_multiplier": 1.3, "explosion_radius": 230.0, "explosion_damage_scale": 1.5, "description": "处刑人进入断罪时刻并提升处决阈值", "f_role_id": "executioner", "f_internal_cd": 1.0, "f_q_line_amp": 1.5, "f_q_closure_amp": 2.06, "f_special_value_1": 1.27, "f_special_value_2": 230.0, "f_special_value_3": 0.32, "f_bond_o_payload": "tag:colossus|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:hexer|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:vanguard|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_executioner_f.gd):<GDScript#-9223371131824632982>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 断罪时刻
+[SkillDrawingBase] _ready(): skill_executioner_q, skill_owner=PlayerGeneric:<Area2D#915046141081>
+[SkillDrawingBase] Line2D 创建成功: skill_executioner_q
+[Arena] 生成角色成功: executioner 在位置 (500.0, 300.0)
+[PlayerBase] Bond stat modifiers applied:
+  HP: 118 -> 118
+  Speed: 470
+  EnergyRegen: 0.7
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 角色切换后羁绊属性已重新应用
+[Arena] ===== 角色切换结束 =====
+[PlayerBase] SkillManager already exists (created by child: @Node@2840), loaded=3, skip auto create
+[Arena] 玩家死亡信号已连接
+[PlayerBase] E pressed -> execute_skill('e')
+[HealthComponent] 血量归零，触发死亡信号
+[skill_executioner_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-700.7235, -898.6434), line_2d閺堝鏅? true
+[skill_executioner_q] ===== 退出规划模式 ===== 点数: 3, 闭合: false
+[skill_executioner_q] 最终闭合判定: false
+[skill_executioner_q] 閻㈢喐鍨氬鈧弨鎹愮熅瀵板嫭鏅ラ弸婊愮礉閸樼喎顫愰悙瑙勬殶: 3, 閸氬牆鑻熺痪鎸庮唽閺? 2
+[skill_executioner_q] open-path effects spawned
+[PlayerBase] E pressed -> execute_skill('e')
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[skill_executioner_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-698.7714, -900.78), line_2d閺堝鏅? true
+[skill_executioner_q] ===== 退出规划模式 ===== 点数: 5, 闭合: true
+[skill_executioner_q] 最终闭合判定: true
+[PolygonUtils] 交叉点数量: 1
+[PolygonUtils] 排序后: ["[0,4]"]
+[PolygonUtils] 单交叉点区域: 点数=4
+[PolygonUtils] 提取完成，共 1 个区域
+[skill_executioner_q] detected 1 closed polygons
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 2 个敌人
+[PlayerBase] E pressed -> execute_skill('e')
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 2 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[PlayerBase] F pressed, ultimate_skill = UltimateSkill:<Node#916774193650>
+[PlayerBase] try activate ultimate, energy: 100.0%
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 2 个敌人
+[ExplosionArea] 检测到 4 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 30.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 30.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 30.0 -> EnemyGeneric
+[ExplosionArea] 区域 4: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 30.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 4 个敌人
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea]   ✅ 造成伤害(备用): 30.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 30.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 30.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 3 个敌人
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 30.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 30.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 30.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 3 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 2 个敌人
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 1 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[DebugSwitcher] test mode disabled
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+[BackgroundManager] 地图纹理大小: (994.000000, 460.000000)
+[BackgroundManager] 初始化完成 - 瓦片大小: 2000, 已生成: 25 个瓦片
+[ChestManager] 初始化完成 - 生成 2 个宝箱（分散布局）
+[ChestManager] 初始化完成 - 预生成 2 个宝箱位置
+[ChestIndicator] indicator_show_range = 3000 (from map_config.csv)
+[ExitConfirmDialog] _ready() called
+[Arena] _ready() 开始
+[Arena] 已添加到 arena 组
+[Arena] 已启用波末战利品模式，禁用旧宝箱流程
+[Arena] 暂停菜单已初始化
+[Arena] 商店面板已连接
+[Arena] WaveRewardSystem 已创建
+[Arena] WaveRewardPanel 已添加到 GameUI
+[Arena] WildcardPanel 已添加到 GameUI
+[Arena] BattleFlowController 已初始化
+[Arena] Spawner 波次完成信号已连接
+[Arena] 准备初始化玩家...
+[Arena] _init_player_from_selection 开始
+[Arena] selected_player_ids: ["singularist"]
+[Arena] selected_player_weapons: { "singularist": "punch" }
+WARNING: [ConfigManager] game_config 缺少键 'enable_wave_recruit_mode'，使用默认值: 1
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] get_game_setting (res://autoloads/config_manager.gd:590)
+       [1] is_wave_recruit_mode_enabled (res://autoloads/global.gd:298)
+       [2] enter_wave_recruit_mode (res://autoloads/global.gd:303)
+       [3] _init_player_from_selection (res://scenes/arena/arena_core.gd:467)
+       [4] _ready (res://scenes/arena/arena_core.gd:117)
+[Arena] 场景中没有默认玩家，直接生成选择的角色
+[Arena] _spawn_player 开始: player_id=singularist, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "singularist": "punch" }
+[Arena] visual_config: { "player_id": "singularist", "sprite_path": "res://assets/sprites/Players/Player_2.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: singularist
+[PlayerFactory] 设置 player_id: singularist
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_singularist.gd (player_id=singularist)
+[PlayerFactory] 成功创建角色: singularist
+[Arena] 警告: player_id 不匹配，重新设置:  -> singularist
+[PlayerBase] player singularist has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player singularist loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = singularist
+[PlayerBase] ultimate config loaded: { "ult_id": "singularist_ult", "name": "奇点牵引", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "commander", "visual_color_hex": "#6A0DAD", "scale_multiplier": 1.2, "explosion_radius": 260.0, "explosion_damage_scale": 1.1, "description": "坍缩师启动奇点牵引并强化坍缩爆发", "f_role_id": "singularist", "f_internal_cd": 0.9, "f_q_line_amp": 1.57, "f_q_closure_amp": 2.04, "f_special_value_1": 1.26, "f_special_value_2": 265.0, "f_special_value_3": 0.28, "f_bond_o_payload": "tag:nomad|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:blaster|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:commander|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_singularist_f.gd):<GDScript#-9223371011246781263>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 奇点牵引
+[SkillDrawingBase] _ready(): skill_singularist_q, skill_owner=PlayerGeneric:<Area2D#1023309515063>
+[SkillDrawingBase] Line2D 创建成功: skill_singularist_q
+[Arena] 生成角色成功: singularist 在位置 (500.0, 300.0)
+[Arena] 玩家初始化完成
+[CharacterSlot] 加载角色图标: singularist -> res://assets/sprites/Players/Player_2.png
+[SquadHUD] 初始化 1 个角色卡槽
+[Arena] 小队 HUD 初始化完成
+[Arena] ===== _init_bond_hud() 开始 =====
+[Arena] ✅ 找到 GameUI 节点: /root/Arena/GameUI
+[Arena] ✅ BondHUD 场景加载成功
+[Arena] ✅ BondHUD 实例化成功
+[Arena] ✅ BondHUD 已添加到 GameUI
+[Arena] BondHUD 路径: /root/Arena/GameUI/BondHUD
+[Arena] BondHUD 可见性: true
+[Arena] _ready() 完成，飘字保护已解除
+[PlayerBase] SkillManager already exists (created by child: @Node@3277), loaded=3, skip auto create
+[Arena] ===== 角色切换开始 =====
+[Arena] 收到角色切换请求: singularist
+[Arena] 跳过自动保存（QEF测试模式）: character_switch
+[Arena] 当前玩家: singularist
+[Arena] 当前玩家位置: (500.0, 300.0)
+[Arena] 不清理旧玩家的技能效果（默认行为）
+[Arena] 调用 player.queue_free()
+[Arena] 等待一帧...
+[DebugSwitcher] test mode enabled: wave_time=999, key8 toggles recording
+[Arena] 玩家死亡信号已连接
+[Arena] 触发 BondManager 重新计算羁绊...
+[Arena] 当前队伍: ["gildhand", "singularist", "executioner"]
+[Arena] ✅ 羁绊计算完成
+[PlayerBase] Bond stat modifiers applied:
+  HP: 103 -> 103
+  Speed: 510
+  EnergyRegen: 0.8
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 羁绊属性已应用到玩家
+[Arena] ===== _init_bond_hud() 完成 =====
+[Arena] 玩家死亡信号已连接
+[Arena] 等待完成，开始生成新角色
+[Arena] _spawn_player 开始: player_id=singularist, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "gildhand": "punch", "singularist": "punch", "executioner": "punch" }
+[Arena] visual_config: { "player_id": "singularist", "sprite_path": "res://assets/sprites/Players/Player_2.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: singularist
+[PlayerFactory] 设置 player_id: singularist
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_singularist.gd (player_id=singularist)
+[PlayerFactory] 成功创建角色: singularist
+[Arena] 警告: player_id 不匹配，重新设置:  -> singularist
+[PlayerBase] player singularist has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player singularist loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = singularist
+[PlayerBase] ultimate config loaded: { "ult_id": "singularist_ult", "name": "奇点牵引", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "commander", "visual_color_hex": "#6A0DAD", "scale_multiplier": 1.2, "explosion_radius": 260.0, "explosion_damage_scale": 1.1, "description": "坍缩师启动奇点牵引并强化坍缩爆发", "f_role_id": "singularist", "f_internal_cd": 0.9, "f_q_line_amp": 1.57, "f_q_closure_amp": 2.04, "f_special_value_1": 1.26, "f_special_value_2": 265.0, "f_special_value_3": 0.28, "f_bond_o_payload": "tag:nomad|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:blaster|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:commander|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_singularist_f.gd):<GDScript#-9223371011246781263>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 奇点牵引
+[SkillDrawingBase] _ready(): skill_singularist_q, skill_owner=PlayerGeneric:<Area2D#1035439442764>
+[SkillDrawingBase] Line2D 创建成功: skill_singularist_q
+[Arena] 生成角色成功: singularist 在位置 (500.0, 300.0)
+[PlayerBase] Bond stat modifiers applied:
+  HP: 103 -> 103
+  Speed: 510
+  EnergyRegen: 0.8
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 角色切换后羁绊属性已重新应用
+[Arena] ===== 角色切换结束 =====
+[PlayerBase] SkillManager already exists (created by child: @Node@3293), loaded=3, skip auto create
+[Arena] 玩家死亡信号已连接
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 2 个敌人
+[skill_singularist_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-701.5745, -899.1647), line_2d閺堝鏅? true
+[skill_singularist_q] ===== 退出规划模式 ===== 点数: 3, 闭合: false
+[skill_singularist_q] 最终闭合判定: false
+[skill_singularist_q] 閻㈢喐鍨氬鈧弨鎹愮熅瀵板嫭鏅ラ弸婊愮礉閸樼喎顫愰悙瑙勬殶: 3, 閸氬牆鑻熺痪鎸庮唽閺? 2
+[skill_singularist_q] open-path effects spawned
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[skill_singularist_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-698.7054, -899.1644), line_2d閺堝鏅? true
+[skill_singularist_q] ===== 退出规划模式 ===== 点数: 5, 闭合: true
+[skill_singularist_q] 最终闭合判定: true
+[PolygonUtils] 交叉点数量: 1
+[PolygonUtils] 排序后: ["[0,4]"]
+[PolygonUtils] 单交叉点区域: 点数=4
+[PolygonUtils] 提取完成，共 1 个区域
+[skill_singularist_q] detected 1 closed polygons
+[PlayerBase] E pressed -> execute_skill('e')
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 2 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[PlayerBase] F pressed, ultimate_skill = UltimateSkill:<Node#1037167496389>
+[PlayerBase] try activate ultimate, energy: 100.0%
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 3 个敌人
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 3 个敌人
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 3 个敌人
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[DebugSwitcher] test mode disabled
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1709)
+   GDScript backtrace (most recent call first):
+       [0] _show_floating_text (res://scenes/ui/bond_hud/bond_hud.gd:136)
+       [1] _play_downgrade_feedback (res://scenes/ui/bond_hud/bond_hud.gd:115)
+       [2] _on_bond_level_changed (res://scenes/ui/bond_hud/bond_hud.gd:71)
+       [3] _detect_level_changes (res://autoloads/bond_manager.gd:234)
+       [4] recalculate_active_bonds (res://autoloads/bond_manager.gd:99)
+       [5] _recalculate_with_current_team (res://autoloads/bond_manager.gd:600)
+       [6] remove_temp_tag (res://autoloads/bond_manager.gd:580)
+       [7] deactivate (res://scenes/skills/skill_ultimate_base.gd:159)
+       [8] _exit_tree (res://scenes/skills/skill_ultimate_base.gd:56)
+       [9] _prepare_role_arena (res://tools/top10_effect_selftest_runner.gd:244)
+       [10] _validate_role (res://tools/top10_effect_selftest_runner.gd:66)
+       [11] _run (res://tools/top10_effect_selftest_runner.gd:48)
+       [12] _validate_role (res://tools/top10_effect_selftest_runner.gd:96)
+       [13] _run_f_phase (res://tools/top10_effect_selftest_runner.gd:166)
+       [14] _tap_action (res://tools/top10_effect_selftest_runner.gd:335)
+       [15] _wait_real_seconds (res://tools/top10_effect_selftest_runner.gd:470)
+[BackgroundManager] 地图纹理大小: (994.000000, 460.000000)
+[BackgroundManager] 初始化完成 - 瓦片大小: 2000, 已生成: 25 个瓦片
+[ChestManager] 初始化完成 - 生成 2 个宝箱（分散布局）
+[ChestManager] 初始化完成 - 预生成 2 个宝箱位置
+[ChestIndicator] indicator_show_range = 3000 (from map_config.csv)
+[ExitConfirmDialog] _ready() called
+[Arena] _ready() 开始
+[Arena] 已添加到 arena 组
+[Arena] 已启用波末战利品模式，禁用旧宝箱流程
+[Arena] 暂停菜单已初始化
+[Arena] 商店面板已连接
+[Arena] WaveRewardSystem 已创建
+[Arena] WaveRewardPanel 已添加到 GameUI
+[Arena] WildcardPanel 已添加到 GameUI
+[Arena] BattleFlowController 已初始化
+[Arena] Spawner 波次完成信号已连接
+[Arena] 准备初始化玩家...
+[Arena] _init_player_from_selection 开始
+[Arena] selected_player_ids: ["quartermaster"]
+[Arena] selected_player_weapons: { "quartermaster": "punch" }
+WARNING: [ConfigManager] game_config 缺少键 'enable_wave_recruit_mode'，使用默认值: 1
+   at: push_warning (core/variant/variant_utility.cpp:1034)
+   GDScript backtrace (most recent call first):
+       [0] get_game_setting (res://autoloads/config_manager.gd:590)
+       [1] is_wave_recruit_mode_enabled (res://autoloads/global.gd:298)
+       [2] enter_wave_recruit_mode (res://autoloads/global.gd:303)
+       [3] _init_player_from_selection (res://scenes/arena/arena_core.gd:467)
+       [4] _ready (res://scenes/arena/arena_core.gd:117)
+[Arena] 场景中没有默认玩家，直接生成选择的角色
+[Arena] _spawn_player 开始: player_id=quartermaster, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "quartermaster": "punch" }
+[Arena] visual_config: { "player_id": "quartermaster", "sprite_path": "res://assets/sprites/Players/Player_15.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: quartermaster
+[PlayerFactory] 设置 player_id: quartermaster
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_quartermaster.gd (player_id=quartermaster)
+[PlayerFactory] 成功创建角色: quartermaster
+[Arena] 警告: player_id 不匹配，重新设置:  -> quartermaster
+[PlayerBase] player quartermaster has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player quartermaster loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = quartermaster
+[PlayerBase] ultimate config loaded: { "ult_id": "quartermaster_ult", "name": "火力链路", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "assist", "visual_color_hex": "#999933", "scale_multiplier": 1.2, "explosion_radius": 240.0, "explosion_damage_scale": 1.1, "description": "军需官进入火力链路并增强压制节奏", "f_role_id": "quartermaster", "f_internal_cd": 0.95, "f_q_line_amp": 1.52, "f_q_closure_amp": 1.98, "f_special_value_1": 1.18, "f_special_value_2": 240.0, "f_special_value_3": 0.31, "f_bond_o_payload": "tag:alchemist|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:blaster|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:assist|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_quartermaster_f.gd):<GDScript#-9223370883135959286>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 火力链路
+[SkillDrawingBase] _ready(): skill_quartermaster_q, skill_owner=PlayerGeneric:<Area2D#1151420337010>
+[SkillDrawingBase] Line2D 创建成功: skill_quartermaster_q
+[Arena] 生成角色成功: quartermaster 在位置 (500.0, 300.0)
+[Arena] 玩家初始化完成
+[CharacterSlot] 加载角色图标: quartermaster -> res://assets/sprites/Players/Player_15.png
+[SquadHUD] 初始化 1 个角色卡槽
+[Arena] 小队 HUD 初始化完成
+[Arena] ===== _init_bond_hud() 开始 =====
+[Arena] ✅ 找到 GameUI 节点: /root/Arena/GameUI
+[Arena] ✅ BondHUD 场景加载成功
+[Arena] ✅ BondHUD 实例化成功
+[Arena] ✅ BondHUD 已添加到 GameUI
+[Arena] BondHUD 路径: /root/Arena/GameUI/BondHUD
+[Arena] BondHUD 可见性: true
+[Arena] _ready() 完成，飘字保护已解除
+[PlayerBase] SkillManager already exists (created by child: @Node@3779), loaded=3, skip auto create
+[Arena] ===== 角色切换开始 =====
+[Arena] 收到角色切换请求: quartermaster
+[Arena] 跳过自动保存（QEF测试模式）: character_switch
+[Arena] 当前玩家: quartermaster
+[Arena] 当前玩家位置: (500.0, 300.0)
+[Arena] 不清理旧玩家的技能效果（默认行为）
+[Arena] 调用 player.queue_free()
+[Arena] 等待一帧...
+[DebugSwitcher] test mode enabled: wave_time=999, key8 toggles recording
+[Arena] 玩家死亡信号已连接
+[Arena] 触发 BondManager 重新计算羁绊...
+[Arena] 当前队伍: ["quartermaster", "paladin", "bloodsworn"]
+[Arena] ✅ 羁绊计算完成
+[PlayerBase] Bond stat modifiers applied:
+  HP: 108 -> 108
+  Speed: 500
+  EnergyRegen: 0.7
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 羁绊属性已应用到玩家
+[Arena] ===== _init_bond_hud() 完成 =====
+[Arena] 玩家死亡信号已连接
+[Arena] 等待完成，开始生成新角色
+[Arena] _spawn_player 开始: player_id=quartermaster, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "quartermaster": "punch", "paladin": "punch", "bloodsworn": "punch" }
+[Arena] visual_config: { "player_id": "quartermaster", "sprite_path": "res://assets/sprites/Players/Player_15.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: quartermaster
+[PlayerFactory] 设置 player_id: quartermaster
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_quartermaster.gd (player_id=quartermaster)
+[PlayerFactory] 成功创建角色: quartermaster
+[Arena] 警告: player_id 不匹配，重新设置:  -> quartermaster
+[PlayerBase] player quartermaster has no equipped item
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player quartermaster loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = quartermaster
+[PlayerBase] ultimate config loaded: { "ult_id": "quartermaster_ult", "name": "火力链路", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "assist", "visual_color_hex": "#999933", "scale_multiplier": 1.2, "explosion_radius": 240.0, "explosion_damage_scale": 1.1, "description": "军需官进入火力链路并增强压制节奏", "f_role_id": "quartermaster", "f_internal_cd": 0.95, "f_q_line_amp": 1.52, "f_q_closure_amp": 1.98, "f_special_value_1": 1.18, "f_special_value_2": 240.0, "f_special_value_3": 0.31, "f_bond_o_payload": "tag:alchemist|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:blaster|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:assist|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_quartermaster_f.gd):<GDScript#-9223370883135959286>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 火力链路
+[SkillDrawingBase] _ready(): skill_quartermaster_q, skill_owner=PlayerGeneric:<Area2D#1164405902400>
+[SkillDrawingBase] Line2D 创建成功: skill_quartermaster_q
+[Arena] 生成角色成功: quartermaster 在位置 (500.0, 300.0)
+[PlayerBase] Bond stat modifiers applied:
+  HP: 108 -> 108
+  Speed: 500
+  EnergyRegen: 0.7
+  PickupRange: 150
+  Damage: 10
+[Arena] ✅ 角色切换后羁绊属性已重新应用
+[Arena] ===== 角色切换结束 =====
+[PlayerBase] SkillManager already exists (created by child: @Node@3795), loaded=3, skip auto create
+[Arena] 玩家死亡信号已连接
+[PlayerBase] E pressed -> execute_skill('e')
+[skill_quartermaster_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-699.2929, -900.7899), line_2d閺堝鏅? true
+[skill_quartermaster_q] ===== 退出规划模式 ===== 点数: 3, 闭合: false
+[skill_quartermaster_q] 最终闭合判定: false
+[skill_quartermaster_q] 閻㈢喐鍨氬鈧弨鎹愮熅瀵板嫭鏅ラ弸婊愮礉閸樼喎顫愰悙瑙勬殶: 3, 閸氬牆鑻熺痪鎸庮唽閺? 2
+[skill_quartermaster_q] open-path effects spawned
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[PlayerBase] E pressed -> execute_skill('e')
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> EnemyGeneric
+[ExplosionArea] 共击中 1 个敌人
+[skill_quartermaster_q] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? (-701.369, -899.6852), line_2d閺堝鏅? true
+[skill_quartermaster_q] ===== 退出规划模式 ===== 点数: 5, 闭合: true
+[skill_quartermaster_q] 最终闭合判定: true
+[PolygonUtils] 交叉点数量: 1
+[PolygonUtils] 排序后: ["[0,4]"]
+[PolygonUtils] 单交叉点区域: 点数=4
+[PolygonUtils] 提取完成，共 1 个区域
+[skill_quartermaster_q] detected 1 closed polygons
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> EnemyGeneric
+[ExplosionArea] 共击中 1 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> EnemyGeneric
+[ExplosionArea] 共击中 1 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> EnemyGeneric
+[ExplosionArea] 共击中 1 个敌人
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> EnemyGeneric
+[ExplosionArea] 共击中 1 个敌人
+[PlayerBase] E pressed -> execute_skill('e')
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> EnemyGeneric
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 3 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> EnemyGeneric
+[ExplosionArea] 共击中 1 个敌人
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> EnemyGeneric
+[ExplosionArea] 共击中 1 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 4 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: EnemyGeneric (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> EnemyGeneric
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 4: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 4 个敌人
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[PlayerBase] F pressed, ultimate_skill = UltimateSkill:<Node#1166133954576>
+[PlayerBase] try activate ultimate, energy: 100.0%
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 共击中 3 个敌人
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 3 个敌人
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 22.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 3 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 2 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[HealthComponent] 血量归零，触发死亡信号
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 血量归零，触发死亡信号
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 3 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(180_0, 0_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(180_0, 0_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 区域 3: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 3 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 2 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 区域 2: HurtboxComponent -> 父节点: CLIEnemy_(90_0, -120_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(90_0, -120_0)
+[ExplosionArea] 共击中 2 个敌人
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[HealthComponent] 已经死亡，忽略伤害
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[ExplosionArea] 检测到 0 个重叠区域
+[ExplosionArea] 共击中 0 个敌人
+[ExplosionArea] 检测到 1 个重叠区域
+[ExplosionArea] 区域 1: HurtboxComponent -> 父节点: CLIEnemy_(120_0, 90_0) (类型: Area2D)
+[ExplosionArea]   ⚠️ 使用备用伤害方案
+[ExplosionArea]   ✅ 造成伤害(备用): 0.0 -> CLIEnemy_(120_0, 90_0)
+[ExplosionArea] 共击中 1 个敌人
+[DebugSwitcher] test mode disabled
+WARNING: 20 RIDs of type "CanvasItem" were leaked.
+   at: _free_rids (servers/rendering/renderer_canvas_cull.cpp:2692)
+ERROR: 1 RID allocations of type 'PN13RendererDummy14TextureStorage12DummyTextureE' were leaked at exit.
+ERROR: 40 RID allocations of type 'PN18TextServerAdvanced22ShapedTextDataAdvancedE' were leaked at exit.
+ERROR: 1 RID allocations of type 'PN18TextServerAdvanced12FontAdvancedE' were leaked at exit.
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+   at: cleanup (core/object/object.cpp:2641)
+ERROR: 10 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:810)

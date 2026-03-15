@@ -274,6 +274,9 @@ func _deploy_web() -> void:
 		return
 
 	_perform_final_closure_check()
+	var executed_points: Array[Vector2] = path_points.duplicate()
+	var executed_segments: int = path_segments.size()
+	var was_closed: bool = has_closure
 	for i: int in range(path_points.size() - 1):
 		_create_web_line(path_points[i], path_points[i + 1])
 
@@ -284,6 +287,7 @@ func _deploy_web() -> void:
 		_launch_silk_shuttle(path_points[0], path_points[path_points.size() - 1])
 	if has_closure and not loops.is_empty():
 		_spawn_web_collapse(loops[0])
+	_publish_semantic_q_context(executed_points, executed_segments, was_closed, loops)
 
 	path_points.clear()
 	path_segments.clear()
@@ -721,3 +725,84 @@ func cleanup() -> void:
 	if is_instance_valid(web_container):
 		web_container.queue_free()
 	web_container = null
+
+func _publish_semantic_q_context(
+	points: Array[Vector2],
+	segment_count: int,
+	is_closed_path: bool,
+	loops: Array[PackedVector2Array]
+) -> void:
+	if not is_instance_valid(skill_owner) or points.is_empty():
+		return
+	var center := _calculate_points_center(points)
+	var radius := _calculate_points_radius(points, center)
+	if is_closed_path and not loops.is_empty():
+		var primary_polygon := loops[0]
+		center = _calculate_polygon_center(primary_polygon)
+		radius = _calculate_polygon_radius(primary_polygon, center)
+
+	var packet := SkillContextBridge.build_packet(
+		skill_owner,
+		"q",
+		skill_id,
+		"q_closed" if is_closed_path else "q_open",
+		center,
+		radius,
+		{
+			"role_id": "weaver",
+			"auto_recall_delay": auto_recall_delay,
+		},
+		{
+			"segment_count": max(0, segment_count),
+			"polygon_count": loops.size() if is_closed_path else 0,
+		},
+		["q", "weaver", "closed" if is_closed_path else "open"]
+	)
+	packet.is_closed = is_closed_path
+	packet.segment_count = max(0, segment_count)
+	packet.polygon_count = loops.size() if is_closed_path else 0
+
+	SkillContextBridge.publish_q_context(
+		skill_owner,
+		packet,
+		"weaver_web_closed" if is_closed_path else "weaver_web_open",
+		max(auto_recall_delay, 2.4),
+		{
+			"segment_count": max(0, segment_count),
+			"polygon_count": loops.size() if is_closed_path else 0,
+		},
+		web_container
+	)
+
+	if "player_id" in skill_owner:
+		Global.cache_recent_draw_path(skill_owner.player_id, points, is_closed_path)
+	if skill_owner.has_method("notify_q_path_executed"):
+		skill_owner.notify_q_path_executed(is_closed_path, max(0, segment_count), loops.size() if is_closed_path else 0)
+
+func _calculate_points_center(points: Array[Vector2]) -> Vector2:
+	if points.is_empty():
+		return Vector2.ZERO
+	var center := Vector2.ZERO
+	for point in points:
+		center += point
+	return center / float(points.size())
+
+func _calculate_points_radius(points: Array[Vector2], center: Vector2) -> float:
+	var radius := 0.0
+	for point in points:
+		radius = max(radius, center.distance_to(point))
+	return max(60.0, radius)
+
+func _calculate_polygon_center(polygon: PackedVector2Array) -> Vector2:
+	if polygon.is_empty():
+		return Vector2.ZERO
+	var center := Vector2.ZERO
+	for point in polygon:
+		center += point
+	return center / float(polygon.size())
+
+func _calculate_polygon_radius(polygon: PackedVector2Array, center: Vector2) -> float:
+	var radius := 0.0
+	for point in polygon:
+		radius = max(radius, center.distance_to(point))
+	return max(60.0, radius)

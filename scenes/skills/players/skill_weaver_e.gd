@@ -1,4 +1,4 @@
-extends SkillBase
+extends SkillEBase
 class_name SkillWeaverE
 
 var stun_radius: float = 320.0
@@ -60,6 +60,20 @@ func execute() -> void:
 		Global.on_camera_shake.emit(4.5 + float(used.size()) * 0.5, 0.1)
 	var recall_window: float = 1.6 + (0.6 if recall_triggered else 0.0) + (0.4 if is_f_window_active() else 0.0)
 	skill_owner.set_meta(WEAVER_E_RECALL_META, Time.get_ticks_msec() + int(round(recall_window * 1000.0)))
+	var context_center := skill_owner.global_position
+	if not used.is_empty():
+		context_center = used[used.size() - 1].global_position
+	publish_e_context(
+		context_center,
+		max(stun_radius, bounce_range),
+		"weaver_recall",
+		{
+			"bounce_count": used.size(),
+			"recall_triggered": recall_triggered,
+		},
+		"weaver_recall_window",
+		recall_window
+	)
 
 	start_cooldown()
 
@@ -157,17 +171,9 @@ func _get_hp_ratio(enemy: Node2D) -> float:
 func _try_trigger_forced_recall(damage_amp: float, duration_amp: float) -> bool:
 	if not is_instance_valid(skill_owner):
 		return false
-	var skill_manager: Node = skill_owner.get_node_or_null("SkillManager")
-	if not is_instance_valid(skill_manager):
+	var q_skill := get_q_skill()
+	if q_skill == null:
 		return false
-	if not skill_manager.has_method("get_skill"):
-		return false
-	var q_skill_var: Variant = skill_manager.call("get_skill", "q")
-	if q_skill_var == null:
-		return false
-	if not (q_skill_var is Node):
-		return false
-	var q_skill: Node = q_skill_var
 	if not q_skill.has_method("trigger_forced_recall"):
 		return false
 	var bonus: float = forced_recall_bonus_mult + (0.14 if is_f_window_active() else 0.0)

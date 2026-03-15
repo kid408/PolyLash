@@ -1,4 +1,4 @@
-extends SkillBase
+extends SkillEBase
 class_name SkillGlacierE
 
 var knockback_force: float = 500.0
@@ -61,6 +61,18 @@ func execute() -> void:
 		Global.spawn_floating_text(skill_owner.global_position, "ICE x%d / SPIKE x%d" % [hit_count, spike_hits], Color(0.7, 0.95, 1.2))
 	var shatter_window: float = 1.9 + (0.7 if q_combo_active else 0.0)
 	skill_owner.set_meta(GLACIER_E_SHATTER_META, Time.get_ticks_msec() + int(round(shatter_window * 1000.0)))
+	publish_e_context(
+		skill_owner.global_position,
+		final_radius,
+		"glacier_shatter",
+		{
+			"burst_hits": hit_count,
+			"spike_hits": spike_hits,
+			"q_combo_active": q_combo_active,
+		},
+		"glacier_shatter_window",
+		shatter_window
+	)
 
 	if "armor" in skill_owner:
 		skill_owner.armor = min(skill_owner.armor + shield_amount, skill_owner.max_armor)
@@ -149,6 +161,9 @@ func _get_aim_direction() -> Vector2:
 	return dir.normalized()
 
 func _is_glacier_zone_active() -> bool:
+	var asset := get_recent_q_asset("glacier_blizzard", 8000)
+	if not asset.is_empty():
+		return true
 	if not is_instance_valid(skill_owner):
 		return false
 	if not skill_owner.has_meta(GLACIER_ACTIVE_META):

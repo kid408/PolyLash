@@ -1,4 +1,4 @@
-extends SkillBase
+﻿extends SkillEBase
 class_name SkillBannerE
 
 var speed_boost_value: float = 0.5
@@ -168,3 +168,4 @@ func _apply_damage(enemy: Node2D, amount: int) -> void:
 func _apply_status(enemy: Node2D, status_name: String, duration: float, value: float, stacks: int = 1, tick_interval: float = 0.6) -> void:
 	if enemy.has_method("apply_status"):
 		enemy.call("apply_status", status_name, max(0.1, duration), value, max(1, stacks), max(0.05, tick_interval))
+

@@ -1,4 +1,4 @@
-﻿extends SkillDrawingBase
+﻿extends SkillQBase
 class_name SkillPlagueQ
 
 var slow_value: float = 0.55
@@ -560,3 +560,4 @@ func _get_line_color() -> Color:
 
 func _get_closure_color() -> Color:
 	return Color(0.3, 0.5, 0.0, 1.0)
+

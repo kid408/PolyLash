@@ -1,4 +1,4 @@
-﻿extends SkillDrawingBase
+﻿extends SkillQBase
 class_name SkillBannerQ
 
 var line_speed_boost: float = 0.28
@@ -469,3 +469,4 @@ func _get_line_color() -> Color:
 
 func _get_closure_color() -> Color:
 	return Color(0.8, 0.1, 0.1, 1.0)
+

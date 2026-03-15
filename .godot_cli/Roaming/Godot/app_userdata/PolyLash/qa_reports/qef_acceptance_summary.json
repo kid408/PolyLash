@@ -1,0 +1,258 @@
+{
+	"generated_at": "2026-03-15 12:13:42",
+	"passed": true,
+	"results": [
+		{
+			"checks": {
+				"e_context": true,
+				"e_input": true,
+				"f_active": true,
+				"f_context": true,
+				"f_input": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_input": true,
+				"q_open_context": true,
+				"q_open_input": true
+			},
+			"kind": "core_role",
+			"passed": true,
+			"role_id": "butcher"
+		},
+		{
+			"checks": {
+				"e_context": true,
+				"e_input": true,
+				"f_active": true,
+				"f_context": true,
+				"f_input": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_input": true,
+				"q_open_context": true,
+				"q_open_input": true
+			},
+			"kind": "core_role",
+			"passed": true,
+			"role_id": "weaver"
+		},
+		{
+			"checks": {
+				"e_context": true,
+				"e_input": true,
+				"f_active": true,
+				"f_context": true,
+				"f_input": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_input": true,
+				"q_open_context": true,
+				"q_open_input": true
+			},
+			"kind": "core_role",
+			"passed": true,
+			"role_id": "lurewarden"
+		},
+		{
+			"checks": {
+				"e_context": true,
+				"e_input": true,
+				"f_active": true,
+				"f_context": true,
+				"f_input": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_input": true,
+				"q_open_context": true,
+				"q_open_input": true
+			},
+			"kind": "core_role",
+			"passed": true,
+			"role_id": "pyro"
+		},
+		{
+			"checks": {
+				"e_context": true,
+				"e_input": true,
+				"f_active": true,
+				"f_context": true,
+				"f_input": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_input": true,
+				"q_open_context": true,
+				"q_open_input": true
+			},
+			"kind": "core_role",
+			"passed": true,
+			"role_id": "glacier"
+		},
+		{
+			"checks": {
+				"e_context": true,
+				"e_input": true,
+				"f_active": true,
+				"f_context": true,
+				"f_input": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_input": true,
+				"q_open_context": true,
+				"q_open_input": true
+			},
+			"kind": "core_role",
+			"passed": true,
+			"role_id": "quartermaster"
+		},
+		{
+			"artifacts": {
+				"feedback_path": "user://qa_reports/character_feedback_20260315.csv",
+				"recording_path": "user://qa_reports/input_recordings/player_ops_20260315_121303_594_wind.json"
+			},
+			"checks": {
+				"feedback_log_exists": true,
+				"feedback_role_id": true,
+				"record_e_input": true,
+				"record_f_input": true,
+				"record_q_input": true,
+				"recording_exists": true,
+				"recording_payload": true,
+				"recording_schema": true,
+				"replay_e_context": true,
+				"replay_f_context": true,
+				"replay_f_role_id": true,
+				"replay_finished": true,
+				"replay_q_context": true,
+				"replay_source": true
+			},
+			"kind": "record_replay_feedback",
+			"passed": true,
+			"role_id": "wind"
+		},
+		{
+			"artifacts": {
+				"feedback_path": "user://qa_reports/character_feedback_20260315.csv",
+				"recording_path": "user://qa_reports/input_recordings/player_ops_20260315_121309_017_lurewarden.json"
+			},
+			"checks": {
+				"feedback_log_exists": true,
+				"feedback_role_id": true,
+				"record_e_input": true,
+				"record_f_input": true,
+				"record_q_input": true,
+				"recording_exists": true,
+				"recording_payload": true,
+				"recording_schema": true,
+				"replay_e_context": true,
+				"replay_f_context": true,
+				"replay_f_role_id": true,
+				"replay_finished": true,
+				"replay_q_context": true,
+				"replay_source": true
+			},
+			"kind": "record_replay_feedback",
+			"passed": true,
+			"role_id": "lurewarden"
+		},
+		{
+			"artifacts": {
+				"feedback_path": "user://qa_reports/character_feedback_20260315.csv",
+				"recording_path": "user://qa_reports/input_recordings/player_ops_20260315_121316_418_quartermaster.json"
+			},
+			"checks": {
+				"feedback_log_exists": true,
+				"feedback_role_id": true,
+				"record_e_input": true,
+				"record_f_input": true,
+				"record_q_input": true,
+				"recording_exists": true,
+				"recording_payload": true,
+				"recording_schema": true,
+				"replay_e_context": true,
+				"replay_f_context": true,
+				"replay_f_role_id": true,
+				"replay_finished": true,
+				"replay_q_context": true,
+				"replay_source": true
+			},
+			"kind": "record_replay_feedback",
+			"passed": true,
+			"role_id": "quartermaster"
+		},
+		{
+			"artifacts": {
+				"feedback_path": "user://qa_reports/character_feedback_20260315.csv",
+				"recording_path": "user://qa_reports/input_recordings/player_ops_20260315_121322_927_singularist.json"
+			},
+			"checks": {
+				"feedback_log_exists": true,
+				"feedback_role_id": true,
+				"record_e_input": true,
+				"record_f_input": true,
+				"record_q_input": true,
+				"recording_exists": true,
+				"recording_payload": true,
+				"recording_schema": true,
+				"replay_e_context": true,
+				"replay_f_context": true,
+				"replay_f_role_id": true,
+				"replay_finished": true,
+				"replay_q_context": true,
+				"replay_source": true
+			},
+			"kind": "record_replay_feedback",
+			"passed": true,
+			"role_id": "singularist"
+		},
+		{
+			"artifacts": {
+				"feedback_path": "user://qa_reports/character_feedback_20260315.csv",
+				"recording_path": "user://qa_reports/input_recordings/player_ops_20260315_121329_386_banner.json"
+			},
+			"checks": {
+				"feedback_log_exists": true,
+				"feedback_role_id": true,
+				"record_e_input": true,
+				"record_f_input": true,
+				"record_q_input": true,
+				"recording_exists": true,
+				"recording_payload": true,
+				"recording_schema": true,
+				"replay_e_context": true,
+				"replay_f_context": true,
+				"replay_f_role_id": true,
+				"replay_finished": true,
+				"replay_q_context": true,
+				"replay_source": true
+			},
+			"kind": "record_replay_feedback",
+			"passed": true,
+			"role_id": "banner"
+		},
+		{
+			"artifacts": {
+				"feedback_path": "user://qa_reports/character_feedback_20260315.csv",
+				"recording_path": "user://qa_reports/input_recordings/player_ops_20260315_121335_820_pyro.json"
+			},
+			"checks": {
+				"feedback_log_exists": true,
+				"feedback_role_id": true,
+				"record_e_input": true,
+				"record_f_input": true,
+				"record_q_input": true,
+				"recording_exists": true,
+				"recording_payload": true,
+				"recording_schema": true,
+				"replay_e_context": true,
+				"replay_f_context": true,
+				"replay_f_role_id": true,
+				"replay_finished": true,
+				"replay_q_context": true,
+				"replay_source": true
+			},
+			"kind": "record_replay_feedback",
+			"passed": true,
+			"role_id": "pyro"
+		}
+	]
+}

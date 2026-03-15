@@ -1,4 +1,4 @@
-extends SkillDrawingBase
+﻿extends SkillQBase
 class_name SkillWindPath
 
 # Core parameters from config/player/skill_params_wide.csv (skill_wind_path).
@@ -446,3 +446,17 @@ func _mark_wind_active(duration: float) -> void:
 		return
 	var expire_msec: int = Time.get_ticks_msec() + int(round(max(0.2, duration) * 1000.0))
 	skill_owner.set_meta(WIND_ACTIVE_META, expire_msec)
+
+func _build_q_asset_payload(
+	is_closed_path: bool,
+	segment_count: int,
+	polygon_count: int,
+	center: Vector2,
+	radius: float
+) -> Dictionary:
+	var payload := super._build_q_asset_payload(is_closed_path, segment_count, polygon_count, center, radius)
+	payload["points"] = path_points.duplicate()
+	if path_points.size() >= 2:
+		payload["path_start"] = path_points[0]
+		payload["path_end"] = path_points[path_points.size() - 1]
+	return payload

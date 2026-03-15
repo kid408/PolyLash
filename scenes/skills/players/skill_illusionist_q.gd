@@ -1,4 +1,4 @@
-﻿extends SkillDrawingBase
+﻿extends SkillQBase
 class_name SkillIllusionistQ
 
 var wall_width: float = 16.0
@@ -483,3 +483,4 @@ func _get_line_color() -> Color:
 
 func _get_closure_color() -> Color:
 	return Color(0.6, 0.6, 0.85, 1.0)
+

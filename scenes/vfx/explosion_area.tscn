@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://c8vxm7y3qr4tn"]
 
 [ext_resource type="Script" path="res://scenes/vfx/explosion_area.gd" id="1_explosion_script"]
-[ext_resource type="PackedScene" uid="uid://bqxqxqxqxqxqx" path="res://scenes/particles/Explosion.tscn" id="2_explosion_particle"]
+[ext_resource type="PackedScene" uid="uid://dvfjoyutjx5jf" path="res://scenes/particles/Explosion.tscn" id="2_explosion_particle"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_explosion"]
 radius = 100.0

@@ -1,4 +1,4 @@
-extends SkillBase
+﻿extends SkillEBase
 class_name SkillSwarmE
 
 const BROOD_META_CENTER: String = "swarm_brood_center"
@@ -163,3 +163,4 @@ func _pick_nearest_enemy(origin: Vector2) -> Node2D:
 			nearest_dist = dist
 			nearest_enemy = enemy_node
 	return nearest_enemy
+

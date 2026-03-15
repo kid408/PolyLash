@@ -17,6 +17,8 @@ signal on_session_xp_changed(current: int)  # 局内 XP 变化
 signal on_active_character_changed(index: int)  # 激活角色变化
 signal on_switch_rejected(index: int, reason: String)  # 切换被拒绝
 signal on_squad_state_changed(index: int, state: Dictionary)  # 角色状态变化
+signal on_f_runtime_changed(player_id: String, f_runtime: Dictionary)
+signal on_f_pack_count_changed(player_id: String, unopened_count: int)
 
 const FLASH_MATERIAL = preload("uid://coi4nu8ohpgeo")
 const FLOATING_TEXT_SCENE = preload("uid://cp86d6q6156la")
@@ -141,8 +143,33 @@ func _process(delta: float) -> void:
 		switch_synergy_timer -= delta
 		if switch_synergy_timer <= 0:
 			_clear_switch_synergy()
+
+	_update_f_runtime_states(delta)
 	# 更新未激活角色的恢复
 	_update_inactive_players_regen(delta)
+
+func _update_f_runtime_states(delta: float) -> void:
+	if delta <= 0.0 or game_paused or is_game_over:
+		return
+
+	var active_player_id: String = ""
+	if is_instance_valid(player):
+		active_player_id = player.player_id
+
+	for player_id_var in player_states.keys():
+		var player_id: String = str(player_id_var)
+		if player_id.is_empty():
+			continue
+		var runtime: Dictionary = get_player_f_runtime(player_id)
+		if not bool(runtime.get("active", false)):
+			continue
+		if player_id == active_player_id:
+			continue
+		var time_left: float = max(0.0, float(runtime.get("time_left", 0.0)) - delta)
+		runtime["time_left"] = time_left
+		if time_left <= 0.0:
+			runtime = _build_default_f_runtime(player_id)
+		set_player_f_runtime(player_id, runtime, false)
 
 # 更新未激活角色的恢复
 func _update_inactive_players_regen(delta: float) -> void:
@@ -288,6 +315,7 @@ func init_player_states() -> void:
 			"base_speed": float(config.get("base_speed", config.get("speed", 200))),
 			"speed": float(config.get("base_speed", config.get("speed", 200))),
 			"skill_cooldowns": {},
+			"f_runtime": _build_default_f_runtime(player_id),
 			"bench_enter_time": 0.0,
 			"last_activated_time": now_sec
 		}
@@ -553,6 +581,7 @@ func save_current_player_state() -> void:
 		"base_speed": player.base_speed if "base_speed" in player else old_state.get("base_speed", 200.0),
 		"speed": player.speed if "speed" in player else old_state.get("speed", 200.0),
 		"skill_cooldowns": skill_snapshot,
+		"f_runtime": _capture_player_f_runtime(player_id, old_state.get("f_runtime", _build_default_f_runtime(player_id))),
 		"bench_enter_time": old_state.get("bench_enter_time", 0.0),
 		"last_activated_time": old_state.get("last_activated_time", _now_seconds())
 	}
@@ -706,6 +735,15 @@ func restore_player_state(player_instance: PlayerBase) -> void:
 		var bench_elapsed: float = consume_bench_elapsed(player_id)
 		var bench_speed_multiplier: float = get_bench_cooldown_speed_multiplier(player_id)
 		player_instance.queue_restore_skill_cooldowns(cooldown_snapshot, bench_elapsed, bench_speed_multiplier)
+
+	var f_runtime: Dictionary = get_player_f_runtime(player_id)
+	if not f_runtime.is_empty() and bool(f_runtime.get("active", false)):
+		player_instance.set_meta("f_runtime_profile", f_runtime.duplicate(true))
+		if is_instance_valid(player_instance.ultimate_skill) and player_instance.ultimate_skill.has_method("resume_from_runtime"):
+			player_instance.ultimate_skill.call("resume_from_runtime", f_runtime)
+	else:
+		if player_instance.has_meta("f_runtime_profile"):
+			player_instance.remove_meta("f_runtime_profile")
 
 	if DEBUG_VERBOSE: print("[Global] 恢复角色状态: %s (血量: %d/%d)" % [player_id, player_instance.health_component.current_health, player_instance.health_component.max_health])
 
@@ -1185,9 +1223,124 @@ func _build_default_player_state(player_id: String) -> Dictionary:
 		"base_speed": default_speed,
 		"speed": default_speed,
 		"skill_cooldowns": {},
+		"f_runtime": _build_default_f_runtime(player_id),
 		"bench_enter_time": 0.0,
 		"last_activated_time": now_sec
 	}
+
+func _build_default_f_runtime(player_id: String = "") -> Dictionary:
+	return {
+		"owner_player_id": player_id,
+		"active": false,
+		"time_left": 0.0,
+		"duration": 0.0,
+		"window_seq": 0,
+		"mode_name": "",
+		"f_role_id": player_id,
+		"ult_id": "",
+		"q_line_amp": 1.0,
+		"q_closure_amp": 1.0,
+		"internal_cd": 0.0,
+		"special_1": 0.0,
+		"special_2": 0.0,
+		"special_3": 0.0,
+		"line_events": 0,
+		"closure_events": 0,
+		"tick_events": 0,
+		"active_pickup_count": 0,
+		"unopened_count": 0,
+		"slot_e": _build_default_f_slot("e"),
+		"slot_q": _build_default_f_slot("q_close"),
+		"utility_buff": {},
+		"utility_buff_list": [],
+		"jackpot_linked": false
+	}
+
+func _build_default_f_slot(target_slot: String = "") -> Dictionary:
+	return {
+		"active": false,
+		"reward_id": "",
+		"display_name": "",
+		"rarity": "",
+		"target_slot": target_slot,
+		"behavior_tags": [],
+		"payload": {},
+		"link_group_id": "",
+		"source_pack_id": "",
+		"source_type": "",
+		"loaded_window_seq": 0
+	}
+
+func _capture_player_f_runtime(player_id: String, fallback_runtime: Variant = {}) -> Dictionary:
+	var runtime: Dictionary = _build_default_f_runtime(player_id)
+	if fallback_runtime is Dictionary:
+		runtime.merge((fallback_runtime as Dictionary).duplicate(true), true)
+	if is_instance_valid(player) and player.player_id == player_id and player.has_meta("f_runtime_profile"):
+		var raw_profile: Variant = player.get_meta("f_runtime_profile", {})
+		if raw_profile is Dictionary:
+			runtime.merge((raw_profile as Dictionary).duplicate(true), true)
+	runtime["owner_player_id"] = player_id
+	return runtime
+
+func set_player_f_runtime(player_id: String, runtime: Dictionary, emit_state_changed: bool = true) -> void:
+	if player_id.is_empty():
+		return
+	if not player_states.has(player_id):
+		player_states[player_id] = _build_default_player_state(player_id)
+	var state: Dictionary = player_states[player_id]
+	var normalized: Dictionary = _build_default_f_runtime(player_id)
+	normalized.merge(runtime.duplicate(true), true)
+	normalized["owner_player_id"] = player_id
+	state["f_runtime"] = normalized
+	player_states[player_id] = state
+	on_f_runtime_changed.emit(player_id, normalized.duplicate(true))
+	on_f_pack_count_changed.emit(player_id, int(normalized.get("unopened_count", 0)))
+	if emit_state_changed:
+		var index: int = selected_player_ids.find(player_id)
+		if index >= 0:
+			emit_signal("on_squad_state_changed", index, state)
+
+func clear_player_f_runtime(player_id: String, emit_state_changed: bool = true) -> void:
+	set_player_f_runtime(player_id, _build_default_f_runtime(player_id), emit_state_changed)
+
+func get_player_f_runtime(player_id: String) -> Dictionary:
+	if player_id.is_empty():
+		return {}
+	if not player_states.has(player_id):
+		player_states[player_id] = _build_default_player_state(player_id)
+	var state: Dictionary = player_states[player_id]
+	var runtime_var: Variant = state.get("f_runtime", {})
+	if runtime_var is Dictionary:
+		var runtime: Dictionary = _build_default_f_runtime(player_id)
+		runtime.merge((runtime_var as Dictionary).duplicate(true), true)
+		return runtime
+	return _build_default_f_runtime(player_id)
+
+func set_player_f_slot(player_id: String, slot_name: String, slot_payload: Dictionary) -> void:
+	if player_id.is_empty():
+		return
+	var runtime: Dictionary = get_player_f_runtime(player_id)
+	var target_key: String = "slot_e" if slot_name == "e" else ("slot_q" if slot_name == "q" or slot_name == "q_close" else "")
+	if target_key.is_empty():
+		return
+	var normalized_slot: Dictionary = _build_default_f_slot(slot_name)
+	normalized_slot.merge(slot_payload.duplicate(true), true)
+	normalized_slot["active"] = true
+	runtime[target_key] = normalized_slot
+	set_player_f_runtime(player_id, runtime)
+
+func consume_player_f_slot(player_id: String, slot_name: String) -> Dictionary:
+	if player_id.is_empty():
+		return {}
+	var runtime: Dictionary = get_player_f_runtime(player_id)
+	var target_key: String = "slot_e" if slot_name == "e" else ("slot_q" if slot_name == "q" or slot_name == "q_close" else "")
+	if target_key.is_empty():
+		return {}
+	var slot_var: Variant = runtime.get(target_key, {})
+	var slot_payload: Dictionary = slot_var.duplicate(true) if slot_var is Dictionary else {}
+	runtime[target_key] = _build_default_f_slot(slot_name)
+	set_player_f_runtime(player_id, runtime)
+	return slot_payload
 
 # 获取角色ID（通过索引）
 func get_player_id_by_index(index: int) -> String:

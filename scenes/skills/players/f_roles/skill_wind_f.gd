@@ -1,15 +1,16 @@
-﻿extends "res://scenes/skills/players/skill_ultimate_qef_v3.gd"
+extends "res://scenes/skills/skill_f_base.gd"
 
 const ROLE_ID: String = "wind"
 const WIND_E_GUST_META: String = "wind_e_gust_until_msec"
 
-func _resolve_mode_id() -> String:
+func _resolve_f_role_id() -> String:
 	return ROLE_ID
 
 func _apply_mode_signature(phase: String, packet: Dictionary, center: Vector2, _hit_count: int) -> void:
 	if not is_active:
 		return
 	_role_signature(phase, packet, center)
+	_spawn_wind_pickups(phase, packet, center)
 
 func _apply_q_link_signature(phase: String, packet: Dictionary, center: Vector2) -> void:
 	if phase == "tick":
@@ -189,3 +190,22 @@ func _is_gust_window() -> bool:
 		return false
 	var expire_msec: int = int(player_ref.get_meta(WIND_E_GUST_META))
 	return Time.get_ticks_msec() <= expire_msec
+
+func _spawn_wind_pickups(phase: String, packet: Dictionary, center: Vector2) -> void:
+	var radius: float = max(58.0, float(packet.get("radius", 140.0)) * 0.56)
+	var count: int = 1 if phase != "closure" else 2
+	_spawn_signature_pickup_burst(
+		center,
+		count,
+		radius,
+		Color(0.55, 1.0, 1.0, 0.95),
+		{
+			"effect_id": "wind_gust",
+			"pickup_text": "风痕羽片",
+			"radius": radius,
+			"text_color": Color(0.68, 1.0, 1.0),
+			"vfx_color": Color(0.45, 1.0, 0.96, 0.92),
+			"effect_scale": 0.56,
+		},
+		5.0 if phase == "tick" else 6.2
+	)

@@ -1,4 +1,4 @@
-extends SkillBase
+extends SkillEBase
 class_name SkillButcherE
 
 var e_damage_or_heal: float = 1.2
@@ -12,6 +12,18 @@ var chain_synergy_range: float = 420.0
 var chain_synergy_damage_ratio: float = 0.72
 var chain_synergy_pull_ratio: float = 0.78
 const BUTCHER_E_CHAIN_META: String = "butcher_e_chain_until_msec"
+const DASH_COMBO_WINDOW_SEC: float = 0.26
+const DASH_COMBO_HIT_STEPS: Array[float] = [0.30, 0.60, 0.90]
+
+var _dash_combo_target_ref: WeakRef = null
+var _dash_combo_expire_msec: int = 0
+var _dash_combo_active: bool = false
+var _dash_combo_offset: Vector2 = Vector2.ZERO
+var _dash_combo_hit_index: int = 0
+
+func _ready() -> void:
+	super._ready()
+	_connect_dash_signals()
 
 func execute() -> void:
 	if not can_execute():
@@ -52,10 +64,36 @@ func execute() -> void:
 		)
 
 	_apply_chain_anchor_synergy(target, final_damage, final_pull, control_duration)
+	_arm_dash_combo(target)
 	var chain_window: float = 2.2 + (0.6 if is_f_window_active() else 0.0)
 	skill_owner.set_meta(BUTCHER_E_CHAIN_META, Time.get_ticks_msec() + int(round(chain_window * 1000.0)))
+	publish_e_context(
+		target.global_position,
+		max(chain_synergy_range, hook_radius * 0.35),
+		"butcher_hook",
+		{
+			"damage": final_damage,
+			"pull_force": final_pull,
+			"control_duration": control_duration,
+		},
+		"butcher_hook_window",
+		chain_window
+	)
 
 	start_cooldown()
+
+func _connect_dash_signals() -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	var started_callable := Callable(self, "_on_owner_dash_started")
+	var active_callable := Callable(self, "_on_owner_dash_active")
+	var finished_callable := Callable(self, "_on_owner_dash_finished")
+	if skill_owner.has_signal("dash_started") and not skill_owner.is_connected("dash_started", started_callable):
+		skill_owner.connect("dash_started", started_callable)
+	if skill_owner.has_signal("dash_active") and not skill_owner.is_connected("dash_active", active_callable):
+		skill_owner.connect("dash_active", active_callable)
+	if skill_owner.has_signal("dash_finished") and not skill_owner.is_connected("dash_finished", finished_callable):
+		skill_owner.connect("dash_finished", finished_callable)
 
 func _find_nearest_enemy(max_distance: float) -> Node2D:
 	if not is_inside_tree() or not is_instance_valid(skill_owner):
@@ -179,3 +217,76 @@ func _on_follow_rip_timeout(target_ref: WeakRef, follow_damage: int) -> void:
 	_apply_damage(enemy, follow_damage)
 	_apply_status(enemy, "curse", max(1.2, stake_duration * 0.35), 9.0)
 	Global.spawn_floating_text(enemy.global_position, "RIP!", Color(1.3, 0.25, 0.25))
+
+func _arm_dash_combo(target: Node2D) -> void:
+	if target == null or not is_instance_valid(target) or not is_instance_valid(skill_owner):
+		return
+	_dash_combo_target_ref = weakref(target)
+	_dash_combo_expire_msec = Time.get_ticks_msec() + int(round(DASH_COMBO_WINDOW_SEC * 1000.0))
+	_dash_combo_active = false
+	_dash_combo_hit_index = 0
+	_dash_combo_offset = target.global_position - skill_owner.global_position
+
+func _on_owner_dash_started(player_id: String, _start_pos: Vector2, _direction: Vector2) -> void:
+	if not is_instance_valid(skill_owner) or str(skill_owner.get("player_id")) != player_id:
+		return
+	if Time.get_ticks_msec() > _dash_combo_expire_msec:
+		return
+	var target := _resolve_dash_combo_target()
+	if target == null:
+		return
+	_dash_combo_active = true
+	_dash_combo_hit_index = 0
+	_dash_combo_offset = target.global_position - skill_owner.global_position
+	Global.spawn_floating_text(target.global_position, "DRAG", Color(1.0, 0.38, 0.32))
+
+func _on_owner_dash_active(player_id: String, current_pos: Vector2, _direction: Vector2, normalized_time: float) -> void:
+	if not _dash_combo_active or not is_instance_valid(skill_owner) or str(skill_owner.get("player_id")) != player_id:
+		return
+	var target := _resolve_dash_combo_target()
+	if target == null:
+		_clear_dash_combo_state()
+		return
+	target.global_position = current_pos + _dash_combo_offset
+	while _dash_combo_hit_index < DASH_COMBO_HIT_STEPS.size() and normalized_time >= DASH_COMBO_HIT_STEPS[_dash_combo_hit_index]:
+		_apply_damage(target, max(1, int(round(float(stake_impact_damage) * 0.45))))
+		_apply_status(target, "marked", 0.9, 0.18)
+		_dash_combo_hit_index += 1
+
+func _on_owner_dash_finished(player_id: String, _end_pos: Vector2, _direction: Vector2) -> void:
+	if not _dash_combo_active or not is_instance_valid(skill_owner) or str(skill_owner.get("player_id")) != player_id:
+		return
+	var target := _resolve_dash_combo_target()
+	if target == null:
+		_clear_dash_combo_state()
+		return
+	var anchor: Node2D = _find_active_saw_anchor(target.global_position, chain_synergy_range * 1.2)
+	if anchor != null:
+		target.global_position = anchor.global_position
+	else:
+		var q_ctx: Dictionary = get_recent_q_context()
+		if bool(q_ctx.get("is_closed", false)):
+			var center_var: Variant = q_ctx.get("center", skill_owner.global_position)
+			var radius: float = max(72.0, float(q_ctx.get("radius", 120.0)))
+			var center: Vector2 = center_var if center_var is Vector2 else skill_owner.global_position
+			var aim_dir: Vector2 = (skill_owner.get_global_mouse_position() - skill_owner.global_position).normalized()
+			if aim_dir.length_squared() <= 0.0001:
+				aim_dir = Vector2.RIGHT
+			target.global_position = center + aim_dir * min(radius * 0.55, 110.0)
+	_apply_damage(target, max(1, int(round(float(stake_impact_damage) * 0.7))))
+	_apply_status(target, "stun", 0.35, 0.0)
+	_clear_dash_combo_state()
+
+func _resolve_dash_combo_target() -> Node2D:
+	var target_var: Variant = _dash_combo_target_ref.get_ref() if _dash_combo_target_ref != null else null
+	if target_var == null or not is_instance_valid(target_var):
+		return null
+	if not (target_var is Node2D):
+		return null
+	return target_var as Node2D
+
+func _clear_dash_combo_state() -> void:
+	_dash_combo_active = false
+	_dash_combo_target_ref = null
+	_dash_combo_expire_msec = 0
+	_dash_combo_hit_index = 0

@@ -1,4 +1,4 @@
-extends SkillBase
+extends SkillEBase
 class_name SkillPyroE
 
 var fire_nova_radius: float = 180.0
@@ -34,6 +34,17 @@ func execute() -> void:
 	spawn_skill_vfx(end_pos, Color(1.35, 0.45, 0.1, 0.95), 0.75)
 	Global.on_camera_shake.emit(7.0, 0.14)
 	Global.spawn_floating_text(end_pos, "BLAZE STEP", Color(1.35, 0.55, 0.15))
+	publish_e_context(
+		end_pos,
+		fire_nova_radius,
+		"pyro_blaze_step",
+		{
+			"nova_damage": nova_damage,
+			"nova_duration": nova_duration,
+		},
+		"pyro_blaze_step",
+		nova_duration
+	)
 
 	if is_f_window_active():
 		var pulse_radius: float = fire_nova_radius * 0.78

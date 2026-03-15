@@ -1,0 +1,24 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2570)
+=== 配置管理器初始化 ===
+[ConfigManager] 加载配置: res://config/player/player_config.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_visual.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_weapons.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_skill_bindings.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_available_weapons.csv - 32 条记录
+[ConfigManager] 加载宽表技能参数: res://config/player/skill_params_wide.csv - 71 个技能, 102 条描述
+[ConfigManager] 加载配置: res://config/enemy/enemy_config.csv - 12 条记录
+[ConfigManager] 加载配置: res://config/enemy/enemy_visual.csv - 12 条记录
+[ConfigManager] 加载配置: res://config/enemy/enemy_weapons.csv - 5 条记录
+[ConfigManager] 加载配置: res://config/weapon/weapon_config_optimized.csv - 35 条记录
+[ConfigManager] 加载配置: res://config/wave/wave_config.csv - 4 条记录
+[ConfigManager] 加载波次单位配置: res://config/wave/wave_units_config.csv - 4 个波次
+[ConfigManager] 加载配置: res://config/system/input_config.csv - 16 条记录
+[ConfigManager] 加载配置: res://config/item/upgrade_attributes.csv - 4 条记录
+[ConfigManager] 加载配置: res://config/item/chest_config.csv - 4 条记录
+[ConfigManager] 加载配置: res://config/wave/wave_chest_config.csv - 5 条记录
+[ConfigManager] 加载 key-value 配置: res://config/system/game_config.csv - 53 条记录
+[ConfigManager] 加载 key-value 配置: res://config/system/camera_config.csv - 8 条记录
+[ConfigManager] 加载 key-value 配置: res://config/system/map_config.csv - 15 条记录

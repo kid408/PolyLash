@@ -1,4 +1,4 @@
-﻿extends SkillDrawingBase
+extends SkillQBase
 class_name SkillMedicQ
 
 var heal_value: int = 5

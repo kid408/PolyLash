@@ -1,4 +1,4 @@
-﻿extends SkillDrawingBase
+﻿extends SkillQBase
 class_name SkillExecutionerQ
 
 var damage_amp_value: float = 0.45
@@ -384,3 +384,4 @@ func _get_line_color() -> Color:
 
 func _get_closure_color() -> Color:
 	return Color(0.5, 0.05, 0.05, 1.0)
+

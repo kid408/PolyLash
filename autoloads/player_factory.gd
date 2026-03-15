@@ -15,12 +15,28 @@ const PLAYER_GENERIC_SCENE = "res://scenes/unit/players/player_generic.tscn"
 
 # 角色脚本路径模板
 const PLAYER_SCRIPT_TEMPLATE = "res://scenes/unit/players/player_%s.gd"
+const LEGACY_PLAYER_ID_ALIASES: Dictionary = {
+	"new_pyro": "runeblazer",
+	"new_totem": "spiritcaller",
+	"new_tempest": "stormseer",
+	"tempest": "stormseer",
+	"train": "breachmarshal",
+	"goo": "mirebinder",
+	"herder": "lurewarden",
+	"hunter": "trapper",
+	"ammo": "quartermaster",
+	"turret_eng": "turretwright",
+	"vacuum": "singularist",
+	"tesla": "arcstriker",
+	"voodoo": "hexwarden",
+	"gambler": "fatebinder",
+	"merchant": "broker",
+	"midas": "gildhand",
+	"vampire": "bloodsworn"
+}
 
 # 脚本映射（用于处理别名或特殊情况）
-var script_mapping = {
-	# "别名": "实际脚本名"
-	# 示例: "tempest": "wind"
-}
+var script_mapping = LEGACY_PLAYER_ID_ALIASES.duplicate()
 
 func _ready() -> void:
 	print("[PlayerFactory] 已初始化")
@@ -28,7 +44,7 @@ func _ready() -> void:
 ## 创建指定 ID 的玩家角色
 ## 
 ## 参数：
-##   player_id: 角色 ID（如 "butcher", "herder" 等）
+##   player_id: 角色 ID（如 "butcher", "lurewarden" 等）
 ## 
 ## 返回：
 ##   创建的玩家实例（PlayerBase 或其子类）
@@ -36,6 +52,7 @@ func create_player(player_id: String) -> PlayerBase:
 	if player_id.is_empty():
 		printerr("[PlayerFactory] 错误: player_id 为空")
 		return null
+	var normalized_player_id := _normalize_player_id(player_id)
 	
 	# 1. 加载通用场景
 	var scene = load(PLAYER_GENERIC_SCENE) as PackedScene
@@ -50,14 +67,21 @@ func create_player(player_id: String) -> PlayerBase:
 		return null
 	
 	# 3. 设置 player_id（必须在加载脚本之前）
-	player.player_id = player_id
-	print("[PlayerFactory] 设置 player_id: %s" % player_id)
+	player.player_id = normalized_player_id
+	if normalized_player_id != player_id:
+		print("[PlayerFactory] 旧角色ID已映射: %s -> %s" % [player_id, normalized_player_id])
+	print("[PlayerFactory] 设置 player_id: %s" % normalized_player_id)
 	
 	# 4. 加载角色特定脚本（必须在 add_child 之前）
-	_load_character_script(player, player_id)
+	_load_character_script(player, normalized_player_id)
 	
-	print("[PlayerFactory] 成功创建角色: %s" % player_id)
+	print("[PlayerFactory] 成功创建角色: %s" % normalized_player_id)
 	return player
+
+func _normalize_player_id(player_id: String) -> String:
+	if player_id.is_empty():
+		return player_id
+	return str(LEGACY_PLAYER_ID_ALIASES.get(player_id, player_id))
 
 ## 加载角色特定脚本
 func _load_character_script(player: PlayerBase, player_id: String) -> void:
@@ -88,5 +112,5 @@ func get_available_players() -> Array[String]:
 
 ## 检查角色是否存在
 func has_player(player_id: String) -> bool:
-	var config = ConfigManager.get_player_config(player_id)
+	var config = ConfigManager.get_player_config(_normalize_player_id(player_id))
 	return not config.is_empty()

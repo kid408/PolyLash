@@ -11,7 +11,7 @@ extends EditorScript
 # - 本工具负责检查依赖并生成最新集成示例。
 # ============================================================================
 
-const REQUIRED_FILES := {
+const REQUIRED_FILES: Dictionary = {
 	"流程编排控制器": "res://scenes/arena/battle_flow_controller.gd",
 	"奖励流程服务": "res://scenes/arena/services/reward_flow_service.gd",
 	"商店流程服务": "res://scenes/arena/services/shop_flow_service.gd",
@@ -22,7 +22,7 @@ const REQUIRED_FILES := {
 	"属性商店管理器": "res://autoloads/shop_attribute_manager.gd"
 }
 
-const REQUIRED_CONFIGS := {
+const REQUIRED_CONFIGS: Dictionary = {
 	"物品商店配置": "res://config/item/shop_item_config.csv",
 	"属性商店配置": "res://config/wave/shop_attribute_config.csv",
 	"属性商店波次配置": "res://config/wave/shop_wave_config.csv"
@@ -33,7 +33,7 @@ func _run() -> void:
 	print("商店/奖励流程快速校准")
 	print("=".repeat(72) + "\n")
 
-	var ok := true
+	var ok: bool = true
 	ok = _check_files() and ok
 	ok = _check_configs() and ok
 	ok = _check_autoload() and ok
@@ -50,9 +50,10 @@ func _run() -> void:
 
 func _check_files() -> bool:
 	print("【1/4】关键脚本检查")
-	var all_ok := true
-	for display_name in REQUIRED_FILES.keys():
-		var path := REQUIRED_FILES[display_name]
+	var all_ok: bool = true
+	for display_name_variant: Variant in REQUIRED_FILES.keys():
+		var display_name: String = str(display_name_variant)
+		var path: String = str(REQUIRED_FILES.get(display_name, ""))
 		if FileAccess.file_exists(path):
 			print("  ✅ %s: %s" % [display_name, path])
 		else:
@@ -62,9 +63,10 @@ func _check_files() -> bool:
 
 func _check_configs() -> bool:
 	print("\n【2/4】关键配置检查")
-	var all_ok := true
-	for display_name in REQUIRED_CONFIGS.keys():
-		var path := REQUIRED_CONFIGS[display_name]
+	var all_ok: bool = true
+	for display_name_variant: Variant in REQUIRED_CONFIGS.keys():
+		var display_name: String = str(display_name_variant)
+		var path: String = str(REQUIRED_CONFIGS.get(display_name, ""))
 		if FileAccess.file_exists(path):
 			print("  ✅ %s: %s" % [display_name, path])
 		else:
@@ -74,19 +76,23 @@ func _check_configs() -> bool:
 
 func _check_autoload() -> bool:
 	print("\n【3/4】Autoload 检查")
-	var all_ok := true
-	var autoloads := ProjectSettings.get_setting("autoload", {})
-	var autoload_text := str(autoloads)
+	var all_ok: bool = true
+	var autoload_setting: Variant = ProjectSettings.get_setting("autoload", {})
+	var autoloads: Dictionary = {}
+	if autoload_setting is Dictionary:
+		autoloads = autoload_setting
+	var autoload_text: String = str(autoloads)
 
-	var required_autoloads := {
+	var required_autoloads: Dictionary = {
 		"ShopManager": "res://autoloads/shop_manager.gd",
 		"ShopAttributeManager": "res://autoloads/shop_attribute_manager.gd"
 	}
 
-	for name in required_autoloads.keys():
-		var path := required_autoloads[name]
-		var has_name := name in autoload_text
-		var has_path := path in autoload_text
+	for name_variant: Variant in required_autoloads.keys():
+		var name: String = str(name_variant)
+		var path: String = str(required_autoloads.get(name, ""))
+		var has_name: bool = name in autoload_text
+		var has_path: bool = path in autoload_text
 		if has_name and has_path:
 			print("  ✅ %s 已注册" % name)
 		else:
@@ -96,7 +102,7 @@ func _check_autoload() -> bool:
 	return all_ok
 
 func _generate_battle_flow_example() -> void:
-	var example := """# ============================================================================
+	var example: String = """# ============================================================================
 # BattleFlowController 集成示例（当前流程）
 # 适用：ArenaCore 或同类关卡控制脚本
 # ============================================================================
@@ -108,17 +114,17 @@ func _setup_flow() -> void:
 
 func _on_wave_completed(wave_number: int) -> void:
 	# 返回 true 代表进入奖励/商店流程；false 可按需求直接开下一波
-	var handled := _battle_flow.on_wave_completed(wave_number)
+	var handled: bool = _battle_flow.on_wave_completed(wave_number)
 	if not handled:
 		_start_next_wave()
 
 func _on_wave_reward_chosen(reward_data: Dictionary) -> void:
-	var keep_shop := _battle_flow.on_wave_reward_chosen(reward_data)
+	var keep_shop: bool = _battle_flow.on_wave_reward_chosen(reward_data)
 	if not keep_shop:
 		_start_next_wave()
 
 func _on_shop_next_wave_requested(slot_index: int, wave_number: int) -> void:
-	var started := _battle_flow.on_shop_next_wave_requested(slot_index, wave_number)
+	var started: bool = _battle_flow.on_shop_next_wave_requested(slot_index, wave_number)
 	if not started:
 		push_warning("shop next wave request failed")
 """
@@ -127,7 +133,7 @@ func _on_shop_next_wave_requested(slot_index: int, wave_number: int) -> void:
 	print("  ✅ 已生成: tools/_battle_flow_integration_example.gd")
 
 func _save_example(path: String, content: String) -> void:
-	var file := FileAccess.open(path, FileAccess.WRITE)
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		printerr("  ❌ 写入失败: %s" % path)
 		return

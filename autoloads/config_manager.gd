@@ -19,7 +19,7 @@ extends Node
 #   └── item/     - 物品配置（宝箱、升级属性）
 # 
 # 使用方法:
-#   var config = ConfigManager.get_player_config("player_herder")
+#   var config = ConfigManager.get_player_config("lurewarden")
 #   var weapon = ConfigManager.get_weapon_config("weapon_sword")
 # 
 # 注意事项:
@@ -99,6 +99,25 @@ const WAVE_CHEST_CONFIG = CONFIG_DIR + "wave/wave_chest_config.csv"
 const ITEM_CONFIG_NEW = CONFIG_DIR + "item/item_config.csv"
 const EMBLEM_CONFIG = CONFIG_DIR + "item/emblem_config.csv"
 const CREDITS_CONFIG = CONFIG_DIR + "system/credits_config.csv"
+const LEGACY_PLAYER_ID_ALIASES: Dictionary = {
+	"new_pyro": "runeblazer",
+	"new_totem": "spiritcaller",
+	"new_tempest": "stormseer",
+	"tempest": "stormseer",
+	"train": "breachmarshal",
+	"goo": "mirebinder",
+	"herder": "lurewarden",
+	"hunter": "trapper",
+	"ammo": "quartermaster",
+	"turret_eng": "turretwright",
+	"vacuum": "singularist",
+	"tesla": "arcstriker",
+	"voodoo": "hexwarden",
+	"gambler": "fatebinder",
+	"merchant": "broker",
+	"midas": "gildhand",
+	"vampire": "bloodsworn"
+}
 
 # ============================================================================
 # 初始化
@@ -518,17 +537,29 @@ func _load_key_value_config(path: String) -> Dictionary:
 # 便捷访问方法
 # ============================================================================
 
+func normalize_player_id(player_id: String) -> String:
+	if player_id.is_empty():
+		return player_id
+	return str(LEGACY_PLAYER_ID_ALIASES.get(player_id, player_id))
+
 func get_player_config(player_id: String) -> Dictionary:
-	return player_configs.get(player_id, {})
+	var normalized_player_id := normalize_player_id(player_id)
+	return player_configs.get(normalized_player_id, {})
 
 func get_player_visual(player_id: String) -> Dictionary:
-	return player_visual_configs.get(player_id, {})
+	var normalized_player_id := normalize_player_id(player_id)
+	return player_visual_configs.get(normalized_player_id, {})
 
 func get_player_weapons(player_id: String) -> Dictionary:
-	return player_weapon_configs.get(player_id, {})
+	var normalized_player_id := normalize_player_id(player_id)
+	return player_weapon_configs.get(normalized_player_id, {})
 
 func get_player_skill_bindings(player_id: String) -> Dictionary:
-	return player_skill_bindings.get(player_id, {})
+	var normalized_player_id := normalize_player_id(player_id)
+	return player_skill_bindings.get(normalized_player_id, {})
+
+func get_all_player_configs() -> Dictionary:
+	return player_configs
 
 func get_skill_params(skill_id: String) -> Dictionary:
 	return skill_params.get(skill_id, {})
@@ -826,7 +857,8 @@ func get_player_available_weapon_types(player_id: String) -> Array[String]:
 	返回:
 	- Array[String]: 可用武器类型数组（如 ["punch", "laser"]）
 	"""
-	var config = player_available_weapons.get(player_id, {})
+	var normalized_player_id := normalize_player_id(player_id)
+	var config = player_available_weapons.get(normalized_player_id, {})
 	var weapons: Array[String] = []
 	for i in range(1, 5):
 		var weapon_type = config.get("weapon_type_%d" % i, "")

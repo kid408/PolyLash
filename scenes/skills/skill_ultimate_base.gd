@@ -18,7 +18,7 @@ var description: String = ""
 
 # Cost / shared F parameters
 var energy_cost: float = 80.0
-var f_mode_id: String = ""
+var f_role_id: String = ""
 var f_internal_cd: float = 1.0
 var f_q_line_amp: float = 1.0
 var f_q_closure_amp: float = 1.0
@@ -52,6 +52,9 @@ func _ready() -> void:
 	add_child(duration_timer)
 
 func _exit_tree() -> void:
+	var preserve_on_exit: bool = is_instance_valid(player_ref) and player_ref.has_meta("preserve_f_runtime_on_exit") and bool(player_ref.get_meta("preserve_f_runtime_on_exit"))
+	if preserve_on_exit:
+		return
 	if is_active:
 		deactivate()
 	else:
@@ -69,7 +72,7 @@ func initialize(config: Dictionary, player: Node) -> void:
 	explosion_radius = float(config.get("explosion_radius", 250.0))
 	explosion_damage_scale = float(config.get("explosion_damage_scale", 1.0))
 
-	f_mode_id = str(config.get("f_mode_id", ""))
+	f_role_id = str(config.get("f_role_id", ""))
 	f_internal_cd = float(config.get("f_internal_cd", 1.0))
 	f_q_line_amp = float(config.get("f_q_line_amp", 1.0))
 	f_q_closure_amp = float(config.get("f_q_closure_amp", 1.0))
@@ -135,6 +138,7 @@ func _activate() -> void:
 	_apply_explosion_to_weapons()
 
 	f_runtime_profile = _build_runtime_profile()
+	f_runtime_profile["window_seq"] = int(f_runtime_profile.get("window_seq", 0)) + 1
 	_publish_runtime_profile()
 
 	if duration_timer != null:
@@ -317,7 +321,9 @@ func _process(delta: float) -> void:
 		return
 
 	remaining_time = max(0.0, remaining_time - delta)
+	f_runtime_profile["time_left"] = remaining_time
 	ultimate_duration_changed.emit(remaining_time, duration)
+	_publish_runtime_profile()
 	_on_ultimate_update(delta)
 
 func _on_duration_timeout() -> void:
@@ -381,8 +387,10 @@ func _on_skill_vfx_timeout(vfx_ref: WeakRef) -> void:
 func _build_runtime_profile() -> Dictionary:
 	return {
 		"active": is_active,
+		"owner_player_id": str(player_ref.get("player_id")) if is_instance_valid(player_ref) and "player_id" in player_ref else "",
 		"ult_id": ult_id,
-		"mode_id": f_mode_id,
+		"mode_name": ult_name,
+		"f_role_id": f_role_id,
 		"q_line_amp": f_q_line_amp,
 		"q_closure_amp": f_q_closure_amp,
 		"internal_cd": f_internal_cd,
@@ -393,6 +401,8 @@ func _build_runtime_profile() -> Dictionary:
 		"bond_m_payload": f_bond_m_payload,
 		"bond_t_payload": f_bond_t_payload,
 		"duration": duration,
+		"time_left": remaining_time,
+		"window_seq": 0,
 	}
 
 func update_runtime_profile(changes: Dictionary) -> void:
@@ -408,15 +418,41 @@ func _publish_runtime_profile() -> void:
 	if f_runtime_profile.is_empty():
 		return
 	f_runtime_profile["active"] = is_active
+	f_runtime_profile["time_left"] = remaining_time
+	f_runtime_profile["duration"] = duration
+	f_runtime_profile["mode_name"] = ult_name
+	f_runtime_profile["owner_player_id"] = str(player_ref.get("player_id")) if "player_id" in player_ref else ""
 	player_ref.set_meta("f_runtime_profile", f_runtime_profile.duplicate(true))
+	if Global != null and Global.has_method("set_player_f_runtime") and "player_id" in player_ref:
+		Global.set_player_f_runtime(str(player_ref.get("player_id")), f_runtime_profile)
 
 func _clear_runtime_profile() -> void:
+	var player_id: String = str(player_ref.get("player_id")) if is_instance_valid(player_ref) and "player_id" in player_ref else ""
 	f_runtime_profile.clear()
 	if is_instance_valid(player_ref) and player_ref.has_meta("f_runtime_profile"):
 		player_ref.remove_meta("f_runtime_profile")
+	if Global != null and Global.has_method("clear_player_f_runtime") and not player_id.is_empty():
+		Global.clear_player_f_runtime(player_id)
 
 func get_runtime_profile() -> Dictionary:
 	return f_runtime_profile.duplicate(true)
+
+func resume_from_runtime(saved_runtime: Dictionary) -> void:
+	if saved_runtime.is_empty():
+		return
+	var time_left: float = max(0.0, float(saved_runtime.get("time_left", 0.0)))
+	if time_left <= 0.0:
+		return
+	is_active = true
+	remaining_time = time_left
+	f_runtime_profile = _build_runtime_profile()
+	f_runtime_profile.merge(saved_runtime.duplicate(true), true)
+	f_runtime_profile["active"] = true
+	f_runtime_profile["time_left"] = time_left
+	_apply_visuals()
+	if duration_timer != null:
+		duration_timer.start(max(0.01, time_left))
+	_publish_runtime_profile()
 
 func get_energy_cost() -> float:
 	return energy_cost

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Godot Compile Check"
+  short_description: "Run the required Godot 4.6.1 compile pass after code edits."
+  default_prompt: "Use this skill when modifying this Godot project and verify changes by compiling with D:\\Godot\\Godot_v4.6.1-stable_win64.exe before finishing."

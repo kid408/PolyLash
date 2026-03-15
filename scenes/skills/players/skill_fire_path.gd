@@ -1,4 +1,4 @@
-extends SkillDrawingBase
+﻿extends SkillQBase
 class_name SkillFirePath
 
 # Core parameters from config/player/skill_params_wide.csv (skill_fire_path).
@@ -145,3 +145,28 @@ func _mark_fire_active(duration: float) -> void:
 		return
 	var expire_msec: int = Time.get_ticks_msec() + int(round(max(0.2, duration) * 1000.0))
 	skill_owner.set_meta(FIRE_ACTIVE_META, expire_msec)
+
+func _get_q_asset_kind(is_closed_path: bool) -> String:
+	return "pyro_inferno_zone" if is_closed_path else "pyro_fire_line"
+
+func _get_q_asset_duration(is_closed_path: bool) -> float:
+	return max(fire_sea_duration, 1.0) if is_closed_path else max(fire_line_duration, _get_line_duration())
+
+func _build_q_asset_payload(
+	is_closed_path: bool,
+	segment_count: int,
+	polygon_count: int,
+	center: Vector2,
+	radius: float
+) -> Dictionary:
+	return {
+		"role_id": "pyro",
+		"is_closed": is_closed_path,
+		"segment_count": segment_count,
+		"polygon_count": polygon_count,
+		"center": center,
+		"radius": radius,
+		"afterburn_damage": afterburn_damage,
+		"inferno_pulse_damage": inferno_pulse_damage,
+	}
+

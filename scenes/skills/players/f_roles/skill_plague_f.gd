@@ -1,4 +1,4 @@
-extends "res://scenes/skills/players/skill_ultimate_qef_v3.gd"
+extends "res://scenes/skills/skill_f_base.gd"
 
 const ROLE_ID: String = "plague"
 const PLAGUE_E_META_CENTER: String = "plague_e_bloom_center"
@@ -6,7 +6,7 @@ const PLAGUE_E_META_RADIUS: String = "plague_e_bloom_radius"
 const PLAGUE_E_META_EXPIRE_MSEC: String = "plague_e_bloom_expire_msec"
 const PLAGUE_E_META_INTENSITY: String = "plague_e_bloom_intensity"
 
-func _resolve_mode_id() -> String:
+func _resolve_f_role_id() -> String:
 	return ROLE_ID
 
 func _apply_mode_signature(phase: String, packet: Dictionary, center: Vector2, _hit_count: int) -> void:

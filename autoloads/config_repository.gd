@@ -18,6 +18,25 @@ const ENEMY_CONFIG_V2_PATH := "res://config/enemy/enemy_config_v2.csv"
 const BOSS_PHASE_CONFIG_PATH := "res://config/enemy/boss_phase_config.csv"
 const WAVE_CONFIG_V2_PATH := "res://config/wave/wave_config_v2.csv"
 const WAVE_UNITS_CONFIG_V2_PATH := "res://config/wave/wave_units_config_v2.csv"
+const LEGACY_PLAYER_ID_ALIASES := {
+	"new_pyro": "runeblazer",
+	"new_totem": "spiritcaller",
+	"new_tempest": "stormseer",
+	"tempest": "stormseer",
+	"train": "breachmarshal",
+	"goo": "mirebinder",
+	"herder": "lurewarden",
+	"hunter": "trapper",
+	"ammo": "quartermaster",
+	"turret_eng": "turretwright",
+	"vacuum": "singularist",
+	"tesla": "arcstriker",
+	"voodoo": "hexwarden",
+	"gambler": "fatebinder",
+	"merchant": "broker",
+	"midas": "gildhand",
+	"vampire": "bloodsworn"
+}
 
 static func load_bond_configs() -> Dictionary:
 	var bond_configs: Dictionary = {}
@@ -387,7 +406,7 @@ static func load_ult_configs() -> Dictionary:
 			"explosion_radius": _to_float(line[7]),
 			"explosion_damage_scale": _to_float(line[8]),
 			"description": line[9].strip_edges(),
-			"f_mode_id": _csv_get(line, 10, ""),
+			"f_role_id": _csv_get(line, 10, ""),
 			"f_internal_cd": _to_float(_csv_get(line, 11, "1.0"), 1.0),
 			"f_q_line_amp": _to_float(_csv_get(line, 12, "1.0"), 1.0),
 			"f_q_closure_amp": _to_float(_csv_get(line, 13, "1.0"), 1.0),
@@ -403,9 +422,15 @@ static func load_ult_configs() -> Dictionary:
 	return ult_configs
 
 static func get_ult_config_for_player(player_id: String) -> Dictionary:
-	var ult_id = player_id + "_ult"
+	var normalized_player_id := _normalize_player_id(player_id)
+	var ult_id = normalized_player_id + "_ult"
 	var ult_configs = load_ult_configs()
 	return ult_configs.get(ult_id, {})
+
+static func _normalize_player_id(player_id: String) -> String:
+	if player_id.is_empty():
+		return player_id
+	return str(LEGACY_PLAYER_ID_ALIASES.get(player_id, player_id))
 
 static func _open_csv_file(path: String) -> FileAccess:
 	if not FileAccess.file_exists(path):

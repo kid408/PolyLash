@@ -6,6 +6,9 @@ signal energy_changed(current, max_val)
 signal armor_changed(current)
 signal xp_changed(current)
 signal gold_changed(current)
+signal dash_started(player_id: String, start_pos: Vector2, direction: Vector2)
+signal dash_active(player_id: String, current_pos: Vector2, direction: Vector2, normalized_time: float)
+signal dash_finished(player_id: String, end_pos: Vector2, direction: Vector2)
 
 @export var player_id: String = ""
 
@@ -135,6 +138,8 @@ func _exit_tree() -> void:
 
 
 func _force_deactivate_ultimate_on_exit() -> void:
+	if has_meta("preserve_f_runtime_on_exit") and bool(get_meta("preserve_f_runtime_on_exit")):
+		return
 	if not ultimate_skill or not is_instance_valid(ultimate_skill):
 		return
 	if ultimate_skill.has_method("deactivate"):
@@ -996,18 +1001,13 @@ func _get_ultimate_script_for_player(pid: String) -> Script:
 	if FileAccess.file_exists(role_script_path):
 		script_path = role_script_path
 
-	var ult_cfg: Dictionary = _load_ult_config_from_csv(pid)
-	var f_mode_id: String = str(ult_cfg.get("f_mode_id", "")).strip_edges().to_lower()
-	if script_path.is_empty() and not f_mode_id.is_empty():
-		var mode_script_path: String = "res://scenes/skills/players/f_modes/skill_%s.gd" % f_mode_id
-		if FileAccess.file_exists(mode_script_path):
-			script_path = mode_script_path
 	if script_path.is_empty():
-		script_path = "res://scenes/skills/players/skill_ultimate_qef_v3.gd"
+		script_path = "res://scenes/skills/skill_ultimate_base.gd"
+		print("[PlayerBase] role ultimate wrapper missing, fallback to base ultimate: %s" % pid)
 
 	if not FileAccess.file_exists(script_path):
 		script_path = "res://scenes/skills/skill_ultimate_base.gd"
-		print("[PlayerBase] QEF V3 script missing, fallback to base ultimate: %s" % pid)
+		print("[PlayerBase] ultimate script missing, fallback to base ultimate: %s" % pid)
 	
 	if not FileAccess.file_exists(script_path):
 		printerr("[PlayerBase] ultimate script not found: %s" % script_path)
@@ -1105,6 +1105,30 @@ func get_energy_percent() -> float:
 	if max_energy <= 0:
 		return 0.0
 	return (energy / max_energy) * 100.0
+
+func get_skill_context_snapshot() -> Dictionary:
+	return SkillContextBridge.snapshot_owner(self)
+
+func get_skill_asset_snapshot(kind_filter: String = "") -> Array[Dictionary]:
+	if kind_filter.strip_edges().is_empty():
+		return SkillAssetRegistry.snapshot_for_owner(self)
+	return SkillAssetRegistry.list_assets(self, kind_filter)
+
+func get_skill_runtime_snapshot() -> Dictionary:
+	var snapshot := {
+		"context": get_skill_context_snapshot(),
+		"energy_percent": get_energy_percent(),
+	}
+	if has_node("SkillManager"):
+		var skill_manager = get_node("SkillManager")
+		if skill_manager != null and skill_manager.has_method("export_cooldown_state"):
+			snapshot["cooldowns"] = skill_manager.export_cooldown_state()
+	if is_instance_valid(ultimate_skill):
+		snapshot["ultimate"] = {
+			"active": ultimate_skill.is_active,
+			"runtime_profile": ultimate_skill.get_runtime_profile() if ultimate_skill.has_method("get_runtime_profile") else {},
+		}
+	return snapshot
 
 func consume_energy_percent(percent: float) -> bool:
 	if _is_skill_synergy_test_no_cost_mode():

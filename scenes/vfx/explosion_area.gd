@@ -52,19 +52,29 @@ func _ready() -> void:
 	
 	# 播放音效
 	SoundManager.play("player_explosion")
+
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		queue_free()
+		return
 	
 	# 等待物理系统准备好
-	await get_tree().physics_frame
-	await get_tree().physics_frame
+	await tree.physics_frame
+	if not is_inside_tree():
+		return
+	await tree.physics_frame
+	if not is_inside_tree():
+		return
 	
 	# 造成伤害
 	_deal_damage()
 	
 	# 等待视觉效果播放完毕
-	await get_tree().create_timer(0.5).timeout
+	await tree.create_timer(0.5).timeout
 	
 	# 销毁自己
-	queue_free()
+	if is_inside_tree():
+		queue_free()
 
 func _setup_collision() -> void:
 	"""设置碰撞检测（延迟调用）"""
@@ -124,6 +134,7 @@ func _create_visual_effects() -> void:
 func _deal_damage() -> void:
 	"""对范围内的敌人造成伤害"""
 	var hit_enemies: Array[Node] = []
+	var damage_source: Node = explosion_owner if is_instance_valid(explosion_owner) else null
 	
 	# 获取所有重叠的区域
 	var overlapping_areas = get_overlapping_areas()
@@ -149,7 +160,7 @@ func _deal_damage() -> void:
 			continue
 		
 		# 不伤害自己的主人（如果是玩家发出的）
-		if explosion_owner and enemy == explosion_owner:
+		if damage_source != null and enemy == damage_source:
 			continue
 		
 		# 造成伤害
@@ -165,7 +176,7 @@ func _deal_damage() -> void:
 			temp_hitbox.damage = explosion_damage
 			temp_hitbox.critical = false
 			temp_hitbox.knockback_power = 0.0
-			temp_hitbox.source = explosion_owner
+			temp_hitbox.source = damage_source
 			enemy._on_hurtbox_component_on_damaged(temp_hitbox)
 			temp_hitbox.queue_free()
 			hit_enemies.append(enemy)

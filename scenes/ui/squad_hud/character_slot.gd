@@ -12,6 +12,11 @@ signal clicked()
 @onready var dead_overlay: ColorRect = $DeadOverlay
 @onready var dead_label: Label = $DeadLabel
 @onready var highlight: Panel = $Highlight
+@onready var f_time_bar: ProgressBar = $FStateMini/FTimeBar
+@onready var pack_badge: Label = $FStateMini/PackBadge
+@onready var e_ready_mark: ColorRect = $FStateMini/EReadyMark
+@onready var q_ready_mark: ColorRect = $FStateMini/QReadyMark
+@onready var jackpot_mark: Label = $FStateMini/JackpotMark
 
 # 状态
 var player_id: String = ""
@@ -32,6 +37,16 @@ func _ready() -> void:
 		dead_label.visible = false
 	if highlight:
 		highlight.visible = false
+	if f_time_bar:
+		f_time_bar.visible = false
+	if pack_badge:
+		pack_badge.visible = false
+	if e_ready_mark:
+		e_ready_mark.visible = false
+	if q_ready_mark:
+		q_ready_mark.visible = false
+	if jackpot_mark:
+		jackpot_mark.visible = false
 
 func _process(delta: float) -> void:
 	# 处理抖动动画
@@ -148,6 +163,33 @@ func update_energy(current: float, max_energy: float) -> void:
 	if energy_bar:
 		energy_bar.max_value = max_energy
 		energy_bar.value = current
+
+func update_f_runtime(f_runtime: Dictionary) -> void:
+	var active: bool = bool(f_runtime.get("active", false))
+	var duration: float = max(0.01, float(f_runtime.get("duration", 10.0)))
+	var time_left: float = max(0.0, float(f_runtime.get("time_left", 0.0)))
+	var pickup_count: int = max(0, int(f_runtime.get("active_pickup_count", 0)))
+	var unopened_count: int = max(0, int(f_runtime.get("unopened_count", 0)))
+	var show_any: bool = active or pickup_count > 0 or unopened_count > 0 or _slot_ready(f_runtime.get("slot_e", {})) or _slot_ready(f_runtime.get("slot_q", {}))
+
+	if f_time_bar:
+		f_time_bar.visible = active
+		f_time_bar.max_value = duration
+		f_time_bar.value = time_left
+	if pack_badge:
+		pack_badge.visible = show_any and (pickup_count > 0 or unopened_count > 0)
+		pack_badge.text = str(max(pickup_count, unopened_count))
+	if e_ready_mark:
+		e_ready_mark.visible = _slot_ready(f_runtime.get("slot_e", {}))
+	if q_ready_mark:
+		q_ready_mark.visible = _slot_ready(f_runtime.get("slot_q", {}))
+	if jackpot_mark:
+		jackpot_mark.visible = bool(f_runtime.get("jackpot_linked", false))
+
+func _slot_ready(slot_var: Variant) -> bool:
+	if not (slot_var is Dictionary):
+		return false
+	return bool((slot_var as Dictionary).get("active", false))
 
 # 设置死亡状态
 func set_dead(dead: bool) -> void:

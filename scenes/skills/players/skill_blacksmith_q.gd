@@ -1,4 +1,4 @@
-﻿extends SkillDrawingBase
+﻿extends SkillQBase
 class_name SkillBlacksmithQ
 
 var rail_contact_damage: int = 18
@@ -545,3 +545,4 @@ func _get_line_color() -> Color:
 
 func _get_closure_color() -> Color:
 	return Color(1.0, 0.4, 0.0, 1.0)
+

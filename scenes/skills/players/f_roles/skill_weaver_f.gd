@@ -1,15 +1,16 @@
-﻿extends "res://scenes/skills/players/skill_ultimate_qef_v3.gd"
+extends "res://scenes/skills/skill_f_base.gd"
 
 const ROLE_ID: String = "weaver"
 const WEAVER_E_RECALL_META: String = "weaver_e_recall_until_msec"
 
-func _resolve_mode_id() -> String:
+func _resolve_f_role_id() -> String:
 	return ROLE_ID
 
 func _apply_mode_signature(phase: String, packet: Dictionary, center: Vector2, _hit_count: int) -> void:
 	if not is_active:
 		return
 	_role_signature(phase, packet, center)
+	_spawn_weaver_pickups(phase, packet, center)
 
 func _apply_q_link_signature(phase: String, packet: Dictionary, center: Vector2) -> void:
 	if phase == "tick":
@@ -202,9 +203,23 @@ func _emit_web_recall_net(center: Vector2, aim_dir: Vector2, length: float, clos
 		)
 
 func _is_recall_window() -> bool:
-	if not is_instance_valid(player_ref):
-		return false
-	if not player_ref.has_meta(WEAVER_E_RECALL_META):
-		return false
-	var expire_msec: int = int(player_ref.get_meta(WEAVER_E_RECALL_META))
-	return Time.get_ticks_msec() <= expire_msec
+	return _is_e_window_active("weaver_recall_window", WEAVER_E_RECALL_META)
+
+func _spawn_weaver_pickups(phase: String, packet: Dictionary, center: Vector2) -> void:
+	var radius: float = max(56.0, float(packet.get("radius", 140.0)) * 0.54)
+	var count: int = 1 if phase != "closure" else 2
+	_spawn_signature_pickup_burst(
+		center,
+		count,
+		radius,
+		Color(1.0, 0.82, 0.38, 0.95),
+		{
+			"effect_id": "weaver_recall",
+			"pickup_text": "丝核",
+			"radius": radius,
+			"text_color": Color(1.0, 0.88, 0.5),
+			"vfx_color": Color(1.0, 0.76, 0.28, 0.90),
+			"effect_scale": 0.56,
+		},
+		5.2 if phase == "tick" else 6.4
+	)

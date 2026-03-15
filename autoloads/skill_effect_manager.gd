@@ -33,6 +33,27 @@ var next_effect_id: int = 0
 ## 临时伤害倍率栈（由技能基类压栈/出栈）
 var _damage_multiplier_stack: Array[float] = []
 
+func _is_effect_ending(effect_data: Dictionary) -> bool:
+	return bool(effect_data.get("ending", false))
+
+func _mark_effect_ending(effect_data: Dictionary) -> void:
+	effect_data["ending"] = true
+
+	var area_var: Variant = effect_data.get("area", null)
+	if area_var is Area2D and is_instance_valid(area_var):
+		var area: Area2D = area_var
+		area.monitoring = false
+
+	var damage_area_var: Variant = effect_data.get("damage_area", null)
+	if damage_area_var is Area2D and is_instance_valid(damage_area_var):
+		var damage_area: Area2D = damage_area_var
+		damage_area.monitoring = false
+
+	var block_area_var: Variant = effect_data.get("block_area", null)
+	if block_area_var is Area2D and is_instance_valid(block_area_var):
+		var block_area: Area2D = block_area_var
+		block_area.monitoring = false
+
 func push_damage_multiplier(multiplier: float) -> void:
 	var safe_multiplier: float = max(0.0, multiplier)
 	_damage_multiplier_stack.append(safe_multiplier)
@@ -520,6 +541,8 @@ func _update_wall_effect(effect_id: int, delta: float) -> void:
 		return
 
 	var effect_data = active_effects[effect_id]
+	if _is_effect_ending(effect_data):
+		return
 	var static_body = effect_data["static_body"]
 
 	if not is_instance_valid(static_body):
@@ -616,6 +639,9 @@ func _end_wall_effect(effect_id: int) -> void:
 		return
 
 	var effect_data = active_effects[effect_id]
+	if _is_effect_ending(effect_data):
+		return
+	_mark_effect_ending(effect_data)
 	var static_body = effect_data["static_body"]
 
 	if not is_instance_valid(static_body):
@@ -809,6 +835,8 @@ func _update_buff_zone(effect_id: int, delta: float) -> void:
 		return
 
 	var effect_data = active_effects[effect_id]
+	if _is_effect_ending(effect_data):
+		return
 	var area = effect_data["area"]
 
 	if not is_instance_valid(area):
@@ -982,6 +1010,9 @@ func _end_buff_zone(effect_id: int) -> void:
 		return
 
 	var effect_data = active_effects[effect_id]
+	if _is_effect_ending(effect_data):
+		return
+	_mark_effect_ending(effect_data)
 	var area = effect_data["area"]
 	var config = effect_data["config"]
 
@@ -1176,6 +1207,8 @@ func _update_debuff_zone(effect_id: int, delta: float) -> void:
 		return
 
 	var effect_data = active_effects[effect_id]
+	if _is_effect_ending(effect_data):
+		return
 	var area = effect_data["area"]
 
 	if not is_instance_valid(area):
@@ -1255,6 +1288,9 @@ func _end_debuff_zone(effect_id: int) -> void:
 		return
 
 	var effect_data = active_effects[effect_id]
+	if _is_effect_ending(effect_data):
+		return
+	_mark_effect_ending(effect_data)
 	var area = effect_data["area"]
 	var config = effect_data["config"]
 
@@ -1674,8 +1710,10 @@ func _start_effect_lifecycle(effect_id: int) -> void:
 func _update_effect(effect_id: int, delta: float) -> void:
 	if not active_effects.has(effect_id):
 		return
-	
+
 	var effect_data = active_effects[effect_id]
+	if _is_effect_ending(effect_data):
+		return
 	var area = effect_data["area"]
 	var config = effect_data["config"]
 	
@@ -1783,8 +1821,11 @@ func _apply_pull_to_line(area: Area2D, start: Vector2, end: Vector2, force: floa
 func _end_effect(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
-	
+
 	var effect_data = active_effects[effect_id]
+	if _is_effect_ending(effect_data):
+		return
+	_mark_effect_ending(effect_data)
 	var area = effect_data["area"]
 	var config = effect_data["config"]
 	

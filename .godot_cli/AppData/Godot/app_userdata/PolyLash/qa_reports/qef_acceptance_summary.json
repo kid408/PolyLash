@@ -1,0 +1,587 @@
+{
+	"generated_at": "2026-03-15 15:57:14",
+	"passed": false,
+	"results": [
+		{
+			"checks": {
+				"e_context": true,
+				"e_input": true,
+				"f_active": true,
+				"f_context": true,
+				"f_input": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_input": true,
+				"q_open_context": true,
+				"q_open_input": true
+			},
+			"kind": "core_role",
+			"passed": true,
+			"role_id": "butcher"
+		},
+		{
+			"checks": {
+				"e_context": true,
+				"e_input": true,
+				"f_active": true,
+				"f_context": true,
+				"f_input": true,
+				"f_role_id": true,
+				"q_closed_context": true,
+				"q_closed_input": true,
+				"q_open_context": true,
+				"q_open_input": true
+			},
+			"kind": "core_role",
+			"passed": true,
+			"role_id": "weaver"
+		},
+		{
+			"checks": {
+				"e_context": true,
+				"e_input": true,
+				"f_active": true,
+				"f_context": true,
+				"f_input": true,
+				"f_role_id": true,
+				"q_closed_context": false,
+				"q_closed_input": true,
+				"q_open_context": true,
+				"q_open_input": true
+			},
+			"context_snapshot": {
+				"e": {
+					"asset_ids": [
+						"lurewarden:lurewarden_pack_window:13789"
+					],
+					"center": "(33.83956, -177.9667)",
+					"is_closed": false,
+					"metrics": {
+
+					},
+					"payload": {
+						"burst_hits": 0,
+						"decoy_hits": 0,
+						"decoy_spawned": true,
+						"decoy_swap_used": false,
+						"lane_hits": 0,
+						"pen_hits": 0
+					},
+					"polygon_count": 0,
+					"radius": 220.0,
+					"role_id": "lurewarden",
+					"schema_version": 1,
+					"segment_count": 0,
+					"skill_id": "skill_lurewarden_e",
+					"skill_slot": "e",
+					"source_kind": "lurewarden_pack",
+					"tags": [
+						"e"
+					],
+					"timestamp_msec": 13789
+				},
+				"f": {
+					"asset_ids": [],
+					"center": "(-1031.037, -1243.047)",
+					"is_closed": false,
+					"metrics": {
+						"closure_events": 0,
+						"line_events": 0,
+						"tick_events": 0
+					},
+					"payload": {
+						"center": "(-1031.037, -1243.047)",
+						"closure_events": 0,
+						"f_role_id": "lurewarden",
+						"line_events": 0,
+						"phase": "activate",
+						"radius": 184.936706542969,
+						"tick_events": 0
+					},
+					"polygon_count": 0,
+					"radius": 184.936706542969,
+					"role_id": "lurewarden",
+					"schema_version": 1,
+					"segment_count": 0,
+					"skill_id": "lurewarden_ult",
+					"skill_slot": "f",
+					"source_kind": "f_activate",
+					"tags": [
+						"f",
+						"lurewarden"
+					],
+					"timestamp_msec": 14084
+				},
+				"q_closed": {
+					"asset_ids": [
+						"lurewarden:lurewarden_lane:13596"
+					],
+					"center": "(-1031.037, -1243.047)",
+					"is_closed": false,
+					"metrics": {
+						"polygon_count": 0,
+						"segment_count": 4
+					},
+					"payload": {
+						"center": "(-1031.037, -1243.047)",
+						"is_closed": false,
+						"polygon_count": 0,
+						"radius": 184.936706542969,
+						"role_id": "lurewarden",
+						"segment_count": 4
+					},
+					"polygon_count": 0,
+					"radius": 184.936706542969,
+					"role_id": "lurewarden",
+					"schema_version": 1,
+					"segment_count": 4,
+					"skill_id": "skill_lurewarden_q",
+					"skill_slot": "q",
+					"source_kind": "q_open",
+					"tags": [
+						"q",
+						"lurewarden",
+						"open"
+					],
+					"timestamp_msec": 13595
+				},
+				"q_open": {
+					"asset_ids": [
+						"lurewarden:lurewarden_lane:9920"
+					],
+					"center": "(-794.6358, -1006.008)",
+					"is_closed": false,
+					"metrics": {
+						"polygon_count": 0,
+						"segment_count": 3
+					},
+					"payload": {
+						"center": "(-794.6358, -1006.008)",
+						"is_closed": false,
+						"polygon_count": 0,
+						"radius": 144.893585205078,
+						"role_id": "lurewarden",
+						"segment_count": 3
+					},
+					"polygon_count": 0,
+					"radius": 144.893585205078,
+					"role_id": "lurewarden",
+					"schema_version": 1,
+					"segment_count": 3,
+					"skill_id": "skill_lurewarden_q",
+					"skill_slot": "q",
+					"source_kind": "q_open",
+					"tags": [
+						"q",
+						"lurewarden",
+						"open"
+					],
+					"timestamp_msec": 9920
+				}
+			},
+			"kind": "core_role",
+			"passed": false,
+			"role_id": "lurewarden"
+		},
+		{
+			"checks": {
+				"e_context": true,
+				"e_input": true,
+				"f_active": true,
+				"f_context": true,
+				"f_input": true,
+				"f_role_id": true,
+				"q_closed_context": false,
+				"q_closed_input": true,
+				"q_open_context": false,
+				"q_open_input": true
+			},
+			"context_snapshot": {
+				"e": {
+					"asset_ids": [
+						"pyro:pyro_blaze_step:21906"
+					],
+					"center": "(302.0101, 102.0101)",
+					"is_closed": false,
+					"metrics": {
+
+					},
+					"payload": {
+						"nova_damage": 46,
+						"nova_duration": 2.4
+					},
+					"polygon_count": 0,
+					"radius": 180.0,
+					"role_id": "pyro",
+					"schema_version": 1,
+					"segment_count": 0,
+					"skill_id": "skill_pyro_e",
+					"skill_slot": "e",
+					"source_kind": "pyro_blaze_step",
+					"tags": [
+						"e"
+					],
+					"timestamp_msec": 21906
+				},
+				"f": {
+					"asset_ids": [],
+					"center": "(0.0, 0.0)",
+					"is_closed": false,
+					"metrics": {
+						"closure_events": 0,
+						"line_events": 0,
+						"tick_events": 0
+					},
+					"payload": {
+						"center": "(0.0, 0.0)",
+						"closure_events": 0,
+						"f_role_id": "pyro",
+						"line_events": 0,
+						"phase": "activate",
+						"radius": 240.0,
+						"tick_events": 0
+					},
+					"polygon_count": 0,
+					"radius": 240.0,
+					"role_id": "pyro",
+					"schema_version": 1,
+					"segment_count": 0,
+					"skill_id": "pyro_ult",
+					"skill_slot": "f",
+					"source_kind": "f_activate",
+					"tags": [
+						"f",
+						"pyro"
+					],
+					"timestamp_msec": 22202
+				},
+				"q_closed": {
+
+				},
+				"q_open": {
+
+				}
+			},
+			"kind": "core_role",
+			"passed": false,
+			"role_id": "pyro"
+		},
+		{
+			"checks": {
+				"e_context": true,
+				"e_input": true,
+				"f_active": true,
+				"f_context": true,
+				"f_input": true,
+				"f_role_id": true,
+				"q_closed_context": false,
+				"q_closed_input": true,
+				"q_open_context": false,
+				"q_open_input": true
+			},
+			"context_snapshot": {
+				"e": {
+					"asset_ids": [
+						"glacier:glacier_shatter_window:30017"
+					],
+					"center": "(500.0, 300.0)",
+					"is_closed": false,
+					"metrics": {
+
+					},
+					"payload": {
+						"burst_hits": 0,
+						"q_combo_active": false,
+						"spike_hits": 0
+					},
+					"polygon_count": 0,
+					"radius": 145.0,
+					"role_id": "glacier",
+					"schema_version": 1,
+					"segment_count": 0,
+					"skill_id": "skill_glacier_e",
+					"skill_slot": "e",
+					"source_kind": "glacier_shatter",
+					"tags": [
+						"e"
+					],
+					"timestamp_msec": 30017
+				},
+				"f": {
+					"asset_ids": [],
+					"center": "(0.0, 0.0)",
+					"is_closed": false,
+					"metrics": {
+						"closure_events": 0,
+						"line_events": 0,
+						"tick_events": 0
+					},
+					"payload": {
+						"center": "(0.0, 0.0)",
+						"closure_events": 0,
+						"f_role_id": "glacier",
+						"line_events": 0,
+						"phase": "activate",
+						"radius": 240.0,
+						"tick_events": 0
+					},
+					"polygon_count": 0,
+					"radius": 240.0,
+					"role_id": "glacier",
+					"schema_version": 1,
+					"segment_count": 0,
+					"skill_id": "glacier_ult",
+					"skill_slot": "f",
+					"source_kind": "f_activate",
+					"tags": [
+						"f",
+						"glacier"
+					],
+					"timestamp_msec": 30315
+				},
+				"q_closed": {
+
+				},
+				"q_open": {
+
+				}
+			},
+			"kind": "core_role",
+			"passed": false,
+			"role_id": "glacier"
+		},
+		{
+			"checks": {
+				"e_context": true,
+				"e_input": true,
+				"f_active": true,
+				"f_context": true,
+				"f_input": true,
+				"f_role_id": true,
+				"q_closed_context": false,
+				"q_closed_input": true,
+				"q_open_context": false,
+				"q_open_input": true
+			},
+			"context_snapshot": {
+				"e": {
+					"asset_ids": [
+						"quartermaster:quartermaster_resupply:38137"
+					],
+					"center": "(500.0, 300.0)",
+					"is_closed": false,
+					"metrics": {
+
+					},
+					"payload": {
+						"overclock_bonus": 0.18,
+						"synergy_used": false
+					},
+					"polygon_count": 0,
+					"radius": 180.0,
+					"role_id": "quartermaster",
+					"schema_version": 1,
+					"segment_count": 0,
+					"skill_id": "skill_quartermaster_e",
+					"skill_slot": "e",
+					"source_kind": "quartermaster_resupply",
+					"tags": [
+						"e"
+					],
+					"timestamp_msec": 38137
+				},
+				"f": {
+					"asset_ids": [],
+					"center": "(0.0, 0.0)",
+					"is_closed": false,
+					"metrics": {
+						"closure_events": 0,
+						"line_events": 0,
+						"tick_events": 0
+					},
+					"payload": {
+						"center": "(0.0, 0.0)",
+						"closure_events": 0,
+						"f_role_id": "quartermaster",
+						"line_events": 0,
+						"phase": "activate",
+						"radius": 240.0,
+						"tick_events": 0
+					},
+					"polygon_count": 0,
+					"radius": 240.0,
+					"role_id": "quartermaster",
+					"schema_version": 1,
+					"segment_count": 0,
+					"skill_id": "quartermaster_ult",
+					"skill_slot": "f",
+					"source_kind": "f_activate",
+					"tags": [
+						"f",
+						"quartermaster"
+					],
+					"timestamp_msec": 38434
+				},
+				"q_closed": {
+
+				},
+				"q_open": {
+
+				}
+			},
+			"kind": "core_role",
+			"passed": false,
+			"role_id": "quartermaster"
+		},
+		{
+			"artifacts": {
+				"feedback_path": "user://qa_reports/character_feedback_20260315.csv",
+				"recording_path": "user://qa_reports/input_recordings/player_ops_20260315_155622_444_wind.json"
+			},
+			"checks": {
+				"feedback_log_exists": true,
+				"feedback_role_id": true,
+				"record_e_input": true,
+				"record_f_input": true,
+				"record_q_input": true,
+				"recording_exists": true,
+				"recording_payload": true,
+				"recording_schema": true,
+				"replay_e_context": true,
+				"replay_f_context": true,
+				"replay_f_role_id": true,
+				"replay_finished": true,
+				"replay_q_context": false,
+				"replay_source": true
+			},
+			"kind": "record_replay_feedback",
+			"passed": false,
+			"role_id": "wind"
+		},
+		{
+			"artifacts": {
+				"feedback_path": "user://qa_reports/character_feedback_20260315.csv",
+				"recording_path": "user://qa_reports/input_recordings/player_ops_20260315_155630_215_lurewarden.json"
+			},
+			"checks": {
+				"feedback_log_exists": true,
+				"feedback_role_id": true,
+				"record_e_input": true,
+				"record_f_input": true,
+				"record_q_input": true,
+				"recording_exists": true,
+				"recording_payload": true,
+				"recording_schema": true,
+				"replay_e_context": true,
+				"replay_f_context": true,
+				"replay_f_role_id": true,
+				"replay_finished": true,
+				"replay_q_context": true,
+				"replay_source": true
+			},
+			"kind": "record_replay_feedback",
+			"passed": true,
+			"role_id": "lurewarden"
+		},
+		{
+			"artifacts": {
+				"feedback_path": "user://qa_reports/character_feedback_20260315.csv",
+				"recording_path": "user://qa_reports/input_recordings/player_ops_20260315_155639_974_quartermaster.json"
+			},
+			"checks": {
+				"feedback_log_exists": true,
+				"feedback_role_id": true,
+				"record_e_input": true,
+				"record_f_input": true,
+				"record_q_input": true,
+				"recording_exists": true,
+				"recording_payload": true,
+				"recording_schema": true,
+				"replay_e_context": true,
+				"replay_f_context": true,
+				"replay_f_role_id": true,
+				"replay_finished": true,
+				"replay_q_context": false,
+				"replay_source": true
+			},
+			"kind": "record_replay_feedback",
+			"passed": false,
+			"role_id": "quartermaster"
+		},
+		{
+			"artifacts": {
+				"feedback_path": "user://qa_reports/character_feedback_20260315.csv",
+				"recording_path": "user://qa_reports/input_recordings/player_ops_20260315_155648_778_singularist.json"
+			},
+			"checks": {
+				"feedback_log_exists": true,
+				"feedback_role_id": true,
+				"record_e_input": true,
+				"record_f_input": true,
+				"record_q_input": true,
+				"recording_exists": true,
+				"recording_payload": true,
+				"recording_schema": true,
+				"replay_e_context": true,
+				"replay_f_context": true,
+				"replay_f_role_id": true,
+				"replay_finished": true,
+				"replay_q_context": false,
+				"replay_source": true
+			},
+			"kind": "record_replay_feedback",
+			"passed": false,
+			"role_id": "singularist"
+		},
+		{
+			"artifacts": {
+				"feedback_path": "user://qa_reports/character_feedback_20260315.csv",
+				"recording_path": "user://qa_reports/input_recordings/player_ops_20260315_155657_606_banner.json"
+			},
+			"checks": {
+				"feedback_log_exists": true,
+				"feedback_role_id": true,
+				"record_e_input": true,
+				"record_f_input": true,
+				"record_q_input": true,
+				"recording_exists": true,
+				"recording_payload": true,
+				"recording_schema": true,
+				"replay_e_context": true,
+				"replay_f_context": true,
+				"replay_f_role_id": true,
+				"replay_finished": true,
+				"replay_q_context": false,
+				"replay_source": true
+			},
+			"kind": "record_replay_feedback",
+			"passed": false,
+			"role_id": "banner"
+		},
+		{
+			"artifacts": {
+				"feedback_path": "user://qa_reports/character_feedback_20260315.csv",
+				"recording_path": "user://qa_reports/input_recordings/player_ops_20260315_155705_376_pyro.json"
+			},
+			"checks": {
+				"feedback_log_exists": true,
+				"feedback_role_id": true,
+				"record_e_input": true,
+				"record_f_input": true,
+				"record_q_input": true,
+				"recording_exists": true,
+				"recording_payload": true,
+				"recording_schema": true,
+				"replay_e_context": true,
+				"replay_f_context": true,
+				"replay_f_role_id": true,
+				"replay_finished": true,
+				"replay_q_context": false,
+				"replay_source": true
+			},
+			"kind": "record_replay_feedback",
+			"passed": false,
+			"role_id": "pyro"
+		}
+	]
+}

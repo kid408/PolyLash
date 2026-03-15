@@ -1,4 +1,4 @@
-﻿extends SkillDrawingBase
+extends SkillQBase
 class_name SkillGlacierQ
 
 var wall_duration: float = 5.0
@@ -477,3 +477,27 @@ func _mark_glacier_active(duration: float) -> void:
 		return
 	var expire_msec: int = Time.get_ticks_msec() + int(round(max(0.2, duration) * 1000.0))
 	skill_owner.set_meta(GLACIER_ACTIVE_META, expire_msec)
+
+func _get_q_asset_kind(is_closed_path: bool) -> String:
+	return "glacier_blizzard" if is_closed_path else "glacier_wall"
+
+func _get_q_asset_duration(is_closed_path: bool) -> float:
+	return max(blizzard_duration, 1.0) if is_closed_path else max(wall_duration, shard_duration)
+
+func _build_q_asset_payload(
+	is_closed_path: bool,
+	segment_count: int,
+	polygon_count: int,
+	center: Vector2,
+	radius: float
+) -> Dictionary:
+	return {
+		"role_id": "glacier",
+		"is_closed": is_closed_path,
+		"segment_count": segment_count,
+		"polygon_count": polygon_count,
+		"center": center,
+		"radius": radius,
+		"freeze_duration": freeze_duration,
+		"shard_blast_damage": shard_blast_damage,
+	}

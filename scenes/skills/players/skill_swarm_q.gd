@@ -1,4 +1,4 @@
-﻿extends SkillDrawingBase
+﻿extends SkillQBase
 class_name SkillSwarmQ
 
 var beetle_damage: int = 32
@@ -466,3 +466,4 @@ func _get_line_color() -> Color:
 
 func _get_closure_color() -> Color:
 	return Color(0.4, 0.3, 0.0, 1.0)
+

@@ -1,4 +1,4 @@
-extends SkillDrawingBase
+﻿extends SkillQBase
 class_name SkillMinePath
 
 var mine_damage: int = 150
@@ -473,3 +473,4 @@ func cleanup() -> void:
 				checker.queue_free()
 	_pending_mines.clear()
 	super.cleanup()
+

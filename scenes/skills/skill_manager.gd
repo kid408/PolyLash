@@ -409,6 +409,14 @@ func export_cooldown_state() -> Dictionary:
 		}
 	return snapshot
 
+func get_semantic_runtime_snapshot() -> Dictionary:
+	var snapshot := {
+		"slots": export_cooldown_state(),
+	}
+	if is_instance_valid(skill_owner):
+		snapshot["context"] = SkillContextBridge.snapshot_owner(skill_owner)
+	return snapshot
+
 func import_cooldown_state(snapshot: Dictionary, elapsed_time: float = 0.0, bench_speed_multiplier: float = 1.0) -> void:
 	if snapshot.is_empty():
 		return

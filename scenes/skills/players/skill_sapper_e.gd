@@ -1,4 +1,4 @@
-extends SkillBase
+﻿extends SkillEBase
 class_name SkillSapperE
 
 var totem_duration: float = 6.6
@@ -203,3 +203,4 @@ func _detonate_q_mines() -> int:
 		return 0
 	var result: Variant = q_skill.call("remote_detonate_all")
 	return max(0, int(result))
+
