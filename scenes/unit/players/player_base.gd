@@ -1,6 +1,10 @@
 ﻿extends Unit
 class_name PlayerBase
 
+const QEFRuntimeService = preload("res://scripts/qef/core/qef_runtime_service.gd")
+const ComboService = preload("res://scripts/qef/services/combo_service.gd")
+const SkillScriptRegistry = preload("res://scripts/skills/skill_script_registry.gd")
+
 # 对外信号：供 HUD、结算与其他系统同步玩家实时状态。
 signal energy_changed(current, max_val)
 signal armor_changed(current)
@@ -9,6 +13,8 @@ signal gold_changed(current)
 signal dash_started(player_id: String, start_pos: Vector2, direction: Vector2)
 signal dash_active(player_id: String, current_pos: Vector2, direction: Vector2, normalized_time: float)
 signal dash_finished(player_id: String, end_pos: Vector2, direction: Vector2)
+
+const TEMP_ARMOR_META: String = "temp_armor_stacks"
 
 @export var player_id: String = ""
 
@@ -634,6 +640,12 @@ func take_damage(raw_amount: float) -> void:
 	
 	if armor > 0:
 		armor -= 1
+		if has_meta(TEMP_ARMOR_META):
+			var temp_armor: int = max(0, int(get_meta(TEMP_ARMOR_META, 0)))
+			if temp_armor > 1:
+				set_meta(TEMP_ARMOR_META, temp_armor - 1)
+			elif temp_armor == 1:
+				remove_meta(TEMP_ARMOR_META)
 		if armor == 0:
 			SoundManager.play("player_armor_break")
 		Global.spawn_floating_text(global_position, "Armor Crack!", Color.YELLOW)
@@ -738,17 +750,17 @@ func _play_danger_flash(tint: Color) -> void:
 
 func _notify_hud_health_danger(level: int, current: float, max_val: float, ratio: float) -> void:
 	var arena = get_tree().get_first_node_in_group("arena")
-	if not arena or not (arena is Arena):
+	if arena == null or not is_instance_valid(arena):
 		return
-	var hud = (arena as Arena).global_hud
+	var hud: Node = arena.get("global_hud") if "global_hud" in arena else null
 	if hud and hud.has_method("show_health_danger"):
 		hud.show_health_danger(level, current, max_val, ratio)
 
 func _notify_hud_health_safe() -> void:
 	var arena = get_tree().get_first_node_in_group("arena")
-	if not arena or not (arena is Arena):
+	if arena == null or not is_instance_valid(arena):
 		return
-	var hud = (arena as Arena).global_hud
+	var hud: Node = arena.get("global_hud") if "global_hud" in arena else null
 	if hud and hud.has_method("clear_health_danger"):
 		hud.clear_health_danger()
 
@@ -923,6 +935,7 @@ func get_speed_damage_bonus() -> float:
 func _on_death() -> void:
 	print("[PlayerBase] ========== PLAYER DIED ==========")
 	print("[PlayerBase] current_hp = %d" % health_component.current_health)
+	ComboService.reset(self)
 	
 	SoundManager.play("player_death")
 	visuals.visible = false
@@ -971,7 +984,7 @@ func _load_ultimate_skill() -> void:
 	
 	print("[PlayerBase] ultimate config loaded: %s" % str(ult_config))
 	
-	var ult_script = _get_ultimate_script_for_player(player_id)
+	var ult_script = _get_ultimate_script_for_player(player_id, ult_config)
 	if not ult_script:
 		print("[PlayerBase] player %s has no ultimate script" % player_id)
 		return
@@ -994,34 +1007,29 @@ func _load_ult_config_from_csv(pid: String) -> Dictionary:
 	
 	return ConfigRepository.get_ult_config_for_player(pid)
 
-func _get_ultimate_script_for_player(pid: String) -> Script:
-
-	var script_path: String = ""
-	var role_script_path: String = "res://scenes/skills/players/f_roles/skill_%s_f.gd" % pid
-	if FileAccess.file_exists(role_script_path):
-		script_path = role_script_path
-
+func _get_ultimate_script_for_player(pid: String, ult_config: Dictionary = {}) -> Script:
+	var script_path: String = SkillScriptRegistry.resolve_ultimate_script_path(pid, ult_config)
 	if script_path.is_empty():
-		script_path = "res://scenes/skills/skill_ultimate_base.gd"
-		print("[PlayerBase] role ultimate wrapper missing, fallback to base ultimate: %s" % pid)
-
-	if not FileAccess.file_exists(script_path):
-		script_path = "res://scenes/skills/skill_ultimate_base.gd"
-		print("[PlayerBase] ultimate script missing, fallback to base ultimate: %s" % pid)
-	
-	if not FileAccess.file_exists(script_path):
-		printerr("[PlayerBase] ultimate script not found: %s" % script_path)
+		printerr("[PlayerBase] ultimate script not found for %s" % pid)
 		return null
-	
+	if script_path == SkillScriptRegistry.ULTIMATE_BASE_PATH:
+		print("[PlayerBase] role ultimate wrapper missing, fallback to base ultimate: %s" % pid)
 	return load(script_path) as Script
 
 func notify_q_path_executed(is_closed: bool, segment_count: int, polygon_count: int) -> void:
 	"""Forward Q path execution events to active ultimate."""
+	QEFRuntimeService.on_q_path_executed(self, is_closed, segment_count, polygon_count)
 	if not ultimate_skill or not is_instance_valid(ultimate_skill):
 		return
 	if not ultimate_skill.has_method("on_q_path_executed"):
 		return
 	ultimate_skill.call("on_q_path_executed", is_closed, segment_count, polygon_count)
+
+func notify_e_result_executed(report_packet: Dictionary, asset_entry: Dictionary = {}) -> void:
+	var report: Dictionary = report_packet.duplicate(true)
+	if not asset_entry.is_empty():
+		report["linked_asset"] = asset_entry.duplicate(true)
+	QEFRuntimeService.on_e_result_executed(self, report)
 
 func _auto_create_skill_manager() -> void:
 	# 若场景未预置 SkillManager，则按角色技能绑定表自动创建。
@@ -1118,6 +1126,7 @@ func get_skill_runtime_snapshot() -> Dictionary:
 	var snapshot := {
 		"context": get_skill_context_snapshot(),
 		"energy_percent": get_energy_percent(),
+		"qef_runtime": QEFRuntimeService.get_runtime(self),
 	}
 	if has_node("SkillManager"):
 		var skill_manager = get_node("SkillManager")

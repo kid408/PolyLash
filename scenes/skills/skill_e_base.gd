@@ -159,13 +159,20 @@ func publish_e_context(
 	)
 	_e_context_published_this_cast = true
 	_staged_e_context_valid = false
-	return SkillContextBridge.publish_e_context(
+	var asset_entry: Dictionary = SkillContextBridge.publish_e_context(
 		skill_owner,
 		packet,
 		asset_kind,
 		asset_duration_sec,
 		payload
 	)
+	if is_instance_valid(skill_owner) and skill_owner.has_method("notify_e_result_executed"):
+		skill_owner.call(
+			"notify_e_result_executed",
+			packet.to_dict(),
+			asset_entry
+		)
+	return asset_entry
 
 func stage_e_context(
 	center: Vector2,

@@ -202,13 +202,18 @@ func _setup_loot_flow_mode() -> void:
 			chest_manager.chest_opened.connect(_on_chest_opened)
 		if chest_indicator and chest_manager:
 			chest_indicator.set_chest_manager(chest_manager)
+			if chest_indicator.has_method("set_qef_pack_tracking"):
+				chest_indicator.set_qef_pack_tracking(false)
 		return
 
 	print("[Arena] 已启用波末战利品模式，禁用旧宝箱流程")
 
 	if chest_indicator:
-		chest_indicator.visible = false
-		chest_indicator.set_process(false)
+		chest_indicator.visible = true
+		chest_indicator.set_process(true)
+		chest_indicator.set_chest_manager(null)
+		if chest_indicator.has_method("set_qef_pack_tracking"):
+			chest_indicator.set_qef_pack_tracking(true)
 
 	if upgrade_ui:
 		upgrade_ui.visible = false
@@ -1084,6 +1089,9 @@ func _cleanup_wave_end_player_effects() -> void:
 		player_node.call("_force_deactivate_ultimate_on_exit")
 	if player_node.has_method("_cleanup_skill_effects"):
 		player_node.call("_cleanup_skill_effects")
+	var combo_service := load("res://scripts/qef/services/combo_service.gd")
+	if combo_service != null:
+		combo_service.reset(player_node)
 	_cleanup_wave_end_global_skill_effects()
 
 func _cleanup_wave_end_global_skill_effects() -> void:

@@ -27,6 +27,8 @@ var is_active: bool = false
 var shake_timer: float = 0.0
 var shake_intensity: float = 5.0
 var original_position: Vector2
+var _indicator_tweens: Dictionary = {}
+var _indicator_visibility: Dictionary = {}
 
 func _ready() -> void:
 	original_position = position
@@ -37,16 +39,11 @@ func _ready() -> void:
 		dead_label.visible = false
 	if highlight:
 		highlight.visible = false
-	if f_time_bar:
-		f_time_bar.visible = false
-	if pack_badge:
-		pack_badge.visible = false
-	if e_ready_mark:
-		e_ready_mark.visible = false
-	if q_ready_mark:
-		q_ready_mark.visible = false
-	if jackpot_mark:
-		jackpot_mark.visible = false
+	_set_canvas_item_immediate(f_time_bar, false)
+	_set_canvas_item_immediate(pack_badge, false)
+	_set_canvas_item_immediate(e_ready_mark, false)
+	_set_canvas_item_immediate(q_ready_mark, false)
+	_set_canvas_item_immediate(jackpot_mark, false)
 
 func _process(delta: float) -> void:
 	# 处理抖动动画
@@ -168,28 +165,76 @@ func update_f_runtime(f_runtime: Dictionary) -> void:
 	var active: bool = bool(f_runtime.get("active", false))
 	var duration: float = max(0.01, float(f_runtime.get("duration", 10.0)))
 	var time_left: float = max(0.0, float(f_runtime.get("time_left", 0.0)))
-	var pickup_count: int = max(0, int(f_runtime.get("active_pickup_count", 0)))
 	var unopened_count: int = max(0, int(f_runtime.get("unopened_count", 0)))
-	var show_any: bool = active or pickup_count > 0 or unopened_count > 0 or _slot_ready(f_runtime.get("slot_e", {})) or _slot_ready(f_runtime.get("slot_q", {}))
 
 	if f_time_bar:
-		f_time_bar.visible = active
 		f_time_bar.max_value = duration
 		f_time_bar.value = time_left
+		_set_canvas_item_visible(f_time_bar, active, 0.12)
 	if pack_badge:
-		pack_badge.visible = show_any and (pickup_count > 0 or unopened_count > 0)
-		pack_badge.text = str(max(pickup_count, unopened_count))
+		pack_badge.text = str(unopened_count)
+		_set_canvas_item_visible(pack_badge, unopened_count > 0, 0.12)
 	if e_ready_mark:
-		e_ready_mark.visible = _slot_ready(f_runtime.get("slot_e", {}))
+		_set_canvas_item_visible(e_ready_mark, _slot_ready(f_runtime.get("slot_e", {})), 0.1)
 	if q_ready_mark:
-		q_ready_mark.visible = _slot_ready(f_runtime.get("slot_q", {}))
+		_set_canvas_item_visible(q_ready_mark, _slot_ready(f_runtime.get("slot_q", {})), 0.1)
 	if jackpot_mark:
-		jackpot_mark.visible = bool(f_runtime.get("jackpot_linked", false))
+		jackpot_mark.text = "联"
+		_set_canvas_item_visible(jackpot_mark, bool(f_runtime.get("jackpot_linked", false)), 0.12)
 
 func _slot_ready(slot_var: Variant) -> bool:
 	if not (slot_var is Dictionary):
 		return false
 	return bool((slot_var as Dictionary).get("active", false))
+
+func _set_canvas_item_immediate(item: CanvasItem, show: bool) -> void:
+	if item == null:
+		return
+	var key: int = item.get_instance_id()
+	_indicator_visibility[key] = show
+	if _indicator_tweens.has(key):
+		var tween: Tween = _indicator_tweens[key]
+		if tween != null:
+			tween.kill()
+		_indicator_tweens.erase(key)
+	item.visible = show
+	item.modulate.a = 1.0 if show else 0.0
+
+func _set_canvas_item_visible(item: CanvasItem, show: bool, fade_sec: float = 0.12) -> void:
+	if item == null:
+		return
+
+	var key: int = item.get_instance_id()
+	var current_target: bool = bool(_indicator_visibility.get(key, item.visible))
+	if current_target == show:
+		return
+	_indicator_visibility[key] = show
+
+	if _indicator_tweens.has(key):
+		var old_tween: Tween = _indicator_tweens[key]
+		if old_tween != null:
+			old_tween.kill()
+
+	var tween: Tween = create_tween()
+	_indicator_tweens[key] = tween
+
+	if show:
+		item.visible = true
+		item.modulate.a = min(item.modulate.a, 0.0)
+		tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tween.tween_property(item, "modulate:a", 1.0, fade_sec)
+		return
+
+	tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tween.tween_property(item, "modulate:a", 0.0, fade_sec)
+	tween.finished.connect(_on_indicator_hide_finished.bind(item, key), CONNECT_ONE_SHOT)
+
+func _on_indicator_hide_finished(item: CanvasItem, key: int) -> void:
+	if item == null or not is_instance_valid(item):
+		return
+	if bool(_indicator_visibility.get(key, false)):
+		return
+	item.visible = false
 
 # 设置死亡状态
 func set_dead(dead: bool) -> void:

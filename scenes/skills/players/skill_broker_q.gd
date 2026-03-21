@@ -4,7 +4,7 @@ class_name SkillBrokerQ
 var bounty_damage_amp: float = 0.2
 var bounty_duration: float = 3.0
 var discount_speed_boost: float = 0.15
-var market_duration: float = 6.0
+var market_duration: float = 1.8
 var market_coin_count: int = 3
 var market_discount_amp: float = 0.16
 var beacon_spacing: float = 170.0
@@ -41,6 +41,11 @@ const MARKET_META_RADIUS: String = "broker_market_radius"
 const MARKET_META_EXPIRE_MSEC: String = "broker_market_expire_msec"
 
 var _beacon_points: Array[Vector2] = []
+
+func _init() -> void:
+	base_line_duration = 2.8
+	q_asset_duration_open = 2.8
+	q_asset_duration_closed = 1.8
 
 func _enter_planning_mode() -> void:
 	_beacon_points.clear()

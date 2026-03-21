@@ -53,6 +53,7 @@ var _last_replay_source_path: String = ""
 var _recording_role_pool: Array[String] = []
 var _recording_group_index: int = 0
 var _replay_sample_action_state: Dictionary = {}
+var _replay_restored_context_timestamps: Dictionary = {}
 
 func _ready() -> void:
 	Global.set_meta("debug_e_no_cooldown", false)
@@ -431,6 +432,7 @@ func _toggle_recording_replay() -> void:
 
 	_replay_active = true
 	_replay_sample_action_state.clear()
+	_replay_restored_context_timestamps.clear()
 	_last_replay_source_path = replay_path
 	_refresh_runtime_info_overlay()
 	_print_debug_tip("replay started: %s" % ProjectSettings.globalize_path(replay_path))
@@ -773,6 +775,7 @@ func _run_input_replay(recording_payload: Dictionary) -> void:
 				_replay_apply_sample_mouse(event_entry)
 				_replay_apply_sample_player_state(event_entry)
 				_replay_sample_event(event_entry)
+				_replay_apply_sample_semantic_contexts(event_entry)
 			else:
 				await _replay_sync_sample_during_raw_input(event_entry)
 			continue
@@ -795,6 +798,7 @@ func _run_input_replay(recording_payload: Dictionary) -> void:
 	var finished_normally: bool = _replay_active
 	_replay_release_sample_actions()
 	_replay_active = false
+	_replay_restored_context_timestamps.clear()
 	_refresh_runtime_info_overlay()
 	if finished_normally:
 		_print_debug_tip("replay finished")
@@ -1007,11 +1011,13 @@ func _replay_sync_sample_during_raw_input(event_entry: Dictionary) -> void:
 	var data: Dictionary = data_raw
 	var skill_q_pressed: bool = bool(data.get("skill_q_pressed", false))
 	var click_left_pressed: bool = bool(data.get("click_left_pressed", false))
-	if not skill_q_pressed and not click_left_pressed:
+	var has_context_snapshot: bool = _sample_event_has_context_snapshot(event_entry)
+	if not skill_q_pressed and not click_left_pressed and not has_context_snapshot:
 		return
 	await _ensure_replay_player_for_event(event_entry)
 	_replay_apply_sample_player_state(event_entry)
 	_replay_warp_mouse_position(_deserialize_vec2(data.get("mouse_position", {})))
+	_replay_apply_sample_semantic_contexts(event_entry)
 
 func _replay_apply_sample_player_state(event_entry: Dictionary) -> void:
 	var data_raw: Variant = event_entry.get("data", {})
@@ -1056,6 +1062,144 @@ func _replay_apply_sample_player_state(event_entry: Dictionary) -> void:
 			var cooldowns_raw: Variant = runtime.get("skill_cooldowns", {})
 			if cooldowns_raw is Dictionary and player_base.has_method("queue_restore_skill_cooldowns"):
 				player_base.queue_restore_skill_cooldowns(cooldowns_raw, 0.0, 1.0)
+
+func _sample_event_has_context_snapshot(event_entry: Dictionary) -> bool:
+	var context_snapshot: Dictionary = _extract_sample_context_snapshot(event_entry)
+	if context_snapshot.is_empty():
+		return false
+	for slot_name in ["q", "e", "f"]:
+		var context_key: String = "%s_context" % slot_name
+		var packet_raw: Variant = context_snapshot.get(context_key, {})
+		if packet_raw is Dictionary and not (packet_raw as Dictionary).is_empty():
+			return true
+	return false
+
+func _extract_sample_context_snapshot(event_entry: Dictionary) -> Dictionary:
+	var data_raw: Variant = event_entry.get("data", {})
+	if not (data_raw is Dictionary):
+		return {}
+	var data: Dictionary = data_raw
+	var runtime_raw: Variant = data.get("player_runtime", {})
+	if not (runtime_raw is Dictionary):
+		return {}
+	var runtime: Dictionary = runtime_raw
+	var skill_runtime_raw: Variant = runtime.get("skill_runtime", {})
+	if not (skill_runtime_raw is Dictionary):
+		return {}
+	var skill_runtime: Dictionary = skill_runtime_raw
+	var context_raw: Variant = skill_runtime.get("context", {})
+	if not (context_raw is Dictionary):
+		return {}
+	return context_raw
+
+func _replay_apply_sample_semantic_contexts(event_entry: Dictionary) -> void:
+	if not is_instance_valid(Global.player):
+		return
+	var context_snapshot: Dictionary = _extract_sample_context_snapshot(event_entry)
+	if context_snapshot.is_empty():
+		return
+	var assets_raw: Variant = context_snapshot.get("assets", [])
+	for slot_name in ["q", "e", "f"]:
+		var context_key: String = "%s_context" % slot_name
+		var packet_raw: Variant = context_snapshot.get(context_key, {})
+		if not (packet_raw is Dictionary):
+			continue
+		var packet: Dictionary = packet_raw
+		if packet.is_empty():
+			continue
+		if not _should_restore_sample_context(slot_name, event_entry, packet):
+			continue
+		var restored_asset_ids: Array[String] = _restore_sample_assets_for_packet(packet, assets_raw)
+		var normalized_packet: Dictionary = _normalize_recorded_context_packet(packet, slot_name, restored_asset_ids)
+		if normalized_packet.is_empty():
+			continue
+		match slot_name:
+			"q":
+				SkillContextBridge.publish_q_context(Global.player, normalized_packet)
+			"e":
+				SkillContextBridge.publish_e_context(Global.player, normalized_packet)
+			"f":
+				SkillContextBridge.publish_f_context(Global.player, normalized_packet)
+			_:
+				continue
+		_mark_sample_context_restored(slot_name, event_entry, packet)
+
+func _should_restore_sample_context(slot_name: String, event_entry: Dictionary, packet: Dictionary) -> bool:
+	var recorded_timestamp: int = int(packet.get("timestamp_msec", 0))
+	if recorded_timestamp <= 0:
+		return false
+	var restore_key: String = _sample_context_restore_key(slot_name, event_entry)
+	return recorded_timestamp > int(_replay_restored_context_timestamps.get(restore_key, 0))
+
+func _mark_sample_context_restored(slot_name: String, event_entry: Dictionary, packet: Dictionary) -> void:
+	var restore_key: String = _sample_context_restore_key(slot_name, event_entry)
+	_replay_restored_context_timestamps[restore_key] = int(packet.get("timestamp_msec", 0))
+
+func _sample_context_restore_key(slot_name: String, event_entry: Dictionary) -> String:
+	var player_id: String = str(event_entry.get("player_id", _get_active_player_id())).strip_edges()
+	return "%s:%s" % [player_id, slot_name]
+
+func _restore_sample_assets_for_packet(packet: Dictionary, assets_raw: Variant) -> Array[String]:
+	if not (assets_raw is Array):
+		return []
+	var raw_asset_ids: Variant = packet.get("asset_ids", [])
+	if not (raw_asset_ids is Array):
+		return []
+	var source_asset_ids: Array[String] = _normalize_string_array(raw_asset_ids)
+	if source_asset_ids.is_empty():
+		return []
+	var restored_asset_ids: Array[String] = []
+	for asset_entry_raw in assets_raw:
+		if not (asset_entry_raw is Dictionary):
+			continue
+		var asset_entry: Dictionary = asset_entry_raw
+		var source_asset_id: String = str(asset_entry.get("asset_id", "")).strip_edges()
+		if source_asset_id.is_empty() or not source_asset_ids.has(source_asset_id):
+			continue
+		var payload_raw: Variant = asset_entry.get("payload", {})
+		var payload: Dictionary = payload_raw if payload_raw is Dictionary else {}
+		var created_msec: int = int(asset_entry.get("created_msec", 0))
+		var expire_msec: int = int(asset_entry.get("expire_msec", 0))
+		var duration_sec: float = 0.0
+		if expire_msec > created_msec and created_msec > 0:
+			duration_sec = max(0.1, float(expire_msec - created_msec) / 1000.0)
+		var restored_entry: Dictionary = SkillAssetRegistry.register_asset(
+			Global.player,
+			str(asset_entry.get("kind", "")),
+			_deserialize_vec2(asset_entry.get("center", {})),
+			float(asset_entry.get("radius", 0.0)),
+			payload,
+			duration_sec
+		)
+		var restored_asset_id: String = str(restored_entry.get("asset_id", "")).strip_edges()
+		if not restored_asset_id.is_empty():
+			restored_asset_ids.append(restored_asset_id)
+	return restored_asset_ids
+
+func _normalize_recorded_context_packet(
+	packet: Dictionary,
+	slot_name: String,
+	restored_asset_ids: Array[String] = []
+) -> Dictionary:
+	var payload_raw: Variant = packet.get("payload", {})
+	var metrics_raw: Variant = packet.get("metrics", {})
+	return {
+		"schema_version": int(packet.get("schema_version", 1)),
+		"role_id": str(packet.get("role_id", _get_active_player_id())).strip_edges(),
+		"skill_slot": slot_name,
+		"skill_id": str(packet.get("skill_id", "")).strip_edges(),
+		"source_kind": str(packet.get("source_kind", "")).strip_edges(),
+		"center": _deserialize_vec2(packet.get("center", {})),
+		"radius": float(packet.get("radius", 0.0)),
+		"timestamp_msec": Time.get_ticks_msec(),
+		"is_closed": bool(packet.get("is_closed", false)),
+		"segment_count": int(packet.get("segment_count", 0)),
+		"polygon_count": int(packet.get("polygon_count", 0)),
+		"tags": _normalize_string_array(packet.get("tags", [])),
+		"metrics": metrics_raw if metrics_raw is Dictionary else {},
+		"payload": payload_raw if payload_raw is Dictionary else {},
+		"asset_ids": restored_asset_ids.duplicate(),
+	}
 
 func _replay_warp_mouse_position(screen_pos: Vector2) -> void:
 	var viewport: Viewport = get_viewport()
@@ -1760,6 +1904,18 @@ func _deserialize_vec2(data: Variant) -> Vector2:
 		var a: Array = data
 		if a.size() >= 2:
 			return Vector2(float(a[0]), float(a[1]))
+	if data is String:
+		var text: String = str(data).strip_edges()
+		if text.begins_with("Vector2"):
+			text = text.trim_prefix("Vector2").strip_edges()
+		if (
+			(text.begins_with("(") and text.ends_with(")"))
+			or (text.begins_with("[") and text.ends_with("]"))
+		):
+			text = text.substr(1, text.length() - 2)
+		var parts: PackedStringArray = text.split(",", false)
+		if parts.size() >= 2:
+			return Vector2(float(parts[0].strip_edges()), float(parts[1].strip_edges()))
 	return Vector2.ZERO
 
 func _build_recording_role_catalog(player_ids: Array) -> Array:

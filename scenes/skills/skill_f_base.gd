@@ -1,6 +1,8 @@
 extends SkillUltimate
 class_name SkillFBase
 
+const FSignaturePickupService = preload("res://scripts/qef/services/f_signature_pickup_service.gd")
+
 const MIN_TICK_INTERVAL: float = 0.25
 
 var _tick_accum: float = 0.0
@@ -208,7 +210,9 @@ func _damage_enemy(enemy: Node, amount: float, text: String = "", text_color: Co
 		if health_component != null and health_component.has_method("take_damage"):
 			health_component.call("take_damage", max(1.0, amount))
 	if text != "" and enemy is Node2D:
-		Global.spawn_floating_text((enemy as Node2D).global_position, text, text_color)
+		var global_node: Node = _get_autoload_node("Global")
+		if global_node != null and global_node.has_method("spawn_floating_text"):
+			global_node.call("spawn_floating_text", (enemy as Node2D).global_position, text, text_color)
 
 func _apply_enemy_status(enemy: Node, status: String, duration: float, value: float, stacks: int = 1, tick_interval: float = 0.6) -> void:
 	if not is_instance_valid(enemy):
@@ -283,21 +287,23 @@ func _add_player_armor(value: int) -> void:
 		player_ref.emit_signal("armor_changed", after)
 
 func _drop_coins(count: int) -> void:
-	if count <= 0 or not is_instance_valid(player_ref) or not Global.has_method("spawn_coin"):
+	var global_node: Node = _get_autoload_node("Global")
+	if count <= 0 or not is_instance_valid(player_ref) or global_node == null or not global_node.has_method("spawn_coin"):
 		return
 	var player_node := _get_player_node()
 	if player_node == null:
 		return
 	for _i in range(count):
 		var offset := Vector2(randf_range(-70.0, 70.0), randf_range(-70.0, 70.0))
-		Global.spawn_coin(player_node.global_position + offset, 1)
+		global_node.call("spawn_coin", player_node.global_position + offset, 1)
 
 func _drop_coins_at(center: Vector2, count: int) -> void:
-	if count <= 0 or not Global.has_method("spawn_coin"):
+	var global_node: Node = _get_autoload_node("Global")
+	if count <= 0 or global_node == null or not global_node.has_method("spawn_coin"):
 		return
 	for _i in range(count):
 		var offset := Vector2(randf_range(-45.0, 45.0), randf_range(-45.0, 45.0))
-		Global.spawn_coin(center + offset, 1)
+		global_node.call("spawn_coin", center + offset, 1)
 
 func _apply_temp_attack_boost(duration: float, bonus: float) -> void:
 	_apply_temp_meta_delta("attack_boost", bonus, duration)
@@ -459,9 +465,12 @@ func _spawn_parallel_wall_pair(
 		dir = Vector2.RIGHT
 	var side := Vector2(-dir.y, dir.x)
 	var half_len: float = max(12.0, length * 0.5)
+	var skill_effect_manager: Node = _get_autoload_node("SkillEffectManager")
+	if skill_effect_manager == null:
+		return
 	for sign in [-1.0, 1.0]:
 		var offset_center: Vector2 = center + side * gap * 0.5 * sign
-		SkillEffectManager.create_wall_effect({
+		skill_effect_manager.call("create_wall_effect", {
 			"start": offset_center - dir * half_len,
 			"end": offset_center + dir * half_len,
 			"width": 12.0,
@@ -474,16 +483,19 @@ func _spawn_parallel_wall_pair(
 		})
 
 func _spawn_pyro_patch(center: Vector2, radius: float, duration: float, damage_scale: float) -> void:
+	var skill_effect_manager: Node = _get_autoload_node("SkillEffectManager")
+	if skill_effect_manager == null:
+		return
 	var polygon := _build_circle_polygon(center, radius, 16)
 	var damage: int = max(1, int(round(_get_player_base_damage() * max(0.0, damage_scale))))
-	SkillEffectManager.create_area_effect({
+	skill_effect_manager.call("create_area_effect", {
 		"polygon": polygon,
 		"damage": damage,
 		"damage_interval": 0.35,
 		"duration": max(0.1, duration),
 		"color": Color(1.0, 0.38, 0.12, 0.32),
 	})
-	SkillEffectManager.create_debuff_zone({
+	skill_effect_manager.call("create_debuff_zone", {
 		"polygon": polygon,
 		"duration": max(0.1, duration),
 		"debuff_type": "burn",
@@ -502,13 +514,16 @@ func _spawn_glacier_ring_walls(
 	contact_interval: float,
 	block_bullets: bool
 ) -> void:
+	var skill_effect_manager: Node = _get_autoload_node("SkillEffectManager")
+	if skill_effect_manager == null:
+		return
 	var points := _build_circle_polygon(center, radius, max(6, segment_count))
 	if points.size() < 3:
 		return
 	for i in range(points.size()):
 		var start := points[i]
 		var finish := points[(i + 1) % points.size()]
-		SkillEffectManager.create_wall_effect({
+		skill_effect_manager.call("create_wall_effect", {
 			"start": start,
 			"end": finish,
 			"width": 10.0,
@@ -521,15 +536,18 @@ func _spawn_glacier_ring_walls(
 		})
 
 func _spawn_glacier_core_zone(center: Vector2, radius: float, duration: float, damage: int, slow_value: float) -> void:
+	var skill_effect_manager: Node = _get_autoload_node("SkillEffectManager")
+	if skill_effect_manager == null:
+		return
 	var polygon := _build_circle_polygon(center, radius, 16)
-	SkillEffectManager.create_area_effect({
+	skill_effect_manager.call("create_area_effect", {
 		"polygon": polygon,
 		"damage": max(0, damage),
 		"damage_interval": 0.28,
 		"duration": max(0.1, duration),
 		"color": Color(0.58, 0.88, 1.0, 0.24),
 	})
-	SkillEffectManager.create_debuff_zone({
+	skill_effect_manager.call("create_debuff_zone", {
 		"polygon": polygon,
 		"duration": max(0.1, duration),
 		"debuff_type": "slow",
@@ -2005,45 +2023,32 @@ func _detonate_sapper_mine(mine: Node, from_closure: bool) -> void:
 	mine.queue_free()
 	_erase_node_from_array(_sapper_mines, mine)
 
-func _erase_node_from_array(arr: Array, node: Node) -> void:
-	var idx: int = arr.find(node)
-	if idx >= 0:
-		arr.remove_at(idx)
+func _erase_node_from_array(arr: Array, node: Variant) -> void:
+	var target_is_object: bool = typeof(node) == TYPE_OBJECT
+	var target_valid: bool = target_is_object and node != null and is_instance_valid(node)
+	for idx: int in range(arr.size() - 1, -1, -1):
+		var entry: Variant = arr[idx]
+		if entry == null:
+			arr.remove_at(idx)
+			continue
+		var entry_is_object: bool = typeof(entry) == TYPE_OBJECT
+		if entry_is_object and not is_instance_valid(entry):
+			arr.remove_at(idx)
+			continue
+		if target_valid and entry_is_object and entry == node:
+			arr.remove_at(idx)
+			return
 
 func _spawn_signature_pickup(center: Vector2, color: Color, reward: Dictionary, lifetime_sec: float = 6.0) -> void:
-	if not is_inside_tree():
-		return
-	var scene: Node = get_tree().current_scene if get_tree() else null
-	if scene == null:
-		return
-	if _signature_pickups.size() >= 8:
-		var oldest: Node = _signature_pickups[0]
-		if is_instance_valid(oldest):
-			oldest.queue_free()
-		_erase_node_from_array(_signature_pickups, oldest)
-
-	var pickup: Node2D = Node2D.new()
-	pickup.global_position = center
-	pickup.z_index = 59
-	pickup.set_meta("expire_msec", Time.get_ticks_msec() + int(round(max(0.8, lifetime_sec) * 1000.0)))
-	pickup.set_meta("reward", reward.duplicate(true))
-	pickup.set_meta("bob_seed", randf() * TAU)
-
-	var visual: Polygon2D = Polygon2D.new()
-	visual.name = "Visual"
-	visual.polygon = PackedVector2Array([
-		Vector2(0.0, -9.0),
-		Vector2(9.0, 0.0),
-		Vector2(0.0, 9.0),
-		Vector2(-9.0, 0.0),
-	])
-	visual.color = color
-	visual.z_index = 59
-	pickup.add_child(visual)
-
-	scene.add_child(pickup)
-	_signature_pickups.append(pickup)
-	_sync_pickup_runtime_count()
+	FSignaturePickupService.spawn_pickup(
+		self,
+		_signature_pickups,
+		_resolve_f_role_id(),
+		center,
+		color,
+		reward,
+		lifetime_sec
+	)
 
 func _spawn_signature_pickup_burst(
 	center: Vector2,
@@ -2053,165 +2058,26 @@ func _spawn_signature_pickup_burst(
 	reward: Dictionary,
 	lifetime_sec: float = 6.0
 ) -> void:
-	var burst_count: int = max(1, count)
-	var safe_radius: float = max(18.0, spread_radius)
-	for i in range(burst_count):
-		var angle: float = randf() * TAU
-		if burst_count > 1:
-			angle = TAU * float(i) / float(burst_count) + randf_range(-0.28, 0.28)
-		var offset_len: float = randf_range(safe_radius * 0.25, safe_radius)
-		var pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * offset_len
-		_spawn_signature_pickup(pos, color, reward, lifetime_sec)
+	FSignaturePickupService.spawn_pickup_burst(
+		self,
+		_signature_pickups,
+		_resolve_f_role_id(),
+		center,
+		count,
+		spread_radius,
+		color,
+		reward,
+		lifetime_sec
+	)
 
 func _update_signature_pickups(delta: float) -> void:
-	if _signature_pickups.is_empty():
-		return
-	var now_msec: int = Time.get_ticks_msec()
-	var player_node: Node2D = _get_player_node()
-	var player_pos: Vector2 = player_node.global_position if player_node != null else Vector2.ZERO
-	var snapshot: Array = _signature_pickups.duplicate()
-	for pickup_var in snapshot:
-		if pickup_var == null or not is_instance_valid(pickup_var):
-			_erase_node_from_array(_signature_pickups, pickup_var)
-			continue
-		if not (pickup_var is Node2D):
-			continue
-		var pickup: Node2D = pickup_var
-		if now_msec > int(pickup.get_meta("expire_msec", 0)):
-			pickup.queue_free()
-			_erase_node_from_array(_signature_pickups, pickup)
-			continue
-		var visual: Polygon2D = pickup.get_node_or_null("Visual") as Polygon2D
-		var bob_seed: float = float(pickup.get_meta("bob_seed", 0.0))
-		pickup.rotation += delta * 2.8
-		if is_instance_valid(visual):
-			var bob_scale: float = 0.92 + 0.08 * sin((Time.get_ticks_msec() / 180.0) + bob_seed)
-			visual.scale = Vector2.ONE * bob_scale
-		if player_node != null and pickup.global_position.distance_to(player_pos) <= 26.0:
-			_collect_signature_pickup(pickup)
+	FSignaturePickupService.update_pickups(self, _signature_pickups, delta)
 
 func _collect_signature_pickup(pickup: Node2D) -> void:
-	if pickup == null or not is_instance_valid(pickup):
-		return
-	var reward_var: Variant = pickup.get_meta("reward", {})
-	var reward: Dictionary = reward_var if reward_var is Dictionary else {}
-	var center: Vector2 = pickup.global_position
-	_apply_signature_pickup_reward(center, reward)
-	pickup.queue_free()
-	_erase_node_from_array(_signature_pickups, pickup)
-	_sync_pickup_runtime_count()
+	FSignaturePickupService.collect_pickup(self, _signature_pickups, pickup)
 
 func _apply_signature_pickup_reward(center: Vector2, reward: Dictionary) -> void:
-	if reward.is_empty():
-		return
-	var player_node: Node2D = _get_player_node()
-	var effect_id: String = str(reward.get("effect_id", "")).strip_edges()
-	var text: String = str(reward.get("pickup_text", "PICKUP")).strip_edges()
-	var text_color: Color = reward.get("text_color", Color(1.0, 0.9, 0.4)) as Color
-	var vfx_color: Color = reward.get("vfx_color", Color(1.0, 0.9, 0.4, 0.9)) as Color
-	var effect_scale: float = float(reward.get("effect_scale", 0.58))
-	var reward_radius: float = max(60.0, float(reward.get("radius", 120.0)))
-
-	match effect_id:
-		"butcher_hook":
-			var butcher_dir: Vector2 = _get_player_aim_direction()
-			_line_slice_burst(
-				center - butcher_dir * reward_radius * 0.42,
-				center + butcher_dir * reward_radius * 0.62,
-				18.0,
-				0.28,
-				"marked",
-				1.1,
-				0.18,
-				true,
-				160.0
-			)
-			_gain_energy(2.0)
-		"runeblazer_rune":
-			_spawn_pyro_patch(center, reward_radius * 0.34, 1.2, 0.20)
-			_apply_status_burst(center, reward_radius * 0.62, 6, "burn", 1.4, 8.0)
-			_gain_energy(1.6)
-		"lurewarden_decoy":
-			_knock_enemies_burst(center, reward_radius * 0.68, 5, 150.0)
-			_apply_status_burst(center, reward_radius * 0.72, 6, "marked", 1.2, 0.18)
-			_apply_temp_meta_delta("buff_speed_boost", 0.05, 1.4)
-		"weaver_recall":
-			_pull_enemies_burst(center, reward_radius * 0.78, 6, 18.0)
-			_apply_status_burst(center, reward_radius * 0.72, 6, "slow", 1.0, 0.30)
-			_gain_energy(1.8)
-		"glacier_wedge":
-			_add_player_armor(1)
-			_spawn_glacier_core_zone(center, reward_radius * 0.42, 1.2, int(max(1.0, _get_player_base_damage() * 0.18)), 0.34)
-			for enemy in _get_enemies_in_radius(center, reward_radius * 0.56):
-				_apply_enemy_status(enemy, "freeze", 0.55, 0.0, 1, 0.1)
-		"wind_gust":
-			var wind_dir: Vector2 = _get_player_aim_direction()
-			_line_slice_burst(
-				center - wind_dir * reward_radius * 0.32,
-				center + wind_dir * reward_radius * 0.72,
-				18.0,
-				0.22,
-				"slow",
-				1.0,
-				0.28,
-				true,
-				180.0
-			)
-			_apply_temp_meta_delta("buff_speed_boost", 0.08, 1.4)
-		"breachmarshal_badge":
-			var breach_dir: Vector2 = _get_player_aim_direction()
-			_line_slice_burst(
-				center - breach_dir * reward_radius * 0.18,
-				center + breach_dir * reward_radius * 0.88,
-				20.0,
-				0.28,
-				"marked",
-				1.1,
-				0.18,
-				false,
-				220.0
-			)
-			_gain_energy(1.8)
-		"executioner_order":
-			var execute_count: int = 0
-			for enemy in _sort_enemies_by_distance(_get_enemies_in_radius(center, reward_radius * 0.68), center):
-				if _is_enemy_below_threshold(enemy, 0.30):
-					_damage_enemy(enemy, _get_player_base_damage() * 1.2, "ORDER", Color(1.0, 0.24, 0.24))
-					execute_count += 1
-				else:
-					_apply_enemy_status(enemy, "marked", 1.4, 0.22, 1, 0.3)
-			if execute_count > 0:
-				_gain_energy(1.2 + float(execute_count) * 0.4)
-		"singularist_dust":
-			_pull_enemies_burst(center, reward_radius * 0.84, 8, 22.0)
-			get_tree().create_timer(0.18).timeout.connect(
-				_on_singularist_implode_timeout.bind(center, reward_radius * 0.42, 0.52),
-				CONNECT_ONE_SHOT
-			)
-		"quartermaster_reload":
-			_gain_energy(2.0)
-			_apply_temp_attack_boost(1.8, 0.10)
-			_refund_skill_cooldown("q", 0.8)
-			_refund_skill_cooldown("e", 0.8)
-		_:
-			if float(reward.get("energy_gain", 0.0)) > 0.0:
-				_gain_energy(float(reward.get("energy_gain", 0.0)))
-
-	if reward.has("energy_gain"):
-		_gain_energy(float(reward.get("energy_gain", 0.0)))
-	if reward.has("armor_gain"):
-		_add_player_armor(int(reward.get("armor_gain", 0)))
-	if reward.has("cooldown_slot") and reward.has("cooldown_refund"):
-		_refund_skill_cooldown(str(reward.get("cooldown_slot", "")), float(reward.get("cooldown_refund", 0.0)))
-	if reward.has("temp_meta_key") and reward.has("temp_meta_delta") and reward.has("temp_meta_duration"):
-		_apply_temp_meta_delta(
-			str(reward.get("temp_meta_key", "")),
-			float(reward.get("temp_meta_delta", 0.0)),
-			float(reward.get("temp_meta_duration", 0.0))
-		)
-	if player_node != null:
-		Global.spawn_floating_text(player_node.global_position, text, text_color)
-	spawn_skill_vfx(center, vfx_color, effect_scale)
+	FSignaturePickupService.apply_reward(self, center, reward)
 
 func _refund_skill_cooldown(slot_name: String, seconds: float) -> void:
 	if slot_name.strip_edges().is_empty() or seconds <= 0.0 or not is_instance_valid(player_ref):
@@ -2244,16 +2110,10 @@ func _clear_signature_nodes() -> void:
 		if is_instance_valid(pool):
 			pool.queue_free()
 	_mirebinder_pools.clear()
-	for pickup in _signature_pickups:
-		if is_instance_valid(pickup):
-			pickup.queue_free()
-	_signature_pickups.clear()
-	_sync_pickup_runtime_count()
+	FSignaturePickupService.clear_pickups(self, _signature_pickups)
 
 func _sync_pickup_runtime_count() -> void:
-	update_runtime_profile({
-		"active_pickup_count": _signature_pickups.size()
-	})
+	FSignaturePickupService.sync_runtime(self, _signature_pickups)
 
 func _build_local_circle_polygon(radius: float, segments: int) -> PackedVector2Array:
 	var points: PackedVector2Array = PackedVector2Array()

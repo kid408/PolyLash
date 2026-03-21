@@ -1,6 +1,9 @@
 extends Node
 class_name SkillBase
 
+const QEFRuntimeService = preload("res://scripts/qef/core/qef_runtime_service.gd")
+const RoleSpecRegistry = preload("res://scripts/qef/roles/role_spec_registry.gd")
+
 ## ==============================================================================
 ## 技能基类 - 所有技能的抽象基类
 ## ==============================================================================
@@ -95,6 +98,8 @@ func can_execute() -> bool:
 func consume_energy() -> bool:
 	if skill_owner and skill_owner.has_method("consume_energy"):
 		var final_cost: float = energy_cost
+		if _is_e_skill() and QEFRuntimeService.try_consume_free_cost_target(skill_owner, "e"):
+			final_cost = 0.0
 		if _is_e_skill():
 			var profile: Dictionary = get_f_runtime_profile()
 			if not profile.is_empty():
@@ -178,18 +183,22 @@ func get_f_runtime_profile() -> Dictionary:
 
 func get_e_damage_amp(line_weight: float = 0.35, closure_weight: float = 0.35) -> float:
 	var profile: Dictionary = get_f_runtime_profile()
+	var slot_payload: Dictionary = _get_e_slot_payload()
+	var slot_bonus: float = float(slot_payload.get("damage_amp_bonus", 0.0))
 	if profile.is_empty():
-		return 1.0
+		return 1.0 + slot_bonus
 	var line_amp: float = max(1.0, float(profile.get("q_line_amp", 1.0)))
 	var closure_amp: float = max(1.0, float(profile.get("q_closure_amp", 1.0)))
-	return 1.0 + (line_amp - 1.0) * line_weight + (closure_amp - 1.0) * closure_weight
+	return 1.0 + (line_amp - 1.0) * line_weight + (closure_amp - 1.0) * closure_weight + slot_bonus
 
 func get_e_duration_amp(weight: float = 0.25) -> float:
 	var profile: Dictionary = get_f_runtime_profile()
+	var slot_payload: Dictionary = _get_e_slot_payload()
+	var slot_bonus: float = float(slot_payload.get("duration_amp_bonus", 0.0))
 	if profile.is_empty():
-		return 1.0
+		return 1.0 + slot_bonus
 	var closure_amp: float = max(1.0, float(profile.get("q_closure_amp", 1.0)))
-	return 1.0 + (closure_amp - 1.0) * weight
+	return 1.0 + (closure_amp - 1.0) * weight + slot_bonus
 
 func is_f_window_active() -> bool:
 	return not get_f_runtime_profile().is_empty()
@@ -207,16 +216,51 @@ func _is_global_e_no_cooldown_enabled() -> bool:
 	return bool(Global.get_meta("debug_e_no_cooldown"))
 
 func _get_f_e_energy_discount(profile: Dictionary) -> float:
+	var role_energy_cfg: Dictionary = _get_role_f_energy_config()
+	if role_energy_cfg.has("e_cost_discount"):
+		return clamp(float(role_energy_cfg.get("e_cost_discount", 0.0)), 0.0, 0.5)
 	var line_amp: float = max(1.0, float(profile.get("q_line_amp", 1.0)))
 	var closure_amp: float = max(1.0, float(profile.get("q_closure_amp", 1.0)))
 	var bonus: float = (line_amp + closure_amp - 2.0) * 0.14
+	var slot_payload: Dictionary = _get_e_slot_payload()
+	bonus += float(slot_payload.get("energy_discount_bonus", 0.0))
 	return clamp(bonus, 0.0, 0.35)
 
 func _get_f_e_cooldown_scale(profile: Dictionary) -> float:
 	var line_amp: float = max(1.0, float(profile.get("q_line_amp", 1.0)))
 	var closure_amp: float = max(1.0, float(profile.get("q_closure_amp", 1.0)))
 	var reduction: float = (line_amp + closure_amp - 2.0) * 0.18
+	var slot_payload: Dictionary = _get_e_slot_payload()
+	reduction += float(slot_payload.get("cooldown_reduction_bonus", 0.0))
 	return clamp(1.0 - reduction, 0.62, 1.0)
+
+func _get_e_slot_payload() -> Dictionary:
+	if not is_instance_valid(skill_owner):
+		return {}
+	return QEFRuntimeService.get_e_bonus(skill_owner)
+
+func get_role_spec() -> Dictionary:
+	var role_id: String = _resolve_runtime_role_id()
+	if role_id.is_empty():
+		return {}
+	return RoleSpecRegistry.get_role_spec(role_id)
+
+func _get_role_f_energy_config() -> Dictionary:
+	var spec: Dictionary = get_role_spec()
+	if spec.is_empty():
+		return {}
+	var f_energy: Variant = spec.get("f_energy", {})
+	if f_energy is Dictionary:
+		return f_energy
+	return {}
+
+func _resolve_runtime_role_id() -> String:
+	if is_instance_valid(skill_owner) and "player_id" in skill_owner:
+		return str(skill_owner.get("player_id")).strip_edges().to_lower()
+	var base_id: String = skill_id.trim_prefix("skill_")
+	if base_id.ends_with("_q") or base_id.ends_with("_e"):
+		base_id = base_id.substr(0, base_id.length() - 2)
+	return base_id.strip_edges().to_lower()
 
 func set_skill_tags_from_value(raw_tags) -> void:
 	skill_tags.clear()

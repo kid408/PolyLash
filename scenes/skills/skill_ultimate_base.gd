@@ -2,6 +2,7 @@ extends Node
 class_name SkillUltimate
 
 const DEBUG_VERBOSE := false
+const QEFRuntimeService = preload("res://scripts/qef/core/qef_runtime_service.gd")
 
 signal ultimate_activated
 signal ultimate_deactivated
@@ -103,7 +104,9 @@ func initialize(config: Dictionary, player: Node) -> void:
 func try_activate() -> bool:
 	if is_active:
 		if is_instance_valid(player_ref):
-			Global.spawn_floating_text(_get_player_global_position(), "Ultimate Active", Color.YELLOW)
+			var global_node: Node = _get_global_singleton()
+			if global_node != null and global_node.has_method("spawn_floating_text"):
+				global_node.call("spawn_floating_text", _get_player_global_position(), "Ultimate Active", Color.YELLOW)
 		return false
 
 	if not is_instance_valid(player_ref):
@@ -114,11 +117,14 @@ func try_activate() -> bool:
 		var current_energy: float = 0.0
 		if player_ref.has_method("get_energy_percent"):
 			current_energy = float(player_ref.get_energy_percent())
-		Global.spawn_floating_text(
-			_get_player_global_position(),
-			"Not enough energy (%.0f%%/%.0f%%)" % [current_energy, energy_cost],
-			Color.ORANGE_RED
-		)
+		var global_node: Node = _get_global_singleton()
+		if global_node != null and global_node.has_method("spawn_floating_text"):
+			global_node.call(
+				"spawn_floating_text",
+				_get_player_global_position(),
+				"Not enough energy (%.0f%%/%.0f%%)" % [current_energy, energy_cost],
+				Color.ORANGE_RED
+			)
 		return false
 
 	_consume_energy()
@@ -129,16 +135,22 @@ func _activate() -> void:
 	is_active = true
 	remaining_time = max(0.01, duration)
 
-	SoundManager.play("skill_ult_activate")
+	var sound_manager: Node = _get_autoload_node("SoundManager")
+	if sound_manager != null and sound_manager.has_method("play"):
+		sound_manager.call("play", "skill_ult_activate")
 
-	if bonus_bond_tag != "" and BondManager:
-		BondManager.add_temp_tag(bonus_bond_tag)
+	var bond_manager: Node = _get_autoload_node("BondManager")
+	if bonus_bond_tag != "" and bond_manager != null and bond_manager.has_method("add_temp_tag"):
+		bond_manager.call("add_temp_tag", bonus_bond_tag)
 
 	_apply_visuals()
 	_apply_explosion_to_weapons()
 
 	f_runtime_profile = _build_runtime_profile()
 	f_runtime_profile["window_seq"] = int(f_runtime_profile.get("window_seq", 0)) + 1
+	var started_runtime: Dictionary = QEFRuntimeService.begin_window(player_ref, _resolve_runtime_role_id(), ult_name, duration, f_runtime_profile)
+	if not started_runtime.is_empty():
+		f_runtime_profile = started_runtime.duplicate(true)
 	_publish_runtime_profile()
 
 	if duration_timer != null:
@@ -155,12 +167,16 @@ func deactivate() -> void:
 	is_active = false
 	remaining_time = 0.0
 
-	SoundManager.play("skill_ult_deactivate")
+	var sound_manager: Node = _get_autoload_node("SoundManager")
+	if sound_manager != null and sound_manager.has_method("play"):
+		sound_manager.call("play", "skill_ult_deactivate")
 
-	if bonus_bond_tag != "" and BondManager:
-		var temp_tags: Dictionary = BondManager.get_temp_tags()
+	var bond_manager: Node = _get_autoload_node("BondManager")
+	if bonus_bond_tag != "" and bond_manager != null and bond_manager.has_method("get_temp_tags"):
+		var temp_tags: Dictionary = bond_manager.call("get_temp_tags")
 		if temp_tags.has(bonus_bond_tag):
-			BondManager.remove_temp_tag(bonus_bond_tag)
+			if bond_manager.has_method("remove_temp_tag"):
+				bond_manager.call("remove_temp_tag", bonus_bond_tag)
 
 	_restore_visuals()
 	_remove_explosion_from_weapons()
@@ -405,6 +421,13 @@ func _build_runtime_profile() -> Dictionary:
 		"window_seq": 0,
 	}
 
+func _resolve_runtime_role_id() -> String:
+	if not f_role_id.strip_edges().is_empty():
+		return f_role_id.strip_edges().to_lower()
+	if is_instance_valid(player_ref) and "player_id" in player_ref:
+		return str(player_ref.get("player_id")).strip_edges().to_lower()
+	return ""
+
 func update_runtime_profile(changes: Dictionary) -> void:
 	if changes.is_empty():
 		return
@@ -422,17 +445,17 @@ func _publish_runtime_profile() -> void:
 	f_runtime_profile["duration"] = duration
 	f_runtime_profile["mode_name"] = ult_name
 	f_runtime_profile["owner_player_id"] = str(player_ref.get("player_id")) if "player_id" in player_ref else ""
-	player_ref.set_meta("f_runtime_profile", f_runtime_profile.duplicate(true))
-	if Global != null and Global.has_method("set_player_f_runtime") and "player_id" in player_ref:
-		Global.set_player_f_runtime(str(player_ref.get("player_id")), f_runtime_profile)
+	var merged_runtime: Dictionary = QEFRuntimeService.sync_skill_profile(player_ref, f_runtime_profile)
+	f_runtime_profile = merged_runtime.duplicate(true)
+	player_ref.set_meta("f_runtime_profile", merged_runtime.duplicate(true))
 
 func _clear_runtime_profile() -> void:
 	var player_id: String = str(player_ref.get("player_id")) if is_instance_valid(player_ref) and "player_id" in player_ref else ""
 	f_runtime_profile.clear()
 	if is_instance_valid(player_ref) and player_ref.has_meta("f_runtime_profile"):
 		player_ref.remove_meta("f_runtime_profile")
-	if Global != null and Global.has_method("clear_player_f_runtime") and not player_id.is_empty():
-		Global.clear_player_f_runtime(player_id)
+	if not player_id.is_empty():
+		QEFRuntimeService.end_window(player_id)
 
 func get_runtime_profile() -> Dictionary:
 	return f_runtime_profile.duplicate(true)
@@ -464,3 +487,12 @@ func get_status_text() -> String:
 	if is_active:
 		return "%s active (%.1fs)" % [ult_name, remaining_time]
 	return "%s ready" % ult_name
+
+func _get_global_singleton() -> Node:
+	return _get_autoload_node("Global")
+
+func _get_autoload_node(node_name: String) -> Node:
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return null
+	return tree.root.get_node_or_null(node_name)

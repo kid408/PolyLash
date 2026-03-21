@@ -1,0 +1,14 @@
+{
+  "name": "wps-codex-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A minimal personal WPS assistant powered by Codex-compatible OpenAI APIs.",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

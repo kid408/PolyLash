@@ -1,24 +1,55 @@
 extends SceneTree
 
-const CORE_ROLES: Array[String] = [
+const SkillScriptRegistry = preload("res://scripts/skills/skill_script_registry.gd")
+const EXPECTED_ROLE_IDS: Array[String] = [
 	"butcher",
+	"glacier",
+	"jailer",
+	"blacksmith",
+	"paladin",
+	"breachmarshal",
+	"hexwarden",
+	"executioner",
+	"pyro",
 	"weaver",
 	"lurewarden",
-	"pyro",
-	"glacier",
-	"quartermaster",
-]
-const RECORD_REPLAY_ROLES: Array[String] = [
+	"runeblazer",
+	"bloodsworn",
+	"spiritcaller",
+	"mirebinder",
+	"necro",
+	"gildhand",
 	"wind",
-	"lurewarden",
+	"arcstriker",
+	"stormseer",
+	"banner",
+	"turretwright",
+	"illusionist",
+	"singularist",
+	"fatebinder",
+	"sapper",
+	"plague",
+	"medic",
+	"quartermaster",
+	"swarm",
+	"broker",
+	"trapper",
+]
+const CORE_ROLES: Array[String] = EXPECTED_ROLE_IDS
+const RECORD_REPLAY_ROLES: Array[String] = [
+	"butcher",
+	"pyro",
+	"wind",
+	"sapper",
 	"quartermaster",
 	"singularist",
 	"banner",
-	"pyro",
+	"broker",
 ]
 const ARENA_SCENE: String = "res://scenes/arena/arena.tscn"
 const ENEMY_SCENE: String = "res://scenes/unit/enemy/enemy_generic.tscn"
 const SUMMARY_PATH: String = "user://qa_reports/qef_acceptance_summary.json"
+const RoleSpecRegistry = preload("res://scripts/qef/roles/role_spec_registry.gd")
 
 var _results: Array[Dictionary] = []
 
@@ -45,6 +76,10 @@ func _run() -> void:
 
 	_reset_global_session()
 
+	var coverage_result: Dictionary = _validate_role_coverage()
+	_results.append(coverage_result)
+	passed = passed and bool(coverage_result.get("passed", false))
+
 	for role_id: String in CORE_ROLES:
 		var role_result: Dictionary = await _validate_core_role(role_id)
 		_results.append(role_result)
@@ -58,6 +93,66 @@ func _run() -> void:
 	_leave_test_mode_if_needed()
 	_write_summary(passed)
 	quit(0 if passed else 1)
+
+
+func _validate_role_coverage() -> Dictionary:
+	var result: Dictionary = {
+		"kind": "role_coverage",
+		"passed": false,
+		"checks": {},
+		"missing": {
+			"spec": [],
+			"player": [],
+			"q": [],
+			"e": [],
+			"f": [],
+		},
+	}
+
+	result["checks"]["role_count_32"] = EXPECTED_ROLE_IDS.size() == 32
+	result["checks"]["registry_count_32"] = int(RoleSpecRegistry.SPEC_SCRIPT_BY_ROLE.size()) == 32
+
+	for role_id: String in EXPECTED_ROLE_IDS:
+		var spec: Dictionary = RoleSpecRegistry.get_role_spec(role_id)
+		var has_spec: bool = not spec.is_empty()
+		if not has_spec:
+			(result["missing"]["spec"] as Array).append(role_id)
+
+		var player_path: String = "res://scenes/unit/players/player_%s.gd" % role_id
+		var q_path: String = SkillScriptRegistry.resolve_active_skill_script_path("skill_%s_q" % role_id, "q")
+		var e_path: String = SkillScriptRegistry.resolve_active_skill_script_path("skill_%s_e" % role_id, "e")
+		var f_path: String = SkillScriptRegistry.resolve_ultimate_script_path(role_id, {
+			"f_role_id": role_id,
+			"ult_id": "%s_ult" % role_id,
+		})
+		var has_q_script: bool = not q_path.is_empty()
+		var has_e_script: bool = not e_path.is_empty()
+		var has_f_script: bool = not f_path.is_empty() and f_path != SkillScriptRegistry.ULTIMATE_BASE_PATH
+
+		if not FileAccess.file_exists(player_path):
+			(result["missing"]["player"] as Array).append(role_id)
+		if not has_q_script:
+			(result["missing"]["q"] as Array).append(role_id)
+		if not has_e_script:
+			(result["missing"]["e"] as Array).append(role_id)
+		if not has_f_script:
+			(result["missing"]["f"] as Array).append(role_id)
+
+		var f_spec: Dictionary = spec.get("f", {}) if spec.get("f", {}) is Dictionary else {}
+		var core_pool: Array = f_spec.get("core_pool", []) if f_spec.get("core_pool", []) is Array else []
+		var first_pack_reward_id: String = str(f_spec.get("first_pack_reward_id", "")).strip_edges()
+		result["checks"]["spec_ready_%s" % role_id] = (
+			has_spec
+			and not first_pack_reward_id.is_empty()
+			and not core_pool.is_empty()
+		)
+		result["checks"]["player_ready_%s" % role_id] = FileAccess.file_exists(player_path)
+		result["checks"]["q_ready_%s" % role_id] = has_q_script
+		result["checks"]["e_ready_%s" % role_id] = has_e_script
+		result["checks"]["f_ready_%s" % role_id] = has_f_script
+
+	result["passed"] = _all_checks_pass(result.get("checks", {}))
+	return result
 
 
 func _validate_core_role(role_id: String) -> Dictionary:
@@ -105,13 +200,14 @@ func _validate_core_role(role_id: String) -> Dictionary:
 	var f_ok: bool = await _tap_action("skill_f", 10, 75)
 	var f_snapshot: Dictionary = _get_player_context_snapshot()
 	var player_runtime: Dictionary = _get_player_runtime_snapshot()
+	var qef_runtime: Dictionary = player_runtime.get("qef_runtime", {}) if player_runtime.get("qef_runtime", {}) is Dictionary else {}
 	var ultimate_snapshot: Dictionary = player_runtime.get("ultimate", {})
 	result["checks"]["f_input"] = f_ok
 	result["checks"]["f_context"] = not f_snapshot.get("f_context", {}).is_empty()
-	result["checks"]["f_active"] = bool(ultimate_snapshot.get("active", false))
+	result["checks"]["f_active"] = bool(qef_runtime.get("active", false)) or bool(ultimate_snapshot.get("active", false))
 	result["checks"]["f_role_id"] = (
-		str(f_snapshot.get("f_context", {}).get("payload", {}).get("f_role_id", "")).strip_edges()
-		== role_id
+		str(qef_runtime.get("role_id", qef_runtime.get("f_role_id", ""))).strip_edges() == role_id
+		or str(f_snapshot.get("f_context", {}).get("payload", {}).get("f_role_id", "")).strip_edges() == role_id
 	)
 
 	_deactivate_ultimate_if_needed()
@@ -192,6 +288,8 @@ func _validate_record_replay_feedback(role_id: String) -> Dictionary:
 	)
 	await _wait_frames(12)
 	var replay_snapshot: Dictionary = _get_player_context_snapshot()
+	var replay_runtime: Dictionary = _get_player_runtime_snapshot()
+	var replay_qef_runtime: Dictionary = replay_runtime.get("qef_runtime", {}) if replay_runtime.get("qef_runtime", {}) is Dictionary else {}
 	var replay_q_context: Dictionary = replay_snapshot.get("q_context", {})
 	var replay_e_context: Dictionary = replay_snapshot.get("e_context", {})
 	var replay_f_context: Dictionary = replay_snapshot.get("f_context", {})
@@ -204,7 +302,8 @@ func _validate_record_replay_feedback(role_id: String) -> Dictionary:
 	)
 	result["checks"]["replay_f_context"] = not replay_f_context.is_empty()
 	result["checks"]["replay_f_role_id"] = (
-		str(replay_f_context.get("payload", {}).get("f_role_id", "")).strip_edges() == role_id
+		str(replay_qef_runtime.get("role_id", replay_qef_runtime.get("f_role_id", ""))).strip_edges() == role_id
+		or str(replay_f_context.get("payload", {}).get("f_role_id", "")).strip_edges() == role_id
 	)
 
 	var role_info: Dictionary = debug_switcher.call("_build_active_role_info")
@@ -279,8 +378,9 @@ func _wait_for_player(role_id: String, max_frames: int) -> Node2D:
 
 func _perform_q_path(closed_path: bool) -> bool:
 	var role_id: String = _get_active_role_id()
-	if role_id == "butcher" or role_id == "weaver":
-		return await _perform_scripted_q_path(role_id, closed_path)
+	var scripted_ok: bool = await _perform_scripted_q_path(role_id, closed_path)
+	if scripted_ok:
+		return true
 
 	var visible_rect: Rect2 = get_root().get_visible_rect()
 	var center: Vector2 = visible_rect.size * 0.5

@@ -7,7 +7,7 @@ var mine_explosion_radius: float = 120.0
 var mine_density_distance: float = 50.0
 var mine_area_density: float = 60.0
 
-var mine_auto_explode_time: float = 5.0
+var mine_auto_explode_time: float = 3.2
 var mine_inner_blast_ratio: float = 1.35
 var mine_shock_slow_value: float = 0.45
 var mine_shock_slow_duration: float = 1.6
@@ -25,6 +25,11 @@ var perimeter_chain_interval: float = 0.17
 var perimeter_chain_damage: int = 30
 
 var _pending_mines: Dictionary = {}
+
+func _init() -> void:
+	base_line_duration = 3.2
+	q_asset_duration_open = 3.2
+	q_asset_duration_closed = 2.0
 
 func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
 	var spacing: float = max(18.0, mine_density_distance)

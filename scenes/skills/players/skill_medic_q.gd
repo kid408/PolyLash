@@ -1,15 +1,18 @@
 extends SkillQBase
 class_name SkillMedicQ
 
+const TEMP_ARMOR_META: String = "temp_armor_stacks"
+const DASH_LIGHT_SHIELD_SEC: float = 0.60
+
 var heal_value: int = 5
 var slow_value: float = 0.4
-var invincible_duration: float = 3.0
+var invincible_duration: float = 2.2
 var triage_speed_boost: float = 0.18
 var field_lifesteal: float = 0.12
 var field_heal_multiplier: float = 1.6
 var triage_node_spacing: float = 165.0
 var triage_node_radius: float = 96.0
-var triage_node_duration: float = 4.8
+var triage_node_duration: float = 3.2
 var triage_pulse_interval: float = 0.24
 var triage_pulse_count: int = 5
 var triage_pulse_damage: int = 12
@@ -29,6 +32,21 @@ var closure_reel_interval: float = 0.16
 var closure_reel_damage: int = 18
 
 var _triage_nodes: Array[Vector2] = []
+var _station_windows: Array[Dictionary] = []
+var _dash_started_in_station: bool = false
+
+func _init() -> void:
+	base_line_duration = 3.2
+	q_asset_duration_open = 3.2
+	q_asset_duration_closed = 2.2
+
+func _ready() -> void:
+	super._ready()
+	_connect_dash_signals()
+
+func _exit_tree() -> void:
+	_disconnect_dash_signals()
+	super._exit_tree()
 
 func _enter_planning_mode() -> void:
 	_triage_nodes.clear()
@@ -76,7 +94,7 @@ func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
 func _spawn_area_effect(polygon: PackedVector2Array) -> void:
 	if polygon.size() < 3:
 		return
-	var field_duration: float = float(max(invincible_duration, 3.0))
+	var field_duration: float = float(max(0.2, invincible_duration))
 	var field_heal: int = int(max(1, int(round(float(heal_value) * field_heal_multiplier))))
 
 	SkillEffectManager.create_buff_zone({
@@ -270,10 +288,11 @@ func _deploy_triage_node_if_needed(pos: Vector2) -> void:
 	_spawn_chain_pulse(last_pos, pos)
 
 func _spawn_triage_node(center: Vector2) -> void:
+	var station_duration: float = max(0.2, min(triage_node_duration, _get_line_duration()))
 	var polygon: PackedVector2Array = _build_circle_polygon(center, triage_node_radius, 14)
 	SkillEffectManager.create_buff_zone({
 		"polygon": polygon,
-		"duration": triage_node_duration,
+		"duration": station_duration,
 		"buff_type": "heal",
 		"buff_value": float(max(1, heal_value - 1)),
 		"tick_interval": 0.4,
@@ -281,7 +300,7 @@ func _spawn_triage_node(center: Vector2) -> void:
 	})
 	SkillEffectManager.create_buff_zone({
 		"polygon": polygon,
-		"duration": triage_node_duration,
+		"duration": station_duration,
 		"buff_type": "speed_boost",
 		"buff_value": triage_speed_boost * 0.9,
 		"tick_interval": 0.4,
@@ -289,13 +308,14 @@ func _spawn_triage_node(center: Vector2) -> void:
 	})
 	SkillEffectManager.create_debuff_zone({
 		"polygon": polygon,
-		"duration": triage_node_duration,
+		"duration": station_duration,
 		"debuff_type": "slow",
 		"debuff_value": slow_value * 0.7,
 		"debuff_duration": 0.9,
 		"tick_interval": 0.35,
 		"color": Color(0.4, 0.8, 0.55, 0.14)
 	})
+	_register_station_window(center, triage_node_radius, station_duration)
 	spawn_skill_vfx(center, Color(0.58, 1.0, 0.72, 0.7), 0.38)
 
 func _spawn_chain_pulse(from_pos: Vector2, to_pos: Vector2) -> void:
@@ -512,6 +532,122 @@ func _polygon_radius(polygon: PackedVector2Array, center: Vector2) -> float:
 	for point: Vector2 in polygon:
 		radius = max(radius, center.distance_to(point))
 	return max(20.0, radius)
+
+func _connect_dash_signals() -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	var started_callable := Callable(self, "_on_owner_dash_started")
+	var finished_callable := Callable(self, "_on_owner_dash_finished")
+	if skill_owner.has_signal("dash_started") and not skill_owner.is_connected("dash_started", started_callable):
+		skill_owner.connect("dash_started", started_callable)
+	if skill_owner.has_signal("dash_finished") and not skill_owner.is_connected("dash_finished", finished_callable):
+		skill_owner.connect("dash_finished", finished_callable)
+
+func _disconnect_dash_signals() -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	var started_callable := Callable(self, "_on_owner_dash_started")
+	var finished_callable := Callable(self, "_on_owner_dash_finished")
+	if skill_owner.has_signal("dash_started") and skill_owner.is_connected("dash_started", started_callable):
+		skill_owner.disconnect("dash_started", started_callable)
+	if skill_owner.has_signal("dash_finished") and skill_owner.is_connected("dash_finished", finished_callable):
+		skill_owner.disconnect("dash_finished", finished_callable)
+
+func _register_station_window(center: Vector2, radius: float, duration: float) -> void:
+	_cleanup_station_windows()
+	_station_windows.append({
+		"center": center,
+		"radius": max(24.0, radius),
+		"expire_msec": Time.get_ticks_msec() + int(round(max(0.2, duration) * 1000.0)),
+	})
+
+func _cleanup_station_windows() -> void:
+	var now_msec: int = Time.get_ticks_msec()
+	var kept: Array[Dictionary] = []
+	for entry_var in _station_windows:
+		if not (entry_var is Dictionary):
+			continue
+		var entry: Dictionary = entry_var
+		if int(entry.get("expire_msec", 0)) > now_msec:
+			kept.append(entry)
+	_station_windows = kept
+
+func _is_inside_active_station(point: Vector2) -> bool:
+	_cleanup_station_windows()
+	for entry in _station_windows:
+		var center: Vector2 = entry.get("center", Vector2.ZERO)
+		var radius: float = float(entry.get("radius", 0.0))
+		if point.distance_to(center) <= radius:
+			return true
+	return false
+
+func _get_owner_player_id() -> String:
+	if not is_instance_valid(skill_owner):
+		return ""
+	if "player_id" in skill_owner:
+		return str(skill_owner.get("player_id"))
+	return ""
+
+func _on_owner_dash_started(player_id: String, start_pos: Vector2, _direction: Vector2) -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	if player_id != _get_owner_player_id():
+		return
+	_dash_started_in_station = _is_inside_active_station(start_pos)
+
+func _on_owner_dash_finished(player_id: String, _end_pos: Vector2, _direction: Vector2) -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	if player_id != _get_owner_player_id():
+		return
+	if not _dash_started_in_station:
+		return
+	_dash_started_in_station = false
+	if _grant_temporary_armor(1, DASH_LIGHT_SHIELD_SEC):
+		Global.spawn_floating_text(skill_owner.global_position, "LIGHT SHIELD", Color(0.72, 1.0, 0.88))
+		spawn_skill_vfx(skill_owner.global_position, Color(0.7, 1.0, 0.86, 0.72), 0.32)
+
+func _grant_temporary_armor(stacks: int, duration_sec: float) -> bool:
+	if stacks <= 0 or duration_sec <= 0.0:
+		return false
+	if not is_instance_valid(skill_owner):
+		return false
+	if not ("armor" in skill_owner and "max_armor" in skill_owner):
+		return false
+	var before: int = int(skill_owner.get("armor"))
+	var grantable: int = min(stacks, max(0, int(skill_owner.get("max_armor")) - before))
+	if grantable <= 0:
+		return false
+	skill_owner.set("armor", before + grantable)
+	var current_temp: int = int(skill_owner.get_meta(TEMP_ARMOR_META, 0))
+	skill_owner.set_meta(TEMP_ARMOR_META, current_temp + grantable)
+	if skill_owner.has_signal("armor_changed"):
+		skill_owner.emit_signal("armor_changed", int(skill_owner.get("armor")))
+	get_tree().create_timer(max(0.05, duration_sec)).timeout.connect(func() -> void:
+		_expire_temporary_armor(grantable)
+	)
+	return true
+
+func _expire_temporary_armor(stacks: int) -> void:
+	if stacks <= 0 or not is_instance_valid(skill_owner):
+		return
+	if not skill_owner.has_meta(TEMP_ARMOR_META):
+		return
+	var current_temp: int = max(0, int(skill_owner.get_meta(TEMP_ARMOR_META, 0)))
+	if current_temp <= 0:
+		skill_owner.remove_meta(TEMP_ARMOR_META)
+		return
+	var remove_count: int = min(stacks, current_temp)
+	var current_armor: int = int(skill_owner.get("armor"))
+	if remove_count > 0 and current_armor > 0:
+		skill_owner.set("armor", max(0, current_armor - remove_count))
+		if skill_owner.has_signal("armor_changed"):
+			skill_owner.emit_signal("armor_changed", int(skill_owner.get("armor")))
+	var remaining_temp: int = current_temp - remove_count
+	if remaining_temp > 0:
+		skill_owner.set_meta(TEMP_ARMOR_META, remaining_temp)
+	else:
+		skill_owner.remove_meta(TEMP_ARMOR_META)
 
 func _apply_damage(enemy: Node2D, amount: int) -> void:
 	if not enemy.has_node("HealthComponent"):

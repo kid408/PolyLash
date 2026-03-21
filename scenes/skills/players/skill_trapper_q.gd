@@ -4,7 +4,7 @@ class_name SkillTrapperQ
 var slow_value: float = 0.5
 var slow_duration: float = 3.0
 var freeze_duration: float = 2.0
-var trap_duration: float = 8.0
+var trap_duration: float = 1.9
 var trap_damage: int = 14
 var mark_damage_amp: float = 0.28
 var burst_damage: int = 24
@@ -36,6 +36,23 @@ const TRAP_META_EXPIRE_MSEC: String = "trapper_trap_expire_msec"
 
 var _has_last_trap_anchor: bool = false
 var _last_trap_anchor: Vector2 = Vector2.ZERO
+var _active_snare_segments: Array[Dictionary] = []
+var _dash_previous_pos: Vector2 = Vector2.ZERO
+var _dash_reel_ready: bool = false
+var _pending_dash_reel_segment: Dictionary = {}
+
+func _init() -> void:
+	base_line_duration = 3.0
+	q_asset_duration_open = 3.0
+	q_asset_duration_closed = 1.9
+
+func _ready() -> void:
+	super._ready()
+	_connect_dash_signals()
+
+func _exit_tree() -> void:
+	_disconnect_dash_signals()
+	super._exit_tree()
 
 func _enter_planning_mode() -> void:
 	_has_last_trap_anchor = false
@@ -43,6 +60,7 @@ func _enter_planning_mode() -> void:
 	super._enter_planning_mode()
 
 func _spawn_line_effect(start: Vector2, end: Vector2) -> void:
+	_register_snare_segment(start, end, _get_line_duration())
 	SkillEffectManager.create_debuff_zone({
 		"start": start,
 		"end": end,
@@ -478,6 +496,171 @@ func _cache_trap_window(polygon: PackedVector2Array, duration: float) -> void:
 	skill_owner.set_meta(TRAP_META_CENTER, center)
 	skill_owner.set_meta(TRAP_META_RADIUS, radius)
 	skill_owner.set_meta(TRAP_META_EXPIRE_MSEC, expire_msec)
+
+func _connect_dash_signals() -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	var started_callable := Callable(self, "_on_owner_dash_started")
+	var active_callable := Callable(self, "_on_owner_dash_active")
+	var finished_callable := Callable(self, "_on_owner_dash_finished")
+	if skill_owner.has_signal("dash_started") and not skill_owner.is_connected("dash_started", started_callable):
+		skill_owner.connect("dash_started", started_callable)
+	if skill_owner.has_signal("dash_active") and not skill_owner.is_connected("dash_active", active_callable):
+		skill_owner.connect("dash_active", active_callable)
+	if skill_owner.has_signal("dash_finished") and not skill_owner.is_connected("dash_finished", finished_callable):
+		skill_owner.connect("dash_finished", finished_callable)
+
+func _disconnect_dash_signals() -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	var started_callable := Callable(self, "_on_owner_dash_started")
+	var active_callable := Callable(self, "_on_owner_dash_active")
+	var finished_callable := Callable(self, "_on_owner_dash_finished")
+	if skill_owner.has_signal("dash_started") and skill_owner.is_connected("dash_started", started_callable):
+		skill_owner.disconnect("dash_started", started_callable)
+	if skill_owner.has_signal("dash_active") and skill_owner.is_connected("dash_active", active_callable):
+		skill_owner.disconnect("dash_active", active_callable)
+	if skill_owner.has_signal("dash_finished") and skill_owner.is_connected("dash_finished", finished_callable):
+		skill_owner.disconnect("dash_finished", finished_callable)
+
+func _register_snare_segment(start: Vector2, end: Vector2, duration: float) -> void:
+	if start.distance_to(end) <= 1.0:
+		return
+	_cleanup_snare_segments()
+	_active_snare_segments.append({
+		"start": start,
+		"end": end,
+		"expire_msec": Time.get_ticks_msec() + int(round(max(0.2, duration) * 1000.0)),
+	})
+
+func _cleanup_snare_segments() -> void:
+	var now_msec: int = Time.get_ticks_msec()
+	var kept: Array[Dictionary] = []
+	for entry_var in _active_snare_segments:
+		if not (entry_var is Dictionary):
+			continue
+		var entry: Dictionary = entry_var
+		if int(entry.get("expire_msec", 0)) > now_msec:
+			kept.append(entry)
+	_active_snare_segments = kept
+
+func _get_owner_player_id() -> String:
+	if not is_instance_valid(skill_owner):
+		return ""
+	if "player_id" in skill_owner:
+		return str(skill_owner.get("player_id"))
+	return ""
+
+func _on_owner_dash_started(player_id: String, start_pos: Vector2, _direction: Vector2) -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	if player_id != _get_owner_player_id():
+		return
+	_cleanup_snare_segments()
+	_dash_previous_pos = start_pos
+	_dash_reel_ready = false
+	_pending_dash_reel_segment = {}
+
+func _on_owner_dash_active(player_id: String, current_pos: Vector2, _direction: Vector2, _normalized_time: float) -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	if player_id != _get_owner_player_id():
+		return
+	if _dash_reel_ready:
+		_dash_previous_pos = current_pos
+		return
+	var segment: Dictionary = _find_crossed_snare_segment(_dash_previous_pos, current_pos)
+	_dash_previous_pos = current_pos
+	if segment.is_empty():
+		return
+	_dash_reel_ready = true
+	_pending_dash_reel_segment = segment
+
+func _on_owner_dash_finished(player_id: String, end_pos: Vector2, _direction: Vector2) -> void:
+	if not is_instance_valid(skill_owner):
+		return
+	if player_id != _get_owner_player_id():
+		return
+	if not _dash_reel_ready:
+		return
+	_trigger_dash_reel(_pending_dash_reel_segment, end_pos)
+	_dash_reel_ready = false
+	_pending_dash_reel_segment = {}
+
+func _find_crossed_snare_segment(from_pos: Vector2, to_pos: Vector2) -> Dictionary:
+	_cleanup_snare_segments()
+	if from_pos.distance_to(to_pos) <= 1.0:
+		return {}
+	for entry in _active_snare_segments:
+		var start: Vector2 = entry.get("start", Vector2.ZERO)
+		var end: Vector2 = entry.get("end", Vector2.ZERO)
+		var intersection: Variant = Geometry2D.segment_intersects_segment(from_pos, to_pos, start, end)
+		if intersection != null:
+			return entry
+	return {}
+
+func _trigger_dash_reel(segment: Dictionary, dash_end: Vector2) -> void:
+	var start: Vector2 = segment.get("start", dash_end)
+	var end: Vector2 = segment.get("end", dash_end)
+	SkillEffectManager.create_line_effect({
+		"start": start,
+		"end": end,
+		"width": 14.0,
+		"damage": 0,
+		"damage_interval": 0.2,
+		"duration": 0.18,
+		"color": Color(0.82, 1.0, 0.72, 0.92)
+	})
+	_apply_line_burst_damage(start, end, 13.0, max(hook_recall_damage + 4, closure_reel_damage))
+	_apply_pull_to_point(dash_end, hook_hit_radius * 1.9, hook_recall_pull * 1.45)
+	var target: Node2D = _pick_dash_reel_target(dash_end)
+	if target != null:
+		_pull_target_to_dash_end(target, dash_end)
+		_apply_damage(target, max(1, closure_reel_damage + 6))
+		_apply_status(target, "marked", sniper_mark_duration, mark_damage_amp + 0.08, 1, 0.3)
+		_apply_status(target, "freeze", freeze_duration * 0.45, 0.0, 1, 0.1)
+		SkillEffectManager.create_line_effect({
+			"start": target.global_position,
+			"end": dash_end,
+			"width": 10.0,
+			"damage": 0,
+			"damage_interval": 0.2,
+			"duration": 0.16,
+			"color": Color(0.72, 0.98, 0.66, 0.92)
+		})
+	Global.spawn_floating_text(dash_end, "REEL!", Color(0.62, 1.0, 0.62))
+	spawn_skill_vfx(dash_end, Color(0.58, 0.98, 0.56, 0.72), 0.4)
+
+func _pick_dash_reel_target(center: Vector2) -> Node2D:
+	var enemies: Array = get_tree().get_nodes_in_group("enemies")
+	var best_marked: Node2D = null
+	var best_marked_dist: float = INF
+	var best_any: Node2D = null
+	var best_any_dist: float = INF
+	for enemy_obj: Variant in enemies:
+		if enemy_obj == null or not is_instance_valid(enemy_obj):
+			continue
+		if not (enemy_obj is Node2D):
+			continue
+		var enemy: Node2D = enemy_obj
+		var dist: float = enemy.global_position.distance_to(center)
+		if dist > 320.0:
+			continue
+		if dist < best_any_dist:
+			best_any = enemy
+			best_any_dist = dist
+		if enemy.has_method("has_status") and bool(enemy.call("has_status", "marked")) and dist < best_marked_dist:
+			best_marked = enemy
+			best_marked_dist = dist
+	if best_marked != null:
+		return best_marked
+	return best_any
+
+func _pull_target_to_dash_end(target: Node2D, dash_end: Vector2) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	var pull_distance: float = min(target.global_position.distance_to(dash_end), hook_recall_pull * 2.2)
+	target.global_position = target.global_position.move_toward(dash_end, pull_distance)
 
 func _polygon_radius(polygon: PackedVector2Array, center: Vector2) -> float:
 	var radius: float = 0.0

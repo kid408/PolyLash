@@ -1,6 +1,7 @@
 ﻿extends Node
 
 const DEBUG_VERBOSE := false
+const QEFModels = preload("res://scripts/qef/core/qef_models.gd")
 
 # 闪避文字
 signal on_create_block_text(unit:Node2D)
@@ -1229,47 +1230,10 @@ func _build_default_player_state(player_id: String) -> Dictionary:
 	}
 
 func _build_default_f_runtime(player_id: String = "") -> Dictionary:
-	return {
-		"owner_player_id": player_id,
-		"active": false,
-		"time_left": 0.0,
-		"duration": 0.0,
-		"window_seq": 0,
-		"mode_name": "",
-		"f_role_id": player_id,
-		"ult_id": "",
-		"q_line_amp": 1.0,
-		"q_closure_amp": 1.0,
-		"internal_cd": 0.0,
-		"special_1": 0.0,
-		"special_2": 0.0,
-		"special_3": 0.0,
-		"line_events": 0,
-		"closure_events": 0,
-		"tick_events": 0,
-		"active_pickup_count": 0,
-		"unopened_count": 0,
-		"slot_e": _build_default_f_slot("e"),
-		"slot_q": _build_default_f_slot("q_close"),
-		"utility_buff": {},
-		"utility_buff_list": [],
-		"jackpot_linked": false
-	}
+	return QEFModels.build_default_runtime(player_id, player_id, "")
 
 func _build_default_f_slot(target_slot: String = "") -> Dictionary:
-	return {
-		"active": false,
-		"reward_id": "",
-		"display_name": "",
-		"rarity": "",
-		"target_slot": target_slot,
-		"behavior_tags": [],
-		"payload": {},
-		"link_group_id": "",
-		"source_pack_id": "",
-		"source_type": "",
-		"loaded_window_seq": 0
-	}
+	return QEFModels.build_default_slot(target_slot)
 
 func _capture_player_f_runtime(player_id: String, fallback_runtime: Variant = {}) -> Dictionary:
 	var runtime: Dictionary = _build_default_f_runtime(player_id)

@@ -22,6 +22,8 @@ const DANGER_COLOR_LV3: Color = Color(1.00, 0.15, 0.15)
 
 var danger_label: Label = null
 var _danger_show_token: int = 0
+var combo_label: Label = null
+var _combo_show_token: int = 0
 var level_label: Label = null
 var xp_progress: ProgressBar = null
 
@@ -62,6 +64,7 @@ func _ready() -> void:
 		update_xp(RunStateService.get_run_xp())
 	update_gold(RunStateService.get_run_gold())
 	_ensure_danger_label()
+	_ensure_combo_label()
 
 # 更新波次显示
 func update_wave(wave_number: int, wave_time: float) -> void:
@@ -170,6 +173,45 @@ func _ensure_danger_label() -> void:
 	danger_label.add_theme_font_size_override("font_size", 30)
 	add_child(danger_label)
 
+func _ensure_combo_label() -> void:
+	if combo_label and is_instance_valid(combo_label):
+		return
+
+	combo_label = Label.new()
+	combo_label.name = "ComboLabel"
+	combo_label.text = ""
+	combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	combo_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	combo_label.anchor_left = 0.5
+	combo_label.anchor_right = 0.5
+	combo_label.anchor_top = 0.0
+	combo_label.anchor_bottom = 0.0
+	combo_label.offset_left = -260.0
+	combo_label.offset_right = 260.0
+	combo_label.offset_top = 122.0
+	combo_label.offset_bottom = 154.0
+	combo_label.visible = false
+	combo_label.modulate = Color.WHITE
+	combo_label.add_theme_font_size_override("font_size", 24)
+	add_child(combo_label)
+
+func show_combo_subtitle(text: String, color: Color = Color(0.78, 1.0, 0.86), hold_time: float = 1.6) -> void:
+	if text.strip_edges().is_empty():
+		return
+	_ensure_combo_label()
+	combo_label.text = text
+	combo_label.visible = true
+	combo_label.modulate = color
+	combo_label.scale = Vector2.ONE
+
+	var pulse := create_tween()
+	pulse.tween_property(combo_label, "scale", Vector2(1.04, 1.04), 0.08)
+	pulse.tween_property(combo_label, "scale", Vector2.ONE, 0.12)
+
+	_combo_show_token += 1
+	var token: int = _combo_show_token
+	_hide_combo_later(token, hold_time)
+
 func show_health_danger(level: int, current: float, max_val: float, ratio: float) -> void:
 	_ensure_danger_label()
 
@@ -216,5 +258,14 @@ func _hide_danger_later(token: int, hold_time: float) -> void:
 			return
 		if danger_label:
 			danger_label.visible = false
+	)
+
+func _hide_combo_later(token: int, hold_time: float) -> void:
+	var timer := get_tree().create_timer(max(0.2, hold_time))
+	timer.timeout.connect(func() -> void:
+		if token != _combo_show_token:
+			return
+		if combo_label:
+			combo_label.visible = false
 	)
 

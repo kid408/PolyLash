@@ -5,7 +5,7 @@ var slow_value: float = 0.55
 var poison_damage: int = 10
 var poison_duration: float = 5.5
 var damage_amp_value: float = 0.35
-var debuff_zone_duration: float = 6.5
+var debuff_zone_duration: float = 2.2
 var miasma_damage: int = 18
 var curse_value: float = 8.0
 var spore_spacing: float = 160.0
@@ -36,6 +36,11 @@ const MIASMA_META_EXPIRE_MSEC: String = "plague_miasma_expire_msec"
 
 var _has_last_spore_anchor: bool = false
 var _last_spore_anchor: Vector2 = Vector2.ZERO
+
+func _init() -> void:
+	base_line_duration = 3.0
+	q_asset_duration_open = 3.0
+	q_asset_duration_closed = 2.2
 
 func _enter_planning_mode() -> void:
 	_has_last_spore_anchor = false

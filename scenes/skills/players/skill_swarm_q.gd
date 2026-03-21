@@ -12,10 +12,10 @@ var nest_spawn_count: int = 1
 
 var turret_damage: int = 18
 var turret_count: int = 3
-var turret_duration: float = 10.0
+var turret_duration: float = 2.0
 
 var brood_slow_value: float = 0.35
-var brood_heal_duration: float = 8.0
+var brood_heal_duration: float = 2.0
 var heal_value: int = 3
 var command_pulse_count: int = 6
 var command_interval: float = 0.24
@@ -38,6 +38,11 @@ const BROOD_META_RADIUS: String = "swarm_brood_radius"
 const BROOD_META_EXPIRE_MSEC: String = "swarm_brood_expire_msec"
 
 var _nest_points: Array[Vector2] = []
+
+func _init() -> void:
+	base_line_duration = 3.0
+	q_asset_duration_open = 3.0
+	q_asset_duration_closed = 2.0
 
 func _enter_planning_mode() -> void:
 	_nest_points.clear()

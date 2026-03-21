@@ -2,19 +2,41 @@ extends SceneTree
 
 const TEST_ROLES: Array[String] = [
 	"butcher",
+	"glacier",
+	"jailer",
+	"blacksmith",
+	"paladin",
+	"breachmarshal",
+	"hexwarden",
+	"executioner",
+	"pyro",
 	"runeblazer",
 	"lurewarden",
 	"weaver",
-	"glacier",
 	"wind",
-	"breachmarshal",
-	"executioner",
+	"arcstriker",
+	"stormseer",
+	"banner",
+	"turretwright",
+	"illusionist",
 	"singularist",
+	"fatebinder",
+	"bloodsworn",
+	"spiritcaller",
+	"mirebinder",
+	"necro",
+	"gildhand",
+	"sapper",
+	"plague",
+	"medic",
+	"swarm",
+	"broker",
+	"trapper",
 	"quartermaster",
 ]
 const ARENA_SCENE: String = "res://scenes/arena/arena.tscn"
 const ENEMY_SCENE: String = "res://scenes/unit/enemy/enemy_generic.tscn"
-const SUMMARY_PATH: String = "user://qa_reports/top10_effect_selftest_summary.json"
+const SUMMARY_PATH: String = "user://qa_reports/qef_effect_selftest_summary.json"
 const PLAYER_EFFECT_GROUPS: Array[String] = [
 	"player_skill_effects",
 	"projectiles",
@@ -25,10 +47,12 @@ var _results: Array[Dictionary] = []
 
 
 func _init() -> void:
+	printerr("[qef_effect_selftest] init")
 	call_deferred("_run")
 
 
 func _run() -> void:
+	printerr("[qef_effect_selftest] run")
 	var passed: bool = true
 	await process_frame
 
@@ -50,13 +74,14 @@ func _run() -> void:
 		passed = passed and bool(result.get("passed", false))
 
 	_leave_test_mode_if_needed()
+	printerr("[qef_effect_selftest] finished passed=%s results=%d" % [passed, _results.size()])
 	_write_summary(passed)
 	quit(0 if passed else 1)
 
 
 func _validate_role(role_id: String) -> Dictionary:
 	var result: Dictionary = {
-		"kind": "top10_effect_selftest",
+		"kind": "qef_effect_selftest",
 		"role_id": role_id,
 		"passed": false,
 		"checks": {},
@@ -160,6 +185,7 @@ func _run_f_phase(player: Node2D, anchor: Vector2, role_id: String) -> Dictionar
 	var f_ok: bool = await _tap_action("skill_f", 10, 70)
 	var snapshot: Dictionary = _get_player_context_snapshot()
 	var runtime: Dictionary = _get_player_runtime_snapshot()
+	var qef_runtime: Dictionary = runtime.get("qef_runtime", {}) if runtime.get("qef_runtime", {}) is Dictionary else {}
 	var after_counts: Dictionary = _collect_effect_counts()
 	var f_context: Dictionary = snapshot.get("f_context", {})
 	var ultimate_snapshot: Dictionary = runtime.get("ultimate", {})
@@ -169,9 +195,13 @@ func _run_f_phase(player: Node2D, anchor: Vector2, role_id: String) -> Dictionar
 		"counts_after": after_counts,
 		"counts_delta": _diff_counts(before_counts, after_counts),
 		"f_context_ok": not f_context.is_empty(),
-		"f_active_ok": bool(ultimate_snapshot.get("active", false)),
-		"f_role_id_ok": str(f_context.get("payload", {}).get("f_role_id", "")).strip_edges() == role_id,
+		"f_active_ok": bool(qef_runtime.get("active", false)) or bool(ultimate_snapshot.get("active", false)),
+		"f_role_id_ok": (
+			str(qef_runtime.get("role_id", qef_runtime.get("f_role_id", ""))).strip_edges() == role_id
+			or str(f_context.get("payload", {}).get("f_role_id", "")).strip_edges() == role_id
+		),
 		"f_context": f_context,
+		"qef_runtime": qef_runtime,
 		"ultimate_runtime": ultimate_snapshot,
 	}
 
@@ -483,6 +513,7 @@ func _all_checks_pass(checks_raw: Variant) -> bool:
 
 
 func _write_summary(passed: bool) -> void:
+	printerr("[qef_effect_selftest] write_summary path=%s passed=%s results=%d" % [SUMMARY_PATH, passed, _results.size()])
 	DirAccess.make_dir_recursive_absolute("user://qa_reports")
 	var payload: Dictionary = {
 		"passed": passed,
