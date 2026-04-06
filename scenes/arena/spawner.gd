@@ -86,6 +86,13 @@ signal wave_completed(wave_number: int)
 # 字段定义
 
 @export var spawn_area_size:= Vector2(1000,500)
+@export_group("Ring Spawn")
+@export var spawn_ring_inner_padding: float = 180.0
+@export var spawn_ring_thickness: float = 220.0
+@export var spawn_ring_vertical_scale: float = 0.82
+@export_group("Test Overrides")
+@export var spawn_interval: float = 0.0
+@export var max_enemies_on_screen: int = 0
 
 # 字段定义
 # 字段定义
@@ -207,18 +214,18 @@ func _load_config_from_csv() -> void:
 	enemy_damage_per_wave = ConfigManager.get_game_setting("enemy_damage_per_wave", 2.0)
 	enemy_speed_scale = ConfigManager.get_game_setting("enemy_speed_scale", 1.0)
 	_director_allow_early_finish = bool(ConfigManager.get_game_setting("director_early_finish_enabled", false))
-	_load_director_v2_configs()
+	_load_director_configs()
 	
 	if DEBUG_VERBOSE: print("[Spawner] 加载配置: spawn_area=%s, max_waves=%d, health_per_wave=%.1f, damage_per_wave=%.1f, enemy_speed_scale=%.2f" % [
 		spawn_area_size, max_waves, enemy_health_per_wave, enemy_damage_per_wave, enemy_speed_scale
 	])
 
-func _load_director_v2_configs() -> void:
+func _load_director_configs() -> void:
 	_enemy_v2 = ConfigRepository.load_enemy_v2_configs()
 	_wave_v2 = ConfigRepository.load_wave_v2_configs()
 	_wave_units_v2 = ConfigRepository.load_wave_units_v2_grouped()
 	_director_enabled = not _enemy_v2.is_empty() and not _wave_units_v2.is_empty()
-	if DEBUG_VERBOSE: print("[Spawner][Director] v2配置: enemy=%d wave=%d wave_units=%d enabled=%s" % [
+	if DEBUG_VERBOSE: print("[Spawner][Director] 配置: enemy=%d wave=%d wave_units=%d enabled=%s" % [
 		_enemy_v2.size(),
 		_wave_v2.size(),
 		_wave_units_v2.size(),
@@ -653,6 +660,9 @@ func set_spawn_timer() -> void:
 	var min_t = current_wave_config.get("min_spawn_time", 0.8)
 	var max_t = current_wave_config.get("max_spawn_time", 1.5)
 	var fixed_time = current_wave_config.get("fixed_spawn_time", 1.0)
+	if spawn_interval > 0.0:
+		spawn_type = "FIXED"
+		fixed_time = spawn_interval
 	if _director_enabled and _wave_v2.has(_current_director_wave_id):
 		var cfg = _wave_v2[_current_director_wave_id]
 		spawn_type = str(cfg.get("spawn_type", spawn_type))
@@ -815,6 +825,40 @@ func get_random_spawn_position() -> Vector2:
 	
 	return spawn_pos
 
+func _get_ring_spawn_position() -> Vector2:
+	var center_pos := Vector2.ZERO
+	if is_instance_valid(Global.player):
+		center_pos = Global.player.global_position
+
+	var viewport_world_size := spawn_area_size
+	var camera_node := get_tree().get_first_node_in_group("camera") as Camera2D
+	if camera_node != null:
+		viewport_world_size = get_viewport().get_visible_rect().size * camera_node.zoom
+
+	var vertical_scale: float = max(0.2, spawn_ring_vertical_scale)
+	var half_world: Vector2 = viewport_world_size * 0.5
+	var inner_radii := Vector2(
+		half_world.x + spawn_ring_inner_padding,
+		half_world.y * vertical_scale + spawn_ring_inner_padding * vertical_scale
+	)
+	var outer_radii := inner_radii + Vector2(
+		spawn_ring_thickness,
+		spawn_ring_thickness * vertical_scale
+	)
+
+	var angle: float = randf_range(0.0, TAU)
+	var radii := Vector2(
+		randf_range(inner_radii.x, outer_radii.x),
+		randf_range(inner_radii.y, outer_radii.y)
+	)
+	var offset := Vector2(cos(angle) * radii.x, sin(angle) * radii.y)
+	var spawn_pos := center_pos + offset
+
+	if DEBUG_VERBOSE:
+		print("[Spawner] ring spawn: center=%s angle=%.2f radii=%s result=%s" % [center_pos, angle, radii, spawn_pos])
+
+	return spawn_pos
+
 func spawn_enemy() -> void:
 	"""
 
@@ -827,6 +871,8 @@ func spawn_enemy() -> void:
 	5. 璁板綍鍒板凡鐢熸垚鍒楄〃
 
 	"""
+	if _is_spawn_cap_reached():
+		return
 	if current_wave_units.is_empty():
 		if DEBUG_VERBOSE: print("[Spawner] 警告：当前波次没有敌人配置")
 		return
@@ -868,7 +914,7 @@ func spawn_enemy() -> void:
 		if DEBUG_VERBOSE: print("[Spawner] 错误：无法加载敌人场景: %s" % enemy_scene_path)
 		return
 	
-	var spawn_pos = get_random_spawn_position()
+	var spawn_pos = _get_ring_spawn_position()
 	var enemy_instance = enemy_scene.instantiate() as Enemy
 	enemy_instance.global_position = spawn_pos
 	enemy_instance.enemy_id = enemy_id
@@ -958,6 +1004,8 @@ func spawn_elite(spawner: EliteSpawner) -> void:
 	"""
 
 	"""
+	if _is_spawn_cap_reached():
+		return
 	var scene_path = spawner.get_elite_scene_path()
 	var elite_id = spawner.get_elite_id()
 	
@@ -1025,8 +1073,16 @@ func _on_spawn_timer_timeout() -> void:
 	if current_wave_config.is_empty() or wave_timer.is_stopped():
 		spawn_timer.stop()
 		return
+	if _is_spawn_cap_reached():
+		set_spawn_timer()
+		return
 		
 	spawn_enemy()
+
+func _is_spawn_cap_reached() -> bool:
+	if max_enemies_on_screen <= 0:
+		return false
+	return _count_alive_enemies() >= max_enemies_on_screen
 
 func _on_elite_spawn_timer_timeout() -> void:
 	"""

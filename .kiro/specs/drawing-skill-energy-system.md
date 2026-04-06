@@ -19,7 +19,7 @@ Q键画线技能（牧羊人、织网者、风行者、爆破手等）使用**�
 |--------|------|-----------------|---------------------------|------------------------|
 | `skill_herder_loop` | 牧羊人 | 1.0 | 1800 | 0.0005 |
 | `skill_web_weave` | 织网者 | 1.0 | 1800 | 0.0006 |
-| `skill_wind_path` | 风行者 | 1.0 | 1800 | 0.0006 |
+| `skill_windblade_path` | 风行者 | 1.0 | 1800 | 0.0006 |
 | `skill_fire_path` | 火焰法师 | 1.0 | 1800 | 0.0008 |
 | `skill_mine_path` | 爆破手 | 1.0 | 1800 | 0.001 |
 | `skill_saw_path` | 屠夫 | 1.0 | 1800 | 0.001 |
@@ -289,7 +289,7 @@ else:
 1. **技能脚本：**
    - `scenes/skills/players/skill_herder_loop.gd` - 牧羊人画圈
    - `scenes/skills/players/skill_web_weave.gd` - 织网者蛛网
-   - `scenes/skills/players/skill_wind_path.gd` - 风行者风墙
+   - `scenes/skills/players/skill_windblade_path.gd` - 风行者风墙
    - `scenes/skills/players/skill_fire_path.gd` - 火焰法师火线
    - `scenes/skills/players/skill_mine_path.gd` - 爆破手地雷
    - `scenes/skills/players/skill_saw_path.gd` - 屠夫锯条

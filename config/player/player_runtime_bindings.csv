@@ -1,0 +1,9 @@
+player_id,player_scene_path,player_script_path,dash_profile_id,space_skill_id,e_skill_id,f_skill_id,assist_id,default_front_slot,notes
+silk,res://scenes/unit/players/player_silk.tscn,res://scenes/unit/players/player_silk.gd,default_dash_v2,draw_silk,e_silk,f_silk,assist_silk,1,formal silk binding
+minimalist,res://scenes/unit/players/player_generic.tscn,res://scenes/unit/players/player_minimalist.gd,default_dash_v2,space_minimalist,e_minimalist,f_minimalist,assist_minimalist,1,formal minimalist binding
+collapse,res://scenes/unit/players/player_generic.tscn,res://scenes/unit/players/player_collapse.gd,default_dash_v2,space_collapse,e_collapse,f_collapse,assist_collapse,1,formal collapse binding
+parasite,res://scenes/unit/players/player_generic.tscn,res://scenes/unit/players/player_parasite.gd,default_dash_v2,space_parasite,e_parasite,f_parasite,assist_parasite,1,formal parasite binding
+joule,res://scenes/unit/players/player_joule.tscn,res://scenes/unit/players/player_joule.gd,default_dash_v2,draw_joule,e_joule,f_joule,assist_joule,1,formal joule binding
+arc,res://scenes/unit/players/player_arc.tscn,res://scenes/unit/players/player_arc.gd,default_dash_v2,draw_arc,e_arc,f_arc,assist_arc,1,formal arc binding
+overtone,res://scenes/unit/players/player_overtone.tscn,res://scenes/unit/players/player_overtone.gd,default_dash_v2,draw_overtone,e_overtone,f_overtone,assist_overtone,1,formal overtone binding
+phalanx,res://scenes/unit/players/player_phalanx.tscn,res://scenes/unit/players/player_phalanx.gd,default_dash_v2,draw_phalanx,e_phalanx,f_phalanx,assist_phalanx,1,formal phalanx binding

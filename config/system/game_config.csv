@@ -31,6 +31,7 @@
 "player_speed_scale","1.00","Player move speed scale"
 "player_hit_cooldown","0.12","Player minimum hit interval in seconds"
 "director_early_finish_enabled","0","是否允许预算耗尽后提前结束波次(1=允许 0=严格按倒计时)"
+"enable_wave_recruit_mode","1","是否启用波次招募模式(1=启用 0=关闭)"
 "recruit_first_wave","3","角色招募首次出现波次"
 "recruit_wave_interval","2","角色招募出现间隔波次(>0生效)"
 "reward_weight_recruit","55","奖励池类型权重-角色"

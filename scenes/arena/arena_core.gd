@@ -1,4 +1,4 @@
-﻿extends Node2D
+extends Node2D
 class_name ArenaCore
 
 @export var player:PlayerBase
@@ -202,18 +202,13 @@ func _setup_loot_flow_mode() -> void:
 			chest_manager.chest_opened.connect(_on_chest_opened)
 		if chest_indicator and chest_manager:
 			chest_indicator.set_chest_manager(chest_manager)
-			if chest_indicator.has_method("set_qef_pack_tracking"):
-				chest_indicator.set_qef_pack_tracking(false)
 		return
 
 	print("[Arena] 已启用波末战利品模式，禁用旧宝箱流程")
 
 	if chest_indicator:
-		chest_indicator.visible = true
-		chest_indicator.set_process(true)
-		chest_indicator.set_chest_manager(null)
-		if chest_indicator.has_method("set_qef_pack_tracking"):
-			chest_indicator.set_qef_pack_tracking(true)
+		chest_indicator.visible = false
+		chest_indicator.set_process(false)
 
 	if upgrade_ui:
 		upgrade_ui.visible = false
@@ -468,7 +463,7 @@ func _init_player_from_selection() -> void:
 
 	# 新开局启用波次招募模式：开局仅1人上场，后续波次再招募扩编。
 	# 读取存档恢复战斗时不改动队伍，保持存档状态。
-	if Global.pending_battle_state.is_empty():
+	if Global.pending_battle_state.is_empty() and not _is_synergy_test_active() and Global.selected_player_ids.size() <= 1:
 		Global.enter_wave_recruit_mode()
 	
 	# 如果没有选择角色，使用场景中默认的玩家
@@ -831,6 +826,7 @@ func _on_pause_return_to_menu() -> void:
 	_finish_run_telemetry(false, "return_to_menu")
 	# 保存完整的战斗状态
 	_save_full_battle_state()
+	_sync_selection_cache_from_global()
 	prepare_run_exit_cleanup()
 	# 清理所有残留的投射物
 	_cleanup_all_projectiles()
@@ -887,9 +883,6 @@ func _on_exit_confirmed() -> void:
 	Global.reset_selection()
 	Global.reset_session_data()
 	Global.current_save_slot = -1  # 重置存档槽位
-	# 清除角色选择缓存，确保回到主菜单时不会自动加载
-	_clear_selection_cache()
-	_clear_weapon_cache()
 	# 返回到主菜单（而不是角色选择界面）
 	get_viewport().set_input_as_handled()
 	get_tree().change_scene_to_file("res://scenes/ui/main_menu/main_menu_root.tscn")
@@ -1022,8 +1015,13 @@ func _save_player_data() -> Array:
 	return players_data
 
 func _sync_selection_cache_from_global() -> void:
-	"""将当前 Global 的角色/武器数据写入 SelectionPanel 的缓存文件"""
-	if battle_flow_controller:
+	"""将当前 Global 的角色/武器数据写入正式预设与缓存。"""
+	if Global.has_method("save_selection_preset"):
+		var player_ids: Array[String] = Global.selected_player_ids.duplicate()
+		var player_weapons: Dictionary = Global.selected_player_weapons.duplicate(true)
+		var leader_id: String = player_ids[0] if not player_ids.is_empty() else ""
+		Global.save_selection_preset(player_ids, player_weapons, leader_id)
+	elif battle_flow_controller:
 		battle_flow_controller.sync_selection_cache()
 	else:
 		SaveFacade.sync_selection_cache_from_runtime()
@@ -1089,9 +1087,6 @@ func _cleanup_wave_end_player_effects() -> void:
 		player_node.call("_force_deactivate_ultimate_on_exit")
 	if player_node.has_method("_cleanup_skill_effects"):
 		player_node.call("_cleanup_skill_effects")
-	var combo_service := load("res://scripts/qef/services/combo_service.gd")
-	if combo_service != null:
-		combo_service.reset(player_node)
 	_cleanup_wave_end_global_skill_effects()
 
 func _cleanup_wave_end_global_skill_effects() -> void:
@@ -1330,31 +1325,9 @@ func _save_progress_on_run_failed() -> void:
 
 	var wave_number: int = spawner.wave_index if spawner else 1
 
-	# 失败后槽位与返回选角都只保留开局角色（队长）。
-	var leader_id: String = ""
-	if Global.has_method("get_leader_player_id"):
-		leader_id = str(Global.get_leader_player_id())
-	if leader_id.is_empty() and Global.selected_player_ids.size() > 0:
-		leader_id = str(Global.selected_player_ids[0])
-
-	var leader_weapon: String = str(Global.selected_player_weapons.get(leader_id, ""))
-	if not leader_id.is_empty() and leader_weapon.is_empty():
-		var weapon_types: Array[String] = ConfigManager.get_player_available_weapon_types(leader_id)
-		if weapon_types.size() > 0:
-			leader_weapon = weapon_types[0]
-
-	var backup_ids: Array[String] = Global.selected_player_ids.duplicate()
-	var backup_weapons: Dictionary = Global.selected_player_weapons.duplicate(true)
-	if not leader_id.is_empty():
-		Global.selected_player_ids.clear()
-		Global.selected_player_ids.append(leader_id)
-		Global.selected_player_weapons.clear()
-		if not leader_weapon.is_empty():
-			Global.selected_player_weapons[leader_id] = leader_weapon
-
 	var save_ok: bool = SaveFacade.save_progress(slot_index, {
 		"trigger": "run_failed",
-		# 失败后回到选角，槽位显示应归位到局外状态。
+		# 失败后回到选角，槽位显示应归位到局外状态，同时保留当前完整小队。
 		"current_floor": 1,
 		"current_wave": 1,
 		"last_failed_wave": wave_number,
@@ -1362,10 +1335,6 @@ func _save_progress_on_run_failed() -> void:
 		"battle_state": {}
 	})
 	var clear_ok: bool = SaveFacade.clear_battle_state(slot_index)
-
-	# 恢复运行时队伍数据（避免影响本局结算界面展示与后续逻辑）。
-	Global.selected_player_ids = backup_ids
-	Global.selected_player_weapons = backup_weapons
 
 	if save_ok and clear_ok:
 		print("[Arena] 失败结算进度已保存: slot=%d wave=%d" % [slot_index, wave_number])

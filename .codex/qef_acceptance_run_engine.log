@@ -1,0 +1,235 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+=== 配置管理器初始化 ===
+[ConfigManager] 加载配置: res://config/player/player_config.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_visual.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_weapons.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_skill_bindings.csv - 32 条记录
+[ConfigManager] 加载配置: res://config/player/player_available_weapons.csv - 32 条记录
+[ConfigManager] 加载宽表技能参数: res://config/player/skill_params_wide.csv - 35 个技能, 51 条描述
+[ConfigManager] 加载配置: res://config/enemy/enemy_config.csv - 12 条记录
+[ConfigManager] 加载配置: res://config/enemy/enemy_visual.csv - 12 条记录
+[ConfigManager] 加载配置: res://config/enemy/enemy_weapons.csv - 5 条记录
+[ConfigManager] 加载配置: res://config/weapon/weapon_config_optimized.csv - 35 条记录
+[ConfigManager] 加载配置: res://config/wave/wave_config.csv - 4 条记录
+[ConfigManager] 加载波次单位配置: res://config/wave/wave_units_config.csv - 4 个波次
+[ConfigManager] 加载配置: res://config/system/input_config.csv - 16 条记录
+[ConfigManager] 加载配置: res://config/item/upgrade_attributes.csv - 4 条记录
+[ConfigManager] 加载配置: res://config/item/chest_config.csv - 4 条记录
+[ConfigManager] 加载配置: res://config/wave/wave_chest_config.csv - 5 条记录
+[ConfigManager] 加载 key-value 配置: res://config/system/game_config.csv - 54 条记录
+[ConfigManager] 加载 key-value 配置: res://config/system/camera_config.csv - 8 条记录
+[ConfigManager] 加载 key-value 配置: res://config/system/map_config.csv - 15 条记录
+[ConfigManager] 加载新格式道具配置: res://config/item/item_config.csv - 59 条记录
+[ConfigManager] 加载护符配置: res://config/item/emblem_config.csv - 14 条记录
+[ConfigManager] 加载致谢配置: res://config/system/credits_config.csv - 4 条记录
+=== 配置加载完成 ===
+[ConfigManager] 加载配置: res://config/audio/ui_sounds.csv - 12 条记录
+[ConfigManager] 加载配置: res://config/audio/combat_sounds.csv - 18 条记录
+[ConfigManager] 加载配置: res://config/audio/skill_sounds.csv - 10 条记录
+[ConfigManager] 加载配置: res://config/audio/environment_sounds.csv - 25 条记录
+[SoundManager] 初始化完成: 65 条配置, 93 个音频缓存, 1 个音效组
+=== 升级管理器初始化 ===
+[EliteConfigManager] 加载精英敌人: EliteConfig(enemy_glutton: 吞噬者)
+[EliteConfigManager] 加载精英能力配置: EliteAbilityConfig(enemy_glutton)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 1)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 2)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 3)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 4)
+[EliteConfigManager] 加载进化阶段: EvolutionStage(enemy_glutton Stage 5)
+[EliteConfigManager] 加载波次精英配置: WaveEliteConfig(wave_1_to_5: enemy_glutton x0)
+[EliteConfigManager] 加载波次精英配置: WaveEliteConfig(wave_6_to_10: enemy_glutton x1)
+[EliteConfigManager] 加载波次精英配置: WaveEliteConfig(wave_11_to_15: enemy_glutton x2)
+[EliteConfigManager] 加载波次精英配置: WaveEliteConfig(wave_16_to_20: enemy_glutton x3)
+[EliteConfigManager] 加载精英生成配置: EliteSpawnConfig(wave_1_to_5: enemy_glutton, 间隔999.0-999.0s, 最多0个)
+[EliteConfigManager] 加载精英生成配置: EliteSpawnConfig(wave_6_to_10: enemy_glutton, 间隔20.0-30.0s, 最多1个)
+[EliteConfigManager] 加载精英生成配置: EliteSpawnConfig(wave_11_to_15: enemy_glutton, 间隔15.0-25.0s, 最多2个)
+[EliteConfigManager] 加载精英生成配置: EliteSpawnConfig(wave_16_to_20: enemy_glutton, 间隔12.0-22.0s, 最多3个)
+[EliteConfigManager] 初始化完成
+
+=== 精英敌人配置 ===
+  enemy_glutton: 吞噬者 (血量88, 伤害9, 护甲0.0, 速度158.0)
+
+=== 进化阶段配置 ===
+  enemy_glutton:
+    Stage 1: 血量x1.00, 伤害x1.00, 护甲x1.00, 速度x1.00, 吞噬1个敌人 - 初始阶段
+    Stage 2: 血量x1.00, 伤害x1.20, 护甲x1.00, 速度x1.07, 吞噬5个敌人 - 酸液射手
+    Stage 3: 血量x1.40, 伤害x1.44, 护甲x1.00, 速度x1.13, 吞噬5个敌人 - 巨型怪物
+    Stage 4: 血量x1.88, 伤害x1.73, 护甲x1.00, 速度x1.20, 吞噬5个敌人 - 过度进食
+    Stage 5: 血量x1.46, 伤害x2.07, 护甲x1.00, 速度x1.27, 吞噬5个敌人 - 终极形态
+
+=== 波次精英配置 ===
+  wave_1_to_5:
+    enemy_glutton: 生成0个, 权重0.0, 初始阶段1, 允许进化false
+  wave_6_to_10:
+    enemy_glutton: 生成1个, 权重2.0, 初始阶段1, 允许进化true
+  wave_11_to_15:
+    enemy_glutton: 生成2个, 权重3.0, 初始阶段1, 允许进化true
+  wave_16_to_20:
+    enemy_glutton: 生成3个, 权重4.0, 初始阶段1, 允许进化true
+
+=== 精英生成配置 ===
+  wave_1_to_5:
+    enemy_glutton: 生成间隔999.0-999.0s, 最多0个 [禁用]
+  wave_6_to_10:
+    enemy_glutton: 生成间隔20.0-30.0s, 最多1个 [启用]
+  wave_11_to_15:
+    enemy_glutton: 生成间隔15.0-25.0s, 最多2个 [启用]
+  wave_16_to_20:
+    enemy_glutton: 生成间隔12.0-22.0s, 最多3个 [启用]
+[PlayerFactory] 已初始化
+[EquipmentManager] 加载装备数据: {  }
+[EquipmentManager] 初始化完成
+[WarehouseManager] 加载了 59 个道具配置（委托 ConfigManager）
+[WarehouseManager] 初始化完成（局内模式），容量: 48
+[BondUILoader] 加载了 11 个羁绊配置
+[BondUILoader] 初始化完成，加载了 11 个羁绊配置
+[ResonanceRuntimeService] init complete, players=32
+[RunTelemetryService] 恢复采样 run_id=run_1774695320_1614
+[ShopManager] 通过 ConfigRepository 加载了 18 行商店配置数据
+[ShopManager] 初始化完成，加载了 13 个商店配置项
+[ShopAttributeManager] 通过 ConfigRepository 加载了 32 个属性配置
+[ShopAttributeManager] 通过 ConfigRepository 加载了 5 个波次配置
+[ShopAttributeManager] 初始化完成: 32个属性, 5个波次配置
+[AbilityManager] 加载了 5 个敌人的能力配置
+[AbilityManager] 初始化完成，已注册 3 个能力类型
+[WeaponConfigLoader] 加载表头: 46 个字段
+[WeaponConfigLoader] 加载完成: 35 个武器基础配置
+[BackgroundManager] 地图纹理大小: (994.000000, 460.000000)
+[BackgroundManager] 初始化完成 - 瓦片大小: 2000, 已生成: 25 个瓦片
+[ChestManager] 初始化完成 - 生成 2 个宝箱（分散布局）
+[ChestManager] 初始化完成 - 预生成 2 个宝箱位置
+[ChestIndicator] indicator_show_range = 3000 (from map_config.csv)
+[ExitConfirmDialog] _ready() called
+[Arena] _ready() 开始
+[Arena] 已添加到 arena 组
+[Arena] 已启用波末战利品模式，禁用旧宝箱流程
+[Arena] 暂停菜单已初始化
+[Arena] 商店面板已连接
+[Arena] WaveRewardSystem 已创建
+[Arena] WaveRewardPanel 已添加到 GameUI
+[Arena] WildcardPanel 已添加到 GameUI
+[Arena] BattleFlowController 已初始化
+[Arena] Spawner 波次完成信号已连接
+[Arena] 准备初始化玩家...
+[Arena] _init_player_from_selection 开始
+[Arena] selected_player_ids: ["butcher"]
+[Arena] selected_player_weapons: { "butcher": "punch" }
+[Arena] 场景中没有默认玩家，直接生成选择的角色
+[Arena] _spawn_player 开始: player_id=butcher, pos=(500.0, 300.0)
+[Arena] Global.selected_player_weapons = { "butcher": "punch" }
+[Arena] visual_config: { "player_id": "butcher", "sprite_path": "res://assets/sprites/Players/Player_5.png", "scene_path": "res://scenes/unit/players/player_generic.tscn", "scale_x": 1.0, "scale_y": 1.0, "color_r": 1.0, "color_g": 1.0, "color_b": 1.0, "color_a": 1.0, "z_index": 1.0 }
+[Arena] 创建角色: butcher
+[PlayerFactory] 设置 player_id: butcher
+[PlayerFactory] 已加载脚本: res://scenes/unit/players/player_butcher.gd (player_id=butcher)
+[PlayerFactory] 成功创建角色: butcher
+[Arena] 警告: player_id 不匹配，重新设置:  -> butcher
+[PlayerBase] player butcher has no equipped item
+[WeaponConfigLoader] DEBUG punch row keys:
+  - weapon_base_id: punch
+  - display_name_template: 拳头%d级
+  - type: melee
+  - max_level: 4
+  - base_damage: 10
+  - base_accuracy: 1
+  - base_cooldown: 0.8
+  - base_crit_chance: 0.05
+  - base_crit_damage: 1.5
+  - base_max_range: 180
+  - base_knockback: 1.5
+  - base_life_steal: 0
+  - base_recoil: 15
+  - base_recoil_duration: 0.08
+  - base_attack_duration: 0.3
+  - base_back_duration: 0.15
+  - base_projectile_speed: 0
+  - base_scene_path: res://scenes/weapons/melee/weapon_melee_point.tscn
+  - projectile_scene: 
+  - sprite_texture_template: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+  - icon_path_template: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+  - muzzle_offset: 0|0
+  - hitbox_offset: 30|0
+  - hitbox_scale: 1.2|1.0
+  - animation_frames_path: res://anims/punch_frames.tres
+  - vfx_attack_scene: res://scenes/vfx/melee_punch_attack.tscn
+  - vfx_hit_scene: res://scenes/vfx/melee_punch_hit.tscn
+  - audio_attack: res://assets/audio/Punch.mp3
+  - shape_type: point
+  - bullet_mode: 
+  - effect_type: 
+  - base_sector_angle: 0
+  - base_bullet_count: 1
+  - base_spread_angle: 0
+  - base_pierce_count: 0
+  - param1: 0
+  - param2: 0
+  - param3: 0
+  - item_cost_base: 1
+  - resource_path: 
+  - damage_scale: 0.5
+  - cooldown_scale: -0.1
+  - range_scale: 10
+  - knockback_scale: 0.1
+  - pierce_scale: 0
+  - bullet_count_scale: 0
+[WeaponConfigLoader] DEBUG punch:
+  - base_max_range: 180.0
+  - range_scale: 10.0
+  - level: 1
+  - max_range: 180.0
+  - row['base_max_range']: 180
+[WeaponConfigLoader] 创建武器 Stats: punch_1 (punch Lv.1)
+[ItemWeapon] 尝试加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[ItemWeapon] 成功加载武器场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon added: 拳头1级 (punch_1)
+[Weapon] _ready() - Sprite2D 初始化:
+  - 可见性: true
+  - z_index: 2
+  - 缩放: (1.0, 1.0)
+  - 位置: (27.0, 0.0)
+  - Sprite2D 全局位置: (527.0, 300.0)
+  - Weapon 全局位置: (500.0, 300.0)
+[Player] weapon node added to scene
+[Player] weapon position: (0.0, 0.0)
+[Player] weapon global position: (500.0, 300.0)
+[Player] weapon visible: true
+[Player] weapon z_index: 0
+[Weapon] 加载贴图: res://assets/sprites/Weapons/Melee/Weapon_Punch.png
+[Weapon] Sprite2D 可见性: true
+[Weapon] Sprite2D 位置: (27.0, 0.0)
+[Weapon] Sprite2D 缩放: (1.0, 1.0)
+[Weapon] 贴图大小: (200.0, 100.0)
+[Weapon] 武器设置完成: 拳头1级 (punch_1)
+  - 类型: MELEE
+  - 等级: 1
+  - 形状类型: point
+  - 子弹模式: 未指定
+  - 碰撞体: 由 MeleeBehavior 动态创建
+  - 基础场景: res://scenes/weapons/melee/weapon_melee_point.tscn
+[Player] weapon position after layout: (0.0, -15.0)
+[Player] weapon global position after layout: (500.0, 285.0)
+[PlayerBase] player butcher loaded 1 weapons
+[PlayerBase] death signal connected
+[PlayerBase] start loading ultimate, player_id = butcher
+[PlayerBase] ultimate config loaded: { "ult_id": "butcher_ult", "name": "血之狂怒", "duration": 10.0, "energy_cost": 40.0, "bonus_bond_tag": "vanguard", "visual_color_hex": "#FF3333", "scale_multiplier": 1.2, "explosion_radius": 220.0, "explosion_damage_scale": 1.3, "description": "屠夫进入血锯屠场窗口并强化画线屠杀", "f_role_id": "butcher", "f_internal_cd": 0.9, "f_q_line_amp": 1.55, "f_q_closure_amp": 2.05, "f_special_value_1": 1.35, "f_special_value_2": 220.0, "f_special_value_3": 0.3, "f_bond_o_payload": "tag:colossus|lv2:0.12|lv3:0.24|axis:line", "f_bond_m_payload": "tag:architect|lv2:0.16|lv3:0.32|axis:closure", "f_bond_t_payload": "tag:vanguard|lv2:0.10|lv3:0.20|axis:tempo" }
+[PlayerBase] ultimate script loaded: (res://scenes/skills/players/f_roles/skill_butcher_f.gd):<GDScript#-9223371860274574957>
+[PlayerBase] ultimate node created
+[PlayerBase] ultimate load complete: 血之狂怒
+[Arena] 生成角色成功: butcher 在位置 (500.0, 300.0)
+[Arena] 玩家初始化完成
+[CharacterSlot] 加载角色图标: butcher -> res://assets/sprites/Players/Player_5.png
+[SquadHUD] 初始化 1 个角色卡槽
+[Arena] 小队 HUD 初始化完成
+[Arena] ===== _init_bond_hud() 开始 =====
+[Arena] ✅ 找到 GameUI 节点: /root/Arena/GameUI
+[Arena] ✅ BondHUD 场景加载成功
+[Arena] ✅ BondHUD 实例化成功
+[Arena] ✅ BondHUD 已添加到 GameUI
+[Arena] BondHUD 路径: /root/Arena/GameUI/BondHUD
+[Arena] BondHUD 可见性: true
+[Arena] _ready() 完成，飘字保护已解除
+[PlayerBase] SkillManager already exists (created by child: @Node@116), loaded=3, skip auto create
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+   at: cleanup (core/object/object.cpp:2641)
+ERROR: 6 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:810)

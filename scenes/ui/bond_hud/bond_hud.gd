@@ -124,6 +124,19 @@ func _find_bond_icon(bond_id: String) -> BondIcon:
 
 func _show_floating_text(text: String, color: Color) -> void:
 	"""在屏幕中央显示飘字提示"""
+	if _is_validation_test_mode_active():
+		return
+	call_deferred("_spawn_floating_text", text, color)
+
+func _spawn_floating_text(text: String, color: Color) -> void:
+	"""延后一帧创建飘字，避免场景切换期间的 add_child 冲突"""
+	if _is_validation_test_mode_active():
+		return
+	if not is_inside_tree():
+		return
+	var tree := get_tree()
+	if tree == null:
+		return
 	var label = Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", 28)
@@ -132,7 +145,7 @@ func _show_floating_text(text: String, color: Color) -> void:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	
 	# 娣诲姞鍒板満鏅爲椤跺眰
-	var canvas_layer = get_tree().root
+	var canvas_layer = tree.root
 	canvas_layer.add_child(label)
 	
 	# 灞呬腑瀹氫綅
@@ -155,6 +168,12 @@ func _show_floating_text(text: String, color: Color) -> void:
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.5)
 	# 娓呯悊
 	tween.tween_callback(label.queue_free)
+
+func _is_validation_test_mode_active() -> bool:
+	return (
+		(Global != null and Global.has_meta("qef_test_mode_active") and bool(Global.get_meta("qef_test_mode_active")))
+		or (Global != null and Global.has_meta("skill_synergy_test_mode_active") and bool(Global.get_meta("skill_synergy_test_mode_active")))
+	)
 
 # ============================================================================
 # 鏄剧ず鏇存柊

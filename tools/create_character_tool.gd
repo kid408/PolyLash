@@ -2,29 +2,29 @@
 extends EditorScript
 
 # ============================================================================
-# 角色创建工具（当前流程版）
+# 瑙掕壊鍒涘缓宸ュ叿锛堝綋鍓嶆祦绋嬬増锛?
 # ============================================================================
 #
-# 功能：
-# 1. 生成最小角色脚本：player_<id>.gd（继承 PlayerBase）
-# 2. 追加最新表结构配置：
+# 鍔熻兘锛?
+# 1. 鐢熸垚鏈€灏忚鑹茶剼鏈細player_<id>.gd锛堢户鎵?PlayerBase锛?
+# 2. 杩藉姞鏈€鏂拌〃缁撴瀯閰嶇疆锛?
 #    - player_config.csv
 #    - player_visual.csv
 #    - player_skill_bindings.csv
 #    - player_weapons.csv
 #    - player_available_weapons.csv
-#    - ult_config.csv（20列）
+#    - ult_config.csv锛?0鍒楋級
 #
-# 说明：
-# - 当前项目由 PlayerBase 自动创建 SkillManager 与处理输入，
-#   角色脚本默认只保留最小子类，避免重复逻辑。
+# 璇存槑锛?
+# - 褰撳墠椤圭洰鐢?PlayerBase 鑷姩鍒涘缓 SkillManager 涓庡鐞嗚緭鍏ワ紝
+#   瑙掕壊鑴氭湰榛樿鍙繚鐣欐渶灏忓瓙绫伙紝閬垮厤閲嶅閫昏緫銆?
 # ============================================================================
 
 # ----------------------------------------------------------------------------
-# 角色基础配置（按需修改）
+# 瑙掕壊鍩虹閰嶇疆锛堟寜闇€淇敼锛?
 # ----------------------------------------------------------------------------
 const CHARACTER_ID := "dryad"
-const CHARACTER_NAME := "德鲁伊"
+const CHARACTER_NAME := "寰烽瞾浼?
 const DISPLAY_ORDER := 99
 const ENABLED := 1
 
@@ -44,21 +44,21 @@ const BASE_SPEED := 500.0
 const EXTERNAL_FORCE_DECAY := 50.0
 const KNOCKBACK_SCALE := 0.3
 
-# 羁绊标签（ID）
+# 缇佺粖鏍囩锛圛D锛?
 const ORIGIN_TAG := "nomad"
 const MASTERY_TAG := "geometrist"
 const TACTIC_TAG := "commander"
 
-# 展示用三类文案（player_config.ties）
-const TIES_DISPLAY := "游侠|几何师|指挥型"
+# 灞曠ず鐢ㄤ笁绫绘枃妗堬紙player_config.ties锛?
+const TIES_DISPLAY := "锋芒|几何师|指挥型"
 
-# 技能绑定
-const SKILL_Q := "skill_wind_path"
+# 鎶€鑳界粦瀹?
+const SKILL_Q := "skill_windblade_path"
 const SKILL_E := "skill_storm_eye"
 const SKILL_LMB := "skill_dash"
 const SKILL_RMB := ""
 
-# 初始武器
+# 鍒濆姝﹀櫒
 const WEAPON_SLOT_1 := "punch_1"
 const WEAPON_SLOT_2 := "punch_2"
 const AVAILABLE_WEAPON_1 := "punch"
@@ -66,12 +66,12 @@ const AVAILABLE_WEAPON_2 := "laser"
 const AVAILABLE_WEAPON_3 := ""
 const AVAILABLE_WEAPON_4 := ""
 
-# Q闭合专属音效（可留空）
+# Q闂悎涓撳睘闊虫晥锛堝彲鐣欑┖锛?
 const Q_CLOSURE_SFX := ""
 const Q_CLOSURE_VOLUME_DB := 0.0
 const Q_CLOSURE_SFX_ENABLED := 0
 
-# 大招默认配置（ult_config.csv）
+# 澶ф嫑榛樿閰嶇疆锛坲lt_config.csv锛?
 const ULT_DURATION := 10.0
 const ULT_ENERGY_COST := 40.0
 const ULT_VISUAL_COLOR := "#66FF99"
@@ -87,24 +87,24 @@ const ULT_F_SPECIAL_VALUE_3 := 0.30
 
 func _run() -> void:
 	print("\n" + "=".repeat(72))
-	print("角色创建工具（当前流程版）")
+	print("瑙掕壊鍒涘缓宸ュ叿锛堝綋鍓嶆祦绋嬬増锛?)
 	print("=".repeat(72))
-	print("角色ID: %s" % CHARACTER_ID)
-	print("角色名: %s" % CHARACTER_NAME)
-	print("脚本类名: Player%s" % _to_pascal_case(CHARACTER_ID))
+	print("瑙掕壊ID: %s" % CHARACTER_ID)
+	print("瑙掕壊鍚? %s" % CHARACTER_NAME)
+	print("鑴氭湰绫诲悕: Player%s" % _to_pascal_case(CHARACTER_ID))
 
 	if CHARACTER_ID.strip_edges().is_empty():
-		printerr("❌ CHARACTER_ID 不能为空")
+		printerr("鉂?CHARACTER_ID 涓嶈兘涓虹┖")
 		return
 
 	_create_character_script()
 	_append_all_csv_rows()
 
-	print("\n✅ 创建完成")
-	print("下一步：")
-	print("1. 在选择界面确认该角色已出现")
-	print("2. 在 player_skill_bindings.csv 检查技能ID是否可加载")
-	print("3. 在 ult_config.csv 按角色定位调整 F 参数")
+	print("\n鉁?鍒涘缓瀹屾垚")
+	print("涓嬩竴姝ワ細")
+	print("1. 鍦ㄩ€夋嫨鐣岄潰纭璇ヨ鑹插凡鍑虹幇")
+	print("2. 鍦?player_skill_bindings.csv 妫€鏌ユ妧鑳絀D鏄惁鍙姞杞?)
+	print("3. 鍦?ult_config.csv 鎸夎鑹插畾浣嶈皟鏁?F 鍙傛暟")
 	print("=".repeat(72) + "\n")
 
 func _to_pascal_case(snake_case: String) -> String:
@@ -121,7 +121,7 @@ func _create_character_script() -> void:
 	var class_name_str := _to_pascal_case(CHARACTER_ID)
 
 	if FileAccess.file_exists(script_path):
-		print("⚠️ 已存在角色脚本，跳过创建: %s" % script_path)
+		print("鈿狅笍 宸插瓨鍦ㄨ鑹茶剼鏈紝璺宠繃鍒涘缓: %s" % script_path)
 		return
 
 	var content := """extends PlayerBase
@@ -129,9 +129,9 @@ class_name Player%s
 
 ## ==============================================================================
 ## %s
-## 说明：
-## - 默认使用 PlayerBase 的自动输入与技能管理流程
-## - 若需角色专属行为，请重写 _process_subclass / 其他钩子
+## 璇存槑锛?
+## - 榛樿浣跨敤 PlayerBase 鐨勮嚜鍔ㄨ緭鍏ヤ笌鎶€鑳界鐞嗘祦绋?
+## - 鑻ラ渶瑙掕壊涓撳睘琛屼负锛岃閲嶅啓 _process_subclass / 鍏朵粬閽╁瓙
 ## ==============================================================================
 
 func _process_subclass(_delta: float) -> void:
@@ -140,14 +140,14 @@ func _process_subclass(_delta: float) -> void:
 
 	var file := FileAccess.open(script_path, FileAccess.WRITE)
 	if file == null:
-		printerr("❌ 无法写入角色脚本: %s" % script_path)
+		printerr("鉂?鏃犳硶鍐欏叆瑙掕壊鑴氭湰: %s" % script_path)
 		return
 	file.store_string(content)
 	file.close()
-	print("✅ 已创建角色脚本: %s" % script_path)
+	print("鉁?宸插垱寤鸿鑹茶剼鏈? %s" % script_path)
 
 func _append_all_csv_rows() -> void:
-	print("\n--- 写入 CSV 配置 ---")
+	print("\n--- 鍐欏叆 CSV 閰嶇疆 ---")
 
 	var player_id := CHARACTER_ID
 	var ult_id := "%s_ult" % CHARACTER_ID
@@ -168,7 +168,7 @@ func _append_all_csv_rows() -> void:
 		str(MAX_ENERGY),
 		str(MAX_ARMOR),
 		str(BASE_SPEED),
-		"新角色",
+		"鏂拌鑹?,
 		str(EXTERNAL_FORCE_DECAY),
 		str(KNOCKBACK_SCALE),
 		ORIGIN_TAG,
@@ -225,7 +225,7 @@ func _append_all_csv_rows() -> void:
 
 	var ult_row := PackedStringArray([
 		ult_id,
-		"%s大招" % CHARACTER_NAME,
+		"%s澶ф嫑" % CHARACTER_NAME,
 		str(ULT_DURATION),
 		str(ULT_ENERGY_COST),
 		TACTIC_TAG,
@@ -233,7 +233,7 @@ func _append_all_csv_rows() -> void:
 		str(ULT_SCALE_MULTIPLIER),
 		str(ULT_EXPLOSION_RADIUS),
 		str(ULT_EXPLOSION_DAMAGE_SCALE),
-		"%s的终极技能" % CHARACTER_NAME,
+		"%s鐨勭粓鏋佹妧鑳? % CHARACTER_NAME,
 		CHARACTER_ID,
 		str(ULT_F_INTERNAL_CD),
 		str(ULT_F_Q_LINE_AMP),
@@ -254,11 +254,11 @@ func _build_bond_payload(tag_id: String, axis: String) -> String:
 
 func _append_csv_row(file_path: String, row: PackedStringArray, id_value: String, display_name: String) -> void:
 	if not FileAccess.file_exists(file_path):
-		printerr("❌ 文件不存在: %s" % file_path)
+		printerr("鉂?鏂囦欢涓嶅瓨鍦? %s" % file_path)
 		return
 
 	if _csv_contains_id(file_path, id_value):
-		print("⚠️ 跳过 %s: ID 已存在 (%s)" % [display_name, id_value])
+		print("鈿狅笍 璺宠繃 %s: ID 宸插瓨鍦?(%s)" % [display_name, id_value])
 		return
 
 	var original_text := ""
@@ -269,7 +269,7 @@ func _append_csv_row(file_path: String, row: PackedStringArray, id_value: String
 
 	var file := FileAccess.open(file_path, FileAccess.READ_WRITE)
 	if file == null:
-		printerr("❌ 无法写入文件: %s" % file_path)
+		printerr("鉂?鏃犳硶鍐欏叆鏂囦欢: %s" % file_path)
 		return
 
 	file.seek_end()
@@ -277,7 +277,7 @@ func _append_csv_row(file_path: String, row: PackedStringArray, id_value: String
 		file.store_string("\n")
 	file.store_csv_line(row)
 	file.close()
-	print("✅ 已写入 %s" % display_name)
+	print("鉁?宸插啓鍏?%s" % display_name)
 
 func _csv_contains_id(file_path: String, target_id: String) -> bool:
 	var file := FileAccess.open(file_path, FileAccess.READ)

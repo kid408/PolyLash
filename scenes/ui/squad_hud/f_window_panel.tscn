@@ -4,7 +4,7 @@
 
 [node name="FWindowPanel" type="PanelContainer"]
 visible = false
-custom_minimum_size = Vector2(0, 96)
+custom_minimum_size = Vector2(0, 84)
 layout_mode = 2
 script = ExtResource("1_panel")
 
@@ -53,12 +53,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Q闭合: 空"
 
-[node name="LinkBand" type="Label" parent="MarginContainer/VBoxContainer/SlotRow"]
-visible = false
-layout_mode = 2
-text = "联结头奖"
-horizontal_alignment = 1
-
 [node name="InfoRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 10
@@ -66,19 +60,10 @@ theme_override_constants/separation = 10
 [node name="PickupLabel" type="Label" parent="MarginContainer/VBoxContainer/InfoRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "未开 0/2 · 场上 0"
+text = "追击物 0 / 包 0"
 
 [node name="UtilityLabel" type="Label" parent="MarginContainer/VBoxContainer/InfoRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "无短时增益"
 horizontal_alignment = 2
-
-[node name="RevealLayer" type="Control" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2

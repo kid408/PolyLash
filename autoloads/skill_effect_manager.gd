@@ -3,15 +3,15 @@ extends Node
 const DEBUG_VERBOSE := false
 
 ## ==============================================================================
-## 技能效果生命周期管理器 - 统一管理所有技能的场景效果
+## 鎶€鑳芥晥鏋滅敓鍛藉懆鏈熺鐞嗗櫒 - 缁熶竴绠＄悊鎵€鏈夋妧鑳界殑鍦烘櫙鏁堟灉
 ## ==============================================================================
 ## 
-## 功能说明:
-## - 统一管理技能效果的生命周期（火海、风墙、锯条、地雷等）
-## - 提供独立的伤害、物理效果、视觉效果管理
-## - 不依赖技能实例，即使角色切换也能继续工作
+## 鍔熻兘璇存槑:
+## - 缁熶竴绠＄悊鎶€鑳芥晥鏋滅殑鐢熷懡鍛ㄦ湡锛堢伀娴枫€侀澧欍€侀敮鏉°€佸湴闆风瓑锛?
+## - 鎻愪緵鐙珛鐨勪激瀹炽€佺墿鐞嗘晥鏋溿€佽瑙夋晥鏋滅鐞?
+## - 涓嶄緷璧栨妧鑳藉疄渚嬶紝鍗充娇瑙掕壊鍒囨崲涔熻兘缁х画宸ヤ綔
 ## 
-## 使用方法:
+## 浣跨敤鏂规硶:
 ##   var effect_id = SkillEffectManager.create_area_effect({
 ##       "polygon": points,
 ##       "damage": 40,
@@ -24,13 +24,13 @@ const DEBUG_VERBOSE := false
 ## 
 ## ==============================================================================
 
-## 效果节点字典 {effect_id: effect_data}
+## 鏁堟灉鑺傜偣瀛楀吀 {effect_id: effect_data}
 var active_effects: Dictionary = {}
 
-## 效果ID计数器
+## 鏁堟灉ID璁℃暟鍣?
 var next_effect_id: int = 0
 
-## 临时伤害倍率栈（由技能基类压栈/出栈）
+## 涓存椂浼ゅ鍊嶇巼鏍堬紙鐢辨妧鑳藉熀绫诲帇鏍?鍑烘爤锛?
 var _damage_multiplier_stack: Array[float] = []
 
 func _is_effect_ending(effect_data: Dictionary) -> bool:
@@ -91,7 +91,7 @@ func _normalize_polygon_config(config: Dictionary, effect_name: String) -> Dicti
 	var polygon: PackedVector2Array = PolygonUtils.sanitize_polygon(raw_points)
 	if polygon.is_empty():
 		push_warning(
-			"[SkillEffectManager] %s 跳过无效多边形: raw_points=%d" % [
+			"[SkillEffectManager] %s 璺宠繃鏃犳晥澶氳竟褰? raw_points=%d" % [
 				effect_name,
 				raw_points.size()
 			]
@@ -113,31 +113,31 @@ func _normalize_polygon_config(config: Dictionary, effect_name: String) -> Dicti
 	return adjusted
 
 # ==============================================================================
-# 创建效果
+# 鍒涘缓鏁堟灉
 # ==============================================================================
 
-## 创建区域效果（多边形）
-## @param config: 配置字典
-##   - polygon: PackedVector2Array (必需)
-##   - damage: int (可选，默认0)
-##   - damage_interval: float (可选，默认0.5)
-##   - duration: float (可选，默认5.0)
-##   - color: Color (可选，默认白色)
-##   - pull_to_center: bool (可选，默认false)
-##   - pull_force: float (可选，默认0)
-##   - pull_interval: float (可选，默认0.05)
-##   - z_index: int (可选，默认10)
-##   - fade_in_duration: float (可选，默认0.2)
-##   - fade_out_duration: float (可选，默认0.3)
-## @return: effect_id (用于后续操作)
+## 鍒涘缓鍖哄煙鏁堟灉锛堝杈瑰舰锛?
+## @param config: 閰嶇疆瀛楀吀
+##   - polygon: PackedVector2Array (蹇呴渶)
+##   - damage: int (鍙€夛紝榛樿0)
+##   - damage_interval: float (鍙€夛紝榛樿0.5)
+##   - duration: float (鍙€夛紝榛樿5.0)
+##   - color: Color (鍙€夛紝榛樿鐧借壊)
+##   - pull_to_center: bool (鍙€夛紝榛樿false)
+##   - pull_force: float (鍙€夛紝榛樿0)
+##   - pull_interval: float (鍙€夛紝榛樿0.05)
+##   - z_index: int (鍙€夛紝榛樿10)
+##   - fade_in_duration: float (鍙€夛紝榛樿0.2)
+##   - fade_out_duration: float (鍙€夛紝榛樿0.3)
+## @return: effect_id (鐢ㄤ簬鍚庣画鎿嶄綔)
 func create_area_effect(config: Dictionary) -> int:
 	config = _apply_runtime_damage_multiplier(config)
 	var effect_id = next_effect_id
 	next_effect_id += 1
 	
-	# 验证必需参数
+	# 楠岃瘉蹇呴渶鍙傛暟
 	if not config.has("polygon"):
-		push_error("[SkillEffectManager] 缺少必需参数: polygon")
+		push_error("[SkillEffectManager] 缂哄皯蹇呴渶鍙傛暟: polygon")
 		return -1
 
 	config = _normalize_polygon_config(config, "create_area_effect")
@@ -146,38 +146,38 @@ func create_area_effect(config: Dictionary) -> int:
 	
 	var points: PackedVector2Array = config["polygon"]
 	if points.size() < 3:
-		push_error("[SkillEffectManager] 多边形点数不足: %d" % points.size())
+		push_error("[SkillEffectManager] 澶氳竟褰㈢偣鏁颁笉瓒? %d" % points.size())
 		return -1
 	
 	if DEBUG_VERBOSE:
-		print("[SkillEffectManager] create_area_effect 被调用: 点数=%d, damage=%d, duration=%.1f" % [
+		print("[SkillEffectManager] create_area_effect 琚皟鐢? 鐐规暟=%d, damage=%d, duration=%.1f" % [
 		points.size(), config.get("damage", 0), config.get("duration", 5.0)
 	])
 	
-	# 创建 Area2D
+	# 鍒涘缓 Area2D
 	var area = Area2D.new()
 	area.collision_layer = 0
-	area.collision_mask = 1 | 2  # 检测 Layer1(Player/Enemy默认) + Layer2(Enemy标记)
+	area.collision_mask = 1 | 2  # 妫€娴?Layer1(Player/Enemy榛樿) + Layer2(Enemy鏍囪)
 	area.monitorable = false
 	area.monitoring = true
 	area.name = "SkillEffect_%d" % effect_id
 	
-	# 碰撞形状
+	# 纰版挒褰㈢姸
 	var col = CollisionPolygon2D.new()
 	col.polygon = points
 	area.add_child(col)
 	
-	# 视觉效果
+	# 瑙嗚鏁堟灉
 	var vis_poly = Polygon2D.new()
 	vis_poly.polygon = points
 	vis_poly.color = Color(1.0, 1.0, 1.0, 0.0)
 	vis_poly.z_index = config.get("z_index", 10)
 	area.add_child(vis_poly)
 	
-	# 添加到 SkillEffectManager 自身（autoload 节点，角色切换不影响）
+	# 娣诲姞鍒?SkillEffectManager 鑷韩锛坅utoload 鑺傜偣锛岃鑹插垏鎹笉褰卞搷锛?
 	add_child(area)
 	
-	# 保存效果数据
+	# 淇濆瓨鏁堟灉鏁版嵁
 	var effect_data = {
 		"area": area,
 		"vis_poly": vis_poly,
@@ -187,13 +187,13 @@ func create_area_effect(config: Dictionary) -> int:
 	}
 	active_effects[effect_id] = effect_data
 	
-	# 淡入动画
+	# 娣″叆鍔ㄧ敾
 	var fade_in_duration = config.get("fade_in_duration", 0.2)
 	var target_color = config.get("color", Color.WHITE)
 	var tween = area.create_tween()
 	tween.tween_property(vis_poly, "color", target_color, fade_in_duration).from(Color(target_color.r, target_color.g, target_color.b, 0.0))
 	
-	# 计算中心点（用于吸附效果）
+	# 璁＄畻涓績鐐癸紙鐢ㄤ簬鍚搁檮鏁堟灉锛?
 	if config.get("pull_to_center", false):
 		var center = Vector2.ZERO
 		for p in points:
@@ -201,35 +201,35 @@ func create_area_effect(config: Dictionary) -> int:
 		center /= points.size()
 		effect_data["center"] = center
 	
-	# 启动效果管理
+	# 鍚姩鏁堟灉绠＄悊
 	_start_effect_lifecycle(effect_id)
 	
 	return effect_id
 
-## 创建线段效果（火线、风墙等）
-## @param config: 配置字典
-##   - start: Vector2 (必需)
-##   - end: Vector2 (必需)
-##   - width: float (可选，默认24)
-##   - damage: int (可选，默认0)
-##   - damage_interval: float (可选，默认0.5)
-##   - duration: float (可选，默认5.0)
-##   - color: Color (可选，默认白色)
-##   - pull_to_line: bool (可选，默认false)
-##   - pull_force: float (可选，默认0)
+## 鍒涘缓绾挎鏁堟灉锛堢伀绾裤€侀澧欑瓑锛?
+## @param config: 閰嶇疆瀛楀吀
+##   - start: Vector2 (蹇呴渶)
+##   - end: Vector2 (蹇呴渶)
+##   - width: float (鍙€夛紝榛樿24)
+##   - damage: int (鍙€夛紝榛樿0)
+##   - damage_interval: float (鍙€夛紝榛樿0.5)
+##   - duration: float (鍙€夛紝榛樿5.0)
+##   - color: Color (鍙€夛紝榛樿鐧借壊)
+##   - pull_to_line: bool (鍙€夛紝榛樿false)
+##   - pull_force: float (鍙€夛紝榛樿0)
 ## @return: effect_id
 func create_line_effect(config: Dictionary) -> int:
 	config = _apply_runtime_damage_multiplier(config)
 	var effect_id = next_effect_id
 	next_effect_id += 1
 	
-	# 验证必需参数
+	# 楠岃瘉蹇呴渶鍙傛暟
 	if not config.has("start") or not config.has("end"):
-		push_error("[SkillEffectManager] 缺少必需参数: start 或 end")
+		push_error("[SkillEffectManager] 缂哄皯蹇呴渶鍙傛暟: start 鎴?end")
 		return -1
 	
 	if DEBUG_VERBOSE:
-		print("[SkillEffectManager] create_line_effect 被调用: damage=%d, duration=%.1f" % [
+		print("[SkillEffectManager] create_line_effect 琚皟鐢? damage=%d, duration=%.1f" % [
 		config.get("damage", 0), config.get("duration", 5.0)
 	])
 	
@@ -237,11 +237,11 @@ func create_line_effect(config: Dictionary) -> int:
 	var end: Vector2 = config["end"]
 	var width: float = config.get("width", 24.0)
 	
-	# 创建 Area2D
+	# 鍒涘缓 Area2D
 	var area = Area2D.new()
 	area.position = start
 	area.collision_layer = 0
-	area.collision_mask = 1 | 2  # 检测 Layer1(Player/Enemy默认) + Layer2(Enemy标记)
+	area.collision_mask = 1 | 2  # 妫€娴?Layer1(Player/Enemy榛樿) + Layer2(Enemy鏍囪)
 	area.monitorable = false
 	area.monitoring = true
 	area.name = "SkillEffect_%d" % effect_id
@@ -250,7 +250,7 @@ func create_line_effect(config: Dictionary) -> int:
 	var length = vec.length()
 	var angle = vec.angle()
 	
-	# 碰撞形状
+	# 纰版挒褰㈢姸
 	var col = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
 	shape.size = Vector2(length, width)
@@ -259,7 +259,7 @@ func create_line_effect(config: Dictionary) -> int:
 	col.rotation = angle
 	area.add_child(col)
 	
-	# 视觉效果
+	# 瑙嗚鏁堟灉
 	var vis_line = Line2D.new()
 	vis_line.add_point(Vector2.ZERO)
 	vis_line.add_point(end - start)
@@ -269,10 +269,10 @@ func create_line_effect(config: Dictionary) -> int:
 	vis_line.end_cap_mode = Line2D.LINE_CAP_ROUND
 	area.add_child(vis_line)
 	
-	# 添加到 SkillEffectManager 自身（autoload 节点，角色切换不影响）
+	# 娣诲姞鍒?SkillEffectManager 鑷韩锛坅utoload 鑺傜偣锛岃鑹插垏鎹笉褰卞搷锛?
 	add_child(area)
 	
-	# 保存效果数据
+	# 淇濆瓨鏁堟灉鏁版嵁
 	var effect_data = {
 		"area": area,
 		"vis_line": vis_line,
@@ -284,38 +284,38 @@ func create_line_effect(config: Dictionary) -> int:
 	}
 	active_effects[effect_id] = effect_data
 	
-	# 启动效果管理
+	# 鍚姩鏁堟灉绠＄悊
 	_start_effect_lifecycle(effect_id)
 	
 	return effect_id
 
 # ==============================================================================
-# 墙体效果
+# 澧欎綋鏁堟灉
 # ==============================================================================
 
-## 创建墙体效果（StaticBody2D）
-## @param config: 配置字典
-##   - start: Vector2 (必需) - 墙体起点
-##   - end: Vector2 (必需) - 墙体终点
-##   - width: float (可选, 默认 16) - 墙体宽度
-##   - duration: float (可选, 默认 5.0) - 持续时间
-##   - health: int (可选, 默认 -1) - 墙体生命值，-1 为不可破坏
-##   - block_enemies: bool (可选, 默认 true) - 是否阻挡敌人
-##   - block_bullets: bool (可选, 默认 false) - 是否阻挡子弹
-##   - reflect_bullets: bool (可选, 默认 false) - 是否反射子弹
-##   - contact_damage: int (可选, 默认 0) - 接触伤害
-##   - contact_interval: float (可选, 默认 0.5) - 接触伤害间隔
-##   - color: Color (可选) - 墙体颜色
-## @return: effect_id (用于后续操作), -1 表示失败
+## 鍒涘缓澧欎綋鏁堟灉锛圫taticBody2D锛?
+## @param config: 閰嶇疆瀛楀吀
+##   - start: Vector2 (蹇呴渶) - 澧欎綋璧风偣
+##   - end: Vector2 (蹇呴渶) - 澧欎綋缁堢偣
+##   - width: float (鍙€? 榛樿 16) - 澧欎綋瀹藉害
+##   - duration: float (鍙€? 榛樿 5.0) - 鎸佺画鏃堕棿
+##   - health: int (鍙€? 榛樿 -1) - 澧欎綋鐢熷懡鍊硷紝-1 涓轰笉鍙牬鍧?
+##   - block_enemies: bool (鍙€? 榛樿 true) - 鏄惁闃绘尅鏁屼汉
+##   - block_bullets: bool (鍙€? 榛樿 false) - 鏄惁闃绘尅瀛愬脊
+##   - reflect_bullets: bool (鍙€? 榛樿 false) - 鏄惁鍙嶅皠瀛愬脊
+##   - contact_damage: int (鍙€? 榛樿 0) - 鎺ヨЕ浼ゅ
+##   - contact_interval: float (鍙€? 榛樿 0.5) - 鎺ヨЕ浼ゅ闂撮殧
+##   - color: Color (鍙€? - 澧欎綋棰滆壊
+## @return: effect_id (鐢ㄤ簬鍚庣画鎿嶄綔), -1 琛ㄧず澶辫触
 func create_wall_effect(config: Dictionary) -> int:
 	config = _apply_runtime_damage_multiplier(config)
-	# 验证必需参数
+	# 楠岃瘉蹇呴渶鍙傛暟
 	if not config.has("start") or not config.has("end"):
-		push_error("[SkillEffectManager] create_wall_effect 缺少必需参数: start 或 end")
+		push_error("[SkillEffectManager] create_wall_effect 缂哄皯蹇呴渶鍙傛暟: start 鎴?end")
 		return -1
 
 	if DEBUG_VERBOSE:
-		print("[SkillEffectManager] create_wall_effect 被调用: start=%s, end=%s, block=%s, damage=%d" % [
+		print("[SkillEffectManager] create_wall_effect 琚皟鐢? start=%s, end=%s, block=%s, damage=%d" % [
 		config.get("start"), config.get("end"),
 		config.get("block_enemies", true), config.get("contact_damage", 0)
 	])
@@ -339,33 +339,33 @@ func create_wall_effect(config: Dictionary) -> int:
 	var length = vec.length()
 	var angle = vec.angle()
 
-	# --- StaticBody2D 物理墙体 ---
+	# --- StaticBody2D 鐗╃悊澧欎綋 ---
 	var static_body = StaticBody2D.new()
 	static_body.name = "WallEffect_%d" % effect_id
 
-	# 碰撞层设置
+	# 纰版挒灞傝缃?
 	var col_layer = 0
 	if block_enemies:
-		col_layer |= 4  # Layer 3: 障碍物层，敌人会碰撞
+		col_layer |= 4  # Layer 3: 闅滅鐗╁眰锛屾晫浜轰細纰版挒
 	if block_bullets or reflect_bullets:
-		col_layer |= 4  # 同层，子弹也会碰撞
+		col_layer |= 4  # 鍚屽眰锛屽瓙寮逛篃浼氱鎾?
 	static_body.collision_layer = col_layer
-	static_body.collision_mask = 0  # StaticBody 不需要主动检测
+	static_body.collision_mask = 0  # StaticBody 涓嶉渶瑕佷富鍔ㄦ娴?
 
-	# 碰撞形状：沿线段的矩形
+	# 纰版挒褰㈢姸锛氭部绾挎鐨勭煩褰?
 	var col_shape = CollisionShape2D.new()
 	var rect_shape = RectangleShape2D.new()
 	rect_shape.size = Vector2(length, width)
 	col_shape.shape = rect_shape
-	# 将碰撞形状放在线段中点，旋转到线段方向
+	# 灏嗙鎾炲舰鐘舵斁鍦ㄧ嚎娈典腑鐐癸紝鏃嬭浆鍒扮嚎娈垫柟鍚?
 	col_shape.position = vec / 2.0
 	col_shape.rotation = angle
 	static_body.add_child(col_shape)
 
-	# 设置墙体位置为起点
+	# 璁剧疆澧欎綋浣嶇疆涓鸿捣鐐?
 	static_body.global_position = start
 
-	# --- Line2D 视觉占位 ---
+	# --- Line2D 瑙嗚鍗犱綅 ---
 	var vis_line = Line2D.new()
 	vis_line.add_point(Vector2.ZERO)
 	vis_line.add_point(vec)
@@ -376,71 +376,71 @@ func create_wall_effect(config: Dictionary) -> int:
 	vis_line.z_index = 5
 	static_body.add_child(vis_line)
 
-	# --- 接触伤害 Area2D ---
+	# --- 鎺ヨЕ浼ゅ Area2D ---
 	var damage_area: Area2D = null
 	if contact_damage > 0:
 		damage_area = Area2D.new()
 		damage_area.name = "WallDamageArea"
 		damage_area.collision_layer = 0
-		damage_area.collision_mask = 1 | 2  # 检测 Layer1(Player/Enemy默认) + Layer2(Enemy标记)
+		damage_area.collision_mask = 1 | 2  # 妫€娴?Layer1(Player/Enemy榛樿) + Layer2(Enemy鏍囪)
 		damage_area.monitorable = false
 		damage_area.monitoring = true
 
 		var dmg_col = CollisionShape2D.new()
 		var dmg_shape = RectangleShape2D.new()
-		dmg_shape.size = Vector2(length, width + 16.0)  # 比墙体宽，确保接触检测可靠
+		dmg_shape.size = Vector2(length, width + 16.0)  # 姣斿浣撳锛岀‘淇濇帴瑙︽娴嬪彲闈?
 		dmg_col.shape = dmg_shape
 		dmg_col.position = vec / 2.0
 		dmg_col.rotation = angle
 		damage_area.add_child(dmg_col)
 		static_body.add_child(damage_area)
 
-	# --- 阻挡敌人 Area2D（因为敌人是 Area2D，不受 StaticBody2D 物理阻挡）---
+	# --- 闃绘尅鏁屼汉 Area2D锛堝洜涓烘晫浜烘槸 Area2D锛屼笉鍙?StaticBody2D 鐗╃悊闃绘尅锛?--
 	var block_area: Area2D = null
 	if block_enemies:
 		block_area = Area2D.new()
 		block_area.name = "WallBlockArea"
 		block_area.collision_layer = 0
-		block_area.collision_mask = 1 | 2  # 检测 Layer1(Player/Enemy默认) + Layer2(Enemy标记)
+		block_area.collision_mask = 1 | 2  # 妫€娴?Layer1(Player/Enemy榛樿) + Layer2(Enemy鏍囪)
 		block_area.monitorable = false
 		block_area.monitoring = true
 
 		var blk_col = CollisionShape2D.new()
 		var blk_shape = RectangleShape2D.new()
-		blk_shape.size = Vector2(length, width + 32.0)  # 比墙体宽很多，确保提前检测到敌人
+		blk_shape.size = Vector2(length, width + 32.0)  # 姣斿浣撳寰堝锛岀‘淇濇彁鍓嶆娴嬪埌鏁屼汉
 		blk_col.shape = blk_shape
 		blk_col.position = vec / 2.0
 		blk_col.rotation = angle
 		block_area.add_child(blk_col)
 		static_body.add_child(block_area)
 
-	# --- 阻挡子弹 Area2D（敌人子弹是 Area2D/HitboxComponent，不受 StaticBody2D 阻挡）---
+	# --- 闃绘尅瀛愬脊 Area2D锛堟晫浜哄瓙寮规槸 Area2D/HitboxComponent锛屼笉鍙?StaticBody2D 闃绘尅锛?--
 	var bullet_block_area: Area2D = null
 	if block_bullets or reflect_bullets:
 		bullet_block_area = Area2D.new()
 		bullet_block_area.name = "WallBulletBlockArea"
 		bullet_block_area.collision_layer = 0
-		bullet_block_area.collision_mask = 4  # Layer 3: HitboxEnemy（敌人子弹的 hitbox）
+		bullet_block_area.collision_mask = 4  # Layer 3: HitboxEnemy锛堟晫浜哄瓙寮圭殑 hitbox锛?
 		bullet_block_area.monitorable = false
 		bullet_block_area.monitoring = true
 
 		var blt_col = CollisionShape2D.new()
 		var blt_shape = RectangleShape2D.new()
-		blt_shape.size = Vector2(length, width + 24.0)  # 比墙体稍宽确保拦截
+		blt_shape.size = Vector2(length, width + 24.0)  # 姣斿浣撶◢瀹界‘淇濇嫤鎴?
 		blt_col.shape = blt_shape
 		blt_col.position = vec / 2.0
 		blt_col.rotation = angle
 		bullet_block_area.add_child(blt_col)
 		static_body.add_child(bullet_block_area)
 
-		# 预计算墙体法线（用于反射）
+		# 棰勮绠楀浣撴硶绾匡紙鐢ㄤ簬鍙嶅皠锛?
 		var wall_dir = vec.normalized()
-		var wall_normal_for_reflect = Vector2(-wall_dir.y, wall_dir.x)  # 垂直于墙体方向
+		var wall_normal_for_reflect = Vector2(-wall_dir.y, wall_dir.x)  # 鍨傜洿浜庡浣撴柟鍚?
 
-		# 连接信号：检测到敌人子弹时阻挡或反射
+		# 杩炴帴淇″彿锛氭娴嬪埌鏁屼汉瀛愬脊鏃堕樆鎸℃垨鍙嶅皠
 		var do_reflect = reflect_bullets
 		bullet_block_area.area_entered.connect(func(area: Area2D):
-			# --- 解析子弹节点 ---
+			# --- 瑙ｆ瀽瀛愬脊鑺傜偣 ---
 			var projectile_node: Node = null
 			if area is HitboxComponent:
 				var p = area.get_parent()
@@ -454,30 +454,30 @@ func create_wall_effect(config: Dictionary) -> int:
 			if projectile_node == null:
 				return
 
-			# --- 反射逻辑 ---
+			# --- 鍙嶅皠閫昏緫 ---
 			if do_reflect and is_instance_valid(projectile_node):
 				if projectile_node is Projectile:
-					# 标准 Projectile：反转 velocity 沿墙体法线反射
+					# 鏍囧噯 Projectile锛氬弽杞?velocity 娌垮浣撴硶绾垮弽灏?
 					var vel: Vector2 = projectile_node.velocity
 					var reflected = vel - 2.0 * vel.dot(wall_normal_for_reflect) * wall_normal_for_reflect
 					projectile_node.velocity = reflected
 					projectile_node.rotation = reflected.angle()
-					# 修改 hitbox 碰撞层：从敌人子弹变为玩家子弹，使其能伤害敌人
+					# 淇敼 hitbox 纰版挒灞傦細浠庢晫浜哄瓙寮瑰彉涓虹帺瀹跺瓙寮癸紝浣垮叾鑳戒激瀹虫晫浜?
 					if projectile_node.hitbox:
 						projectile_node.hitbox.collision_layer = 16  # Layer 5: HitboxPlayer
 						projectile_node.hitbox.collision_mask = 8    # Layer 4: HurtboxEnemy
 						projectile_node.hitbox.source = Global.player if is_instance_valid(Global.player) else null
 					return
 
-			# --- 纯阻挡：销毁子弹 ---
+			# --- 绾樆鎸★細閿€姣佸瓙寮?---
 			if is_instance_valid(projectile_node):
 				projectile_node.queue_free()
 		)
 
-	# 添加到 SkillEffectManager 自身（autoload 节点，角色切换不影响）
+	# 娣诲姞鍒?SkillEffectManager 鑷韩锛坅utoload 鑺傜偣锛岃鑹插垏鎹笉褰卞搷锛?
 	add_child(static_body)
 
-	# --- 保存效果数据 ---
+	# --- 淇濆瓨鏁堟灉鏁版嵁 ---
 	var effect_data = {
 		"type": "wall",
 		"static_body": static_body,
@@ -491,7 +491,7 @@ func create_wall_effect(config: Dictionary) -> int:
 		effect_data["contact_timer"] = 0.0
 	if block_area:
 		effect_data["block_area"] = block_area
-		# 预计算墙体法线方向（用于推回敌人）
+		# 棰勮绠楀浣撴硶绾挎柟鍚戯紙鐢ㄤ簬鎺ㄥ洖鏁屼汉锛?
 		var wall_normal = vec.rotated(PI / 2.0).normalized()
 		effect_data["wall_normal"] = wall_normal
 		effect_data["wall_start"] = start
@@ -499,12 +499,12 @@ func create_wall_effect(config: Dictionary) -> int:
 		effect_data["wall_width"] = width
 	active_effects[effect_id] = effect_data
 
-	# 启动墙体生命周期
+	# 鍚姩澧欎綋鐢熷懡鍛ㄦ湡
 	_start_wall_lifecycle(effect_id)
 
 	return effect_id
 
-## 墙体受到伤害（外部调用，用于可破坏墙体）
+## 澧欎綋鍙楀埌浼ゅ锛堝閮ㄨ皟鐢紝鐢ㄤ簬鍙牬鍧忓浣擄級
 func wall_take_damage(effect_id: int, damage: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -512,13 +512,13 @@ func wall_take_damage(effect_id: int, damage: int) -> void:
 	if effect_data.get("type") != "wall":
 		return
 	if effect_data["health"] < 0:
-		return  # 不可破坏
+		return  # 涓嶅彲鐮村潖
 
 	effect_data["health"] -= damage
 	if effect_data["health"] <= 0:
 		_destroy_wall(effect_id)
 
-## 启动墙体生命周期管理
+## 鍚姩澧欎綋鐢熷懡鍛ㄦ湡绠＄悊
 func _start_wall_lifecycle(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -535,7 +535,7 @@ func _start_wall_lifecycle(effect_id: int) -> void:
 	)
 	timer.start()
 
-## 更新墙体效果
+## 鏇存柊澧欎綋鏁堟灉
 func _update_wall_effect(effect_id: int, delta: float) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -552,7 +552,7 @@ func _update_wall_effect(effect_id: int, delta: float) -> void:
 	effect_data["elapsed"] += delta
 	var duration = effect_data["config"].get("duration", 5.0)
 
-	# 接触伤害 tick
+	# 鎺ヨЕ浼ゅ tick
 	if effect_data.has("damage_area"):
 		var damage_area: Area2D = effect_data["damage_area"]
 		var contact_damage_val: int = effect_data["config"].get("contact_damage", 0)
@@ -564,17 +564,17 @@ func _update_wall_effect(effect_id: int, delta: float) -> void:
 				_apply_wall_contact_damage(damage_area, contact_damage_val)
 				effect_data["contact_timer"] = 0.0
 
-	# 阻挡敌人（Area2D 推回机制，因为敌人是 Area2D 不受 StaticBody2D 物理阻挡）
+	# 闃绘尅鏁屼汉锛圓rea2D 鎺ㄥ洖鏈哄埗锛屽洜涓烘晫浜烘槸 Area2D 涓嶅彈 StaticBody2D 鐗╃悊闃绘尅锛?
 	if effect_data["config"].get("block_enemies", false) and effect_data.has("block_area"):
 		var block_area: Area2D = effect_data["block_area"]
 		if is_instance_valid(block_area):
 			_push_enemies_from_wall(block_area, effect_data)
 
-	# 持续时间到期 → 淡出并移除
+	# 鎸佺画鏃堕棿鍒版湡 鈫?娣″嚭骞剁Щ闄?
 	if effect_data["elapsed"] >= duration:
 		_end_wall_effect(effect_id)
 
-## 应用墙体接触伤害
+## 搴旂敤澧欎綋鎺ヨЕ浼ゅ
 func _apply_wall_contact_damage(damage_area: Area2D, damage: int) -> void:
 	if not is_instance_valid(damage_area):
 		return
@@ -590,11 +590,11 @@ func _apply_wall_contact_damage(damage_area: Area2D, damage: int) -> void:
 		if enemy and is_instance_valid(enemy) and enemy.has_node("HealthComponent"):
 			enemy.health_component.take_damage(damage)
 			if DEBUG_VERBOSE:
-				print("[SkillEffectManager] 墙体接触伤害: %d -> %s" % [damage, enemy.name])
+				print("[SkillEffectManager] 澧欎綋鎺ヨЕ浼ゅ: %d -> %s" % [damage, enemy.name])
 
-## 将敌人推离墙体（Area2D 推回机制）
-## 因为敌人是 Area2D 使用 position += 移动，StaticBody2D 无法物理阻挡
-## 所以通过每帧检测重叠并推回来模拟阻挡效果
+## 灏嗘晫浜烘帹绂诲浣擄紙Area2D 鎺ㄥ洖鏈哄埗锛?
+## 鍥犱负鏁屼汉鏄?Area2D 浣跨敤 position += 绉诲姩锛孲taticBody2D 鏃犳硶鐗╃悊闃绘尅
+## 鎵€浠ラ€氳繃姣忓抚妫€娴嬮噸鍙犲苟鎺ㄥ洖鏉ユā鎷熼樆鎸℃晥鏋?
 func _push_enemies_from_wall(block_area: Area2D, effect_data: Dictionary) -> void:
 	if not is_instance_valid(block_area):
 		return
@@ -612,28 +612,28 @@ func _push_enemies_from_wall(block_area: Area2D, effect_data: Dictionary) -> voi
 			enemy = t.owner
 
 		if enemy and is_instance_valid(enemy):
-			# 计算敌人到墙体线段的最近点
+			# 璁＄畻鏁屼汉鍒板浣撶嚎娈电殑鏈€杩戠偣
 			var closest = Geometry2D.get_closest_point_to_segment(enemy.global_position, wall_start, wall_end)
 			var to_enemy = enemy.global_position - closest
 			var dist = to_enemy.length()
 
-			# 如果敌人在墙体宽度内，推到墙体边缘外
-			var push_dist = (wall_width / 2.0 + 16.0)  # 墙体半宽 + 缓冲（加大缓冲确保推出）
+			# 濡傛灉鏁屼汉鍦ㄥ浣撳搴﹀唴锛屾帹鍒板浣撹竟缂樺
+			var push_dist = (wall_width / 2.0 + 16.0)  # 澧欎綋鍗婂 + 缂撳啿锛堝姞澶х紦鍐茬‘淇濇帹鍑猴級
 			if dist < push_dist:
 				var push_dir: Vector2
 				if dist > 0.1:
 					push_dir = to_enemy.normalized()
 				else:
-					# 敌人几乎在墙体线上，使用墙体法线推开
+					# 鏁屼汉鍑犱箮鍦ㄥ浣撶嚎涓婏紝浣跨敤澧欎綋娉曠嚎鎺ㄥ紑
 					push_dir = effect_data["wall_normal"]
 				enemy.global_position = closest + push_dir * push_dist
-				# 仅首次推回时打印日志（避免刷屏）
+				# 浠呴娆℃帹鍥炴椂鎵撳嵃鏃ュ織锛堥伩鍏嶅埛灞忥級
 				if not effect_data.has("_push_logged"):
 					effect_data["_push_logged"] = true
 					if DEBUG_VERBOSE:
-						print("[SkillEffectManager] 墙体推回敌人: %s, dist=%.1f" % [enemy.name, dist])
+						print("[SkillEffectManager] 澧欎綋鎺ㄥ洖鏁屼汉: %s, dist=%.1f" % [enemy.name, dist])
 
-## 墙体淡出并移除
+## 澧欎綋娣″嚭骞剁Щ闄?
 func _end_wall_effect(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -663,7 +663,7 @@ func _end_wall_effect(effect_id: int) -> void:
 		static_body.queue_free()
 		active_effects.erase(effect_id)
 
-## 立即销毁墙体（生命值归零时调用）
+## 绔嬪嵆閿€姣佸浣擄紙鐢熷懡鍊煎綊闆舵椂璋冪敤锛?
 func _destroy_wall(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -672,7 +672,7 @@ func _destroy_wall(effect_id: int) -> void:
 	var static_body = effect_data["static_body"]
 
 	if is_instance_valid(static_body):
-		# 快速闪烁后销毁
+		# 蹇€熼棯鐑佸悗閿€姣?
 		var tween = static_body.create_tween()
 		tween.tween_property(static_body, "modulate:a", 0.0, 0.15)
 		tween.tween_callback(func():
@@ -684,31 +684,31 @@ func _destroy_wall(effect_id: int) -> void:
 		active_effects.erase(effect_id)
 
 # ==============================================================================
-# Buff 区域效果
+# Buff 鍖哄煙鏁堟灉
 # ==============================================================================
 
-## 创建 Buff 区域效果（Area2D）
-## @param config: 配置字典
-##   - polygon: PackedVector2Array (多边形形状，与 start/end 二选一)
-##   - start: Vector2 (线段型起点，与 polygon 二选一)
-##   - end: Vector2 (线段型终点)
-##   - width: float (线段型宽度，默认 24)
-##   - duration: float (持续时间，默认 5.0)
-##   - buff_type: String (必需) - Buff 类型:
+## 鍒涘缓 Buff 鍖哄煙鏁堟灉锛圓rea2D锛?
+## @param config: 閰嶇疆瀛楀吀
+##   - polygon: PackedVector2Array (澶氳竟褰㈠舰鐘讹紝涓?start/end 浜岄€変竴)
+##   - start: Vector2 (绾挎鍨嬭捣鐐癸紝涓?polygon 浜岄€変竴)
+##   - end: Vector2 (绾挎鍨嬬粓鐐?
+##   - width: float (绾挎鍨嬪搴︼紝榛樿 24)
+##   - duration: float (鎸佺画鏃堕棿锛岄粯璁?5.0)
+##   - buff_type: String (蹇呴渶) - Buff 绫诲瀷:
 ##       "attack_boost", "speed_boost", "heal", "lifesteal",
 ##       "invincible", "cooldown_reduction", "ignore_collision"
-##   - buff_value: float (Buff 数值，默认 0.0)
-##   - tick_interval: float (效果触发间隔，默认 1.0)
-##   - color: Color (区域颜色)
-##   - target_group: String (目标组，默认 "player")
-##   - fade_out_duration: float (淡出时间，默认 0.3)
-## @return: effect_id, -1 表示失败
+##   - buff_value: float (Buff 鏁板€硷紝榛樿 0.0)
+##   - tick_interval: float (鏁堟灉瑙﹀彂闂撮殧锛岄粯璁?1.0)
+##   - color: Color (鍖哄煙棰滆壊)
+##   - target_group: String (鐩爣缁勶紝榛樿 "player")
+##   - fade_out_duration: float (娣″嚭鏃堕棿锛岄粯璁?0.3)
+## @return: effect_id, -1 琛ㄧず澶辫触
 func create_buff_zone(config: Dictionary) -> int:
-	# 验证必需参数
+	# 楠岃瘉蹇呴渶鍙傛暟
 	var has_polygon = config.has("polygon")
 	var has_line = config.has("start") and config.has("end")
 	if not has_polygon and not has_line:
-		push_error("[SkillEffectManager] create_buff_zone 缺少必需参数: polygon 或 start/end")
+		push_error("[SkillEffectManager] create_buff_zone 缂哄皯蹇呴渶鍙傛暟: polygon 鎴?start/end")
 		return -1
 
 	if has_polygon:
@@ -726,7 +726,7 @@ func create_buff_zone(config: Dictionary) -> int:
 	var color: Color = config.get("color", Color(0.3, 1.0, 0.3, 0.4))
 	var target_group: String = config.get("target_group", "player")
 
-	# --- Area2D 检测区域 ---
+	# --- Area2D 妫€娴嬪尯鍩?---
 	var area = Area2D.new()
 	area.name = "BuffZone_%d" % effect_id
 	area.collision_layer = 0
@@ -739,21 +739,22 @@ func create_buff_zone(config: Dictionary) -> int:
 		"config": config,
 		"elapsed": 0.0,
 		"buff_timer": max(tick_interval - 0.1, 0.0),
+		"buff_targets": [],
 	}
 
 	if has_polygon:
-		# --- 多边形形状 ---
+		# --- 澶氳竟褰㈠舰鐘?---
 		var points: PackedVector2Array = config["polygon"]
 		if points.size() < 3:
-			push_error("[SkillEffectManager] create_buff_zone 多边形点数不足: %d" % points.size())
+			push_error("[SkillEffectManager] create_buff_zone 澶氳竟褰㈢偣鏁颁笉瓒? %d" % points.size())
 			return -1
 
-		# 碰撞形状
+		# 纰版挒褰㈢姸
 		var col = CollisionPolygon2D.new()
 		col.polygon = points
 		area.add_child(col)
 
-		# 视觉效果 - Polygon2D
+		# 瑙嗚鏁堟灉 - Polygon2D
 		var vis_poly = Polygon2D.new()
 		vis_poly.polygon = points
 		vis_poly.color = color
@@ -761,29 +762,29 @@ func create_buff_zone(config: Dictionary) -> int:
 		area.add_child(vis_poly)
 		effect_data["vis_poly"] = vis_poly
 
-		# 设置碰撞掩码检测 players 组
+		# 璁剧疆纰版挒鎺╃爜妫€娴?players 缁?
 		area.collision_mask = 1  # Layer 1: players
 	else:
-		# --- 线段形状 ---
+		# --- 绾挎褰㈢姸 ---
 		var start: Vector2 = config["start"]
 		var end_pos: Vector2 = config["end"]
-		var width: float = config.get("width", 48.0)  # 默认48px宽，确保玩家容易触发
+		var width: float = config.get("width", 48.0)  # 榛樿48px瀹斤紝纭繚鐜╁瀹规槗瑙﹀彂
 
 		area.position = start
 		var vec = end_pos - start
 		var length = vec.length()
 		var angle = vec.angle()
 
-		# 碰撞形状 - 比视觉宽度更大，确保检测可靠
+		# 纰版挒褰㈢姸 - 姣旇瑙夊搴︽洿澶э紝纭繚妫€娴嬪彲闈?
 		var col = CollisionShape2D.new()
 		var shape = RectangleShape2D.new()
-		shape.size = Vector2(length, width + 32.0)  # 碰撞比视觉宽32px
+		shape.size = Vector2(length, width + 32.0)  # 纰版挒姣旇瑙夊32px
 		col.shape = shape
 		col.position = Vector2(length / 2.0, 0)
 		col.rotation = angle
 		area.add_child(col)
 
-		# 视觉效果 - Line2D
+		# 瑙嗚鏁堟灉 - Line2D
 		var vis_line = Line2D.new()
 		vis_line.add_point(Vector2.ZERO)
 		vis_line.add_point(vec)
@@ -795,10 +796,10 @@ func create_buff_zone(config: Dictionary) -> int:
 		area.add_child(vis_line)
 		effect_data["vis_line"] = vis_line
 
-		# 设置碰撞掩码检测 players 组
+		# 璁剧疆纰版挒鎺╃爜妫€娴?players 缁?
 		area.collision_mask = 1  # Layer 1: players
 
-	# 添加到场景树（而非 SkillEffectManager 自身），确保 Area2D 物理检测正常工作
+	# 娣诲姞鍒板満鏅爲锛堣€岄潪 SkillEffectManager 鑷韩锛夛紝纭繚 Area2D 鐗╃悊妫€娴嬫甯稿伐浣?
 	var scene_root = get_tree().current_scene
 	if scene_root:
 		scene_root.add_child(area)
@@ -807,12 +808,12 @@ func create_buff_zone(config: Dictionary) -> int:
 
 	active_effects[effect_id] = effect_data
 
-	# 启动 Buff 区域生命周期
+	# 鍚姩 Buff 鍖哄煙鐢熷懡鍛ㄦ湡
 	_start_buff_zone_lifecycle(effect_id)
 
 	return effect_id
 
-## 启动 Buff 区域生命周期管理
+## 鍚姩 Buff 鍖哄煙鐢熷懡鍛ㄦ湡绠＄悊
 func _start_buff_zone_lifecycle(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -829,7 +830,7 @@ func _start_buff_zone_lifecycle(effect_id: int) -> void:
 	)
 	timer.start()
 
-## 更新 Buff 区域效果
+## 鏇存柊 Buff 鍖哄煙鏁堟灉
 func _update_buff_zone(effect_id: int, delta: float) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -851,27 +852,30 @@ func _update_buff_zone(effect_id: int, delta: float) -> void:
 	# Buff tick
 	effect_data["buff_timer"] += delta
 	if effect_data["buff_timer"] >= tick_interval:
-		_apply_buff_to_targets(area, config)
+		var applied_targets: Array = _apply_buff_to_targets(area, config)
+		var cached_targets: Array = effect_data.get("buff_targets", [])
+		for target in applied_targets:
+			if target not in cached_targets:
+				cached_targets.append(target)
+		effect_data["buff_targets"] = cached_targets
 		effect_data["buff_timer"] = 0.0
 
-	# 持续时间到期 → 淡出并移除
+	# 鎸佺画鏃堕棿鍒版湡 鈫?娣″嚭骞剁Щ闄?
 	if effect_data["elapsed"] >= duration:
 		_end_buff_zone(effect_id)
 
-## 对区域内目标应用 Buff 效果
-func _apply_buff_to_targets(area: Area2D, config: Dictionary) -> void:
+## 瀵瑰尯鍩熷唴鐩爣搴旂敤 Buff 鏁堟灉
+func _apply_buff_to_targets(area: Area2D, config: Dictionary) -> Array:
 	if not is_instance_valid(area):
-		return
+		return []
 
 	var target_group: String = config.get("target_group", "player")
 	var buff_type: String = config.get("buff_type", "")
 	var buff_value: float = config.get("buff_value", 0.0)
 
-	var overlapping_areas = area.get_overlapping_areas()
-	var overlapping_bodies = area.get_overlapping_bodies()
-	var targets = overlapping_bodies + overlapping_areas
+	var targets = _collect_buff_zone_targets(area)
 	
-	# 收集命中的玩家
+	# 鏀堕泦鍛戒腑鐨勭帺瀹?
 	var hit_players: Array = []
 	for t in targets:
 		var player = null
@@ -883,78 +887,80 @@ func _apply_buff_to_targets(area: Area2D, config: Dictionary) -> void:
 		if player and is_instance_valid(player) and player not in hit_players:
 			hit_players.append(player)
 
-	# 备用方案：如果 Area2D 重叠检测未命中，使用距离检测
-	# 这解决了 SkillEffectManager(Node) 作为父节点时 Area2D 物理检测可能不可靠的问题
+	# 澶囩敤鏂规锛氬鏋?Area2D 閲嶅彔妫€娴嬫湭鍛戒腑锛屼娇鐢ㄨ窛绂绘娴?
+	# 杩欒В鍐充簡 SkillEffectManager(Node) 浣滀负鐖惰妭鐐规椂 Area2D 鐗╃悊妫€娴嬪彲鑳戒笉鍙潬鐨勯棶棰?
 	if hit_players.is_empty() and target_group == "player":
 		var player = Global.player if is_instance_valid(Global.player) else null
 		if player:
-			# 计算玩家到 buff 区域的距离
+			# 璁＄畻鐜╁鍒?buff 鍖哄煙鐨勮窛绂?
 			var in_range = false
 			if config.has("polygon"):
-				# 多边形：检查玩家是否在多边形内
+				# 澶氳竟褰細妫€鏌ョ帺瀹舵槸鍚﹀湪澶氳竟褰㈠唴
 				in_range = Geometry2D.is_point_in_polygon(player.global_position, config["polygon"])
 			elif config.has("start") and config.has("end"):
-				# 线段：检查玩家到线段的距离
+				# 绾挎锛氭鏌ョ帺瀹跺埌绾挎鐨勮窛绂?
 				var closest = Geometry2D.get_closest_point_to_segment(
 					player.global_position, config["start"], config["end"]
 				)
 				var dist = player.global_position.distance_to(closest)
 				var width = config.get("width", 48.0)
-				in_range = dist <= (width / 2.0 + 20.0)  # 线段半宽 + 玩家碰撞半径
+				in_range = dist <= (width / 2.0 + 20.0)  # 绾挎鍗婂 + 鐜╁纰版挒鍗婂緞
 			
 			if in_range:
 				hit_players.append(player)
 
-	# 应用 Buff
+	# 搴旂敤 Buff
 	for player in hit_players:
 		_apply_single_buff(player, buff_type, buff_value, config)
 
-## 对单个目标应用 Buff
+	return hit_players
+
+## 瀵瑰崟涓洰鏍囧簲鐢?Buff
 func _apply_single_buff(player: Node, buff_type: String, buff_value: float, config: Dictionary) -> void:
 	match buff_type:
 		"attack_boost":
-			# 增加攻击力百分比
+			# 澧炲姞鏀诲嚮鍔涚櫨鍒嗘瘮
 			if not player.has_meta("buff_attack_boost"):
 				player.set_meta("buff_attack_boost", buff_value)
 			else:
-				# 刷新值（取较大值）
+				# 鍒锋柊鍊硷紙鍙栬緝澶у€硷級
 				var current = player.get_meta("buff_attack_boost")
 				player.set_meta("buff_attack_boost", max(current, buff_value))
 
 		"speed_boost":
-			# 增加移动速度百分比
+			# 澧炲姞绉诲姩閫熷害鐧惧垎姣?
 			if not player.has_meta("buff_speed_boost"):
 				player.set_meta("buff_speed_boost", buff_value)
 				if DEBUG_VERBOSE:
-					print("[SkillEffectManager] Buff区域命中: speed_boost -> %s (+%.0f%%)" % [player.name, buff_value * 100])
+					print("[SkillEffectManager] Buff鍖哄煙鍛戒腑: speed_boost -> %s (+%.0f%%)" % [player.name, buff_value * 100])
 			else:
 				var current = player.get_meta("buff_speed_boost")
 				player.set_meta("buff_speed_boost", max(current, buff_value))
 
 		"heal":
-			# 恢复生命值
+			# 鎭㈠鐢熷懡鍊?
 			if player.has_node("HealthComponent"):
 				player.health_component.heal(int(buff_value))
 			elif "hp" in player:
 				player.hp = min(player.hp + int(buff_value), player.max_hp)
 
 		"lifesteal":
-			# 设置生命偷取百分比
+			# 璁剧疆鐢熷懡鍋峰彇鐧惧垎姣?
 			player.set_meta("buff_lifesteal", buff_value)
 
 		"invincible":
-			# 无敌状态
+			# 鏃犳晫鐘舵€?
 			player.set_meta("buff_invincible", true)
 
 		"cooldown_reduction":
-			# 减少冷却百分比
+			# 鍑忓皯鍐峰嵈鐧惧垎姣?
 			player.set_meta("buff_cooldown_reduction", buff_value)
 
 		"ignore_collision":
-			# 忽略单位碰撞
+			# 蹇界暐鍗曚綅纰版挒
 			player.set_meta("buff_ignore_collision", true)
 
-## 清除单个目标上的 Buff meta
+## 娓呴櫎鍗曚釜鐩爣涓婄殑 Buff meta
 func _clear_buff_meta(player: Node, buff_type: String) -> void:
 	if not is_instance_valid(player):
 		return
@@ -978,33 +984,39 @@ func _clear_buff_meta(player: Node, buff_type: String) -> void:
 		"ignore_collision":
 			if player.has_meta("buff_ignore_collision"):
 				player.remove_meta("buff_ignore_collision")
-		# "heal" 不需要清除 meta，因为它是即时效果
+		# "heal" 涓嶉渶瑕佹竻闄?meta锛屽洜涓哄畠鏄嵆鏃舵晥鏋?
 
-## 清除区域内所有目标的 Buff
-func _clear_buff_zone_buffs(area: Area2D, config: Dictionary) -> void:
+## 娓呴櫎鍖哄煙鍐呮墍鏈夌洰鏍囩殑 Buff
+func _clear_buff_zone_buffs(area: Area2D, config: Dictionary, targets: Array = []) -> void:
 	var target_group: String = config.get("target_group", "player")
 	var buff_type: String = config.get("buff_type", "")
 
-	# 尝试通过 Area2D 重叠检测清除
-	if is_instance_valid(area):
-		var targets = area.get_overlapping_bodies() + area.get_overlapping_areas()
-		for t in targets:
-			var player = null
-			if t.is_in_group(target_group):
-				player = t
-			elif t.owner and t.owner.is_in_group(target_group):
-				player = t.owner
+	var resolved_targets: Array = targets.duplicate()
 
-			if player and is_instance_valid(player):
-				_clear_buff_meta(player, buff_type)
+	for t in resolved_targets:
+		var player = null
+		if t.is_in_group(target_group):
+			player = t
+		elif t.owner and t.owner.is_in_group(target_group):
+			player = t.owner
 
-	# 备用：直接清除 Global.player 的 buff meta（确保不会残留）
+		if player and is_instance_valid(player):
+			_clear_buff_meta(player, buff_type)
+
 	if target_group == "player":
 		var player = Global.player if is_instance_valid(Global.player) else null
 		if player:
 			_clear_buff_meta(player, buff_type)
 
-## Buff 区域淡出并移除
+func _collect_buff_zone_targets(area: Area2D) -> Array:
+	var resolved_targets: Array = []
+	if not is_instance_valid(area):
+		return resolved_targets
+	if not area.monitoring:
+		return resolved_targets
+	resolved_targets = area.get_overlapping_bodies() + area.get_overlapping_areas()
+	return resolved_targets
+
 func _end_buff_zone(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -1012,20 +1024,25 @@ func _end_buff_zone(effect_id: int) -> void:
 	var effect_data = active_effects[effect_id]
 	if _is_effect_ending(effect_data):
 		return
-	_mark_effect_ending(effect_data)
 	var area = effect_data["area"]
 	var config = effect_data["config"]
+	var targets: Array = effect_data.get("buff_targets", [])
+	if targets.is_empty():
+		targets = _collect_buff_zone_targets(area)
+		effect_data["buff_targets"] = targets
+
+	_mark_effect_ending(effect_data)
 
 	if not is_instance_valid(area):
 		active_effects.erase(effect_id)
 		return
 
-	# 清除区域内所有目标的 Buff meta
-	_clear_buff_zone_buffs(area, config)
+	# 娓呴櫎鍖哄煙鍐呮墍鏈夌洰鏍囩殑 Buff meta
+	_clear_buff_zone_buffs(area, config, targets)
 
 	var fade_out_duration = config.get("fade_out_duration", 0.3)
 
-	# 淡出视觉效果
+	# 娣″嚭瑙嗚鏁堟灉
 	if effect_data.has("vis_poly"):
 		var vis_poly = effect_data["vis_poly"]
 		if is_instance_valid(vis_poly):
@@ -1050,42 +1067,42 @@ func _end_buff_zone(effect_id: int) -> void:
 			)
 			return
 
-	# 没有视觉元素，直接删除
+	# 娌℃湁瑙嗚鍏冪礌锛岀洿鎺ュ垹闄?
 	area.queue_free()
 	active_effects.erase(effect_id)
 
 # ==============================================================================
-# Debuff 区域效果
+# Debuff 鍖哄煙鏁堟灉
 # ==============================================================================
 
-## 创建 Debuff 区域效果（Area2D）
-## @param config: 配置字典
-##   - polygon: PackedVector2Array (多边形形状，与 start/end 二选一)
-##   - start: Vector2 (线段型起点，与 polygon 二选一)
-##   - end: Vector2 (线段型终点)
-##   - width: float (线段型宽度，默认 24)
-##   - duration: float (持续时间，默认 5.0)
-##   - debuff_type: String (必需) - Debuff 类型:
+## 鍒涘缓 Debuff 鍖哄煙鏁堟灉锛圓rea2D锛?
+## @param config: 閰嶇疆瀛楀吀
+##   - polygon: PackedVector2Array (澶氳竟褰㈠舰鐘讹紝涓?start/end 浜岄€変竴)
+##   - start: Vector2 (绾挎鍨嬭捣鐐癸紝涓?polygon 浜岄€変竴)
+##   - end: Vector2 (绾挎鍨嬬粓鐐?
+##   - width: float (绾挎鍨嬪搴︼紝榛樿 24)
+##   - duration: float (鎸佺画鏃堕棿锛岄粯璁?5.0)
+##   - debuff_type: String (蹇呴渶) - Debuff 绫诲瀷:
 ##       "slow", "damage_amp", "poison", "freeze", "fear", "curse"
-##   - debuff_value: float (Debuff 数值，默认 0.0)
-##   - debuff_duration: float (单次 Debuff 持续时间，默认 3.0)
-##   - tick_interval: float (效果触发间隔，默认 1.0)
-##   - damage: int (可选) - 区域伤害
-##   - damage_interval: float (可选) - 伤害间隔
-##   - color: Color (区域颜色)
-##   - fade_out_duration: float (淡出时间，默认 0.3)
-## @return: effect_id, -1 表示失败
+##   - debuff_value: float (Debuff 鏁板€硷紝榛樿 0.0)
+##   - debuff_duration: float (鍗曟 Debuff 鎸佺画鏃堕棿锛岄粯璁?3.0)
+##   - tick_interval: float (鏁堟灉瑙﹀彂闂撮殧锛岄粯璁?1.0)
+##   - damage: int (鍙€? - 鍖哄煙浼ゅ
+##   - damage_interval: float (鍙€? - 浼ゅ闂撮殧
+##   - color: Color (鍖哄煙棰滆壊)
+##   - fade_out_duration: float (娣″嚭鏃堕棿锛岄粯璁?0.3)
+## @return: effect_id, -1 琛ㄧず澶辫触
 func create_debuff_zone(config: Dictionary) -> int:
 	config = _apply_runtime_damage_multiplier(config)
-	# 验证必需参数
+	# 楠岃瘉蹇呴渶鍙傛暟
 	var has_polygon = config.has("polygon")
 	var has_line = config.has("start") and config.has("end")
 	if not has_polygon and not has_line:
-		push_error("[SkillEffectManager] create_debuff_zone 缺少必需参数: polygon 或 start/end")
+		push_error("[SkillEffectManager] create_debuff_zone 缂哄皯蹇呴渶鍙傛暟: polygon 鎴?start/end")
 		return -1
 
 	if DEBUG_VERBOSE:
-		print("[SkillEffectManager] create_debuff_zone 被调用: type=%s, debuff=%s, damage=%d" % [
+		print("[SkillEffectManager] create_debuff_zone 琚皟鐢? type=%s, debuff=%s, damage=%d" % [
 		"polygon" if has_polygon else "line",
 		config.get("debuff_type", "none"),
 		config.get("damage", 0)
@@ -1103,11 +1120,11 @@ func create_debuff_zone(config: Dictionary) -> int:
 	var tick_interval: float = config.get("tick_interval", 1.0)
 	var color: Color = config.get("color", Color(0.8, 0.2, 0.2, 0.4))
 
-	# --- Area2D 检测区域 ---
+	# --- Area2D 妫€娴嬪尯鍩?---
 	var area = Area2D.new()
 	area.name = "DebuffZone_%d" % effect_id
 	area.collision_layer = 0
-	area.collision_mask = 1 | 2  # 检测 Layer1(Player/Enemy默认) + Layer2(Enemy标记)
+	area.collision_mask = 1 | 2  # 妫€娴?Layer1(Player/Enemy榛樿) + Layer2(Enemy鏍囪)
 	area.monitorable = false
 	area.monitoring = true
 
@@ -1116,22 +1133,22 @@ func create_debuff_zone(config: Dictionary) -> int:
 		"area": area,
 		"config": config,
 		"elapsed": 0.0,
-		"debuff_timer": max(tick_interval - 0.1, 0.0),  # 首次 debuff 在 ~0.1秒后触发（给物理引擎时间注册重叠）
+		"debuff_timer": max(tick_interval - 0.1, 0.0),  # 棣栨 debuff 鍦?~0.1绉掑悗瑙﹀彂锛堢粰鐗╃悊寮曟搸鏃堕棿娉ㄥ唽閲嶅彔锛?
 	}
 
 	if has_polygon:
-		# --- 多边形形状 ---
+		# --- 澶氳竟褰㈠舰鐘?---
 		var points: PackedVector2Array = config["polygon"]
 		if points.size() < 3:
-			push_error("[SkillEffectManager] create_debuff_zone 多边形点数不足: %d" % points.size())
+			push_error("[SkillEffectManager] create_debuff_zone 澶氳竟褰㈢偣鏁颁笉瓒? %d" % points.size())
 			return -1
 
-		# 碰撞形状
+		# 纰版挒褰㈢姸
 		var col = CollisionPolygon2D.new()
 		col.polygon = points
 		area.add_child(col)
 
-		# 视觉效果 - Polygon2D
+		# 瑙嗚鏁堟灉 - Polygon2D
 		var vis_poly = Polygon2D.new()
 		vis_poly.polygon = points
 		vis_poly.color = color
@@ -1139,7 +1156,7 @@ func create_debuff_zone(config: Dictionary) -> int:
 		area.add_child(vis_poly)
 		effect_data["vis_poly"] = vis_poly
 	else:
-		# --- 线段形状 ---
+		# --- 绾挎褰㈢姸 ---
 		var start: Vector2 = config["start"]
 		var end_pos: Vector2 = config["end"]
 		var width: float = config.get("width", 24.0)
@@ -1149,7 +1166,7 @@ func create_debuff_zone(config: Dictionary) -> int:
 		var length = vec.length()
 		var angle = vec.angle()
 
-		# 碰撞形状
+		# 纰版挒褰㈢姸
 		var col = CollisionShape2D.new()
 		var shape = RectangleShape2D.new()
 		shape.size = Vector2(length, width)
@@ -1158,7 +1175,7 @@ func create_debuff_zone(config: Dictionary) -> int:
 		col.rotation = angle
 		area.add_child(col)
 
-		# 视觉效果 - Line2D
+		# 瑙嗚鏁堟灉 - Line2D
 		var vis_line = Line2D.new()
 		vis_line.add_point(Vector2.ZERO)
 		vis_line.add_point(vec)
@@ -1170,21 +1187,21 @@ func create_debuff_zone(config: Dictionary) -> int:
 		area.add_child(vis_line)
 		effect_data["vis_line"] = vis_line
 
-	# 初始化可选的区域伤害计时器
+	# 鍒濆鍖栧彲閫夌殑鍖哄煙浼ゅ璁℃椂鍣?
 	if config.get("damage", 0) > 0:
 		effect_data["damage_timer"] = 0.0
 
-	# 添加到 SkillEffectManager 自身（autoload 节点，角色切换不影响）
+	# 娣诲姞鍒?SkillEffectManager 鑷韩锛坅utoload 鑺傜偣锛岃鑹插垏鎹笉褰卞搷锛?
 	add_child(area)
 
 	active_effects[effect_id] = effect_data
 
-	# 启动 Debuff 区域生命周期
+	# 鍚姩 Debuff 鍖哄煙鐢熷懡鍛ㄦ湡
 	_start_debuff_zone_lifecycle(effect_id)
 
 	return effect_id
 
-## 启动 Debuff 区域生命周期管理
+## 鍚姩 Debuff 鍖哄煙鐢熷懡鍛ㄦ湡绠＄悊
 func _start_debuff_zone_lifecycle(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -1201,7 +1218,7 @@ func _start_debuff_zone_lifecycle(effect_id: int) -> void:
 	)
 	timer.start()
 
-## 更新 Debuff 区域效果
+## 鏇存柊 Debuff 鍖哄煙鏁堟灉
 func _update_debuff_zone(effect_id: int, delta: float) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -1226,7 +1243,7 @@ func _update_debuff_zone(effect_id: int, delta: float) -> void:
 		_apply_debuff_to_targets(area, config)
 		effect_data["debuff_timer"] = 0.0
 
-	# 可选的区域伤害 tick（独立于 debuff tick）
+	# 鍙€夌殑鍖哄煙浼ゅ tick锛堢嫭绔嬩簬 debuff tick锛?
 	if effect_data.has("damage_timer"):
 		var damage_interval: float = config.get("damage_interval", 0.5)
 		effect_data["damage_timer"] += delta
@@ -1234,11 +1251,11 @@ func _update_debuff_zone(effect_id: int, delta: float) -> void:
 			_apply_damage(area, config.get("damage", 0))
 			effect_data["damage_timer"] = 0.0
 
-	# 持续时间到期 → 淡出并移除
+	# 鎸佺画鏃堕棿鍒版湡 鈫?娣″嚭骞剁Щ闄?
 	if effect_data["elapsed"] >= duration:
 		_end_debuff_zone(effect_id)
 
-## 对区域内敌人应用 Debuff 效果
+## 瀵瑰尯鍩熷唴鏁屼汉搴旂敤 Debuff 鏁堟灉
 func _apply_debuff_to_targets(area: Area2D, config: Dictionary) -> void:
 	if not is_instance_valid(area):
 		return
@@ -1257,32 +1274,32 @@ func _apply_debuff_to_targets(area: Area2D, config: Dictionary) -> void:
 
 		if enemy and is_instance_valid(enemy) and enemy.has_method("apply_status"):
 			if DEBUG_VERBOSE:
-				print("[SkillEffectManager] Debuff区域命中: %s -> %s (type=%s)" % [debuff_type, enemy.name, enemy.get_class()])
+				print("[SkillEffectManager] Debuff鍖哄煙鍛戒腑: %s -> %s (type=%s)" % [debuff_type, enemy.name, enemy.get_class()])
 			_apply_single_debuff(enemy, debuff_type, debuff_value, debuff_duration)
 
-## 对单个敌人应用 Debuff
+## 瀵瑰崟涓晫浜哄簲鐢?Debuff
 func _apply_single_debuff(enemy: Node, debuff_type: String, debuff_value: float, debuff_duration: float) -> void:
 	match debuff_type:
 		"slow":
-			# 减速 - debuff_value 为减速比例（如 0.5 = 50% 减速）
+			# 鍑忛€?- debuff_value 涓哄噺閫熸瘮渚嬶紙濡?0.5 = 50% 鍑忛€燂級
 			enemy.apply_status("slow", debuff_duration, debuff_value)
 		"damage_amp":
-			# 伤害放大 - 使用 "marked" 状态
+			# 浼ゅ鏀惧ぇ - 浣跨敤 "marked" 鐘舵€?
 			enemy.apply_status("marked", debuff_duration, debuff_value)
 		"poison":
-			# 中毒 - DOT 伤害
+			# 涓瘨 - DOT 浼ゅ
 			enemy.apply_status("poison", debuff_duration, debuff_value, 1, 1.0)
 		"freeze":
-			# 冰冻 - 完全停止移动和攻击
+			# 鍐板喕 - 瀹屽叏鍋滄绉诲姩鍜屾敾鍑?
 			enemy.apply_status("freeze", debuff_duration, debuff_value)
 		"fear":
-			# 恐惧 - 逃跑行为，需要 tick 更新移动方向
+			# 鎭愭儳 - 閫冭窇琛屼负锛岄渶瑕?tick 鏇存柊绉诲姩鏂瑰悜
 			enemy.apply_status("fear", debuff_duration, debuff_value, 1, 0.1)
 		"curse":
-			# 诅咒 - DOT 伤害，类似 poison
+			# 璇呭拻 - DOT 浼ゅ锛岀被浼?poison
 			enemy.apply_status("curse", debuff_duration, debuff_value, 1, 1.0)
 
-## Debuff 区域淡出并移除
+## Debuff 鍖哄煙娣″嚭骞剁Щ闄?
 func _end_debuff_zone(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -1300,7 +1317,7 @@ func _end_debuff_zone(effect_id: int) -> void:
 
 	var fade_out_duration = config.get("fade_out_duration", 0.3)
 
-	# 淡出视觉效果
+	# 娣″嚭瑙嗚鏁堟灉
 	if effect_data.has("vis_poly"):
 		var vis_poly = effect_data["vis_poly"]
 		if is_instance_valid(vis_poly):
@@ -1325,40 +1342,40 @@ func _end_debuff_zone(effect_id: int) -> void:
 			)
 			return
 
-	# 没有视觉元素，直接删除
+	# 娌℃湁瑙嗚鍏冪礌锛岀洿鎺ュ垹闄?
 	area.queue_free()
 	active_effects.erase(effect_id)
 
 # ==============================================================================
-# 召唤物管理
+# 鍙敜鐗╃鐞?
 # ==============================================================================
 
-## 创建召唤物
-## @param config: 配置字典
-##   - position: Vector2 (必需) - 生成位置
-##   - summon_type: String (必需) - 召唤物类型 ("turret", "beetle", "slime", "phantom")
-##   - duration: float (必需) - 存活时间
-##   - health: int (可选, 默认 -1) - 生命值，-1 为无限
-##   - damage: int (可选, 默认 10) - 攻击伤害
-##   - attack_interval: float (可选, 默认 1.0) - 攻击间隔
-##   - attack_range: float (可选, 默认 200.0) - 攻击范围
-##   - max_count: int (可选, 默认 5) - 同技能最大数量
-##   - owner_skill_id: String (必需) - 所属技能 ID
-##   - color: Color (可选) - 占位颜色
-## @return: effect_id, -1 表示失败
+## 鍒涘缓鍙敜鐗?
+## @param config: 閰嶇疆瀛楀吀
+##   - position: Vector2 (蹇呴渶) - 鐢熸垚浣嶇疆
+##   - summon_type: String (蹇呴渶) - 鍙敜鐗╃被鍨?("turret", "beetle", "slime", "phantom")
+##   - duration: float (蹇呴渶) - 瀛樻椿鏃堕棿
+##   - health: int (鍙€? 榛樿 -1) - 鐢熷懡鍊硷紝-1 涓烘棤闄?
+##   - damage: int (鍙€? 榛樿 10) - 鏀诲嚮浼ゅ
+##   - attack_interval: float (鍙€? 榛樿 1.0) - 鏀诲嚮闂撮殧
+##   - attack_range: float (鍙€? 榛樿 200.0) - 鏀诲嚮鑼冨洿
+##   - max_count: int (鍙€? 榛樿 5) - 鍚屾妧鑳芥渶澶ф暟閲?
+##   - owner_skill_id: String (蹇呴渶) - 鎵€灞炴妧鑳?ID
+##   - color: Color (鍙€? - 鍗犱綅棰滆壊
+## @return: effect_id, -1 琛ㄧず澶辫触
 func create_summon(config: Dictionary) -> int:
-	# 验证必需参数
+	# 楠岃瘉蹇呴渶鍙傛暟
 	if not config.has("position"):
-		push_error("[SkillEffectManager] create_summon 缺少必需参数: position")
+		push_error("[SkillEffectManager] create_summon 缂哄皯蹇呴渶鍙傛暟: position")
 		return -1
 	if not config.has("owner_skill_id"):
-		push_error("[SkillEffectManager] create_summon 缺少必需参数: owner_skill_id")
+		push_error("[SkillEffectManager] create_summon 缂哄皯蹇呴渶鍙傛暟: owner_skill_id")
 		return -1
 
 	var owner_skill_id: String = config["owner_skill_id"]
 	var max_count: int = config.get("max_count", 5)
 
-	# --- max_count 限制：移除最早的召唤物 ---
+	# --- max_count 闄愬埗锛氱Щ闄ゆ渶鏃╃殑鍙敜鐗?---
 	_enforce_summon_max_count(owner_skill_id, max_count)
 
 	var effect_id = next_effect_id
@@ -1372,25 +1389,25 @@ func create_summon(config: Dictionary) -> int:
 	var attack_range: float = config.get("attack_range", 200.0)
 	var color: Color = config.get("color", Color(0.4, 0.8, 1.0, 0.8))
 
-	# 根据类型决定视觉半径
+	# 鏍规嵁绫诲瀷鍐冲畾瑙嗚鍗婂緞
 	var visual_radius: float = 16.0
 	if summon_type in ["beetle", "slime"]:
 		visual_radius = 10.0
 
-	# --- 创建召唤物根节点 ---
+	# --- 鍒涘缓鍙敜鐗╂牴鑺傜偣 ---
 	var summon_root = Node2D.new()
 	summon_root.name = "Summon_%s_%d" % [summon_type, effect_id]
 	summon_root.global_position = pos
 
-	# --- Area2D 用于敌人检测 ---
+	# --- Area2D 鐢ㄤ簬鏁屼汉妫€娴?---
 	var detect_area = Area2D.new()
 	detect_area.name = "DetectArea"
 	detect_area.collision_layer = 0
-	detect_area.collision_mask = 1 | 2  # 检测 Layer1(Player/Enemy默认) + Layer2(Enemy标记)
+	detect_area.collision_mask = 1 | 2  # 妫€娴?Layer1(Player/Enemy榛樿) + Layer2(Enemy鏍囪)
 	detect_area.monitorable = false
 	detect_area.monitoring = true
 
-	# 检测范围碰撞形状（圆形，attack_range）
+	# 妫€娴嬭寖鍥寸鎾炲舰鐘讹紙鍦嗗舰锛宎ttack_range锛?
 	var detect_col = CollisionShape2D.new()
 	var detect_shape = CircleShape2D.new()
 	detect_shape.radius = attack_range
@@ -1398,7 +1415,7 @@ func create_summon(config: Dictionary) -> int:
 	detect_area.add_child(detect_col)
 	summon_root.add_child(detect_area)
 
-	# --- Polygon2D 彩色圆形占位视觉 ---
+	# --- Polygon2D 褰╄壊鍦嗗舰鍗犱綅瑙嗚 ---
 	var vis_poly = Polygon2D.new()
 	var circle_points = PackedVector2Array()
 	var num_segments = 14
@@ -1410,10 +1427,10 @@ func create_summon(config: Dictionary) -> int:
 	vis_poly.z_index = 10
 	summon_root.add_child(vis_poly)
 
-	# 添加到 SkillEffectManager 自身（角色切换不影响）
+	# 娣诲姞鍒?SkillEffectManager 鑷韩锛堣鑹插垏鎹笉褰卞搷锛?
 	add_child(summon_root)
 
-	# --- 保存效果数据 ---
+	# --- 淇濆瓨鏁堟灉鏁版嵁 ---
 	var effect_data = {
 		"type": "summon",
 		"node": summon_root,
@@ -1423,19 +1440,19 @@ func create_summon(config: Dictionary) -> int:
 		"elapsed": 0.0,
 		"attack_timer": 0.0,
 		"owner_skill_id": owner_skill_id,
-		"focus_target": null,  # 用于 focus_fire 指令
+		"focus_target": null,  # 鐢ㄤ簬 focus_fire 鎸囦护
 	}
 	active_effects[effect_id] = effect_data
 
-	# 启动召唤物生命周期
+	# 鍚姩鍙敜鐗╃敓鍛藉懆鏈?
 	_start_summon_lifecycle(effect_id)
 
 	return effect_id
 
-## 向指定技能的所有召唤物发送指令
-## @param owner_skill_id: String - 所属技能 ID
-## @param command: String - 指令: "focus_fire", "self_destruct", "return"
-## @param target: Node2D (可选) - 目标节点（用于 focus_fire）
+## 鍚戞寚瀹氭妧鑳界殑鎵€鏈夊彫鍞ょ墿鍙戦€佹寚浠?
+## @param owner_skill_id: String - 鎵€灞炴妧鑳?ID
+## @param command: String - 鎸囦护: "focus_fire", "self_destruct", "return"
+## @param target: Node2D (鍙€? - 鐩爣鑺傜偣锛堢敤浜?focus_fire锛?
 func command_summons(owner_skill_id: String, command: String, target: Node2D = null) -> void:
 	var summon_ids = _get_summon_ids_by_skill(owner_skill_id)
 	if summon_ids.is_empty():
@@ -1450,29 +1467,29 @@ func command_summons(owner_skill_id: String, command: String, target: Node2D = n
 			for eid in summon_ids:
 				_self_destruct_summon(eid)
 		"return":
-			# 预留：召唤物返回玩家身边
+			# 棰勭暀锛氬彫鍞ょ墿杩斿洖鐜╁韬竟
 			pass
 
-## 获取指定技能的所有召唤物 effect_id 列表（按创建顺序）
+## 鑾峰彇鎸囧畾鎶€鑳界殑鎵€鏈夊彫鍞ょ墿 effect_id 鍒楄〃锛堟寜鍒涘缓椤哄簭锛?
 func _get_summon_ids_by_skill(owner_skill_id: String) -> Array:
 	var ids: Array = []
 	for eid in active_effects.keys():
 		var data = active_effects[eid]
 		if data.get("type") == "summon" and data.get("owner_skill_id") == owner_skill_id:
 			ids.append(eid)
-	ids.sort()  # effect_id 递增，排序即为创建顺序
+	ids.sort()  # effect_id 閫掑锛屾帓搴忓嵆涓哄垱寤洪『搴?
 	return ids
 
-## 强制执行 max_count 限制
+## 寮哄埗鎵ц max_count 闄愬埗
 func _enforce_summon_max_count(owner_skill_id: String, max_count: int) -> void:
 	var existing_ids = _get_summon_ids_by_skill(owner_skill_id)
-	# 如果已达上限，移除最早的召唤物（可能需要移除多个）
+	# 濡傛灉宸茶揪涓婇檺锛岀Щ闄ゆ渶鏃╃殑鍙敜鐗╋紙鍙兘闇€瑕佺Щ闄ゅ涓級
 	while existing_ids.size() >= max_count and not existing_ids.is_empty():
 		var oldest_id = existing_ids[0]
 		_remove_summon(oldest_id)
 		existing_ids.remove_at(0)
 
-## 启动召唤物生命周期管理
+## 鍚姩鍙敜鐗╃敓鍛藉懆鏈熺鐞?
 func _start_summon_lifecycle(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -1489,7 +1506,7 @@ func _start_summon_lifecycle(effect_id: int) -> void:
 	)
 	timer.start()
 
-## 更新召唤物逻辑
+## 鏇存柊鍙敜鐗╅€昏緫
 func _update_summon(effect_id: int, delta: float) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -1505,19 +1522,19 @@ func _update_summon(effect_id: int, delta: float) -> void:
 	var config = effect_data["config"]
 	var duration: float = config.get("duration", 10.0)
 
-	# 持续时间到期 → 移除
+	# 鎸佺画鏃堕棿鍒版湡 鈫?绉婚櫎
 	if effect_data["elapsed"] >= duration:
 		_end_summon(effect_id)
 		return
 
-	# --- 攻击逻辑 ---
+	# --- 鏀诲嚮閫昏緫 ---
 	var attack_interval: float = config.get("attack_interval", 1.0)
 	effect_data["attack_timer"] += delta
 	if effect_data["attack_timer"] >= attack_interval:
 		_summon_attack(effect_id)
 		effect_data["attack_timer"] = 0.0
 
-## 召唤物攻击逻辑
+## 鍙敜鐗╂敾鍑婚€昏緫
 func _summon_attack(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -1532,20 +1549,20 @@ func _summon_attack(effect_id: int) -> void:
 	if not is_instance_valid(summon_node) or not is_instance_valid(detect_area):
 		return
 
-	# 幻影类型：嘲讽范围内所有敌人（每次攻击 tick 刷新仇恨）
+	# 骞诲奖绫诲瀷锛氬槻璁借寖鍥村唴鎵€鏈夋晫浜猴紙姣忔鏀诲嚮 tick 鍒锋柊浠囨仺锛?
 	if summon_type == "phantom":
 		_phantom_taunt_enemies(effect_data, detect_area, summon_node)
 
-	# 查找目标：优先 focus_target，否则最近敌人
+	# 鏌ユ壘鐩爣锛氫紭鍏?focus_target锛屽惁鍒欐渶杩戞晫浜?
 	var target_enemy = _find_summon_target(effect_data, detect_area, summon_node)
 	if target_enemy == null:
 		return
 
-	# 造成伤害
+	# 閫犳垚浼ゅ
 	if target_enemy.has_node("HealthComponent"):
 		target_enemy.health_component.take_damage(damage)
 
-	# 攻击视觉反馈：短暂闪白
+	# 鏀诲嚮瑙嗚鍙嶉锛氱煭鏆傞棯鐧?
 	var vis_poly = effect_data["vis_poly"]
 	if is_instance_valid(vis_poly):
 		var original_color = vis_poly.color
@@ -1553,12 +1570,12 @@ func _summon_attack(effect_id: int) -> void:
 		var tween = summon_node.create_tween()
 		tween.tween_property(vis_poly, "color", original_color, 0.15)
 
-## 查找召唤物攻击目标
+## 鏌ユ壘鍙敜鐗╂敾鍑荤洰鏍?
 func _find_summon_target(effect_data: Dictionary, detect_area: Area2D, summon_node: Node2D) -> Node:
-	# 优先使用 focus_fire 指定的目标
+	# 浼樺厛浣跨敤 focus_fire 鎸囧畾鐨勭洰鏍?
 	var focus_target = effect_data.get("focus_target")
 	if focus_target != null and is_instance_valid(focus_target):
-		# focus_fire 模式：攻击距离 target 最近的敌人
+		# focus_fire 妯″紡锛氭敾鍑昏窛绂?target 鏈€杩戠殑鏁屼汉
 		var nearest_enemy = null
 		var nearest_dist = INF
 		var targets = detect_area.get_overlapping_bodies() + detect_area.get_overlapping_areas()
@@ -1571,7 +1588,7 @@ func _find_summon_target(effect_data: Dictionary, detect_area: Area2D, summon_no
 					nearest_enemy = enemy
 		return nearest_enemy
 
-	# 默认：攻击范围内最近敌人
+	# 榛樿锛氭敾鍑昏寖鍥村唴鏈€杩戞晫浜?
 	var nearest_enemy = null
 	var nearest_dist = INF
 	var targets = detect_area.get_overlapping_bodies() + detect_area.get_overlapping_areas()
@@ -1584,7 +1601,7 @@ func _find_summon_target(effect_data: Dictionary, detect_area: Area2D, summon_no
 				nearest_enemy = enemy
 	return nearest_enemy
 
-## 幻影嘲讽：让范围内敌人攻击幻影分身而非玩家
+## 骞诲奖鍢茶锛氳鑼冨洿鍐呮晫浜烘敾鍑诲够褰卞垎韬€岄潪鐜╁
 func _phantom_taunt_enemies(effect_data: Dictionary, detect_area: Area2D, summon_node: Node2D) -> void:
 	if not is_instance_valid(detect_area) or not is_instance_valid(summon_node):
 		return
@@ -1592,11 +1609,11 @@ func _phantom_taunt_enemies(effect_data: Dictionary, detect_area: Area2D, summon
 	for t in targets:
 		var enemy = _resolve_enemy(t)
 		if enemy and enemy.has_method("set_taunt_target"):
-			# 只嘲讽那些还没被嘲讽到这个幻影的敌人，或者 override_target 已失效的
+			# 鍙槻璁介偅浜涜繕娌¤鍢茶鍒拌繖涓够褰辩殑鏁屼汉锛屾垨鑰?override_target 宸插け鏁堢殑
 			if not is_instance_valid(enemy.override_target) or enemy.override_target != summon_node:
 				enemy.set_taunt_target(summon_node)
 
-## 从碰撞目标解析出敌人节点
+## 浠庣鎾炵洰鏍囪В鏋愬嚭鏁屼汉鑺傜偣
 func _resolve_enemy(target: Node) -> Node:
 	if target.is_in_group("enemies") and is_instance_valid(target):
 		return target
@@ -1604,7 +1621,7 @@ func _resolve_enemy(target: Node) -> Node:
 		return target.owner
 	return null
 
-## 召唤物自爆
+## 鍙敜鐗╄嚜鐖?
 func _self_destruct_summon(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -1613,23 +1630,23 @@ func _self_destruct_summon(effect_id: int) -> void:
 	var summon_node = effect_data["node"]
 	var detect_area: Area2D = effect_data["detect_area"]
 	var config = effect_data["config"]
-	var damage: int = config.get("damage", 10) * 2  # 自爆伤害 = 2x 普通伤害
+	var damage: int = config.get("damage", 10) * 2  # 鑷垎浼ゅ = 2x 鏅€氫激瀹?
 
 	if not is_instance_valid(summon_node) or not is_instance_valid(detect_area):
 		_remove_summon(effect_id)
 		return
 
-	# 对范围内所有敌人造成爆炸伤害
+	# 瀵硅寖鍥村唴鎵€鏈夋晫浜洪€犳垚鐖嗙偢浼ゅ
 	var targets = detect_area.get_overlapping_bodies() + detect_area.get_overlapping_areas()
 	for t in targets:
 		var enemy = _resolve_enemy(t)
 		if enemy and enemy.has_node("HealthComponent"):
 			enemy.health_component.take_damage(damage)
 
-	# 爆炸视觉反馈：快速放大 + 淡出
+	# 鐖嗙偢瑙嗚鍙嶉锛氬揩閫熸斁澶?+ 娣″嚭
 	var vis_poly = effect_data["vis_poly"]
 	if is_instance_valid(vis_poly):
-		vis_poly.color = Color(1.0, 0.5, 0.0, 1.0)  # 橙色爆炸
+		vis_poly.color = Color(1.0, 0.5, 0.0, 1.0)  # 姗欒壊鐖嗙偢
 		var tween = summon_node.create_tween()
 		tween.tween_property(summon_node, "scale", Vector2(2.5, 2.5), 0.15)
 		tween.parallel().tween_property(vis_poly, "modulate:a", 0.0, 0.15)
@@ -1639,7 +1656,7 @@ func _self_destruct_summon(effect_id: int) -> void:
 	else:
 		_remove_summon(effect_id)
 
-## 召唤物到期淡出移除
+## 鍙敜鐗╁埌鏈熸贰鍑虹Щ闄?
 func _end_summon(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -1661,7 +1678,7 @@ func _end_summon(effect_id: int) -> void:
 	else:
 		_remove_summon(effect_id)
 
-## 立即移除召唤物
+## 绔嬪嵆绉婚櫎鍙敜鐗?
 func _remove_summon(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -1670,7 +1687,7 @@ func _remove_summon(effect_id: int) -> void:
 	var summon_node = effect_data["node"]
 	var summon_type: String = effect_data["config"].get("summon_type", "turret")
 
-	# 幻影消失时清除所有被嘲讽到它的敌人的 override_target
+	# 骞诲奖娑堝け鏃舵竻闄ゆ墍鏈夎鍢茶鍒板畠鐨勬晫浜虹殑 override_target
 	if summon_type == "phantom" and is_instance_valid(summon_node):
 		var enemies = get_tree().get_nodes_in_group("enemies")
 		for enemy in enemies:
@@ -1683,10 +1700,10 @@ func _remove_summon(effect_id: int) -> void:
 	active_effects.erase(effect_id)
 
 # ==============================================================================
-# 生命周期管理
+# 鐢熷懡鍛ㄦ湡绠＄悊
 # ==============================================================================
 
-## 启动效果生命周期管理
+## 鍚姩鏁堟灉鐢熷懡鍛ㄦ湡绠＄悊
 func _start_effect_lifecycle(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -1695,7 +1712,7 @@ func _start_effect_lifecycle(effect_id: int) -> void:
 	var area = effect_data["area"]
 	var config = effect_data["config"]
 	
-	# 创建管理 Timer
+	# 鍒涘缓绠＄悊 Timer
 	var timer = Timer.new()
 	timer.wait_time = 0.016  # ~60fps
 	area.add_child(timer)
@@ -1706,7 +1723,7 @@ func _start_effect_lifecycle(effect_id: int) -> void:
 	
 	timer.start()
 
-## 更新效果
+## 鏇存柊鏁堟灉
 func _update_effect(effect_id: int, delta: float) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -1724,7 +1741,7 @@ func _update_effect(effect_id: int, delta: float) -> void:
 	effect_data["elapsed"] += delta
 	var duration = config.get("duration", 5.0)
 	
-	# 伤害 tick
+	# 浼ゅ tick
 	if config.get("damage", 0) > 0:
 		if not effect_data.has("damage_timer"):
 			effect_data["damage_timer"] = 0.0
@@ -1736,7 +1753,7 @@ func _update_effect(effect_id: int, delta: float) -> void:
 			_apply_damage(area, config.get("damage", 0))
 			effect_data["damage_timer"] = 0.0
 	
-	# 物理效果 tick
+	# 鐗╃悊鏁堟灉 tick
 	if config.get("pull_to_center", false):
 		if not effect_data.has("pull_timer"):
 			effect_data["pull_timer"] = 0.0
@@ -1759,11 +1776,11 @@ func _update_effect(effect_id: int, delta: float) -> void:
 			_apply_pull_to_line(area, effect_data["start"], effect_data["end"], config.get("pull_force", 0), pull_interval)
 			effect_data["pull_timer"] = 0.0
 	
-	# 生命周期结束
+	# 鐢熷懡鍛ㄦ湡缁撴潫
 	if effect_data["elapsed"] >= duration:
 		_end_effect(effect_id)
 
-## 应用伤害
+## 搴旂敤浼ゅ
 func _apply_damage(area: Area2D, damage: int) -> void:
 	if not is_instance_valid(area):
 		return
@@ -1779,7 +1796,7 @@ func _apply_damage(area: Area2D, damage: int) -> void:
 		if enemy and enemy.has_node("HealthComponent"):
 			enemy.health_component.take_damage(damage)
 
-## 应用吸附到中心
+## 搴旂敤鍚搁檮鍒颁腑蹇?
 func _apply_pull_to_center(area: Area2D, center: Vector2, force: float, dt: float) -> void:
 	if not is_instance_valid(area):
 		return
@@ -1796,7 +1813,7 @@ func _apply_pull_to_center(area: Area2D, center: Vector2, force: float, dt: floa
 			var dir = (center - enemy.global_position).normalized()
 			enemy.global_position += dir * force * dt
 
-## 应用吸附到线段
+## 搴旂敤鍚搁檮鍒扮嚎娈?
 func _apply_pull_to_line(area: Area2D, start: Vector2, end: Vector2, force: float, dt: float) -> void:
 	if not is_instance_valid(area):
 		return
@@ -1817,7 +1834,7 @@ func _apply_pull_to_line(area: Area2D, start: Vector2, end: Vector2, force: floa
 				var dir = (closest_point - enemy.global_position).normalized()
 				enemy.global_position += dir * force * dt
 
-## 结束效果
+## 缁撴潫鏁堟灉
 func _end_effect(effect_id: int) -> void:
 	if not active_effects.has(effect_id):
 		return
@@ -1833,7 +1850,7 @@ func _end_effect(effect_id: int) -> void:
 		active_effects.erase(effect_id)
 		return
 	
-	# 淡出动画
+	# 娣″嚭鍔ㄧ敾
 	var fade_out_duration = config.get("fade_out_duration", 0.3)
 	
 	if effect_data.has("vis_poly"):
@@ -1860,35 +1877,49 @@ func _end_effect(effect_id: int) -> void:
 			)
 			return
 	
-	# 没有视觉元素，直接删除
+	# 娌℃湁瑙嗚鍏冪礌锛岀洿鎺ュ垹闄?
 	area.queue_free()
 	active_effects.erase(effect_id)
 
 # ==============================================================================
-# 手动控制
+# 鎵嬪姩鎺у埗
 # ==============================================================================
 
-## 手动移除效果
+## 鎵嬪姩绉婚櫎鏁堟灉
 func remove_effect(effect_id: int) -> void:
-	if active_effects.has(effect_id):
-		var effect_data = active_effects[effect_id]
-		# Buff 区域需要先清除目标上的 meta
-		if effect_data.get("type") == "buff_zone" and effect_data.has("area"):
-			_clear_buff_zone_buffs(effect_data["area"], effect_data["config"])
-		# 召唤物使用专用移除方法
-		if effect_data.get("type") == "summon":
-			_remove_summon(effect_id)
-			return
-		var node_key = "area"
-		if effect_data.get("type") == "wall":
-			node_key = "static_body"
-		elif effect_data.get("type") == "debuff_zone":
-			node_key = "area"
-		if effect_data.has(node_key) and is_instance_valid(effect_data[node_key]):
-			effect_data[node_key].queue_free()
-		active_effects.erase(effect_id)
+	if not active_effects.has(effect_id):
+		return
 
-## 清理所有效果
+	var effect_data = active_effects[effect_id]
+
+	if effect_data.get("type") == "buff_zone" and effect_data.has("area") and effect_data.has("config"):
+		var area_var: Variant = effect_data["area"]
+		var targets: Array = effect_data.get("buff_targets", [])
+		if targets.is_empty() and area_var is Area2D and is_instance_valid(area_var):
+			var area: Area2D = area_var
+			if area.monitoring:
+				targets = _collect_buff_zone_targets(area)
+		if area_var is Area2D and is_instance_valid(area_var):
+			_clear_buff_zone_buffs(area_var, effect_data["config"], targets)
+
+	if effect_data.get("type") == "summon":
+		_remove_summon(effect_id)
+		return
+
+	var node_key = "area"
+	if effect_data.get("type") == "wall":
+		node_key = "static_body"
+	elif effect_data.get("type") == "debuff_zone":
+		node_key = "area"
+
+	if effect_data.has(node_key):
+		var node_var: Variant = effect_data[node_key]
+		if typeof(node_var) == TYPE_OBJECT and is_instance_valid(node_var):
+			node_var.call_deferred("queue_free")
+
+	active_effects.erase(effect_id)
+
+## 娓呯悊鎵€鏈夋晥鏋?
 func clear_all_effects() -> void:
-	for effect_id in active_effects.keys():
+	for effect_id in active_effects.keys().duplicate():
 		remove_effect(effect_id)

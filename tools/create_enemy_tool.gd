@@ -58,13 +58,13 @@ const DEFAULT_CONFIG = {
 	"pool_damage_interval": 0.5,
 	"pool_lifetime": 8,
 
-	# 导演系统（enemy_config_v2）
-	"director_role": "runner",        # runner | elite | tank | ranged | swarm ...
+	# 导演系统（enemy_config）
+	"director_role": "runner",        # runner | elite | tank | ranged | dealer ...
 	"director_cost": 1.0,             # 导演预算消耗
 	"behavior_params": "{}"           # JSON 字符串
 }
 
-const ENEMY_CONFIG_V2_PATH := "res://config/enemy/enemy_config_v2.csv"
+const ENEMY_CONFIG_PATH := "res://config/enemy/enemy_config.csv"
 
 # ==============================================================================
 # 主函数 - 在这里修改配置并运行
@@ -83,8 +83,8 @@ func _run() -> void:
 		"health": 350,                      # 生命值
 		"speed": 180,                       # 移动速度
 		"damage": 15,                       # 攻击力
-		"director_role": "runner",          # 导演职业（写入 enemy_config_v2.csv）
-		"director_cost": 1.0,               # 导演预算消耗（写入 enemy_config_v2.csv）
+		"director_role": "runner",          # 导演职业（写入 enemy_config.csv）
+		"director_cost": 1.0,               # 导演预算消耗（写入 enemy_config.csv）
 		"attack_range": 50,                 # 攻击范围
 		"attack_cooldown": 1.0,             # 攻击冷却
 		"xp_value": 15,                     # 经验值
@@ -163,9 +163,9 @@ func create_enemy(config: Dictionary) -> bool:
 		if not _add_abilities(enemy_id, config.abilities):
 			return false
 
-	# 5. 写入导演配置 enemy_config_v2.csv（可选，默认开启）
-	if config.get("add_to_director_v2", true):
-		if not _add_to_enemy_config_v2(config):
+	# 5. 写入导演配置 enemy_config.csv（可选，默认开启）
+	if config.get("add_to_director", true):
+		if not _add_to_enemy_config(config):
 			return false
 
 	# 6. 创建资源文件（可选）
@@ -317,19 +317,19 @@ func _add_abilities(enemy_id: String, abilities: Array) -> bool:
 	print("[CreateEnemyTool] 添加了 %d 个能力" % abilities.size())
 	return true
 
-func _add_to_enemy_config_v2(config: Dictionary) -> bool:
-	"""写入 enemy_config_v2.csv（导演预算出怪链路）"""
-	if not FileAccess.file_exists(ENEMY_CONFIG_V2_PATH):
-		print("[CreateEnemyTool] 警告: 未找到 %s，跳过导演配置写入" % ENEMY_CONFIG_V2_PATH)
+func _add_to_enemy_config(config: Dictionary) -> bool:
+	"""写入 enemy_config.csv（导演预算出怪链路）"""
+	if not FileAccess.file_exists(ENEMY_CONFIG_PATH):
+		print("[CreateEnemyTool] 警告: 未找到 %s，跳过导演配置写入" % ENEMY_CONFIG_PATH)
 		return true
 
 	var enemy_id: String = str(config.get("enemy_id", "")).strip_edges()
 	if enemy_id.is_empty():
-		printerr("[CreateEnemyTool] 错误: enemy_id 为空，无法写入 enemy_config_v2.csv")
+		printerr("[CreateEnemyTool] 错误: enemy_id 为空，无法写入 enemy_config.csv")
 		return false
 
-	if _id_exists_in_csv(ENEMY_CONFIG_V2_PATH, enemy_id):
-		print("[CreateEnemyTool] ⚠️ enemy_config_v2 已存在，跳过: %s" % enemy_id)
+	if _id_exists_in_csv(ENEMY_CONFIG_PATH, enemy_id):
+		print("[CreateEnemyTool] ⚠️ enemy_config 已存在，跳过: %s" % enemy_id)
 		return true
 
 	var full_config = DEFAULT_CONFIG.duplicate()
@@ -337,15 +337,41 @@ func _add_to_enemy_config_v2(config: Dictionary) -> bool:
 
 	var row = PackedStringArray([
 		enemy_id,
-		str(full_config.get("director_role", "runner")).to_lower(),
-		str(full_config.get("director_cost", 1.0)),
+		str(full_config.get("display_name", "")),
 		str(full_config.get("health", 100)),
 		str(full_config.get("speed", 160)),
 		str(full_config.get("damage", 15)),
+		str(full_config.get("attack_range", 50)),
+		str(full_config.get("attack_cooldown", 1.0)),
+		str(full_config.get("xp_value", 10)),
+		str(full_config.get("gold_value", 5)),
+		str(full_config.get("knockback_resistance", 0.5)),
+		str(full_config.get("energy_drop", 2)),
+		str(full_config.get("color_r", 1.0)),
+		str(full_config.get("color_g", 1.0)),
+		str(full_config.get("color_b", 1.0)),
+		str(full_config.get("flock_push", 20.0)),
+		str(full_config.get("stop_distance", 60.0)),
+		str(full_config.get("charge_prep_time", 0.8)),
+		str(full_config.get("charge_duration", 0.6)),
+		str(full_config.get("charge_speed_mult", 3.5)),
+		str(full_config.get("charge_cooldown", 3)),
+		str(full_config.get("break_radius", 40)),
+		str(full_config.get("can_charge", 0)),
+		str(full_config.get("shoot_cooldown", 3)),
+		str(full_config.get("projectile_count", 3)),
+		str(full_config.get("projectile_arc_angle", 45)),
+		str(full_config.get("projectile_speed", 1800)),
+		str(full_config.get("pool_radius", 60)),
+		str(full_config.get("pool_damage", 5)),
+		str(full_config.get("pool_damage_interval", 0.5)),
+		str(full_config.get("pool_lifetime", 8)),
+		str(full_config.get("director_role", "runner")).to_lower(),
+		str(full_config.get("director_cost", 1.0)),
 		str(full_config.get("behavior_params", "{}"))
 	])
 
-	return _append_csv_row(ENEMY_CONFIG_V2_PATH, row)
+	return _append_csv_row(ENEMY_CONFIG_PATH, row)
 
 func _id_exists_in_csv(file_path: String, target_id: String) -> bool:
 	if not FileAccess.file_exists(file_path):
@@ -432,12 +458,12 @@ func _print_usage_guide(enemy_id: String) -> void:
 	print("\n3. 调整属性:")
 	print("   - 修改 config/enemy/enemy_config.csv")
 	print("   - 修改 config/enemy/enemy_visual.csv")
-	print("   - 修改 config/enemy/enemy_config_v2.csv（导演预算出怪）")
+	print("   - 修改 config/enemy/enemy_config.csv（导演预算出怪）")
 	print("\n4. 添加能力:")
 	print("   - 编辑 config/enemy/enemy_abilities.csv")
 	print("   - 可用能力: poison_pool, shooting, charge")
 	print("\n5. 如需在导演系统波次中出现：")
-	print("   - 在 config/wave/wave_units_config_v2.csv 配置该 enemy_id")
+	print("   - 在 config/wave/wave_units_config.csv 配置该 enemy_id")
 	print("────────────────────────────────────────────────────────────────────────────────")
 
 # ==============================================================================

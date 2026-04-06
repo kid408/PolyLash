@@ -96,7 +96,9 @@ func _build_q_asset_payload(
 	center: Vector2,
 	radius: float
 ) -> Dictionary:
-	return _build_q_context_payload(is_closed_path, segment_count, polygon_count, center, radius)
+	var payload := _build_q_context_payload(is_closed_path, segment_count, polygon_count, center, radius)
+	payload.merge(_get_pending_q_asset_payload(is_closed_path), true)
+	return payload
 
 func _build_q_tags(is_closed_path: bool) -> Array[String]:
 	var tags: Array[String] = ["q", _resolve_role_id()]

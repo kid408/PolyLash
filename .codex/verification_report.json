@@ -1,0 +1,202 @@
+﻿{
+    "generated_at":  "2026-03-28 18:48:07",
+    "repo_root":  "D:\\Godot\\Production\\PolyLash_Project",
+    "state_file":  "D:\\Godot\\Production\\PolyLash_Project\\docs\\session_state.yaml",
+    "verifier":  "Codex",
+    "promote_requested":  false,
+    "manual_checks_passed":  false,
+    "promoted":  false,
+    "promote_reason":  "not requested",
+    "summary":  {
+                    "total":  23,
+                    "passed":  23,
+                    "failed":  0,
+                    "gate_failed":  0
+                },
+    "checks":  [
+                   {
+                       "id":  "file_progression_manager",
+                       "description":  "progression manager file exists",
+                       "passed":  true,
+                       "details":  "autoloads/progression_manager.gd",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "autoload_progression_manager",
+                       "description":  "project autoload includes ProgressionManager",
+                       "passed":  true,
+                       "details":  "project.godot [autoload]",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "arena_levelup_hook",
+                       "description":  "arena has progression level up hook",
+                       "passed":  true,
+                       "details":  "scenes/arena/arena.gd",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "skill_tags_column",
+                       "description":  "skill csv has tags column",
+                       "passed":  true,
+                       "details":  "config/player/skill_params_wide.csv header",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "skill_base_tags",
+                       "description":  "skill base stores skill_tags",
+                       "passed":  true,
+                       "details":  "scenes/skills/skill_base.gd",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "skill_manager_tags",
+                       "description":  "skill manager loads and infers tags",
+                       "passed":  true,
+                       "details":  "scenes/skills/skill_manager.gd",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "legacy_q_bindings",
+                       "description":  "legacy Q bindings migrated to refactored ids",
+                       "passed":  true,
+                       "details":  "config/player/player_skill_bindings.csv; legacy=none",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "shop_interval",
+                       "description":  "shop interval is every 2 waves",
+                       "passed":  true,
+                       "details":  "scenes/arena/services/shop_flow_service.gd",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "flow_controller_split",
+                       "description":  "battle flow controller and sub services exist",
+                       "passed":  true,
+                       "details":  "scenes/arena/services/*",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "run_meta_service",
+                       "description":  "run and meta state services exist",
+                       "passed":  true,
+                       "details":  "autoloads/run_state_service.gd, autoloads/meta_progress_service.gd",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "shop_pipeline",
+                       "description":  "shop domain service and effect pipeline exist",
+                       "passed":  true,
+                       "details":  "autoloads/shop_domain_service.gd, autoloads/purchase_effect_pipeline.gd",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "bond_v3_file",
+                       "description":  "bond v3 config exists",
+                       "passed":  true,
+                       "details":  "config/player/bond_config_v3.csv",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "bond_resonance_file",
+                       "description":  "bond resonance config exists",
+                       "passed":  true,
+                       "details":  "config/player/bond_resonance_config.csv",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "resonance_runtime",
+                       "description":  "resonance runtime service exists and is autoloaded",
+                       "passed":  true,
+                       "details":  "autoloads/resonance_runtime_service.gd + project.godot",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "run_telemetry_service",
+                       "description":  "run telemetry service exists and is autoloaded",
+                       "passed":  true,
+                       "details":  "autoloads/run_telemetry_service.gd + project.godot",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "docs_gdignore",
+                       "description":  "docs folder is ignored by Godot importer",
+                       "passed":  true,
+                       "details":  "docs/.gdignore",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "no_doc_translation_artifacts",
+                       "description":  "docs sample csv is not imported as translation resource",
+                       "passed":  true,
+                       "details":  "none",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "enemy_v2_configs",
+                       "description":  "enemy and wave v2 configs exist",
+                       "passed":  true,
+                       "details":  "config/enemy|wave/*_v2.csv",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "spawner_budget",
+                       "description":  "spawner has budget and role caps",
+                       "passed":  true,
+                       "details":  "scenes/arena/spawner.gd",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "boss_phase_config",
+                       "description":  "boss phase config template exists",
+                       "passed":  true,
+                       "details":  "config/enemy/boss_phase_config.csv",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "boss_phase_runtime",
+                       "description":  "enemy runtime includes boss phase template hooks",
+                       "passed":  true,
+                       "details":  "scenes/unit/enemy/enemy.gd",
+                       "severity":  "required",
+                       "gate":  true
+                   },
+                   {
+                       "id":  "arena_line_budget",
+                       "description":  "arena lines \u003c= 400 (architecture target)",
+                       "passed":  true,
+                       "details":  "current=4",
+                       "severity":  "warn",
+                       "gate":  false
+                   },
+                   {
+                       "id":  "godot_smoke",
+                       "description":  "godot smoke test",
+                       "passed":  true,
+                       "details":  "bin=D:\\Godot\\Godot_v4.6.1-stable_win64_console.exe; exit_code=0; errors=0; crashes=0; warnings=1; stdout=D:\\Godot\\Production\\PolyLash_Project\\docs\\godot_smoke_stdout.log; stderr=D:\\Godot\\Production\\PolyLash_Project\\docs\\godot_smoke_stderr.log; engine_log=D:\\Godot\\Production\\PolyLash_Project\\docs\\godot_smoke_engine.log",
+                       "severity":  "required",
+                       "gate":  true
+                   }
+               ]
+}

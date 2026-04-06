@@ -207,6 +207,8 @@ func _on_save_slot_selected(slot_index: int) -> void:
 			# 清除角色选择缓存，确保新游戏从空白开始
 			_clear_selection_cache()
 			_clear_weapon_cache()
+			if Global.has_method("clear_selection_preset"):
+				Global.clear_selection_preset()
 			get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
 		"load":
 			# 加载存档：读取数据后恢复到 Global，跳转游戏场景

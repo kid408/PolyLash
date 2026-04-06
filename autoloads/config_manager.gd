@@ -19,7 +19,7 @@ extends Node
 #   └── item/     - 物品配置（宝箱、升级属性）
 # 
 # 使用方法:
-#   var config = ConfigManager.get_player_config("lurewarden")
+#   var config = ConfigManager.get_player_config("shaman")
 #   var weapon = ConfigManager.get_weapon_config("weapon_sword")
 # 
 # 注意事项:
@@ -82,6 +82,7 @@ const PLAYER_VISUAL = CONFIG_DIR + "player/player_visual.csv"
 const PLAYER_WEAPONS = CONFIG_DIR + "player/player_weapons.csv"
 const PLAYER_SKILL_BINDINGS = CONFIG_DIR + "player/player_skill_bindings.csv"
 const SKILL_PARAMS = CONFIG_DIR + "player/skill_params_wide.csv"
+const ULT_CONFIG = CONFIG_DIR + "player/ult_config.csv"
 const PLAYER_AVAILABLE_WEAPONS = CONFIG_DIR + "player/player_available_weapons.csv"
 const ENEMY_CONFIG = CONFIG_DIR + "enemy/enemy_config.csv"
 const ENEMY_VISUAL = CONFIG_DIR + "enemy/enemy_visual.csv"
@@ -100,28 +101,30 @@ const ITEM_CONFIG_NEW = CONFIG_DIR + "item/item_config.csv"
 const EMBLEM_CONFIG = CONFIG_DIR + "item/emblem_config.csv"
 const CREDITS_CONFIG = CONFIG_DIR + "system/credits_config.csv"
 const LEGACY_PLAYER_ID_ALIASES: Dictionary = {
-	"new_pyro": "runeblazer",
-	"new_totem": "spiritcaller",
-	"new_tempest": "stormseer",
-	"tempest": "stormseer",
-	"train": "breachmarshal",
-	"goo": "mirebinder",
-	"herder": "lurewarden",
-	"hunter": "trapper",
-	"ammo": "quartermaster",
-	"turret_eng": "turretwright",
-	"vacuum": "singularist",
-	"tesla": "arcstriker",
-	"voodoo": "hexwarden",
-	"gambler": "fatebinder",
-	"merchant": "broker",
-	"midas": "gildhand",
-	"vampire": "bloodsworn"
+	"new_ignis": "frostbite",
+	"new_totem": "plague",
+	"new_tempest": "snareweaver",
+	"tempest": "snareweaver",
+	"train": "polaris",
+	"goo": "chronomancer",
+	"herder": "shaman",
+	"hunter": "botanist",
+	"ammo": "medium",
+	"turret_eng": "shadow",
+	"vacuum": "beastmaster",
+	"tesla": "flashblade",
+	"voodoo": "leviathan",
+	"gambler": "demolitionist",
+	"merchant": "pathfinder",
+	"midas": "necromancer",
+	"vampire": "astrologer"
 }
 
 # ============================================================================
 # 初始化
 # ============================================================================
+
+var ult_configs: Dictionary = {}
 
 func _ready() -> void:
 	"""
@@ -154,6 +157,7 @@ func load_all_configs() -> void:
 	player_skill_bindings = load_csv_as_dict(PLAYER_SKILL_BINDINGS, "player_id")
 	player_available_weapons = load_csv_as_dict(PLAYER_AVAILABLE_WEAPONS, "player_id")
 	skill_params = load_skill_params_wide_format(SKILL_PARAMS)
+	ult_configs = load_csv_as_dict(ULT_CONFIG, "ult_id")
 	
 	# 敌人配置
 	enemy_configs = load_csv_as_dict(ENEMY_CONFIG, "enemy_id")
@@ -563,6 +567,13 @@ func get_all_player_configs() -> Dictionary:
 
 func get_skill_params(skill_id: String) -> Dictionary:
 	return skill_params.get(skill_id, {})
+
+func get_ult_config(ult_id: String) -> Dictionary:
+	return ult_configs.get(ult_id, {})
+
+func get_player_ult_config(player_id: String) -> Dictionary:
+	var normalized_player_id := normalize_player_id(player_id)
+	return ult_configs.get("%s_ult" % normalized_player_id, {})
 
 func get_weapon_config(weapon_id: String) -> Dictionary:
 	return weapon_configs.get(weapon_id, {})

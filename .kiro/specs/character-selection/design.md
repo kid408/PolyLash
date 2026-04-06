@@ -95,11 +95,11 @@ player_id,weapon_type_1,weapon_type_2,weapon_type_3,weapon_type_4
 -1,武器类型1,武器类型2,武器类型3,武器类型4
 butcher,punch,laser,,
 herder,pistol,laser,punch,
-pyro,laser,pistol,,
-sapper,pistol,laser,,
+ignis,laser,pistol,,
+diva,pistol,laser,,
 tempest,punch,pistol,,
-weaver,laser,punch,,
-wind,pistol,punch,,
+nexus,laser,punch,,
+windblade,pistol,punch,,
 ```
 
 说明：

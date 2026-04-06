@@ -9,8 +9,7 @@ extends EditorScript
 ## 1. 修改 _run() 中的 config 字典
 ## 2. 在 Godot 编辑器中：File -> Run
 ## 3. 工具会自动将羁绊追加到当前生效羁绊表
-##    - 优先: bond_config_v3.csv
-##    - 回退: bond_config.csv
+##    - 写入: bond_config.csv
 ##
 ## 羁绊类型说明：
 ##   - origin  : 身世羁绊（如 魔导/重装/游侠/后勤）
@@ -411,11 +410,7 @@ func _id_exists_in_csv(file_path: String, target_id: String) -> bool:
 	return false
 
 func _get_bond_csv_path() -> String:
-	var v3_path := "res://config/player/bond_config_v3.csv"
-	var legacy_path := "res://config/player/bond_config.csv"
-	if FileAccess.file_exists(v3_path):
-		return v3_path
-	return legacy_path
+	return "res://config/player/bond_config.csv"
 
 func _append_csv_row(file_path: String, row: PackedStringArray) -> bool:
 	if not FileAccess.file_exists(file_path):

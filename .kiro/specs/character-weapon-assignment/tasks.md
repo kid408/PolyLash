@@ -7,14 +7,14 @@ Fix weapon assignment system by completing missing character assignments and syn
 
 ### 1. Analysis and Validation
 - [ ] 1.1 Verify current weapon assignments in player_available_weapons.csv
-- [ ] 1.2 Identify missing characters (tempest, sapper)
+- [ ] 1.2 Identify missing characters (tempest, diva)
 - [ ] 1.3 List all available weapon types from weapon_config_optimized.csv
 - [ ] 1.4 Verify no duplicate default weapons exist
 
 ### 2. Update Weapon Assignment Tool
 - [ ] 2.1 Modify `tools/assign_character_weapons.gd` to add missing characters
   - Add tempest with unique default weapon
-  - Add sapper with unique default weapon
+  - Add diva with unique default weapon
   - Ensure 3 weapons per character
 - [ ] 2.2 Add validation function to check weapon assignments
   - Verify all weapon types exist in weapon_config_optimized.csv
@@ -54,7 +54,7 @@ Fix weapon assignment system by completing missing character assignments and syn
   - Close game
   - Reopen game
   - Verify weapon selection remembered
-- [ ] 4.5 Test missing characters (tempest, sapper)
+- [ ] 4.5 Test missing characters (tempest, diva)
   - Verify they appear in selection screen
   - Verify they have 3 selectable weapons
   - Verify they load correctly in-game
@@ -113,7 +113,7 @@ Fix weapon assignment system by completing missing character assignments and syn
 3. Identify missing characters
 
 **Expected Output:**
-- List of missing characters: `tempest`, `sapper`
+- List of missing characters: `tempest`, `diva`
 
 ### Task 1.3: List Available Weapon Types
 **Goal:** Know which weapons can be assigned
@@ -140,7 +140,7 @@ Fix weapon assignment system by completing missing character assignments and syn
 - OR list of duplicate weapons to fix
 
 ### Task 2.1: Add Missing Characters to Tool
-**Goal:** Update tool to assign weapons to tempest and sapper
+**Goal:** Update tool to assign weapons to tempest and diva
 
 **Steps:**
 1. Open `tools/assign_character_weapons.gd`
@@ -149,7 +149,7 @@ Fix weapon assignment system by completing missing character assignments and syn
    - Default: bow_arrow (unique ranged)
    - Alt 1: smg
    - Alt 2: single_sniper
-4. Add sapper assignment:
+4. Add diva assignment:
    - Default: spread_fan (unique support)
    - Alt 1: magic_heal_aoe
    - Alt 2: heal_bolt
@@ -205,7 +205,7 @@ Fix weapon assignment system by completing missing character assignments and syn
 **Steps:**
 1. Open `config/player/player_available_weapons.csv`
 2. Count rows (should be 28 + 2 header rows = 30)
-3. Verify tempest and sapper present
+3. Verify tempest and diva present
 4. Verify all weapon types valid
 5. Verify no duplicate default weapons
 
@@ -234,7 +234,7 @@ Fix weapon assignment system by completing missing character assignments and syn
 4. Verify 28 characters visible
 5. Click each character
 6. Verify weapons display correctly
-7. Verify tempest and sapper present
+7. Verify tempest and diva present
 
 **Expected Output:**
 - All 28 characters visible
@@ -285,7 +285,7 @@ Fix weapon assignment system by completing missing character assignments and syn
 - Console shows: "从缓存获取武器: shotgun"
 
 ### Task 4.5: Test Missing Characters
-**Goal:** Verify tempest and sapper work correctly
+**Goal:** Verify tempest and diva work correctly
 
 **Steps:**
 1. Select tempest
@@ -293,7 +293,7 @@ Fix weapon assignment system by completing missing character assignments and syn
 3. Verify default is bow_arrow
 4. Start game with default weapon
 5. Verify tempest has bow_arrow
-6. Repeat for sapper (default: spread_fan)
+6. Repeat for diva (default: spread_fan)
 
 **Expected Output:**
 - Both characters work correctly

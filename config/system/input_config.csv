@@ -1,18 +1,18 @@
 action,key_code,description,player_switch_index
--1,按键码,说明,切换角色索引
-switch_player_1,49,切换到角色1,0
-switch_player_2,50,切换到角色2,1
-switch_player_3,51,切换到角色3,2
-switch_player_4,52,切换到角色4,3
-switch_player_5,53,切换到角色5,4
-switch_player_6,54,切换到角色6,5
-switch_player_7,55,切换到角色7,6
-move_up,87,向上移动,-1
-move_down,83,向下移动,-1
-move_left,65,向左移动,-1
-move_right,68,向右移动,-1
-dash,32,冲刺,-1
-skill_q,81,Q技能,-1
-skill_e,69,E技能,-1
-click_left,1,左键,-1
-click_right,2,右键,-1
+-1,,input map,-1
+switch_player_1,49,switch player 1,0
+switch_player_2,50,switch player 2,1
+switch_player_3,51,switch player 3,2
+switch_player_4,52,switch player 4,3
+switch_player_5,53,switch player 5,4
+switch_player_6,54,switch player 6,5
+switch_player_7,55,switch player 7,6
+move_up,87,move up,-1
+move_down,83,move down,-1
+move_left,65,move left,-1
+move_right,68,move right,-1
+dash,,dash,-1
+skill_q,32,legacy space skill q,-1
+skill_e,69,skill e,-1
+click_left,1,left click,-1
+click_right,2,right click,-1

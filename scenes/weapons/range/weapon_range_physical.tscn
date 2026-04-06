@@ -1,45 +1,39 @@
-[gd_scene load_steps=5 format=3 uid="uid://c7j0e8i8kry8q"]
+[gd_scene load_steps=6 format=3]
 
-[ext_resource type="Script" uid="uid://jgcwdnw0j3td" path="res://scenes/weapons/weapon.gd" id="1_1w427"]
-[ext_resource type="Script" uid="uid://cyj3i1371tt7i" path="res://scenes/components/hitbox_component.gd" id="2_det67"]
-[ext_resource type="Script" uid="uid://c536k38sign4j" path="res://scenes/weapons/range/range_behavior.gd" id="3_yvmf3"]
+[ext_resource type="Script" path="res://scenes/weapons/weapon.gd" id="1_weapon"]
+[ext_resource type="PackedScene" path="res://scenes/components/hitbox_component.tscn" id="2_hitbox"]
+[ext_resource type="Script" path="res://scenes/weapons/range/range_behavior.gd" id="3_behavior"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_range"]
-radius = 300.0
+[sub_resource type="CircleShape2D" id="1_range_shape"]
+radius = 420.0
 
-[node name="Weapon" type="Node2D"]
-script = ExtResource("1_1w427")
+[node name="WeaponRangePhysical" type="Node2D"]
+script = ExtResource("1_weapon")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-unique_name_in_owner = true
-
-[node name="HitboxComponent" type="Area2D" parent="."]
-unique_name_in_owner = true
-collision_layer = 4
-collision_mask = 8
-script = ExtResource("2_det67")
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="HitboxComponent"]
-disabled = true
+centered = true
 
 [node name="RangeArea2" type="Area2D" parent="."]
 collision_layer = 0
 collision_mask = 8
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="RangeArea2"]
-shape = SubResource("CircleShape2D_range")
+shape = SubResource("1_range_shape")
+
+[node name="HitboxComponent" parent="." instance=ExtResource("2_hitbox")]
+collision_layer = 4
+collision_mask = 8
+monitoring = false
+monitorable = false
 
 [node name="CooldownTimer" type="Timer" parent="."]
-unique_name_in_owner = true
 one_shot = true
 
 [node name="WeaponBehavior" type="Node2D" parent="."]
-unique_name_in_owner = true
-script = ExtResource("3_yvmf3")
+script = ExtResource("3_behavior")
 
-[node name="Muzzle" type="Marker2D" parent="WeaponBehavior"]
-unique_name_in_owner = true
-position = Vector2(50, 0)
+[node name="Muzzle" type="Marker2D" parent="WeaponBehavior" unique_name_in_owner="true"]
+position = Vector2(20, 0)
 
 [connection signal="area_entered" from="RangeArea2" to="." method="_on_range_area_2_area_entered"]
 [connection signal="area_exited" from="RangeArea2" to="." method="_on_range_area_2_area_exited"]

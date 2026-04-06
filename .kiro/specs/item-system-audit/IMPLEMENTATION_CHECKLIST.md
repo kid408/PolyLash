@@ -61,7 +61,7 @@
 
 需要将现有技能脚本适配到新系统：
 
-#### 火焰系（Pyro）
+#### 火焰系（Ignis）
 
 - [ ] `scenes/skills/players/skill_fire_path.gd`
   - [ ] 定义标签常量

@@ -1,0 +1,10 @@
+e_skill_id,player_id,skill_name,cast_mode,energy_cost,cooldown,cast_range,targeting_mode,execution_profile_id,effect_radius,effect_duration,damage_formula_id,logic_tags,physics_tags,payload_schema_id,sfx_cast_id,sfx_hit_id,vfx_profile_id,notes
+e_silk,silk,命运收束,instant,25,10,9999,global,silk_convergence,12,0.5,,pull|stun,enemy_hit,silk_e_payload,sfx_e_cast,sfx_e_hit,vfx_silk_convergence,将所有已链接目标快速拖拽到几何中心
+e_minimalist,minimalist,弦音共振,instant,40,8,9999,asset_centered,minimalist_resonance,80,0.18,,stun|knockback,enemy_hit,minimalist_e_payload,sfx_e_cast,sfx_e_hit,vfx_minimalist_resonance,围绕熔毁切痕爆发
+e_collapse,collapse,重力井,instant,30,6,250,self_centered,collapse_gravity_well,250,1,,slow|pull,enemy_hit,collapse_e_payload,sfx_e_cast,sfx_e_hit,vfx_collapse_well,对范围内敌人施加牵引与减速
+e_parasite,parasite,催化裂变,instant,40,8,9999,global,parasite_catalyze,300,0.35,,parasite|burst,enemy_hit,parasite_e_payload,sfx_e_cast,sfx_e_hit,vfx_parasite_burst,引爆全场寄生宿主并拉拽新目标
+e_joule,joule,电磁诱饵,target_point,30,8,9999,cursor_world,joule_magnetic_decoy,20,0.25,,pull|stun,enemy_hit,joule_e_payload,sfx_e_cast,sfx_e_hit,vfx_joule_decoy,将全场焦油目标快速牵引到鼠标点附近
+e_arc,arc,紧急漂移起爆,instant,25,6,9999,self_centered,arc_drift_eject,140,0.14,,burst|knockback,enemy_hit,arc_e_payload,sfx_e_cast,sfx_e_hit,vfx_arc_drift,只能在高速穿梭/离心机期间施放并在当前位置爆破脱离
+e_overtone,overtone,强制调音,instant,30,8,9999,global,overtone_tuning,150,0.1,,pull|retune,enemy_hit,overtone_e_payload,sfx_e_cast,sfx_e_hit,vfx_overtone_tuning,将全部光弦沿当前方向平移收缩并刮拽敌人
+
+e_phalanx,phalanx,引力除雪车,instant,30,8,9999,global,phalanx_sweep,0,0,,sweep|ballistic,enemy_hit,phalanx_e_payload,sfx_e_cast,sfx_e_hit,vfx_phalanx_sweep,收回全部开线屏障并把沿途敌人像铲雪一样甩向屏障两侧

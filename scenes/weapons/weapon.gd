@@ -5,9 +5,11 @@ class_name Weapon
 @onready var hitbox_component: HitboxComponent = $HitboxComponent
 @onready var cooldown_timer: Timer = $CooldownTimer
 @onready var weapon_behavior: WeaponBehavior = $WeaponBehavior
+@onready var range_area: Area2D = $RangeArea2
 
 # 碰撞形状（可能不存在，由 MeleeBehavior 动态创建）
 var collision: CollisionShape2D
+var range_collision: CollisionShape2D
 
 var data : ItemWeapon
 var is_attacking := false
@@ -70,6 +72,8 @@ func setup_weapon(data:ItemWeapon) -> void:
 	# 尝试获取 CollisionShape2D（可能由 MeleeBehavior 动态创建）
 	if not collision:
 		collision = hitbox_component.get_node_or_null("CollisionShape2D")
+	if not range_collision and is_instance_valid(range_area):
+		range_collision = range_area.get_node_or_null("CollisionShape2D")
 	
 	# 只有当 collision 存在时才设置检测范围
 	if collision:
@@ -82,6 +86,8 @@ func setup_weapon(data:ItemWeapon) -> void:
 			collision.shape.radius = data.stats.max_range
 		elif collision.shape is RectangleShape2D:
 			collision.shape.extents = Vector2(data.stats.max_range, data.stats.max_range)
+
+	_configure_range_area()
 	
 	# ============================================================================
 	# 场景复用系统 - 应用新字段
@@ -137,7 +143,9 @@ func setup_weapon(data:ItemWeapon) -> void:
 		var muzzle_offset = data.stats.get_muzzle_offset()
 		if muzzle_offset != Vector2.ZERO:
 			# 尝试查找 Muzzle 节点（可能在 Sprite2D 下或直接在 Weapon 下）
-			var muzzle = sprite.get_node_or_null("Muzzle")
+			var muzzle = weapon_behavior.get_node_or_null("Muzzle") if weapon_behavior else null
+			if not muzzle:
+				muzzle = sprite.get_node_or_null("Muzzle")
 			if not muzzle:
 				muzzle = get_node_or_null("Muzzle")
 			
@@ -149,7 +157,10 @@ func setup_weapon(data:ItemWeapon) -> void:
 				var new_muzzle = Marker2D.new()
 				new_muzzle.name = "Muzzle"
 				new_muzzle.position = muzzle_offset
-				sprite.add_child(new_muzzle)
+				if weapon_behavior:
+					weapon_behavior.add_child(new_muzzle)
+				else:
+					sprite.add_child(new_muzzle)
 				print("[Weapon] 动态创建枪口节点，偏移: ", muzzle_offset)
 	
 	# 5. 打印调试信息
@@ -168,6 +179,26 @@ func setup_weapon(data:ItemWeapon) -> void:
 		print("  - 基础场景: ", data.stats.base_scene_path)
 
 ## 新增：从 weapon_id 直接设置武器（简化调用）
+func _configure_range_area() -> void:
+	if not is_instance_valid(range_area):
+		return
+	if not range_collision:
+		range_collision = range_area.get_node_or_null("CollisionShape2D")
+	if not range_collision:
+		return
+
+	var detection_radius: float = 120.0
+	if data and data.stats:
+		detection_radius = max(120.0, float(data.stats.max_range))
+
+	if range_collision.shape == null:
+		range_collision.shape = CircleShape2D.new()
+
+	if range_collision.shape is CircleShape2D:
+		(range_collision.shape as CircleShape2D).radius = detection_radius
+	elif range_collision.shape is RectangleShape2D:
+		(range_collision.shape as RectangleShape2D).size = Vector2.ONE * detection_radius * 2.0
+
 func setup_weapon_by_id(weapon_id: String) -> void:
 	var weapon_data = ItemWeapon.create_from_csv(weapon_id)
 	if weapon_data:

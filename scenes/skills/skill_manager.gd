@@ -1,12 +1,33 @@
-﻿extends Node
+extends Node
 class_name SkillManager
 
 const DEBUG_VERBOSE := false
-const SkillScriptRegistry = preload("res://scripts/skills/skill_script_registry.gd")
 
-# SkillManager only manages live skill instances.
-# Script lookup is delegated to SkillScriptRegistry so this file
-# does not depend on concrete directory layouts.
+## ==============================================================================
+
+## ==============================================================================
+## 
+## 鍔熻兘璇存槑:
+
+
+
+
+## 
+## 浣跨敤鏂规硶:
+##   var skill_manager = SkillManager.new(self)
+##   add_child(skill_manager)
+##   skill_manager.load_skills_from_config(player_id)
+##   skill_manager.execute_skill("q")
+## 
+## ==============================================================================
+
+# ==============================================================================
+
+# ==============================================================================
+
+## 閹垛偓閼宠姤蝎娴ｅ秴鐡ч崗?
+# 字段定义
+# 字段定义
 var skill_slots: Dictionary = {
 	"q": null,
 	"e": null,
@@ -14,9 +35,15 @@ var skill_slots: Dictionary = {
 	"rmb": null
 }
 
+# 字段定义
 var skill_owner: Node2D
 
+## 璋冭瘯妯″紡
 var debug_mode: bool = false
+
+# ==============================================================================
+# 闁告帗绻傞～鎰板礌?
+# ==============================================================================
 
 func _init(_owner: Node2D = null):
 	if _owner:
@@ -26,7 +53,13 @@ func _ready() -> void:
 	if not skill_owner:
 		push_error("[SkillManager] Error: skill_owner is not set")
 
-# Load all configured skills for the given player id.
+# ==============================================================================
+# 閹垛偓閼宠棄濮炴潪?
+# ==============================================================================
+
+
+## @param player_id: 闁绘壕鏅涢宀籇闁挎稑鐗嗛々?butcher", "nexus"闁?
+# 函数：load_skills_from_config
 func load_skills_from_config(player_id: String) -> bool:
 	if player_id.is_empty():
 		push_error("[SkillManager] Error: player_id is empty")
@@ -36,43 +69,52 @@ func load_skills_from_config(player_id: String) -> bool:
 		push_error("[SkillManager] Error: skill_owner is not set, cannot load skills")
 		return false
 	
-	var bindings: Dictionary = ConfigManager.get_player_skill_bindings(player_id)
+	# 字段定义
+	var bindings = ConfigManager.get_player_skill_bindings(player_id)
 	if bindings.is_empty():
 		push_warning("[SkillManager] Warning: missing skill binding config for %s" % player_id)
 		return false
 	
-	var success_count: int = 0
+	# 字段定义
+	var success_count = 0
+	var total_count = 0
 	
 	for slot in ["q", "e", "lmb", "rmb"]:
-		var skill_id: String = str(bindings.get("slot_%s" % slot, ""))
+		var skill_id = bindings.get("slot_%s" % slot, "")
 		if not skill_id.is_empty():
+			total_count += 1
 			if _load_skill_to_slot(slot, skill_id):
 				success_count += 1
 	
 	return success_count > 0
 
-# Resolve, instantiate and bind one skill into the target slot.
+## 鍔犺浇鎶拷鑳藉埌鎸囧畾妲戒綅
+## @param slot: 婵″弶鍨濈紞鍛村触瀹ュ泦鐐烘晬?q", "e", "lmb", "rmb"闁?
+## @param skill_id: 闁瑰灈鍋撻柤宕囩イD闁挎稑鐗嗛々?skill_dash", "skill_saw_path"闁?
+# 函数：_load_skill_to_slot
 func _load_skill_to_slot(slot: String, skill_id: String) -> bool:
+	# 条件判断
 	if skill_id.is_empty():
 		if debug_mode:
 			if DEBUG_VERBOSE: print("[SkillManager] slot %s has no skill configured" % slot.to_upper())
 		return false
 	
-	var skill_script_path: String = SkillScriptRegistry.resolve_active_skill_script_path(skill_id, slot)
-	if skill_script_path.is_empty():
-		push_error("[SkillManager] Error: no registered skill script for %s (slot=%s)" % [skill_id, slot])
-		return false
+	# 构造技能脚本路径
+	var skill_script_path = "res://scenes/skills/players/%s.gd" % skill_id
 	
-	var skill_script: Script = load(skill_script_path) as Script
+	# 字段定义
+	var skill_script = load(skill_script_path)
 	if not skill_script:
 		push_error("[SkillManager] Error: failed to load skill script %s (file missing or bad path)" % skill_script_path)
 		return false
 	
+	# 字段定义
 	var skill: SkillBase = skill_script.new()
 	if not skill:
 		push_error("[SkillManager] Error: failed to create skill instance %s (script may not inherit SkillBase)" % skill_id)
 		return false
 	
+	# 楠岃瘉鎶拷鑳藉疄渚嬫槸鍚︾户鎵胯嚜SkillBase
 	if not skill is SkillBase:
 		push_error("[SkillManager] Error: skill %s is not a SkillBase subtype" % skill_id)
 		skill.free()
@@ -86,8 +128,10 @@ func _load_skill_to_slot(slot: String, skill_id: String) -> bool:
 
 	_load_skill_params(skill, skill_id)
 	
+	# 节点管理
 	add_child(skill)
 	
+	# 娣囨繂鐡ㄩ崚鐗埿担?
 	skill_slots[slot] = skill
 	
 	if DEBUG_VERBOSE: print("[SkillManager] skill loaded %s -> %s (script=%s, class=%s, energy: %.0f, cooldown: %.1fs)" % [
@@ -102,14 +146,18 @@ func _load_skill_to_slot(slot: String, skill_id: String) -> bool:
 	return true
 
 
+## @param skill: 閹垛偓閼宠棄鐤勬笟?
+## @param skill_id: 閹垛偓閼崇祤D
 func _load_skill_params(skill: SkillBase, skill_id: String) -> void:
-	var params: Dictionary = ConfigManager.get_skill_params(skill_id)
+	# 字段定义
+	var params = ConfigManager.get_skill_params(skill_id)
 	
 	if params.is_empty():
 		if debug_mode:
 			if DEBUG_VERBOSE: print("[SkillManager] Warning: missing skill params for %s, using defaults" % skill_id)
 		return
 	
+	# 閻犱礁澧介悿鍡涙焻濮樿鲸鏆忛柛娆忓€归弳?
 	if "energy_cost" in params:
 		skill.energy_cost = params["energy_cost"]
 	if "cooldown" in params:
@@ -162,11 +210,11 @@ func _infer_default_skill_tags(skill_id: String, params: Dictionary) -> String:
 	return ",".join(normalized)
 
 # ==============================================================================
-# Skill Execution
+# 閹垛偓閼宠姤澧界悰?
 # ==============================================================================
 
-## @param slot: skill slot name such as "q", "e", "lmb" or "rmb"
-# Execute an instant skill from one slot.
+## 閹笛嗩攽閹垛偓閼虫枻绱欓惉顒拷褰傞敍?
+## @param slot: 婵″弶鍨濈紞鍛村触瀹ュ泦鐐烘晬?q", "e", "lmb", "rmb"闁?
 func execute_skill(slot: String) -> void:
 	var skill = skill_slots.get(slot)
 	if not skill:
@@ -177,6 +225,7 @@ func execute_skill(slot: String) -> void:
 		printerr("[SkillManager] Error: invalid skill instance in slot %s" % slot.to_upper())
 		return
 	
+	# 条件判断
 	if skill.is_on_cooldown:
 		if DEBUG_VERBOSE: print("[SkillManager] skill cooling down: %s (%s), remaining: %.1fs" % [
 			slot.to_upper(), skill.skill_id, skill.get_cooldown_remaining()
@@ -196,16 +245,19 @@ func execute_skill(slot: String) -> void:
 		skill.energy_cost
 	])
 	var switch_synergy_ctx: Dictionary = _begin_switch_synergy_bonus(skill, slot)
+	# 条件判断
 	if slot == "e":
 		SoundManager.play("skill_e_instant")
 	skill.execute()
 	_end_switch_synergy_bonus(skill, slot, switch_synergy_ctx)
 
-## @param slot: skill slot name
-# Continue charging a held skill.
+
+## @param slot: 婵″弶鍨濈紞鍛村触瀹ュ泦?
+# 函数：charge_skill
 func charge_skill(slot: String, delta: float) -> void:
 	var skill = skill_slots.get(slot)
 	if not skill or not is_instance_valid(skill):
+		# 条件判断
 		if not has_meta("_warned_no_skill_%s" % slot):
 			set_meta("_warned_no_skill_%s" % slot, true)
 			if DEBUG_VERBOSE: print("[SkillManager] charge_skill: slot %s has no skill | slot states: %s" % [
@@ -220,8 +272,8 @@ func charge_skill(slot: String, delta: float) -> void:
 	
 	skill.charge(delta)
 
-## @param slot: skill slot name
-# Release a charging skill.
+
+## @param slot: 婵″弶鍨濈紞鍛村触瀹ュ泦?
 func release_skill(slot: String) -> void:
 	var skill = skill_slots.get(slot)
 	if not skill or not is_instance_valid(skill):
@@ -304,22 +356,24 @@ func _end_switch_synergy_bonus(skill: SkillBase, slot: String, ctx: Dictionary) 
 				])
 
 # ==============================================================================
-# Slot Queries
+# 闁瑰灈鍋撻柤瀹犲Г閻擄紕鎷?
 # ==============================================================================
 
-## @param slot: skill slot name
-## @return: loaded skill instance or null
+
+## @param slot: 婵″弶鍨濈紞鍛村触瀹ュ泦?
+## @return: 鎶拷鑳藉疄渚嬫垨null
 func get_skill(slot: String) -> SkillBase:
 	return skill_slots.get(slot)
 
 
-## @param slot: skill slot name
+## @param slot: 婵″弶鍨濈紞鍛村触瀹ュ泦?
+# 函数：has_skill
 func has_skill(slot: String) -> bool:
 	var skill = skill_slots.get(slot)
 	return skill != null and is_instance_valid(skill)
 
 
-## @return: all loaded skill instances
+## @return: 闁瑰灈鍋撻柤瀹犲Г閺嗙喓绱?
 func get_all_skills() -> Array[SkillBase]:
 	var skills: Array[SkillBase] = []
 	for slot in skill_slots.keys():
@@ -390,7 +444,7 @@ func import_cooldown_state(snapshot: Dictionary, elapsed_time: float = 0.0, benc
 		skill.set_cooldown_remaining(remaining)
 
 # ==============================================================================
-# Lifecycle
+# 閹垛偓閼崇晫顓搁悶?
 # ==============================================================================
 
 # 函数：cleanup
@@ -415,21 +469,25 @@ func cleanup() -> void:
 	
 	if DEBUG_VERBOSE: print("[SkillManager] ===== cleanup() done =====")
 
-## @param player_id: player id
+
+
+## @param player_id: 鐜╁ID
+# 函数：reload_skills
 func reload_skills(player_id: String) -> bool:
 	cleanup()
 	await get_tree().process_frame
 	return load_skills_from_config(player_id)
 
 
-## @return: true when at least one skill is loaded
+## @return: 濡傛灉鑷冲皯鏈変竴涓妧鑳藉姞杞芥垚鍔熻繑鍥瀟rue
 func is_loaded() -> bool:
 	for slot in skill_slots.keys():
 		if has_skill(slot):
 			return true
 	return false
 
-## @return: number of loaded skills
+
+## @return: 瀹告彃濮炴潪鐣屾畱閹垛偓閼宠姤鏆熼柌?
 func get_loaded_skill_count() -> int:
 	var count = 0
 	for slot in skill_slots.keys():
@@ -438,9 +496,10 @@ func get_loaded_skill_count() -> int:
 	return count
 
 # ==============================================================================
-# Debug
+# 閻犲鍟抽惁?
 # ==============================================================================
 
+# 函数：print_skills_info
 func print_skills_info() -> void:
 	if DEBUG_VERBOSE: print("[SkillManager] skill slot info:")
 	for slot in ["q", "e", "lmb", "rmb"]:

@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/unit/players/player_generic.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scenes/unit/players/player_collapse.gd" id="2_script"]
+
+[node name="PlayerCollapse" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+player_id = "collapse"

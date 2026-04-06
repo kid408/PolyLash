@@ -17,7 +17,7 @@
 |------|--------|---------|---------|---------|---------|------|
 | 牧羊人 | `SkillHerderLoop` | 画圈击杀 | 1.0 | 1800 | 0.0005 | 闭合秒杀 |
 | 织网者 | `SkillWebWeave` | 蛛网陷阱 | 1.0 | 1800 | 0.0006 | 减速陷阱 |
-| 风行者 | `SkillWindPath` | 风墙路径 | 1.0 | 1800 | 0.0006 | 推进敌人 |
+| 风行者 | `SkillWindbladePath` | 风墙路径 | 1.0 | 1800 | 0.0006 | 推进敌人 |
 | 火焰法师 | `SkillFirePath` | 火线火海 | 1.0 | 1800 | 0.0008 | 持续伤害 |
 | 爆破手 | `SkillMinePath` | 布雷路径 | 1.0 | 1800 | 0.001 | 地雷陷阱 |
 | 屠夫 | `SkillSawPath` | 锯条路径 | 1.0 | 1800 | 0.001 | 切割伤害 |
@@ -109,7 +109,7 @@ skill_id,energy_cost,cooldown,...,energy_per_10px,energy_threshold_distance,ener
 ```csv
 skill_herder_loop,0,0,...,1,1800,0.0005,...
 skill_web_weave,10,0,...,1,1800,0.0006,...
-skill_wind_path,0,0,...,1,1800,0.0006,...
+skill_windblade_path,0,0,...,1,1800,0.0006,...
 skill_fire_path,0,0,...,1,1800,0.0008,...
 skill_mine_path,0,0,...,1,1800,0.001,...
 skill_saw_path,10,0,...,1,1800,0.001,...
@@ -146,7 +146,7 @@ skill_totem,8,0,...,0,0,0,...
 SkillBase (基类)
 ├── SkillHerderLoop (画线技能)
 ├── SkillWebWeave (画线技能)
-├── SkillWindPath (画线技能)
+├── SkillWindbladePath (画线技能)
 ├── SkillFirePath (画线技能)
 ├── SkillMinePath (画线技能)
 ├── SkillSawPath (画线技能)
@@ -240,7 +240,7 @@ func _calculate_total_consumed_energy() -> float:
 ```gdscript
 class_name SkillHerderLoop extends SkillDrawingBase
 class_name SkillWebWeave extends SkillDrawingBase
-class_name SkillWindPath extends SkillDrawingBase
+class_name SkillWindbladePath extends SkillDrawingBase
 # ...
 ```
 

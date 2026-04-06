@@ -1,9 +1,7 @@
-﻿extends Unit
+extends Unit
 class_name PlayerBase
 
-const QEFRuntimeService = preload("res://scripts/qef/core/qef_runtime_service.gd")
-const ComboService = preload("res://scripts/qef/services/combo_service.gd")
-const SkillScriptRegistry = preload("res://scripts/skills/skill_script_registry.gd")
+const COMBAT_MODIFIER_COMPONENT := preload("res://scenes/components/combat_modifier_component.gd")
 
 # 对外信号：供 HUD、结算与其他系统同步玩家实时状态。
 signal energy_changed(current, max_val)
@@ -13,8 +11,7 @@ signal gold_changed(current)
 signal dash_started(player_id: String, start_pos: Vector2, direction: Vector2)
 signal dash_active(player_id: String, current_pos: Vector2, direction: Vector2, normalized_time: float)
 signal dash_finished(player_id: String, end_pos: Vector2, direction: Vector2)
-
-const TEMP_ARMOR_META: String = "temp_armor_stacks"
+signal pre_hit_veto_requested(payload: Dictionary)
 
 @export var player_id: String = ""
 
@@ -51,6 +48,17 @@ var reduction_per_armor: float = 0.2
 var player_hit_cooldown: float = 0.12
 var _player_hit_cooldown_timer: float = 0.0
 
+@export_group("Tactical Reject")
+@export var tactical_reject_enabled: bool = true
+@export var tactical_reject_energy_cost: float = 15.0
+@export var tactical_reject_cooldown: float = 4.0
+@export var tactical_reject_radius: float = 150.0
+@export var tactical_reject_push_distance: float = 150.0
+@export var tactical_reject_stun_duration: float = 0.5
+@export var tactical_reject_visual_duration: float = 0.18
+
+var _tactical_reject_cooldown_remaining: float = 0.0
+
 # 核心节点引用
 @onready var collision: CollisionShape2D = $CollisionShape2D
 @onready var weapon_container: WeaponContainer = $WeaponContainer if has_node("WeaponContainer") else null
@@ -70,6 +78,7 @@ var _pending_bench_multiplier: float = 1.0
 
 # 装备词条与当前已装备道具
 var modifier_manager: Node = null
+var combat_modifier_component: CombatModifierComponent = null
 
 var equipped_item_id: String = "" 
 
@@ -82,6 +91,7 @@ var _danger_warned_lv2: bool = false
 var _danger_warned_lv3: bool = false
 
 func _ready() -> void:
+	_ensure_combat_modifier_component()
 	# 初始化顺序：基础配置 -> 外观 -> 父类构建 -> 道具/武器 -> 信号 -> UI -> 大招 -> 技能管理器
 
 	_load_config_from_csv()
@@ -288,42 +298,36 @@ func _load_sprite_from_csv() -> void:
 		printerr("[PlayerBase] Error: failed to load sprite texture: %s" % sprite_path)
 
 func _load_weapons_from_config() -> void:
-	# 武器来源优先级：本局选中的初始武器 + 局内商店购买武器（避免重复）。
-	if player_id.is_empty() or not weapon_container:
-		return
-	
-	var selected_weapon_type: String = ""
-	if Global.selected_player_weapons.has(player_id):
-		selected_weapon_type = str(Global.selected_player_weapons[player_id])
+	for weapon in current_weapons:
+		if is_instance_valid(weapon):
+			weapon.queue_free()
+	current_weapons.clear()
 
-	if selected_weapon_type.is_empty():
-		var fallback_weapon_types: Array[String] = ConfigManager.get_player_available_weapon_types(player_id)
-		if not fallback_weapon_types.is_empty():
-			selected_weapon_type = fallback_weapon_types[0]
-			Global.selected_player_weapons[player_id] = selected_weapon_type
-			print("[PlayerBase] fallback weapon assigned for %s: %s" % [player_id, selected_weapon_type])
-		else:
-			push_warning("[PlayerBase] no available weapon types for player: %s" % player_id)
-	
-	if selected_weapon_type != "":
-		var weapon_id = "%s_1" % selected_weapon_type
-		var item_weapon = _create_item_weapon_from_csv(weapon_id)
-		if item_weapon:
-			_add_weapon(item_weapon)
-	
-	var purchased_weapon_type = DataManager.get_purchased_weapon(player_id)
-	if purchased_weapon_type != "" and purchased_weapon_type != selected_weapon_type:
-		var purchased_weapon_id = "%s_1" % purchased_weapon_type
-		var purchased_item = _create_item_weapon_from_csv(purchased_weapon_id)
-		if purchased_item:
-			_add_weapon(purchased_item)
-			print("[PlayerBase] loaded purchased weapon: %s" % purchased_weapon_id)
-	
-	if current_weapons.is_empty():
-		print("[PlayerBase] Warning: player %s has no weapons loaded" % player_id)
-	else:
-		print("[PlayerBase] player %s loaded %d weapons" % [player_id, current_weapons.size()])
-	return
+	if player_id.strip_edges().is_empty():
+		push_warning("[PlayerBase] skip weapon load: empty player_id")
+		return
+
+	var weapon_type: String = ""
+	if Global != null:
+		weapon_type = str(Global.selected_player_weapons.get(player_id, "")).strip_edges()
+
+	if weapon_type.is_empty():
+		var available_weapon_types: Array[String] = ConfigManager.get_player_available_weapon_types(player_id)
+		if not available_weapon_types.is_empty():
+			weapon_type = available_weapon_types[0]
+
+	if weapon_type.is_empty():
+		push_warning("[PlayerBase] no weapon configured for player: %s" % player_id)
+		return
+
+	var weapon_id: String = "%s_1" % weapon_type
+	var weapon_data: ItemWeapon = _create_item_weapon_from_csv(weapon_id)
+	if weapon_data == null:
+		printerr("[PlayerBase] failed to create weapon from csv: %s" % weapon_id)
+		return
+
+	_add_weapon(weapon_data)
+	print("[PlayerBase] equipped runtime weapon: %s -> %s" % [player_id, weapon_id])
 
 func _create_item_weapon_from_csv(weapon_id: String) -> ItemWeapon:
 	"""Create ItemWeapon instance from CSV config."""
@@ -537,7 +541,8 @@ func _process(delta: float) -> void:
 
 	if _player_hit_cooldown_timer > 0.0:
 		_player_hit_cooldown_timer = max(0.0, _player_hit_cooldown_timer - delta)
-	
+	if _tactical_reject_cooldown_remaining > 0.0:
+		_tactical_reject_cooldown_remaining = max(0.0, _tactical_reject_cooldown_remaining - delta)	
 	if energy < max_energy:
 		energy += energy_regen * delta
 		update_ui_signals()
@@ -553,14 +558,15 @@ func _process(delta: float) -> void:
 	update_rotation()
 
 func _handle_input(delta: float) -> void:
-	# 输入优先级：移动 -> E瞬发 -> Q蓄力/释放 -> 普攻 -> F大招。
+	# 输入优先级：移动 -> 通用保命Q -> E瞬发 -> Space蓄力/释放 -> 普攻 -> F大招。
 
 	move_dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if can_move():
-		var current_speed = speed
-		if has_meta("buff_speed_boost"):
-			current_speed *= (1.0 + get_meta("buff_speed_boost"))
+		var current_speed: float = get_effective_move_speed()
 		position += move_dir * current_speed * delta
+
+	if Input.is_action_just_pressed("tactical_reject"):
+		_try_activate_tactical_reject()
 
 	if has_node("SkillManager"):
 		var skill_manager = get_node("SkillManager")
@@ -570,10 +576,10 @@ func _handle_input(delta: float) -> void:
 			skill_manager.execute_skill("e")
 			return
 		
-		if Input.is_action_pressed("skill_q"):
+		if Input.is_action_pressed("click_right"):
 			skill_manager.charge_skill("q", delta)
 			return
-		elif Input.is_action_just_released("skill_q"):
+		elif Input.is_action_just_released("click_right"):
 			print("[PlayerBase] Q released -> release_skill('q')")
 			skill_manager.release_skill("q")
 			return
@@ -592,8 +598,164 @@ func _handle_input(delta: float) -> void:
 
 			Global.spawn_floating_text(global_position, "Ultimate not ready", Color.GRAY)
 
-func can_move() -> bool: 
+func _try_activate_tactical_reject() -> bool:
+	if not tactical_reject_enabled:
+		return false
+	if has_meta("buff_invincible"):
+		return false
+	if _tactical_reject_cooldown_remaining > 0.0:
+		Global.spawn_floating_text(global_position, "CD", Color(0.9, 0.8, 0.4))
+		SoundManager.play("ui_error")
+		return false
+	if not consume_energy(tactical_reject_energy_cost):
+		return false
+	_tactical_reject_cooldown_remaining = tactical_reject_cooldown
+	_execute_tactical_reject()
 	return true
+
+func _execute_tactical_reject() -> void:
+	var pushed_enemy_count: int = 0
+	var interrupted_enemy_count: int = 0
+	var destroyed_projectile_count: int = 0
+
+	for enemy_node in get_tree().get_nodes_in_group("enemies"):
+		if not (enemy_node is Enemy):
+			continue
+		var enemy: Enemy = enemy_node as Enemy
+		if not is_instance_valid(enemy) or enemy.is_dead:
+			continue
+		if enemy.global_position.distance_to(global_position) > tactical_reject_radius:
+			continue
+		if enemy.has_method("apply_tactical_reject"):
+			var raw_result: Variant = enemy.call("apply_tactical_reject", global_position, tactical_reject_push_distance, tactical_reject_stun_duration)
+			if raw_result is Dictionary:
+				var result: Dictionary = raw_result
+				if bool(result.get("pushed", false)):
+					pushed_enemy_count += 1
+				if bool(result.get("interrupted", false)):
+					interrupted_enemy_count += 1
+
+	var cleared_projectile_ids: Dictionary = {}
+	for group_name: String in ["elite_projectiles", "projectiles"]:
+		for projectile_node in get_tree().get_nodes_in_group(group_name):
+			if not is_instance_valid(projectile_node) or projectile_node.is_queued_for_deletion():
+				continue
+			var projectile_id: int = projectile_node.get_instance_id()
+			if cleared_projectile_ids.has(projectile_id):
+				continue
+			if not _is_enemy_projectile(projectile_node):
+				continue
+			if projectile_node is Node2D and (projectile_node as Node2D).global_position.distance_to(global_position) <= tactical_reject_radius:
+				cleared_projectile_ids[projectile_id] = true
+				projectile_node.queue_free()
+				destroyed_projectile_count += 1
+
+	_spawn_tactical_reject_vfx()
+	Global.on_camera_shake.emit(4.0, 0.08)
+	SoundManager.play("skill_e_instant")
+	var label: String = "DENY"
+	if destroyed_projectile_count > 0:
+		label = "DENY x%d" % destroyed_projectile_count
+	Global.spawn_floating_text(global_position, label, Color(0.72, 0.95, 1.0))
+	if interrupted_enemy_count > 0 and interrupted_enemy_count >= pushed_enemy_count:
+		Global.spawn_floating_text(global_position + Vector2(0, -24), "BREAK", Color(1.0, 0.9, 0.72))
+
+func _is_enemy_projectile(node: Node) -> bool:
+	if node.is_in_group("elite_projectiles"):
+		return true
+	if node is Projectile:
+		var projectile: Projectile = node as Projectile
+		if is_instance_valid(projectile.owner_unit) and projectile.owner_unit.is_in_group("enemies"):
+			return true
+		if projectile.hitbox != null and int(projectile.hitbox.collision_layer) == 64:
+			return true
+	return false
+
+func _spawn_tactical_reject_vfx() -> void:
+	var root: Node2D = Node2D.new()
+	root.top_level = true
+	root.global_position = global_position
+	root.z_index = 90
+	get_tree().current_scene.add_child(root)
+
+	var outer_ring: Line2D = Line2D.new()
+	outer_ring.top_level = true
+	outer_ring.closed = true
+	outer_ring.width = 14.0
+	outer_ring.default_color = Color(0.58, 0.92, 1.0, 0.95)
+	outer_ring.antialiased = true
+	outer_ring.z_index = 90
+	root.add_child(outer_ring)
+
+	var inner_ring: Line2D = Line2D.new()
+	inner_ring.top_level = true
+	inner_ring.closed = true
+	inner_ring.width = 34.0
+	inner_ring.default_color = Color(0.72, 0.95, 1.0, 0.22)
+	inner_ring.antialiased = true
+	inner_ring.z_index = 89
+	root.add_child(inner_ring)
+
+	var points: PackedVector2Array = PackedVector2Array()
+	for i in range(25):
+		var angle: float = (float(i) / 24.0) * TAU
+		points.append(global_position + Vector2.RIGHT.rotated(angle) * tactical_reject_radius)
+	outer_ring.points = points
+	inner_ring.points = points
+	outer_ring.scale = Vector2(0.25, 0.25)
+	inner_ring.scale = Vector2(0.2, 0.2)
+
+	var tween: Tween = root.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(outer_ring, "scale", Vector2.ONE, tactical_reject_visual_duration)
+	tween.tween_property(inner_ring, "scale", Vector2.ONE, tactical_reject_visual_duration)
+	tween.tween_property(outer_ring, "modulate:a", 0.0, tactical_reject_visual_duration)
+	tween.tween_property(inner_ring, "modulate:a", 0.0, tactical_reject_visual_duration)
+	tween.finished.connect(root.queue_free)
+
+func can_move() -> bool:
+	return true
+
+func _ensure_combat_modifier_component() -> void:
+	if combat_modifier_component and is_instance_valid(combat_modifier_component):
+		return
+	combat_modifier_component = get_node_or_null("CombatModifierComponent") as CombatModifierComponent
+	if combat_modifier_component == null:
+		combat_modifier_component = COMBAT_MODIFIER_COMPONENT.new()
+		combat_modifier_component.name = "CombatModifierComponent"
+		add_child(combat_modifier_component)
+
+func get_effective_move_speed() -> float:
+	var current_speed: float = speed
+	if has_meta("buff_speed_boost"):
+		current_speed *= (1.0 + float(get_meta("buff_speed_boost")))
+	if combat_modifier_component:
+		current_speed *= combat_modifier_component.get_move_speed_multiplier()
+	return current_speed
+
+func get_incoming_damage_multiplier() -> float:
+	if combat_modifier_component:
+		return combat_modifier_component.get_damage_taken_multiplier()
+	return 1.0
+
+func apply_modifier_damage(raw_amount: float, _source: Variant = null, _payload: Dictionary = {}) -> void:
+	take_damage(raw_amount)
+
+func apply_move_speed_modifier(modifier_id: String, multiplier: float, duration: float, stacking_rule: String = CombatModifierComponent.STACK_REFRESH, source: Variant = null, payload: Dictionary = {}) -> String:
+	_ensure_combat_modifier_component()
+	return combat_modifier_component.apply_move_speed_multiplier(modifier_id, multiplier, duration, stacking_rule, source, payload)
+
+func apply_damage_over_time_modifier(modifier_id: String, damage_per_tick: float, duration: float, tick_interval: float, stacking_rule: String = CombatModifierComponent.STACK_REFRESH, source: Variant = null, payload: Dictionary = {}) -> String:
+	_ensure_combat_modifier_component()
+	return combat_modifier_component.apply_damage_over_time(modifier_id, damage_per_tick, duration, tick_interval, stacking_rule, source, payload)
+
+func apply_vulnerable_modifier(modifier_id: String, multiplier: float, duration: float, stacking_rule: String = CombatModifierComponent.STACK_REFRESH, source: Variant = null, payload: Dictionary = {}) -> String:
+	_ensure_combat_modifier_component()
+	return combat_modifier_component.apply_vulnerable(modifier_id, multiplier, duration, stacking_rule, source, payload)
+
+func apply_tag_marker(modifier_id: String, tag_name: String, duration: float, stacking_rule: String = CombatModifierComponent.STACK_REFRESH, source: Variant = null, payload: Dictionary = {}) -> String:
+	_ensure_combat_modifier_component()
+	return combat_modifier_component.apply_tag_marker(modifier_id, tag_name, duration, stacking_rule, source, payload)
 
 func _process_subclass(delta: float) -> void: 
 	pass
@@ -618,34 +780,55 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 		Global.on_create_block_text.emit(self)
 		return
 
+	var pre_hit_payload: Dictionary = {
+		"damage": float(hitbox.damage),
+		"source": hitbox.source,
+		"hitbox": hitbox,
+		"kind": "hurtbox",
+		"knockback_power": float(hitbox.knockback_power),
+	}
+	var pre_hit_result: Dictionary = _evaluate_pre_hit_veto(pre_hit_payload)
+	if bool(pre_hit_result.get("cancel", false)):
+		Global.on_create_block_text.emit(self)
+		return
+
 	set_flash_material()
-	take_damage(hitbox.damage)
+	var damage_applied: bool = take_damage(hitbox.damage, {
+		"skip_pre_hit_veto": true,
+		"source": hitbox.source,
+		"kind": "hurtbox",
+		"hitbox": hitbox,
+	})
+	if not damage_applied:
+		return
 	_player_hit_cooldown_timer = player_hit_cooldown
 
 	if hitbox.knockback_power > 0.0 and hitbox.source and is_instance_valid(hitbox.source):
 		var knock_dir := hitbox.source.global_position.direction_to(global_position)
 		apply_knockback_self(knock_dir * hitbox.knockback_power)
 
-func take_damage(raw_amount: float) -> void:
+func take_damage(raw_amount: float, payload: Dictionary = {}) -> bool:
 	if Global.has_meta("skill_synergy_test_no_damage") and bool(Global.get_meta("skill_synergy_test_no_damage")):
-		return
+		return false
+	if not bool(payload.get("skip_pre_hit_veto", false)):
+		var pre_hit_payload: Dictionary = payload.duplicate(true)
+		pre_hit_payload["damage"] = float(raw_amount)
+		var pre_hit_result: Dictionary = _evaluate_pre_hit_veto(pre_hit_payload)
+		if bool(pre_hit_result.get("cancel", false)):
+			Global.on_create_block_text.emit(self)
+			return false
 	# 伤害流程：护甲减伤 -> 护甲层消耗/破甲反馈 -> 扣血 -> 被动反制触发。
-	var damage_multiplier = 1.0 - (clamp(armor, 0, max_armor) * reduction_per_armor)
-	var final_damage = max(1, raw_amount * damage_multiplier)
+	var incoming_multiplier: float = get_incoming_damage_multiplier()
+	var damage_multiplier: float = 1.0 - (clamp(armor, 0, max_armor) * reduction_per_armor)
+	var final_damage: float = max(1.0, raw_amount * incoming_multiplier * damage_multiplier)
 	
-	print("[PlayerBase] take_damage: raw=%d, final=%d, current_hp=%d" % [raw_amount, final_damage, health_component.current_health])
+	print("[PlayerBase] take_damage: raw=%d, final=%d, current_hp=%d" % [int(round(raw_amount)), int(round(final_damage)), health_component.current_health])
 	
 
 	SoundManager.play("player_hurt")
 	
 	if armor > 0:
 		armor -= 1
-		if has_meta(TEMP_ARMOR_META):
-			var temp_armor: int = max(0, int(get_meta(TEMP_ARMOR_META, 0)))
-			if temp_armor > 1:
-				set_meta(TEMP_ARMOR_META, temp_armor - 1)
-			elif temp_armor == 1:
-				remove_meta(TEMP_ARMOR_META)
 		if armor == 0:
 			SoundManager.play("player_armor_break")
 		Global.spawn_floating_text(global_position, "Armor Crack!", Color.YELLOW)
@@ -665,6 +848,23 @@ func take_damage(raw_amount: float) -> void:
 		_trigger_soul_attach_on_hit()
 	
 	print("[PlayerBase] hp after damage=%d" % health_component.current_health)
+	return true
+
+func _evaluate_pre_hit_veto(payload: Dictionary) -> Dictionary:
+	var normalized_payload: Dictionary = payload.duplicate(true)
+	pre_hit_veto_requested.emit(normalized_payload)
+	var local_result: Dictionary = on_pre_hit_check(normalized_payload)
+	if bool(local_result.get("cancel", false)):
+		return local_result
+	var assist_service: Node = get_node_or_null("/root/AssistRuntimeService")
+	if assist_service != null and assist_service.has_method("on_front_pre_hit"):
+		var assist_result: Variant = assist_service.call("on_front_pre_hit", self, normalized_payload)
+		if assist_result is Dictionary and bool((assist_result as Dictionary).get("cancel", false)):
+			return assist_result
+	return {"cancel": false}
+
+func on_pre_hit_check(_payload: Dictionary) -> Dictionary:
+	return {"cancel": false}
 
 func _cancel_active_planning_skills(refund_energy: bool = false) -> void:
 	var sm = get_node_or_null("SkillManager")
@@ -750,17 +950,17 @@ func _play_danger_flash(tint: Color) -> void:
 
 func _notify_hud_health_danger(level: int, current: float, max_val: float, ratio: float) -> void:
 	var arena = get_tree().get_first_node_in_group("arena")
-	if arena == null or not is_instance_valid(arena):
+	if not arena or not (arena is Arena):
 		return
-	var hud: Node = arena.get("global_hud") if "global_hud" in arena else null
+	var hud = (arena as Arena).global_hud
 	if hud and hud.has_method("show_health_danger"):
 		hud.show_health_danger(level, current, max_val, ratio)
 
 func _notify_hud_health_safe() -> void:
 	var arena = get_tree().get_first_node_in_group("arena")
-	if arena == null or not is_instance_valid(arena):
+	if not arena or not (arena is Arena):
 		return
-	var hud: Node = arena.get("global_hud") if "global_hud" in arena else null
+	var hud = (arena as Arena).global_hud
 	if hud and hud.has_method("clear_health_danger"):
 		hud.clear_health_danger()
 
@@ -890,18 +1090,24 @@ func is_facing_right() -> bool:
 	return visuals.scale.x < 0
 
 func _is_drawing_active() -> bool:
-	
-	
-	
 	if not has_node("SkillManager"):
 		return false
 	
 	var skill_manager = get_node("SkillManager")
-	
+
+	if skill_manager.has_method("get_skill"):
+		var q_skill = skill_manager.get_skill("q")
+		if q_skill and is_instance_valid(q_skill):
+			for flag in ["is_planning", "is_drawing", "is_charging"]:
+				if flag in q_skill and bool(q_skill.get(flag)):
+					return true
+
 	if skill_manager.has_method("get_all_skills"):
 		for skill in skill_manager.get_all_skills():
-			if skill is SkillDrawingBase:
-				if skill.is_planning or skill.is_drawing:
+			if skill == null or not is_instance_valid(skill):
+				continue
+			for flag in ["is_planning", "is_drawing", "is_charging"]:
+				if flag in skill and bool(skill.get(flag)):
 					return true
 	
 	return false
@@ -914,8 +1120,8 @@ func get_speed_damage_bonus() -> float:
 	
 	var conversion_rate = BondManager.get_mechanic_value("speed_to_damage")
 	
-	var current_speed = speed
-	var speed_diff = current_speed - base_speed
+	var current_speed: float = get_effective_move_speed()
+	var speed_diff: float = current_speed - base_speed
 	
 	if speed_diff <= 0:
 		return 0.0
@@ -935,7 +1141,6 @@ func get_speed_damage_bonus() -> float:
 func _on_death() -> void:
 	print("[PlayerBase] ========== PLAYER DIED ==========")
 	print("[PlayerBase] current_hp = %d" % health_component.current_health)
-	ComboService.reset(self)
 	
 	SoundManager.play("player_death")
 	visuals.visible = false
@@ -970,147 +1175,74 @@ func _cleanup_skill_effects() -> void:
 
 
 func _load_ultimate_skill() -> void:
-	"""按角色读取大招配置并挂载统一的大招脚本实例。"""
-	print("[PlayerBase] start loading ultimate, player_id = %s" % player_id)
-	
-	if player_id.is_empty():
-		print("[PlayerBase] player_id is empty, skip ultimate load")
-		return
-	
-	var ult_config = _load_ult_config_from_csv(player_id)
-	if ult_config.is_empty():
-		print("[PlayerBase] player %s has no ultimate config" % player_id)
-		return
-	
-	print("[PlayerBase] ultimate config loaded: %s" % str(ult_config))
-	
-	var ult_script = _get_ultimate_script_for_player(player_id, ult_config)
-	if not ult_script:
-		print("[PlayerBase] player %s has no ultimate script" % player_id)
-		return
-	
-	print("[PlayerBase] ultimate script loaded: %s" % str(ult_script))
-	
-
-	ultimate_skill = ult_script.new()
-	ultimate_skill.name = "UltimateSkill"
-	add_child(ultimate_skill)
-	
-	print("[PlayerBase] ultimate node created")
-	
-
-	ultimate_skill.initialize(ult_config, self)
-	
-	print("[PlayerBase] ultimate load complete: %s" % ult_config.get("name", "Unknown"))
+	ultimate_skill = null
+	print("[PlayerBase] Stage 1 cleanup: legacy ultimate loading disabled")
 
 func _load_ult_config_from_csv(pid: String) -> Dictionary:
 	
 	return ConfigRepository.get_ult_config_for_player(pid)
 
-func _get_ultimate_script_for_player(pid: String, ult_config: Dictionary = {}) -> Script:
-	var script_path: String = SkillScriptRegistry.resolve_ultimate_script_path(pid, ult_config)
+func _get_ultimate_script_for_player(pid: String) -> Script:
+
+	var script_path: String = ""
+	var role_script_path: String = "res://scenes/skills/players/f_roles/skill_%s_f.gd" % pid
+	if FileAccess.file_exists(role_script_path):
+		script_path = role_script_path
+
 	if script_path.is_empty():
-		printerr("[PlayerBase] ultimate script not found for %s" % pid)
-		return null
-	if script_path == SkillScriptRegistry.ULTIMATE_BASE_PATH:
+		script_path = "res://scenes/skills/skill_ultimate_base.gd"
 		print("[PlayerBase] role ultimate wrapper missing, fallback to base ultimate: %s" % pid)
+
+	if not FileAccess.file_exists(script_path):
+		script_path = "res://scenes/skills/skill_ultimate_base.gd"
+		print("[PlayerBase] ultimate script missing, fallback to base ultimate: %s" % pid)
+	
+	if not FileAccess.file_exists(script_path):
+		printerr("[PlayerBase] ultimate script not found: %s" % script_path)
+		return null
+	
 	return load(script_path) as Script
 
 func notify_q_path_executed(is_closed: bool, segment_count: int, polygon_count: int) -> void:
 	"""Forward Q path execution events to active ultimate."""
-	QEFRuntimeService.on_q_path_executed(self, is_closed, segment_count, polygon_count)
 	if not ultimate_skill or not is_instance_valid(ultimate_skill):
 		return
 	if not ultimate_skill.has_method("on_q_path_executed"):
 		return
 	ultimate_skill.call("on_q_path_executed", is_closed, segment_count, polygon_count)
 
-func notify_e_result_executed(report_packet: Dictionary, asset_entry: Dictionary = {}) -> void:
-	var report: Dictionary = report_packet.duplicate(true)
-	if not asset_entry.is_empty():
-		report["linked_asset"] = asset_entry.duplicate(true)
-	QEFRuntimeService.on_e_result_executed(self, report)
+func notify_space_draw_release(release_data: Dictionary) -> void:
+	var assist_service: Node = get_node_or_null("/root/AssistRuntimeService")
+	if assist_service == null or not assist_service.has_method("on_front_draw_release"):
+		return
+	assist_service.call("on_front_draw_release", self, release_data.duplicate(true))
+
+func notify_front_dash_used(dash_data: Dictionary) -> void:
+	var assist_service: Node = get_node_or_null("/root/AssistRuntimeService")
+	if assist_service == null or not assist_service.has_method("on_front_dash"):
+		return
+	assist_service.call("on_front_dash", self, dash_data.duplicate(true))
+
+func notify_front_skill_damage(skill_slot: String, hit_enemies: Array, payload: Dictionary = {}) -> void:
+	var assist_service: Node = get_node_or_null("/root/AssistRuntimeService")
+	if assist_service == null or not assist_service.has_method("on_front_skill_damage"):
+		return
+	assist_service.call(
+		"on_front_skill_damage",
+		self,
+		skill_slot,
+		hit_enemies.duplicate(),
+		payload.duplicate(true)
+	)
+
+func reset_dash_cooldown() -> void:
+	pass
 
 func _auto_create_skill_manager() -> void:
-	# 若场景未预置 SkillManager，则按角色技能绑定表自动创建。
-	for child in get_children():
-		if child is SkillManager:
-			var sm = child as SkillManager
-			print("[PlayerBase] SkillManager already exists (created by child: %s), loaded=%d, skip auto create" % [child.name, sm.get_loaded_skill_count()])
-			if child.name != "SkillManager":
-				child.name = "SkillManager"
-
-			sm.print_skills_info()
-			return
-	
-	var bindings = ConfigManager.get_player_skill_bindings(player_id)
-	if bindings.is_empty():
-		print("[PlayerBase] player %s has no skill bindings, skip SkillManager auto create" % player_id)
-		return
-	
-	var has_any_skill = false
-	for slot in ["q", "e", "lmb", "rmb"]:
-		var skill_id = bindings.get("slot_%s" % slot, "")
-		if not skill_id.is_empty():
-			has_any_skill = true
-			break
-	
-	if not has_any_skill:
-		print("[PlayerBase] player %s has no skills configured, skip SkillManager auto create" % player_id)
-		return
-	
-	var skill_manager = SkillManager.new(self)
-	skill_manager.name = "SkillManager"
-	skill_manager.debug_mode = false
-	add_child(skill_manager)
-	
-	var success = skill_manager.load_skills_from_config(player_id)
-	
-	if success:
-		print("[PlayerBase] SkillManager auto-created: %s (loaded %d skills)" % [
-			player_id, 
-			skill_manager.get_loaded_skill_count()
-		])
-	else:
-		print("[PlayerBase] SkillManager created, but skill loading failed: %s" % player_id)
-
-func get_skill_cooldowns_snapshot() -> Dictionary:
-	if not has_node("SkillManager"):
-		return {}
-	var sm = get_node("SkillManager")
-	if sm and sm.has_method("export_cooldown_state"):
-		return sm.export_cooldown_state()
-	return {}
-
-func queue_restore_skill_cooldowns(snapshot: Dictionary, elapsed_time: float = 0.0, bench_speed_multiplier: float = 1.0) -> void:
-	_pending_skill_cooldowns = snapshot.duplicate(true)
-	_pending_bench_elapsed = max(0.0, elapsed_time)
-	_pending_bench_multiplier = max(0.0, bench_speed_multiplier)
-	call_deferred("_apply_queued_skill_cooldowns")
-
-func _apply_queued_skill_cooldowns() -> void:
-	if _pending_skill_cooldowns.is_empty():
-		return
-
-	var retry_frames := 5
-	while not has_node("SkillManager") and retry_frames > 0:
-		retry_frames -= 1
-		await get_tree().process_frame
-
-	if not has_node("SkillManager"):
-		return
-
-	var sm = get_node("SkillManager")
-	if sm and sm.has_method("import_cooldown_state"):
-		sm.import_cooldown_state(_pending_skill_cooldowns, _pending_bench_elapsed, _pending_bench_multiplier)
-
-	_pending_skill_cooldowns.clear()
-	_pending_bench_elapsed = 0.0
-	_pending_bench_multiplier = 1.0
-
+	print("[PlayerBase] Stage 1 cleanup: legacy skill manager auto-create disabled")
+	return
 func get_energy_percent() -> float:
-	
-	if max_energy <= 0:
+	if max_energy <= 0.0:
 		return 0.0
 	return (energy / max_energy) * 100.0
 
@@ -1123,29 +1255,14 @@ func get_skill_asset_snapshot(kind_filter: String = "") -> Array[Dictionary]:
 	return SkillAssetRegistry.list_assets(self, kind_filter)
 
 func get_skill_runtime_snapshot() -> Dictionary:
-	var snapshot := {
-		"context": get_skill_context_snapshot(),
-		"energy_percent": get_energy_percent(),
-		"qef_runtime": QEFRuntimeService.get_runtime(self),
+	return {
+		"player_id": player_id,
+		"energy": energy,
+		"max_energy": max_energy,
+		"armor": armor,
+		"current_weapons": current_weapons.size(),
+		"ultimate_loaded": ultimate_skill != null and is_instance_valid(ultimate_skill)
 	}
-	if has_node("SkillManager"):
-		var skill_manager = get_node("SkillManager")
-		if skill_manager != null and skill_manager.has_method("export_cooldown_state"):
-			snapshot["cooldowns"] = skill_manager.export_cooldown_state()
-	if is_instance_valid(ultimate_skill):
-		snapshot["ultimate"] = {
-			"active": ultimate_skill.is_active,
-			"runtime_profile": ultimate_skill.get_runtime_profile() if ultimate_skill.has_method("get_runtime_profile") else {},
-		}
-	return snapshot
-
-func consume_energy_percent(percent: float) -> bool:
-	if _is_skill_synergy_test_no_cost_mode():
-		return true
-
-	
-	var amount = (percent / 100.0) * max_energy
-	return consume_energy(amount)
 
 func _is_skill_synergy_test_no_cost_mode() -> bool:
 	if Global == null:
@@ -1157,12 +1274,10 @@ func try_break_line(enemy_pos: Vector2, radius: float) -> void:
 
 func _cleanup_all_skills() -> void:
 	if has_node("SkillManager"):
-		var skill_manager = get_node("SkillManager")
+		var skill_manager := get_node("SkillManager")
 		if skill_manager.has_method("cleanup_all_skills"):
 			skill_manager.cleanup_all_skills()
-	
+
 	for child in get_children():
-		if child.has_method("cleanup"):
+		if child and child.has_method("cleanup"):
 			child.cleanup()
-
-

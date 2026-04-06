@@ -252,7 +252,7 @@ func calculate_team_bonds(selected_player_ids: Array) -> Dictionary:
 	"""计算队伍羁绊统计（角色标签 + 装备bond_grant）
 	
 	Args:
-		selected_player_ids: 已选角色ID数组（如 ["butcher", "wind", "pyro"]）
+		selected_player_ids: 已选角色ID数组（如 ["butcher", "windblade", "ignis"]）
 	
 	Returns:
 		Dictionary: 羁绊统计结果

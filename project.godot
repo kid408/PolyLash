@@ -22,6 +22,8 @@ config/icon="uid://b02x7h4bntic6"
 [autoload]
 
 ConfigManager="*res://autoloads/config_manager.gd"
+ConfigRepositoryV2="*res://autoloads/config_repository_v2.gd"
+RoleRuntimeService="*res://autoloads/role_runtime_service.gd"
 SoundManager="*res://autoloads/sound_manager.gd"
 Global="*res://autoloads/global.gd"
 DataManager="*res://autoloads/data_manager.gd"
@@ -36,6 +38,7 @@ WarehouseManager="*res://autoloads/warehouse_manager.gd"
 BondUILoader="*res://autoloads/bond_ui_loader.gd"
 BondManager="*res://autoloads/bond_manager.gd"
 ResonanceRuntimeService="*res://autoloads/resonance_runtime_service.gd"
+AssistRuntimeService="*res://autoloads/assist_runtime_service.gd"
 RunTelemetryService="*res://autoloads/run_telemetry_service.gd"
 EmblemManager="*res://autoloads/emblem_manager.gd"
 ModifierManager="*res://autoloads/modifier_manager.gd"
@@ -82,8 +85,7 @@ move_down={
 }
 dash={
 "deadzone": 0.2,
-"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":32,"key_label":0,"unicode":32,"location":0,"echo":false,"script":null)
-]
+"events": []
 }
 click_left={
 "deadzone": 0.2,
@@ -106,6 +108,11 @@ skill_f={
 ]
 }
 skill_q={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":32,"key_label":0,"unicode":32,"location":0,"echo":false,"script":null)
+]
+}
+tactical_reject={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":81,"key_label":0,"unicode":113,"location":0,"echo":false,"script":null)
 ]

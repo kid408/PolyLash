@@ -1,29 +1,70 @@
-﻿extends Panel
+extends Panel
 class_name SelectionPanel
 
-# ============================================================================
-# 角色选择面板 - 游戏开始前选择角色和武器
-# ============================================================================
+const ARENA_SCENE_PATH := "res://scenes/arena/arena.tscn"
+const MAIN_MENU_SCENE_PATH := "res://scenes/ui/main_menu/main_menu_root.tscn"
+const MAX_SELECTED_PLAYERS := 3
+const PLAYER_BUTTON_SIZE := 120
+const GRID_COLUMNS := 5
 
-# 预加载场景
-const BOND_SUMMARY_ITEM = preload("res://scenes/ui/components/bond_summary_item.tscn")
+const CLASS_GROUP_ORDER: Array[String] = ["vanguard", "mystic", "sentinel", "harmony"]
+const CLASS_GROUP_TITLES := {
+	"sentinel": "御阵 (Sentinel)",
+	"vanguard": "锋芒 (Vanguard)",
+	"mystic": "术理 (Mystic)",
+	"harmony": "协律 (Harmony)",
+}
+const CLASS_GROUP_ALIASES := {
+	"sentinel": "sentinel",
+	"御阵": "sentinel",
+	"colossus": "sentinel",
+	"architect": "sentinel",
+	"vanguard": "vanguard",
+	"锋芒": "vanguard",
+	"nomad": "vanguard",
+	"mystic": "mystic",
+	"术理": "mystic",
+	"inkborn": "mystic",
+	"blaster": "mystic",
+	"hexer": "mystic",
+	"geometrist": "mystic",
+	"harmony": "harmony",
+	"协律": "harmony",
+	"alchemist": "harmony",
+	"assist": "harmony",
+	"commander": "harmony",
+}
+const DISPLAY_CLASS_BY_PLAYER := {
+	"minimalist": "vanguard",
+	"collapse": "mystic",
+	"parasite": "mystic",
+	"joule": "sentinel",
+	"phalanx": "sentinel",
+	"silk": "harmony",
+	"arc": "vanguard",
+	"overtone": "harmony",
+}
 
-# ============================================================================
-# 信号
-# ============================================================================
+const DEFAULT_WEAPON_BY_PLAYER := {
+	"minimalist": "sword",
+	"collapse": "laser",
+	"parasite": "punch",
+	"joule": "shotgun",
+	"phalanx": "shotgun",
+	"silk": "wand",
+	"arc": "laser",
+	"overtone": "wand",
+}
 
-signal selection_confirmed(selected_data: Array[Dictionary])
-
-# ============================================================================
-# 节点引用
-# ============================================================================
-
-@onready var player_container: Container = $MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper/PlayerScrollContainer/PlayerContainer
+@onready var left_title: Label = $MarginContainer/HBoxContainer/LeftPanel/Label
+@onready var synergy_title: Label = $MarginContainer/HBoxContainer/LeftPanel/SynergyLabel
+@onready var role_title: Label = $MarginContainer/HBoxContainer/MainContent/MiddleSection/Label
+@onready var weapon_title: Label = $MarginContainer/HBoxContainer/MainContent/BottomSection/Label2
 @onready var player_scroll_container: ScrollContainer = $MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper/PlayerScrollContainer
-@onready var weapon_container: Container = $MarginContainer/HBoxContainer/MainContent/BottomSection/WeaponContainerWrapper/WeaponContainer
+@onready var player_container: Container = $MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper/PlayerScrollContainer/PlayerContainer
+@onready var weapon_container: GridContainer = $MarginContainer/HBoxContainer/MainContent/BottomSection/WeaponContainerWrapper/WeaponContainer
 @onready var selected_list: VBoxContainer = $MarginContainer/HBoxContainer/LeftPanel/SelectedList
 @onready var synergy_list: VBoxContainer = $MarginContainer/HBoxContainer/LeftPanel/SynergyScrollContainer/SynergyList
-@onready var player_info: HBoxContainer = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo
 @onready var player_ico: TextureRect = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/PlayerIco
 @onready var player_name_label: Label = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/PlayerName
 @onready var player_ties_label: Label = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/PlayerTies
@@ -31,1142 +72,603 @@ signal selection_confirmed(selected_data: Array[Dictionary])
 @onready var player_description: RichTextLabel = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/StatsScroll/PlayerDescription
 @onready var skill_description: RichTextLabel = $MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/SkillColumn/SkillDescription
 @onready var continue_button: Button = $MarginContainer/HBoxContainer/RightPanel/Continue
-@onready var upgrade_button: Button = get_node_or_null("MarginContainer/HBoxContainer/RightPanel/UpgradeButton") as Button
-@onready var warehouse_button: Button = get_node_or_null("MarginContainer/HBoxContainer/RightPanel/WarehouseButton") as Button
+@onready var warehouse_button: Button = $MarginContainer/HBoxContainer/RightPanel/WarehouseButton
 @onready var exit_dialog: ExitConfirmDialog = $ExitConfirmDialog
 
-var player_button_template: Button = null
-var weapon_button_template: Button = null
-var selected_slot_template: Button = null
-
-# ============================================================================
-# 数据变量
-# ============================================================================
-
-# 已选择的角色列表
-var selected_players: Array[Dictionary] = []
-# 格式: [{player_id: String, weapon_type: String, slot_index: int}, ...]
-
-# 当前预览的角色ID
-var preview_player_id: String = ""
-
-# 当前预览角色选择的武器类型
-var preview_weapon_type: String = ""
-
-# 配置
-var players_per_row: int = 5
-var max_selected_players: int = 1
-
-# 角色按钮映射 {player_id: Button}
-var player_buttons: Dictionary = {}
-
-# 已选槽位按钮数组
-var selected_slot_buttons: Array[Button] = []
-
-# 角色武器选择缓存 {player_id: weapon_type} - 记住每个角色选择的武器
-var player_weapon_cache: Dictionary = {}
-
-# 已选角色缓存 - 记住上次选择的角色
-var selected_players_cache: Array = []
-
-# 本地存储路径
-const WEAPON_CACHE_PATH = "user://player_weapon_cache.json"
-const SELECTION_CACHE_PATH = "user://player_selection_cache.json"
-
-# ============================================================================
-# 初始化
-# ============================================================================
+var _role_entries: Array[Dictionary] = []
+var _selected_players: Array[Dictionary] = []
+var _preview_player_id := ""
+var _preview_weapon_type := ""
+var _player_buttons: Dictionary = {}
+var _selected_slot_buttons: Array[SelectedSlotButton] = []
+var _player_weapon_cache: Dictionary = {}
 
 func _ready() -> void:
-	# 加载配置
-	players_per_row = int(ConfigManager.get_game_setting("selection_players_per_row", 5))
-	# 设计改造：开局仅允许选择1名角色，队伍扩编放到局内流程。
-	max_selected_players = 1
-	
-	# 加载武器选择缓存
-	_load_weapon_cache()
-	
-	# 加载已选角色缓存
-	_load_selection_cache()
-	
-	# 保存模板按钮
-	_save_templates()
-	
-	# 生成UI
+	_configure_static_texts()
+	_connect_signals()
+	_load_roles()
 	_generate_selected_slots()
 	_generate_player_buttons()
-	
-	# 从缓存恢复已选角色
-	_restore_selection_from_cache()
-	
-	# 连接Continue按钮
-	continue_button.pressed.connect(_on_continue_pressed)
-	continue_button.disabled = true
-	
-	# 局外关闭强化/仓库入口（统一改到局内流程）
-	if upgrade_button:
-		upgrade_button.visible = false
-		upgrade_button.disabled = true
-	if warehouse_button:
-		warehouse_button.visible = false
-		warehouse_button.disabled = true
-	
-	# 清空初始显示
 	_clear_player_info()
-	_clear_weapon_container()
-	
-	# 右列技能详情使用系统字体，避免艺术字体不清晰
-	var sys_font = SystemFont.new()
-	sys_font.font_names = PackedStringArray(["Microsoft YaHei", "SimHei", "Noto Sans CJK SC", "sans-serif"])
-	sys_font.antialiasing = TextServer.FONT_ANTIALIASING_LCD
-	skill_description.add_theme_font_override("normal_font", sys_font)
-	skill_description.add_theme_font_override("bold_font", sys_font)
-	
-	# 更新Continue按钮状态
+	_clear_weapon_cards()
+	_restore_previous_selection()
+	if _selected_players.is_empty():
+		_restore_initial_preview()
+	_refresh_synergy_summary()
 	_update_continue_button_state()
-	
-	# 创建退出确认对话框
-	_create_exit_dialog()
-	
-	print("[SelectionPanel] 初始化完成 - 每行%d个角色，最多选择%d个" % [players_per_row, max_selected_players])
 
-# ============================================================================
-# 武器缓存持久化
-# ============================================================================
+func _configure_static_texts() -> void:
+	left_title.text = "已选角色"
+	synergy_title.text = "职能统计"
+	role_title.text = "选择角色"
+	weapon_title.text = "武器选择"
+	continue_button.text = "开始战斗"
+	warehouse_button.text = "返回主菜单"
+	player_description.bbcode_enabled = false
+	skill_description.bbcode_enabled = false
 
-func _load_weapon_cache() -> void:
-	"""从本地文件加载武器选择缓存"""
-	if not FileAccess.file_exists(WEAPON_CACHE_PATH):
-		print("[SelectionPanel] 武器缓存文件不存在，使用默认值")
-		return
-	
-	var file = FileAccess.open(WEAPON_CACHE_PATH, FileAccess.READ)
-	if not file:
-		printerr("[SelectionPanel] 无法打开武器缓存文件")
-		return
-	
-	var json_text = file.get_as_text()
-	file.close()
-	
-	var json = JSON.new()
-	var error = json.parse(json_text)
-	if error != OK:
-		printerr("[SelectionPanel] 解析武器缓存JSON失败: %s" % json.get_error_message())
-		return
-	
-	var data = json.get_data()
-	if data is Dictionary:
-		player_weapon_cache = data
-		print("[SelectionPanel] 加载武器缓存: %s" % str(player_weapon_cache))
+func _connect_signals() -> void:
+	if not continue_button.pressed.is_connected(_on_continue_pressed):
+		continue_button.pressed.connect(_on_continue_pressed)
+	if not warehouse_button.pressed.is_connected(_on_back_pressed):
+		warehouse_button.pressed.connect(_on_back_pressed)
+	if exit_dialog != null:
+		if not exit_dialog.confirmed.is_connected(_on_exit_confirmed):
+			exit_dialog.confirmed.connect(_on_exit_confirmed)
+		if not exit_dialog.cancelled.is_connected(_on_exit_cancelled):
+			exit_dialog.cancelled.connect(_on_exit_cancelled)
 
-func _save_weapon_cache() -> void:
-	"""保存武器选择缓存到本地文件"""
-	var file = FileAccess.open(WEAPON_CACHE_PATH, FileAccess.WRITE)
-	if not file:
-		printerr("[SelectionPanel] 无法创建武器缓存文件")
-		return
-	
-	var json_text = JSON.stringify(player_weapon_cache)
-	file.store_string(json_text)
-	file.close()
-	print("[SelectionPanel] 保存武器缓存: %s" % str(player_weapon_cache))
-
-func _load_selection_cache() -> void:
-	"""从本地文件加载已选角色缓存"""
-	if not FileAccess.file_exists(SELECTION_CACHE_PATH):
-		print("[SelectionPanel] 已选角色缓存文件不存在")
-		return
-	
-	var file = FileAccess.open(SELECTION_CACHE_PATH, FileAccess.READ)
-	if not file:
-		printerr("[SelectionPanel] 无法打开已选角色缓存文件")
-		return
-	
-	var json_text = file.get_as_text()
-	file.close()
-	
-	var json = JSON.new()
-	var error = json.parse(json_text)
-	if error != OK:
-		printerr("[SelectionPanel] 解析已选角色缓存JSON失败: %s" % json.get_error_message())
-		return
-	
-	var data = json.get_data()
-	if data is Array:
-		selected_players_cache = data
-		print("[SelectionPanel] 加载已选角色缓存: %s" % str(selected_players_cache))
-
-func _save_selection_cache() -> void:
-	"""保存已选角色缓存到本地文件"""
-	var cache_data: Array = []
-	for data in selected_players:
-		cache_data.append({
-			"player_id": data.player_id,
-			"weapon_type": data.weapon_type,
-			"slot_index": data.slot_index
-		})
-	
-	var file = FileAccess.open(SELECTION_CACHE_PATH, FileAccess.WRITE)
-	if not file:
-		printerr("[SelectionPanel] 无法创建已选角色缓存文件")
-		return
-	
-	var json_text = JSON.stringify(cache_data)
-	file.store_string(json_text)
-	file.close()
-	print("[SelectionPanel] 保存已选角色缓存: %s" % str(cache_data))
-
-func _restore_selection_from_cache() -> void:
-	"""从缓存恢复已选角色"""
-	if selected_players_cache.is_empty():
-		return
-	
-	# ✅ 修复：按slot_index排序缓存数据，确保恢复顺序一致
-	var sorted_cache = selected_players_cache.duplicate()
-	sorted_cache.sort_custom(func(a, b): return a.get("slot_index", 0) < b.get("slot_index", 0))
-	
-	for cached_data in sorted_cache:
-		if max_selected_players == 1 and not selected_players.is_empty():
-			break
-
-		var player_id = cached_data.get("player_id", "")
-		var weapon_type = cached_data.get("weapon_type", "")
-		var slot_index = cached_data.get("slot_index", -1)
-		if max_selected_players == 1:
-			slot_index = 0
-		
-		if player_id == "":
+func _load_roles() -> void:
+	_role_entries.clear()
+	for config_variant: Dictionary in ConfigManager.get_enabled_players():
+		var player_id: String = str(config_variant.get("player_id", "")).strip_edges()
+		if player_id.is_empty():
 			continue
-		
-		# 检查角色是否存在
-		if not player_buttons.has(player_id):
-			continue
-		
-		# 如果武器为空，使用缓存的武器
-		if weapon_type == "":
-			if player_weapon_cache.has(player_id):
-				weapon_type = player_weapon_cache[player_id]
-			else:
-				var weapon_types = ConfigManager.get_player_available_weapon_types(player_id)
-				if weapon_types.size() > 0:
-					weapon_type = weapon_types[0]
-		
-		# ✅ 修复：直接添加到selected_players，保留原始slot_index
-		if slot_index >= 0 and slot_index < max_selected_players:
-			# 检查该槽位是否已被占用
-			var slot_occupied = false
-			for data in selected_players:
-				if data.slot_index == slot_index:
-					slot_occupied = true
-					break
-			
-			if not slot_occupied:
-				# 直接添加，保留原始slot_index
-				var data = {
-					"player_id": player_id,
-					"weapon_type": weapon_type,
-					"slot_index": slot_index
-				}
-				selected_players.append(data)
-				
-				# 更新槽位显示
-				_update_selected_slot_display(slot_index, player_id)
-				
-				# 更新角色按钮状态
-				if player_buttons.has(player_id):
-					player_buttons[player_id].modulate = Color(0.5, 1, 0.5)
-				
-				print("[SelectionPanel] 从缓存恢复角色 %s 到槽位 %d" % [player_id, slot_index])
-				continue
-		
-		# 如果slot_index无效，使用_add_player_to_selected分配新槽位
-		_add_player_to_selected(player_id, weapon_type)
-	
-	# 更新队伍羁绊统计
-	_update_team_synergy()
-	
-	print("[SelectionPanel] 从缓存恢复了 %d 个已选角色" % selected_players.size())
+		_role_entries.append(config_variant.duplicate(true))
+	_seed_default_weapon_cache()
 
-func _save_templates() -> void:
-	# 保存角色按钮模板
-	for child in player_container.get_children():
-		if child is Button:
-			player_button_template = child.duplicate()
-			child.queue_free()
-			#print("[SelectionPanel] 保存角色按钮模板成功")
-			break
-	
-	if player_button_template == null:
-		print("[SelectionPanel] 警告: player_container 没有按钮子节点，无法保存模板")
-	
-	# 保存武器按钮模板
-	for child in weapon_container.get_children():
-		if child is Button:
-			weapon_button_template = child.duplicate()
-			weapon_button_template.modulate = Color.WHITE
-			child.queue_free()
-			#print("[SelectionPanel] 保存武器按钮模板成功")
-			break
-	
-	if weapon_button_template == null:
-		print("[SelectionPanel] 警告: weapon_container 没有按钮子节点，创建默认模板")
-		weapon_button_template = Button.new()
-		weapon_button_template.custom_minimum_size = Vector2(32, 32)  # 武器最小，仅作附件展示
-		weapon_button_template.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		weapon_button_template.expand_icon = true
-		weapon_button_template.modulate = Color.WHITE
-	
-	# 保存已选槽位模板（从 SelectedList 获取）
-	for child in selected_list.get_children():
-		if child is Button:
-			selected_slot_template = child.duplicate()
-			child.queue_free()
-			#print("[SelectionPanel] 保存已选槽位模板成功")
-			break
-	
-	if selected_slot_template == null:
-		print("[SelectionPanel] 警告: selected_list 没有按钮子节点，无法保存模板")
-
-# ============================================================================
-# 角色列表生成（按 Origin 分组）
-# ============================================================================
-
-func _generate_player_buttons() -> void:
-	var enabled_players = ConfigManager.get_enabled_players()
-	
-	# 图标尺寸配置
-	var icon_size = 120  # 角色池图标尺寸 (大图标)
-	var spacing = 10  # 间距
-	var grid_columns = 10  # 每组列数（每行显示10个角色）
-	
-	# 获取 PlayerScrollContainer
-	var scroll_container = player_scroll_container
-	
-	# 清理并重新设置PlayerContainer
-	player_container.queue_free()
-	
-	# 创建主 VBoxContainer
-	var main_vbox = VBoxContainer.new()
-	main_vbox.name = "PlayerVBox"
-	main_vbox.add_theme_constant_override("separation", 20)  # 组间距
-	main_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	main_vbox.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	scroll_container.add_child(main_vbox)
-	
-	# 更新引用
-	player_container = main_vbox
-	
-	# 按 origin_tag 分组
-	var grouped_players = {
-		"colossus": [],
-		"inkborn": [],
-		"nomad": [],
-		"alchemist": []
-	}
-	
-	for player_config in enabled_players:
-		var origin = player_config.get("origin_tag", "")
-		if grouped_players.has(origin):
-			grouped_players[origin].append(player_config)
-	
-	# 定义分组信息（顺序、标题、颜色）
-	var group_info = [
-		{"id": "colossus", "title": "重装 (Colossus)", "color": Color(1, 0.3, 0.3)},
-		{"id": "inkborn", "title": "魔导 (Inkborn)", "color": Color(0.3, 0.5, 1)},
-		{"id": "nomad", "title": "游侠 (Nomad)", "color": Color(0.3, 1, 0.5)},
-		{"id": "alchemist", "title": "后勤 (Alchemist)", "color": Color(1, 0.9, 0.3)}
-	]
-	
-	# 为每个分组创建UI
-	for info in group_info:
-		var group_id = info.id
-		var players = grouped_players[group_id]
-		
-		if players.is_empty():
-			continue
-		
-		# 创建分组容器
-		var group_vbox = VBoxContainer.new()
-		group_vbox.name = "%sGroup" % group_id.capitalize()
-		group_vbox.add_theme_constant_override("separation", 10)
-		main_vbox.add_child(group_vbox)
-		
-		# 创建标题 Label
-		var title_label = Label.new()
-		title_label.name = "%sTitle" % group_id.capitalize()
-		title_label.text = info.title
-		title_label.add_theme_font_size_override("font_size", 18)
-		title_label.add_theme_color_override("font_color", info.color)
-		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		group_vbox.add_child(title_label)
-		
-		# 创建角色 GridContainer
-		var grid = GridContainer.new()
-		grid.name = "%sGrid" % group_id.capitalize()
-		grid.columns = grid_columns
-		grid.add_theme_constant_override("h_separation", spacing)
-		grid.add_theme_constant_override("v_separation", spacing)
-		group_vbox.add_child(grid)
-		
-		# 填充角色按钮
-		_populate_group(grid, players, icon_size)
-	
-	print("[SelectionPanel] 生成了 %d 个角色按钮，按 Origin 分组" % player_buttons.size())
-
-func _populate_group(grid: GridContainer, players: Array, icon_size: int) -> void:
-	"""填充指定分组的角色按钮"""
-	for player_config in players:
-		var player_id = player_config.get("player_id", "")
-		if player_id == "":
-			continue
-		
-		# 创建按钮（使用自定义类）
-		var btn = PlayerSelectButton.new()
-		btn.name = "PlayerBtn_" + player_id
-		btn.custom_minimum_size = Vector2(icon_size, icon_size)
-		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		btn.expand_icon = true
-		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		
-		# 获取该角色可用武器，优先使用缓存的武器
-		var weapon_types = ConfigManager.get_player_available_weapon_types(player_id)
-		var default_weapon = ""
-		if player_weapon_cache.has(player_id):
-			default_weapon = player_weapon_cache[player_id]
-		elif weapon_types.size() > 0:
-			default_weapon = weapon_types[0]
-		btn.setup(player_id, default_weapon)
-		
-		# 设置图标（从player_visual获取sprite_path）
-		var visual_config = ConfigManager.get_player_visual(player_id)
-		var sprite_path = visual_config.get("sprite_path", "")
-		if sprite_path != "":
-			var texture = load(sprite_path)
-			if texture:
-				btn.icon = texture
-		
-		# 设置tooltip
-		btn.tooltip_text = player_config.get("display_name", player_id)
-		
-		# 连接信号
-		btn.pressed.connect(_on_player_button_pressed.bind(player_id))
-		
-		grid.add_child(btn)
-		player_buttons[player_id] = btn
-
-
-# ============================================================================
-# 已选槽位生成
-# ============================================================================
+func _seed_default_weapon_cache() -> void:
+	for config: Dictionary in _role_entries:
+		var player_id: String = str(config.get("player_id", ""))
+		if not _player_weapon_cache.has(player_id):
+			_player_weapon_cache[player_id] = _resolve_default_weapon(player_id)
 
 func _generate_selected_slots() -> void:
-	selected_slot_buttons.clear()
-	
-	# 清除所有按钮子节点
 	for child in selected_list.get_children():
-		if child is Button:
+		child.queue_free()
+	_selected_slot_buttons.clear()
+
+	for i in range(MAX_SELECTED_PLAYERS):
+		var slot_button := SelectedSlotButton.new()
+		slot_button.custom_minimum_size = Vector2(110, 110)
+		slot_button.text = ""
+		slot_button.setup(i)
+		slot_button.player_dropped.connect(_on_player_dropped)
+		slot_button.pressed.connect(_on_selected_slot_pressed.bind(i))
+		selected_list.add_child(slot_button)
+		_selected_slot_buttons.append(slot_button)
+
+func _generate_player_buttons() -> void:
+	for child in player_scroll_container.get_children():
+		if child != player_container:
 			child.queue_free()
-	
-	# 固定生成 3 个槽位（队伍上限）
-	var slot_size = 110  # 左侧已选列表槽位尺寸
-	
-	for i in range(max_selected_players):
-		var btn = SelectedSlotButton.new()
-		btn.name = "SelectedSlot_%d" % i
-		btn.custom_minimum_size = Vector2(slot_size, slot_size)
-		btn.text = ""
-		btn.tooltip_text = "槽位 %d (空)" % (i + 1)
-		btn.setup(i)
-		btn.pressed.connect(_on_selected_slot_pressed.bind(i))
-		btn.player_dropped.connect(_on_player_dropped)
-		selected_slot_buttons.append(btn)
-		selected_list.add_child(btn)
-	
-	print("[SelectionPanel] 生成了 %d 个已选槽位" % max_selected_players)
+	player_container.queue_free()
 
-# ============================================================================
-# 角色按钮事件
-# ============================================================================
+	var root_vbox := VBoxContainer.new()
+	root_vbox.name = "PlayerVBox"
+	root_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root_vbox.add_theme_constant_override("separation", 18)
+	player_scroll_container.add_child(root_vbox)
+	player_container = root_vbox
+	_player_buttons.clear()
 
-func _on_player_button_pressed(player_id: String) -> void:
-	print("[SelectionPanel] === 开始处理角色点击: %s ===" % player_id)
-	SoundManager.play("ui_char_select")
-	preview_player_id = player_id
-	
-	# 获取该角色可用武器
-	var weapon_types = ConfigManager.get_player_available_weapon_types(player_id)
-	
-	# 优先使用缓存的武器选择，否则使用第一个
-	if player_weapon_cache.has(player_id):
-		preview_weapon_type = player_weapon_cache[player_id]
-		print("[SelectionPanel] 从缓存获取武器: %s" % preview_weapon_type)
-	elif weapon_types.size() > 0:
-		preview_weapon_type = weapon_types[0]
-		print("[SelectionPanel] 使用默认武器: %s" % preview_weapon_type)
-		# 保存默认选择到缓存
-		player_weapon_cache[player_id] = preview_weapon_type
-		_save_weapon_cache()
+	var grouped := {}
+	for group_key in CLASS_GROUP_ORDER:
+		grouped[group_key] = []
+
+	for config: Dictionary in _role_entries:
+		var group_key := _resolve_config_class_group(config)
+		(grouped[group_key] as Array).append(config)
+
+	for group_key in CLASS_GROUP_ORDER:
+		_build_group_section(root_vbox, group_key, grouped[group_key])
+
+func _build_group_section(root_vbox: VBoxContainer, group_key: String, entries: Array) -> void:
+	var section := VBoxContainer.new()
+	section.add_theme_constant_override("separation", 10)
+	root_vbox.add_child(section)
+
+	var title := Label.new()
+	title.text = str(CLASS_GROUP_TITLES.get(group_key, group_key))
+	title.add_theme_font_size_override("font_size", 20)
+	section.add_child(title)
+
+	var grid := GridContainer.new()
+	grid.columns = GRID_COLUMNS
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
+	section.add_child(grid)
+
+	if entries.is_empty():
+		var empty_label := Label.new()
+		empty_label.text = "暂无角色"
+		empty_label.modulate = Color(0.7, 0.7, 0.7, 0.9)
+		section.add_child(empty_label)
+		return
+
+	for config_variant in entries:
+		var config: Dictionary = config_variant
+		var player_id: String = str(config.get("player_id", ""))
+		var button := PlayerSelectButton.new()
+		button.custom_minimum_size = Vector2(PLAYER_BUTTON_SIZE, PLAYER_BUTTON_SIZE)
+		button.text = str(config.get("display_name", player_id))
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		button.expand_icon = true
+		button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		button.setup(player_id, _resolve_default_weapon(player_id))
+		button.pressed.connect(_on_player_button_pressed.bind(player_id))
+
+		var visual_config: Dictionary = ConfigManager.get_player_visual(player_id)
+		var sprite_path: String = str(visual_config.get("sprite_path", "")).strip_edges()
+		if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
+			button.icon = load(sprite_path)
+
+		grid.add_child(button)
+		_player_buttons[player_id] = button
+
+func _restore_initial_preview() -> void:
+	if _role_entries.is_empty():
+		return
+	_preview_player(str(_role_entries[0].get("player_id", "")))
+
+func _restore_previous_selection() -> void:
+	var restored_ids: Array[String] = []
+	var restored_weapons: Dictionary = {}
+
+	if not Global.selected_player_ids.is_empty():
+		restored_ids = Global.selected_player_ids.duplicate()
+		restored_weapons = Global.selected_player_weapons.duplicate(true)
+	elif Global.has_method("get_selection_preset"):
+		var preset: Dictionary = Global.get_selection_preset()
+		var preset_ids_var: Variant = preset.get("player_ids", [])
+		if preset_ids_var is Array:
+			for raw_id in preset_ids_var:
+				var player_id: String = str(raw_id).strip_edges()
+				if not player_id.is_empty():
+					restored_ids.append(player_id)
+		var preset_weapons_var: Variant = preset.get("player_weapons", {})
+		if preset_weapons_var is Dictionary:
+			restored_weapons = (preset_weapons_var as Dictionary).duplicate(true)
+
+	if restored_ids.is_empty():
+		return
+
+	for key in restored_weapons.keys():
+		var player_id: String = str(key).strip_edges()
+		if not player_id.is_empty():
+			_player_weapon_cache[player_id] = str(restored_weapons.get(key, "")).strip_edges()
+
+	_selected_players.clear()
+	var slot_index: int = 0
+	for player_id in restored_ids:
+		if slot_index >= MAX_SELECTED_PLAYERS:
+			break
+		if ConfigManager.get_player_config(player_id).is_empty():
+			continue
+		_selected_players.append({
+			"player_id": player_id,
+			"slot_index": slot_index,
+			"weapon_type": str(_player_weapon_cache.get(player_id, _resolve_default_weapon(player_id))),
+		})
+		slot_index += 1
+
+	_sort_selected_players()
+	_refresh_all_selected_slots()
+	if not _selected_players.is_empty():
+		_preview_player(str(_selected_players[0].get("player_id", "")))
 	else:
-		preview_weapon_type = ""
-	
-	# 更新角色按钮的武器类型（用于拖拽）
-	if player_buttons.has(player_id):
-		var btn = player_buttons[player_id] as PlayerSelectButton
-		if btn:
-			btn.weapon_type = preview_weapon_type
-	
-	# 更新显示
-	_update_player_info(player_id)
-	_update_weapon_container(player_id)
-	
-	print("[SelectionPanel] === 完成处理角色点击: %s, 武器: %s ===" % [player_id, preview_weapon_type])
+		_refresh_player_button_states()
 
-# ============================================================================
-# 角色信息显示（事件驱动：当角色被点击时触发）
-# ============================================================================
-
-func _update_player_info(player_id: String) -> void:
-	"""更新角色详细信息面板（左列属性，右列技能详情）"""
-	var config = ConfigManager.get_player_config(player_id)
-	var visual_config = ConfigManager.get_player_visual(player_id)
-	
+func _preview_player(player_id: String) -> void:
+	var config := ConfigManager.get_player_config(player_id)
 	if config.is_empty():
 		_clear_player_info()
 		return
-	
-	# 设置图标
-	var sprite_path = visual_config.get("sprite_path", "")
-	if sprite_path != "":
-		var texture = load(sprite_path)
-		if texture:
-			player_ico.texture = texture
-	
-	# 设置名称
-	player_name_label.text = config.get("display_name", player_id)
-	
-	# 设置羁绊
-	player_ties_label.text = "[%s]" % config.get("ties", "无")
-	
-	# 更新羁绊图标
-	_update_bond_icons(player_id, config)
-	
-	# === 左列：属性数值 ===
-	var stats_text = ""
-	stats_text += "生命值: %d\n" % int(config.get("health", 0))
-	stats_text += "生命恢复: %.1f/秒\n" % config.get("health_regen", 0)
-	stats_text += "最大护甲: %d\n" % int(config.get("max_armor", 0))
-	stats_text += "移动速度: %d\n" % int(config.get("base_speed", 0))
-	stats_text += "最大能量: %d\n" % int(config.get("max_energy", 0))
-	stats_text += "初始能量: %d\n" % int(config.get("initial_energy", 0))
-	stats_text += "能量恢复: %.1f/秒\n" % config.get("energy_regen", 0)
-	stats_text += "Q技能消耗: %d\n" % int(config.get("skill_q_cost", 0))
-	stats_text += "E技能消耗: %d" % int(config.get("skill_e_cost", 0))
-	
-	var final_desc = config.get("description", "")
-	if final_desc != "" and str(final_desc) != "0":
-		stats_text += "\n\n[color=gray]" + str(final_desc) + "[/color]"
-	
-	player_description.text = stats_text
-	
-	# === 右列：技能详情 ===
-	var skill_text = "[color=#FFD700][b]=== 技能详情 ===[/b][/color]\n"
-	
-	# 从 player_skill_bindings 获取技能ID
-	var bindings = ConfigManager.get_player_skill_bindings(player_id)
-	var q_skill_id = str(bindings.get("slot_q", ""))
-	var e_skill_id = str(bindings.get("slot_e", ""))
-	
-	# Q技能描述（画线 + 画圈）
-	if q_skill_id != "":
-		var q_params = ConfigManager.get_skill_params(q_skill_id)
-		var q_line_desc = str(q_params.get("desc_q_line", ""))
-		var q_circle_desc = str(q_params.get("desc_q_circle", ""))
-		if q_line_desc != "" and q_line_desc != "0":
-			skill_text += "\n[b][color=#87CEEB]Q (画线):[/color][/b]\n" + q_line_desc + "\n"
-		if q_circle_desc != "" and q_circle_desc != "0":
-			skill_text += "\n[b][color=#87CEEB]Q (画圈):[/color][/b]\n" + q_circle_desc + "\n"
-	
-	# E技能描述
-	if e_skill_id != "":
-		var e_params = ConfigManager.get_skill_params(e_skill_id)
-		var e_desc = str(e_params.get("desc_e", ""))
-		if e_desc != "" and e_desc != "0":
-			skill_text += "\n[b][color=#FFA07A]E 技能:[/color][/b]\n" + e_desc + "\n"
-	
-	# F大招描述（从 ult_config.csv 读取）
-	var f_desc = _get_ult_description(player_id)
-	if f_desc != "" and f_desc != "0":
-		skill_text += "\n[b][color=#98FB98]F 大招:[/color][/b]\n" + f_desc + "\n"
-	
-	skill_description.text = skill_text
 
-func _get_ult_description(player_id: String) -> String:
-	"""从 ult_config.csv 获取大招描述"""
-	var csv_path = "res://config/player/ult_config.csv"
-	if not FileAccess.file_exists(csv_path):
-		return ""
-	var file = FileAccess.open(csv_path, FileAccess.READ)
-	if not file:
-		return ""
-	var target_id = player_id + "_ult"
-	file.get_line()  # 跳过表头
-	while not file.eof_reached():
-		var line = file.get_csv_line()
-		if line.size() < 10:
-			continue
-		if line[0].strip_edges() == "-1":
-			continue
-		if line[0].strip_edges() == target_id:
-			file.close()
-			return line[9].strip_edges()
-	file.close()
-	return ""
+	_preview_player_id = player_id
+	_preview_weapon_type = _resolve_default_weapon(player_id)
 
-func _update_bond_icons(player_id: String, config: Dictionary) -> void:
-	"""更新羁绊图标显示"""
-	# 获取羁绊标签
-	var origin_tag = config.get("origin_tag", "")
-	var mastery_tag = config.get("mastery_tag", "")
-	var tactic_tag = config.get("tactic_tag", "")
-	
-	if origin_tag == "" or mastery_tag == "" or tactic_tag == "":
-		print("[SelectionPanel] 角色 %s 缺少羁绊标签" % player_id)
-		# 清除现有图标
-		for child in bond_icons_container.get_children():
-			child.queue_free()
+	var visual_config := ConfigManager.get_player_visual(player_id)
+	var sprite_path: String = str(visual_config.get("sprite_path", "")).strip_edges()
+	player_ico.texture = load(sprite_path) if (not sprite_path.is_empty() and ResourceLoader.exists(sprite_path)) else null
+
+	player_name_label.text = str(config.get("display_name", player_id))
+	player_ties_label.text = _build_ties_text(config)
+	_refresh_bond_icons(config)
+	player_description.text = _build_stats_text(config)
+	skill_description.text = _build_skill_text(player_id)
+
+	_refresh_weapon_cards(player_id)
+	_refresh_player_button_states()
+
+func _build_ties_text(config: Dictionary) -> String:
+	var ties: String = str(config.get("ties", "")).strip_edges()
+	if ties.is_empty():
+		return ""
+	return "[" + ties.replace("|", " / ") + "]"
+
+func _refresh_bond_icons(config: Dictionary) -> void:
+	for child in bond_icons_container.get_children():
+		child.queue_free()
+	if BondUILoader == null:
 		return
-	
-	# 提取当前队伍的角色ID列表
-	var team_player_ids: Array = []
-	for data in selected_players:
-		team_player_ids.append(data.player_id)
-	
-	# 使用 BondUILoader 更新图标，传入队伍信息以生成详细 Tooltip
-	BondUILoader.update_bond_icons(bond_icons_container, origin_tag, mastery_tag, tactic_tag, team_player_ids)
+	var team_player_ids: Array[String] = []
+	for entry in _selected_players:
+		team_player_ids.append(str(entry.get("player_id", "")))
+	BondUILoader.update_bond_icons(
+		bond_icons_container,
+		str(config.get("origin_tag", "")),
+		str(config.get("mastery_tag", "")),
+		str(config.get("tactic_tag", "")),
+		team_player_ids
+	)
+
+func _build_stats_text(config: Dictionary) -> String:
+	var lines: Array[String] = []
+	lines.append("生命值: %s" % str(config.get("health", 0)))
+	lines.append("生命恢复: %s / 秒" % str(config.get("health_regen", 0)))
+	lines.append("最大护甲: %s" % str(config.get("max_armor", 0)))
+	lines.append("移动速度: %s" % str(config.get("base_speed", 0)))
+	lines.append("最大能量: %s" % str(config.get("max_energy", 0)))
+	lines.append("初始能量: %s" % str(config.get("initial_energy", 0)))
+	lines.append("能量恢复: %s / 秒" % str(config.get("energy_regen", 0)))
+	lines.append("通用Q消耗: %s" % str(config.get("skill_q_cost", 0)))
+	lines.append("E技能消耗: %s" % str(config.get("skill_e_cost", 0)))
+	lines.append("")
+	lines.append(str(config.get("description", "")))
+	return "\n".join(lines)
+
+func _build_skill_text(player_id: String) -> String:
+	var bindings := ConfigManager.get_player_skill_bindings(player_id)
+	var space_skill_id: String = str(bindings.get("slot_q", ""))
+	var e_skill_id: String = str(bindings.get("slot_e", ""))
+	var space_params := ConfigManager.get_skill_params(space_skill_id)
+	var e_params := ConfigManager.get_skill_params(e_skill_id)
+	var f_config := ConfigManager.get_player_ult_config(player_id)
+
+	var sections: Array[String] = []
+	sections.append("[Space]")
+	var line_desc: String = str(space_params.get("desc_q_line", "")).strip_edges()
+	var circle_desc: String = str(space_params.get("desc_q_circle", "")).strip_edges()
+	sections.append(line_desc if not line_desc.is_empty() else "暂无说明")
+	if not circle_desc.is_empty():
+		sections.append("")
+		sections.append("[闭合结算]")
+		sections.append(circle_desc)
+
+	sections.append("")
+	sections.append("[E]")
+	var e_desc: String = str(e_params.get("desc_e", "")).strip_edges()
+	sections.append(e_desc if not e_desc.is_empty() else "暂无说明")
+
+	sections.append("")
+	sections.append("[F]")
+	var f_desc: String = str(f_config.get("description", "")).strip_edges()
+	sections.append(f_desc if not f_desc.is_empty() else "暂无说明")
+
+	return "\n".join(sections)
+
+func _refresh_weapon_cards(player_id: String) -> void:
+	_clear_weapon_cards()
+	var weapon_types: Array[String] = ConfigManager.get_player_available_weapon_types(player_id)
+	var selected_weapon: String = str(_player_weapon_cache.get(player_id, _resolve_default_weapon(player_id)))
+
+	if weapon_types.is_empty():
+		var empty_button := Button.new()
+		empty_button.custom_minimum_size = Vector2(96, 96)
+		empty_button.disabled = true
+		empty_button.text = "无武器"
+		weapon_container.add_child(empty_button)
+		return
+
+	weapon_container.columns = max(1, weapon_types.size())
+	for weapon_type in weapon_types:
+		var weapon_config := ConfigManager.get_weapon_by_type_level(weapon_type, 1)
+		var card := Button.new()
+		card.custom_minimum_size = Vector2(96, 96)
+		card.focus_mode = Control.FOCUS_NONE
+		card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		card.text = _get_weapon_display_name(weapon_type)
+		card.tooltip_text = card.text
+		card.pressed.connect(_on_weapon_selected.bind(player_id, weapon_type))
+
+		var icon_path: String = str(weapon_config.get("icon_path_template", "")).strip_edges()
+		if not icon_path.is_empty() and ResourceLoader.exists(icon_path):
+			card.icon = load(icon_path)
+			card.expand_icon = true
+			card.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+		var style := StyleBoxFlat.new()
+		style.set_corner_radius_all(8)
+		style.set_border_width_all(2)
+		if weapon_type == selected_weapon:
+			style.bg_color = Color(0.28, 0.28, 0.18, 1.0)
+			style.border_color = Color(1.0, 0.88, 0.26, 1.0)
+		else:
+			style.bg_color = Color(0.18, 0.18, 0.18, 1.0)
+			style.border_color = Color(0.35, 0.35, 0.35, 1.0)
+		card.add_theme_stylebox_override("normal", style)
+		card.add_theme_stylebox_override("hover", style.duplicate())
+		card.add_theme_stylebox_override("pressed", style.duplicate())
+		weapon_container.add_child(card)
+
+func _clear_weapon_cards() -> void:
+	for child in weapon_container.get_children():
+		child.queue_free()
+
+func _resolve_default_weapon(player_id: String) -> String:
+	var cached: String = str(_player_weapon_cache.get(player_id, "")).strip_edges()
+	if not cached.is_empty():
+		return cached
+
+	var preferred: String = str(DEFAULT_WEAPON_BY_PLAYER.get(player_id, "")).strip_edges()
+	var weapon_types: Array[String] = ConfigManager.get_player_available_weapon_types(player_id)
+	if not preferred.is_empty() and weapon_types.has(preferred):
+		return preferred
+	if not weapon_types.is_empty():
+		return weapon_types[0]
+	return preferred
+
+func _get_weapon_display_name(weapon_type: String) -> String:
+	var weapon_config := ConfigManager.get_weapon_by_type_level(weapon_type, 1)
+	var template: String = str(weapon_config.get("display_name_template", "")).strip_edges()
+	if not template.is_empty():
+		return template.replace("%d", "").replace("（", "").replace("）", "").strip_edges()
+	return weapon_type
+
+func _on_weapon_selected(player_id: String, weapon_type: String) -> void:
+	_player_weapon_cache[player_id] = weapon_type
+	if player_id == _preview_player_id:
+		_preview_weapon_type = weapon_type
+		_refresh_weapon_cards(player_id)
+	for i in range(_selected_players.size()):
+		if str(_selected_players[i].get("player_id", "")) == player_id:
+			_selected_players[i]["weapon_type"] = weapon_type
+	_refresh_all_selected_slots()
+	_persist_current_selection()
+
+func _on_player_button_pressed(player_id: String) -> void:
+	_preview_player(player_id)
+
+func is_player_selected(player_id: String) -> bool:
+	for entry in _selected_players:
+		if str(entry.get("player_id", "")) == player_id:
+			return true
+	return false
+
+func _find_selected_player_index(player_id: String) -> int:
+	for i in range(_selected_players.size()):
+		if str(_selected_players[i].get("player_id", "")) == player_id:
+			return i
+	return -1
+
+func _find_selected_slot_index(slot_index: int) -> int:
+	for i in range(_selected_players.size()):
+		if int(_selected_players[i].get("slot_index", -1)) == slot_index:
+			return i
+	return -1
+
+func _sort_selected_players() -> void:
+	_selected_players.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a.get("slot_index", 0)) < int(b.get("slot_index", 0))
+	)
+
+func _on_selected_slot_pressed(slot_index: int) -> void:
+	var occupied_index: int = _find_selected_slot_index(slot_index)
+	if occupied_index >= 0:
+		_remove_player_from_selected(occupied_index)
+		return
+	if not _preview_player_id.is_empty():
+		_add_player_to_selected(_preview_player_id, slot_index)
+
+func _on_player_dropped(slot_index: int, player_id: String, weapon_type: String) -> void:
+	_player_weapon_cache[player_id] = weapon_type if not weapon_type.is_empty() else _resolve_default_weapon(player_id)
+	_add_player_to_selected(player_id, slot_index)
+	_preview_player(player_id)
+
+func _add_player_to_selected(player_id: String, slot_index: int = 0) -> void:
+	if player_id.is_empty():
+		return
+	slot_index = clampi(slot_index, 0, MAX_SELECTED_PLAYERS - 1)
+
+	var existing_player_index: int = _find_selected_player_index(player_id)
+	if existing_player_index >= 0:
+		_selected_players[existing_player_index]["slot_index"] = slot_index
+		_selected_players[existing_player_index]["weapon_type"] = str(_player_weapon_cache.get(player_id, _resolve_default_weapon(player_id)))
+	else:
+		var existing_slot_index: int = _find_selected_slot_index(slot_index)
+		if existing_slot_index >= 0:
+			_selected_players.remove_at(existing_slot_index)
+		elif _selected_players.size() >= MAX_SELECTED_PLAYERS:
+			return
+
+		_selected_players.append({
+			"player_id": player_id,
+			"slot_index": slot_index,
+			"weapon_type": str(_player_weapon_cache.get(player_id, _resolve_default_weapon(player_id))),
+		})
+
+	_sort_selected_players()
+	_refresh_all_selected_slots()
+	_refresh_player_button_states()
+	_refresh_synergy_summary()
+	_update_continue_button_state()
+	_persist_current_selection()
+
+func _remove_player_from_selected(index: int) -> void:
+	if index < 0 or index >= _selected_players.size():
+		return
+	_selected_players.remove_at(index)
+	_sort_selected_players()
+	_refresh_all_selected_slots()
+	_refresh_player_button_states()
+	_refresh_synergy_summary()
+	_update_continue_button_state()
+	_persist_current_selection()
+
+func _refresh_all_selected_slots() -> void:
+	for i in range(_selected_slot_buttons.size()):
+		_clear_selected_slot_display(i)
+	for entry in _selected_players:
+		_update_selected_slot_display(int(entry.get("slot_index", 0)), str(entry.get("player_id", "")))
+
+func _update_selected_slot_display(slot_index: int, player_id: String) -> void:
+	if slot_index < 0 or slot_index >= _selected_slot_buttons.size():
+		return
+	var btn := _selected_slot_buttons[slot_index]
+	var config := ConfigManager.get_player_config(player_id)
+	var visual_config := ConfigManager.get_player_visual(player_id)
+	btn.text = str(config.get("display_name", player_id))
+	btn.tooltip_text = "%s | 武器: %s" % [btn.text, _get_weapon_display_name(str(_player_weapon_cache.get(player_id, "")))]
+	var sprite_path: String = str(visual_config.get("sprite_path", "")).strip_edges()
+	btn.icon = load(sprite_path) if (not sprite_path.is_empty() and ResourceLoader.exists(sprite_path)) else null
+
+func _clear_selected_slot_display(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= _selected_slot_buttons.size():
+		return
+	var btn := _selected_slot_buttons[slot_index]
+	btn.text = ""
+	btn.icon = null
+	btn.tooltip_text = "拖拽或点击左侧槽位放入当前预览角色"
+
+func _refresh_player_button_states() -> void:
+	for player_id in _player_buttons.keys():
+		var btn: PlayerSelectButton = _player_buttons[player_id]
+		var style := StyleBoxFlat.new()
+		style.set_corner_radius_all(10)
+		style.set_border_width_all(2)
+		if is_player_selected(str(player_id)):
+			style.bg_color = Color(0.20, 0.32, 0.22, 1.0)
+			style.border_color = Color(0.90, 0.85, 0.40, 1.0)
+		elif str(player_id) == _preview_player_id:
+			style.bg_color = Color(0.24, 0.24, 0.24, 1.0)
+			style.border_color = Color(0.65, 0.65, 0.65, 1.0)
+		else:
+			style.bg_color = Color(0.16, 0.16, 0.16, 1.0)
+			style.border_color = Color(0.28, 0.28, 0.28, 1.0)
+		btn.add_theme_stylebox_override("normal", style)
+		btn.add_theme_stylebox_override("hover", style.duplicate())
+		btn.add_theme_stylebox_override("pressed", style.duplicate())
+
+func _refresh_synergy_summary() -> void:
+	for child in synergy_list.get_children():
+		child.queue_free()
+
+	if _selected_players.is_empty():
+		var empty_label := Label.new()
+		empty_label.text = "当前未选择角色"
+		synergy_list.add_child(empty_label)
+		return
+
+	var counts := {}
+	for group_key in CLASS_GROUP_ORDER:
+		counts[group_key] = 0
+
+	for entry in _selected_players:
+		var config := ConfigManager.get_player_config(str(entry.get("player_id", "")))
+		var group_key := _resolve_config_class_group(config)
+		counts[group_key] = int(counts.get(group_key, 0)) + 1
+
+	for group_key in CLASS_GROUP_ORDER:
+		var label := Label.new()
+		label.text = "%s  %d/%d" % [CLASS_GROUP_TITLES[group_key], int(counts[group_key]), MAX_SELECTED_PLAYERS]
+		label.add_theme_font_size_override("font_size", 18)
+		synergy_list.add_child(label)
+
+func _resolve_class_group(raw_tag: String) -> String:
+	var tag: String = raw_tag.strip_edges()
+	if CLASS_GROUP_ALIASES.has(tag):
+		return str(CLASS_GROUP_ALIASES[tag])
+	return "sentinel"
+
+func _resolve_config_class_group(config: Dictionary) -> String:
+	var player_id: String = str(config.get("player_id", "")).strip_edges()
+	if DISPLAY_CLASS_BY_PLAYER.has(player_id):
+		return str(DISPLAY_CLASS_BY_PLAYER[player_id])
+	return _resolve_class_group(str(config.get("mastery_tag", "")))
+
+func _update_continue_button_state() -> void:
+	continue_button.disabled = _selected_players.is_empty() and _preview_player_id.is_empty()
 
 func _clear_player_info() -> void:
 	player_ico.texture = null
 	player_name_label.text = "选择角色"
 	player_ties_label.text = ""
-	
-	# 清除羁绊图标
 	for child in bond_icons_container.get_children():
 		child.queue_free()
-	
-	player_description.text = "点击角色查看详情"
+	player_description.text = "点击角色查看详情，再点击左侧槽位或直接继续进入战斗。"
 	skill_description.text = ""
 
-# ============================================================================
-# 队伍羁绊统计（事件驱动：当队伍成员变化时触发）
-# ============================================================================
-
-func _update_team_synergy() -> void:
-	"""更新队伍羁绊统计面板 - 已激活的羁绊排在最上面
-	
-	触发时机：
-	- 添加角色到队伍时 (_add_player_to_selected)
-	- 从队伍移除角色时 (_remove_player_from_selected)
-	- 从缓存恢复队伍时 (_restore_selection_from_cache)
-	"""
-	if not synergy_list:
-		return
-	
-	# 清除现有条目
-	for child in synergy_list.get_children():
-		child.queue_free()
-	
-	# 如果没有选择角色，显示空状态
-	if selected_players.is_empty():
-		return
-	
-	# 提取已选角色ID
-	var player_ids: Array = []
-	for data in selected_players:
-		player_ids.append(data.player_id)
-	
-	# 计算羁绊统计
-	var bond_stats = BondUILoader.calculate_team_bonds(player_ids)
-	
-	# 获取排序后的羁绊列表
-	var sorted_bonds = BondUILoader.get_sorted_bonds(bond_stats)
-	
-	# 二次排序：先按激活状态排序，再按数量排序
-	sorted_bonds.sort_custom(func(a, b):
-		var a_active = a.count >= a.max
-		var b_active = b.count >= b.max
-		if a_active != b_active:
-			return a_active  # 已激活的排在前面
-		return a.count > b.count  # 数量多的排在前面
-	)
-	
-	# 为每个羁绊创建条目
-	for bond_data in sorted_bonds:
-		var item = BOND_SUMMARY_ITEM.instantiate() as BondSummaryItem
-		if item:
-			synergy_list.add_child(item)
-			item.update_info(
-				bond_data.bond_id,
-				bond_data.type,
-				bond_data.count,
-				bond_data.max
-			)
-	
-	print("[SelectionPanel] 更新队伍羁绊统计: %d 个羁绊" % sorted_bonds.size())
-
-# ============================================================================
-# 武器选择
-# ============================================================================
-
-func _update_weapon_container(player_id: String) -> void:
-	# 清除现有武器按钮
-	_clear_weapon_container()
-	
-	var weapon_types = ConfigManager.get_player_available_weapon_types(player_id)
-	
-	# 确定当前应该高亮的武器：优先使用缓存，否则使用preview_weapon_type
-	var highlight_weapon = player_weapon_cache.get(player_id, "")
-	if highlight_weapon == "":
-		highlight_weapon = preview_weapon_type
-	
-	print("[SelectionPanel] _update_weapon_container: player_id=%s, highlight_weapon=%s" % [player_id, highlight_weapon])
-	
-	# 武器图标尺寸 - 角色的一半，面积1/4
-	var weapon_slot_size = 60
-	
-	for weapon_type in weapon_types:
-		# 获取1级武器配置
-		var weapon_config = ConfigManager.get_weapon_by_type_level(weapon_type, 1)
-		if weapon_config.is_empty():
-			continue
-		
-		# 获取武器详细配置（包含图标路径）
-		var weapon_id = "%s_1" % weapon_type
-		var weapon_info = WeaponConfigLoader.get_weapon_info(weapon_id)
-		
-		# 创建 Panel 作为 Slot 容器（不使用 CenterContainer，直接左对齐）
-		var slot = Panel.new()
-		slot.name = "WeaponSlot_" + weapon_type
-		slot.custom_minimum_size = Vector2(weapon_slot_size, weapon_slot_size)
-		slot.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		slot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		slot.tooltip_text = weapon_config.get("display_name", weapon_type)
-		
-		# 设置 Slot 背景样式
-		var is_highlighted = (weapon_type == highlight_weapon)
-		var style = StyleBoxFlat.new()
-		if is_highlighted:
-			style.bg_color = Color(0.3, 0.3, 0.3, 1)
-			style.border_color = Color(1, 1, 0)  # 黄色边框
-			style.set_border_width_all(2)
-			print("[SelectionPanel] 高亮武器: %s" % weapon_type)
-		else:
-			style.bg_color = Color(0.2, 0.2, 0.2, 1)
-			style.border_color = Color(0.4, 0.4, 0.4)
-			style.set_border_width_all(1)
-		style.set_corner_radius_all(4)
-		slot.add_theme_stylebox_override("panel", style)
-		
-		# 创建 TextureRect 作为图标 - 完全填充 Slot
-		var icon_rect = TextureRect.new()
-		icon_rect.name = "IconRect"
-		icon_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-		icon_rect.set_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_KEEP_SIZE, 2)
-		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		
-		# 设置图标纹理
-		var icon_path = weapon_info.get("icon_path", "")
-		print("[SelectionPanel] 武器 %s 图标路径: %s" % [weapon_type, icon_path])
-		if icon_path != "":
-			if ResourceLoader.exists(icon_path):
-				var texture = load(icon_path)
-				if texture:
-					icon_rect.texture = texture
-					print("[SelectionPanel] ✓ 成功加载武器图标: %s" % weapon_type)
-				else:
-					printerr("[SelectionPanel] ✗ 加载纹理失败: %s" % icon_path)
-			else:
-				printerr("[SelectionPanel] ✗ 图标文件不存在: %s" % icon_path)
-		else:
-			printerr("[SelectionPanel] ✗ 武器 %s 没有 icon_path" % weapon_type)
-		
-		slot.add_child(icon_rect)
-		
-		# 创建透明按钮覆盖层用于点击检测
-		var click_btn = Button.new()
-		click_btn.name = "ClickArea"
-		click_btn.set_anchors_preset(Control.PRESET_FULL_RECT)
-		click_btn.flat = true
-		click_btn.mouse_filter = Control.MOUSE_FILTER_STOP
-		click_btn.pressed.connect(_on_weapon_button_pressed.bind(weapon_type))
-		slot.add_child(click_btn)
-		
-		# Slot 直接放入 Grid（左对齐）
-		weapon_container.add_child(slot)
-	
-	print("[SelectionPanel] 显示 %d 种武器" % weapon_types.size())
-
-func _clear_weapon_container() -> void:
-	for child in weapon_container.get_children():
-		child.free()  # 使用 free() 而不是 queue_free() 避免延迟删除导致的问题
-
-func _on_weapon_button_pressed(weapon_type: String) -> void:
-	print("[SelectionPanel] 武器按钮点击: %s (当前预览角色: %s)" % [weapon_type, preview_player_id])
-	SoundManager.play("ui_tab_switch")
-	preview_weapon_type = weapon_type
-	
-	# 更新武器按钮高亮 - 使用 StyleBox 边框
-	for child in weapon_container.get_children():
-		if child is Button:
-			var is_selected = child.name == "WeaponBtn_" + weapon_type
-			var style = StyleBoxFlat.new()
-			if is_selected:
-				style.bg_color = Color(0.3, 0.3, 0.3, 1)
-				style.border_color = Color(1, 1, 0)  # 黄色边框
-				style.set_border_width_all(4)
-			else:
-				style.bg_color = Color(0.2, 0.2, 0.2, 1)
-				style.border_color = Color(0.4, 0.4, 0.4)
-				style.set_border_width_all(2)
-			style.set_corner_radius_all(8)
-			child.add_theme_stylebox_override("normal", style)
-			child.add_theme_stylebox_override("hover", style)
-			child.add_theme_stylebox_override("pressed", style)
-			child.add_theme_stylebox_override("focus", style)
-	
-	# 更新角色按钮的武器类型（用于拖拽）
-	if player_buttons.has(preview_player_id):
-		var btn = player_buttons[preview_player_id] as PlayerSelectButton
-		if btn:
-			btn.weapon_type = weapon_type
-	
-	# 保存到缓存并持久化
-	if preview_player_id != "":
-		player_weapon_cache[preview_player_id] = weapon_type
-		_save_weapon_cache()
-	
-	# 如果当前预览角色已在已选列表中，更新其武器并保存缓存
-	var found_in_selected = false
-	for i in range(selected_players.size()):
-		if selected_players[i].player_id == preview_player_id:
-			selected_players[i].weapon_type = weapon_type
-			found_in_selected = true
-			print("[SelectionPanel] 更新已选角色 %s 的武器为 %s" % [preview_player_id, weapon_type])
-			break
-	
-	# 如果角色在已选列表中，保存已选角色缓存
-	if found_in_selected:
-		_save_selection_cache()
-
-# ============================================================================
-# 已选槽位事件
-# ============================================================================
-
-func _on_selected_slot_pressed(slot_index: int) -> void:
-	# 检查该槽位是否有角色
-	for i in range(selected_players.size()):
-		if selected_players[i].slot_index == slot_index:
-			_remove_player_from_selected(i)
-			return
-
-# ============================================================================
-# 角色选择管理
-# ============================================================================
-
-func is_player_selected(player_id: String) -> bool:
-	"""检查角色是否已被选择过"""
-	for data in selected_players:
-		if data.player_id == player_id:
-			return true
-	return false
-
-func _add_player_to_selected(player_id: String, weapon_type: String) -> bool:
-	# 单角色模式：再次选择新角色时，直接替换原角色。
-	if max_selected_players == 1 and selected_players.size() >= 1:
-		if selected_players[0].player_id == player_id:
-			return false
-		_remove_player_from_selected(0)
-
-	# 检查是否已选满
-	if selected_players.size() >= max_selected_players:
-		print("[SelectionPanel] 已选满 %d 个角色" % max_selected_players)
-		return false
-	
-	# 检查是否已选择该角色
-	for data in selected_players:
-		if data.player_id == player_id:
-			print("[SelectionPanel] 角色 %s 已被选择" % player_id)
-			return false
-	
-	# 找到空槽位
-	var slot_index = -1
-	for i in range(max_selected_players):
-		var slot_occupied = false
-		for data in selected_players:
-			if data.slot_index == i:
-				slot_occupied = true
-				break
-		if not slot_occupied:
-			slot_index = i
-			break
-	
-	if slot_index == -1:
-		return false
-	
-	# 添加到已选列表
-	var data = {
-		"player_id": player_id,
-		"weapon_type": weapon_type,
-		"slot_index": slot_index
-	}
-	selected_players.append(data)
-	
-	# 更新槽位显示
-	_update_selected_slot_display(slot_index, player_id)
-	
-	# 更新角色按钮状态（显示已选中）
-	if player_buttons.has(player_id):
-		player_buttons[player_id].modulate = Color(0.5, 1, 0.5)  # 绿色表示已选
-	
-	# 更新Continue按钮状态
-	_update_continue_button_state()
-	
-	# 更新队伍羁绊统计
-	_update_team_synergy()
-	
-	print("[SelectionPanel] 添加角色 %s 到槽位 %d，武器: %s" % [player_id, slot_index, weapon_type])
-	return true
-
-func _remove_player_from_selected(index: int) -> void:
-	if index < 0 or index >= selected_players.size():
-		return
-	
-	var data = selected_players[index]
-	var player_id = data.player_id
-	var slot_index = data.slot_index
-	
-	# 从列表移除
-	selected_players.remove_at(index)
-	
-	# 清空槽位显示
-	_clear_selected_slot_display(slot_index)
-	
-	# 恢复角色按钮状态
-	if player_buttons.has(player_id):
-		player_buttons[player_id].modulate = Color.WHITE
-	
-	# 更新Continue按钮状态
-	_update_continue_button_state()
-	
-	# 更新队伍羁绊统计
-	_update_team_synergy()
-	
-	# 保存已选角色缓存（删除后也要保存）
-	_save_selection_cache()
-	
-	print("[SelectionPanel] 移除角色 %s 从槽位 %d" % [player_id, slot_index])
-
-func _update_selected_slot_display(slot_index: int, player_id: String) -> void:
-	if slot_index < 0 or slot_index >= selected_slot_buttons.size():
-		return
-	
-	var btn = selected_slot_buttons[slot_index]
-	
-	# 设置图标
-	var visual_config = ConfigManager.get_player_visual(player_id)
-	var sprite_path = visual_config.get("sprite_path", "")
-	if sprite_path != "":
-		var texture = load(sprite_path)
-		if texture:
-			btn.icon = texture
-	
-	# 设置tooltip
-	var config = ConfigManager.get_player_config(player_id)
-	btn.tooltip_text = config.get("display_name", player_id)
-
-func _clear_selected_slot_display(slot_index: int) -> void:
-	if slot_index < 0 or slot_index >= selected_slot_buttons.size():
-		return
-	
-	var btn = selected_slot_buttons[slot_index]
-	btn.icon = null
-	btn.tooltip_text = "槽位 %d (空)" % (slot_index + 1)
-
-# ============================================================================
-# 拖拽功能
-# ============================================================================
-
-func _on_player_dropped(slot_index: int, player_id: String, weapon_type: String) -> void:
-	# 如果武器为空，优先使用缓存的武器，否则使用默认武器
-	if weapon_type == "":
-		if player_weapon_cache.has(player_id):
-			weapon_type = player_weapon_cache[player_id]
-		else:
-			var weapon_types = ConfigManager.get_player_available_weapon_types(player_id)
-			if weapon_types.size() > 0:
-				weapon_type = weapon_types[0]
-	
-	# 尝试添加到已选列表
-	_add_player_to_selected(player_id, weapon_type)
-
-# ============================================================================
-# Continue按钮
-# ============================================================================
-
-func _update_continue_button_state() -> void:
-	continue_button.disabled = selected_players.size() == 0
-
-func _on_upgrade_pressed() -> void:
-	"""打开角色强化界面"""
-	SoundManager.play("ui_click")
-	# 先保存当前选择
-	_save_selection_cache()
-	
-	# 准备数据传递给Global（强化界面需要知道已选角色）
-	var player_ids: Array[String] = []
-	var player_weapons: Dictionary = {}
-	
-	var sorted_players = selected_players.duplicate()
-	sorted_players.sort_custom(func(a, b): return a.slot_index < b.slot_index)
-	
-	for data in sorted_players:
-		var pid = data.player_id
-		var wtype = data.weapon_type
-		if wtype == "" and player_weapon_cache.has(pid):
-			wtype = player_weapon_cache[pid]
-		player_ids.append(pid)
-		player_weapons[pid] = wtype
-	
-	Global.selected_player_ids = player_ids
-	Global.selected_player_weapons = player_weapons
-	
-	print("[SelectionPanel] 打开强化界面，已选角色: %s" % str(player_ids))
-	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/character_upgrade.tscn")
-
-func _on_warehouse_pressed() -> void:
-	"""打开仓库界面"""
-	print("[SelectionPanel] 打开仓库")
-	SoundManager.play("ui_click")
-	
-	# 加载仓库UI场景
-	var warehouse_scene = load("res://scenes/ui/warehouse_ui.tscn")
-	if warehouse_scene:
-		var warehouse_ui = warehouse_scene.instantiate()
-		add_child(warehouse_ui)
-	else:
-		printerr("[SelectionPanel] 无法加载仓库UI场景")
-
 func _on_continue_pressed() -> void:
-	if selected_players.size() == 0:
-		print("[SelectionPanel] 请至少选择一个角色")
-		SoundManager.play("ui_error")
-		# 显示提示信息
-		_show_selection_hint("请至少选择一个角色！")
+	if _selected_players.is_empty() and not _preview_player_id.is_empty():
+		_add_player_to_selected(_preview_player_id, 0)
+	if _selected_players.is_empty():
 		return
-	
-	SoundManager.play("ui_click")
-	
-	# 保存已选角色缓存到本地
-	_save_selection_cache()
-	
-	# 准备数据传递给Global
+
+	_sort_selected_players()
 	var player_ids: Array[String] = []
 	var player_weapons: Dictionary = {}
-	
-	# 按槽位顺序排列
-	var sorted_players = selected_players.duplicate()
-	sorted_players.sort_custom(func(a, b): return a.slot_index < b.slot_index)
-	
-	for data in sorted_players:
-		var pid = data.player_id
-		var wtype = data.weapon_type
-		
-		# 如果武器类型为空，从缓存获取
-		if wtype == "" and player_weapon_cache.has(pid):
-			wtype = player_weapon_cache[pid]
-			print("[SelectionPanel] 从缓存补充武器: %s -> %s" % [pid, wtype])
-		
-		player_ids.append(pid)
-		player_weapons[pid] = wtype
-		print("[SelectionPanel] 角色 %s 武器: %s" % [pid, wtype])
-	
-	# 保存到Global
+	for entry in _selected_players:
+		var player_id: String = str(entry.get("player_id", ""))
+		player_ids.append(player_id)
+		player_weapons[player_id] = str(entry.get("weapon_type", _resolve_default_weapon(player_id)))
+
+	if Global.has_method("save_selection_preset"):
+		Global.save_selection_preset(player_ids, player_weapons, player_ids[0] if not player_ids.is_empty() else "")
+	Global.reset_selection()
 	Global.selected_player_ids = player_ids
-	Global.selected_player_weapons = player_weapons
+	Global.leader_player_id = player_ids[0] if not player_ids.is_empty() else ""
 	Global.current_player_index = 0
-	
-	print("[SelectionPanel] Global.selected_player_weapons = %s" % str(Global.selected_player_weapons))
-	
-	# 初始化角色状态
-	Global.init_player_states()
-	
-	# === 检查是否需要重置属性升级 (Roguelike模式) ===
-	DataManager.check_and_reset_on_new_game()
-	
-	# === 自动保存到当前槽位 ===
-	if Global.current_save_slot >= 0:
-		var leader_id: String = player_ids[0] if player_ids.size() > 0 else ""
-		var save_players: Array = []
-		for data in sorted_players:
-			save_players.append({
-				"player_id": data.player_id,
-				"weapon_type": data.weapon_type
-			})
-		SaveManager.create_new_save(Global.current_save_slot, leader_id, save_players)
-		print("[SelectionPanel] 自动保存到槽位 %d" % Global.current_save_slot)
-	
-	print("[SelectionPanel] 确认选择，角色: %s" % str(player_ids))
-	
-	# 发出信号
-	selection_confirmed.emit(sorted_players)
-	
-	# 切换到游戏场景
-	get_tree().change_scene_to_file("res://scenes/arena/arena.tscn")
+	Global.selected_player_weapons = player_weapons
+	get_tree().change_scene_to_file(ARENA_SCENE_PATH)
 
+func _on_back_pressed() -> void:
+	if exit_dialog != null:
+		exit_dialog.show_dialog("返回主菜单？")
+	else:
+		get_tree().change_scene_to_file(MAIN_MENU_SCENE_PATH)
 
-# ============================================================================
-# 提示信息
-# ============================================================================
+func _on_exit_confirmed() -> void:
+	if not _selected_players.is_empty() and Global.has_method("save_selection_preset"):
+		_sort_selected_players()
+		var player_ids: Array[String] = []
+		var player_weapons: Dictionary = {}
+		for entry in _selected_players:
+			var player_id: String = str(entry.get("player_id", ""))
+			player_ids.append(player_id)
+			player_weapons[player_id] = str(entry.get("weapon_type", _resolve_default_weapon(player_id)))
+		Global.save_selection_preset(player_ids, player_weapons, player_ids[0] if not player_ids.is_empty() else "")
+	Global.reset_selection()
+	get_tree().change_scene_to_file(MAIN_MENU_SCENE_PATH)
 
-func _show_selection_hint(message: String) -> void:
-	"""显示选择提示信息（飘字效果）"""
-	var hint_label = Label.new()
-	hint_label.text = message
-	hint_label.add_theme_font_size_override("font_size", 32)
-	hint_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))  # 红色
-	hint_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	hint_label.add_theme_constant_override("outline_size", 4)
-	
-	# 设置位置（屏幕中央偏上）
-	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hint_label.anchors_preset = Control.PRESET_CENTER_TOP
-	hint_label.position = Vector2(get_viewport_rect().size.x / 2 - 150, 100)
-	hint_label.custom_minimum_size = Vector2(300, 50)
-	
-	add_child(hint_label)
-	
-	# 创建动画：向上飘动并淡出
-	var tween = create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(hint_label, "position:y", hint_label.position.y - 50, 1.5)
-	tween.tween_property(hint_label, "modulate:a", 0.0, 1.5)
-	tween.set_parallel(false)
-	tween.tween_callback(hint_label.queue_free)
+func _persist_current_selection() -> void:
+	if not Global.has_method("save_selection_preset"):
+		return
+	_sort_selected_players()
+	var player_ids: Array[String] = []
+	var player_weapons: Dictionary = {}
+	for entry in _selected_players:
+		var player_id: String = str(entry.get("player_id", "")).strip_edges()
+		if player_id.is_empty():
+			continue
+		player_ids.append(player_id)
+		player_weapons[player_id] = str(entry.get("weapon_type", _resolve_default_weapon(player_id))).strip_edges()
+	Global.save_selection_preset(player_ids, player_weapons, player_ids[0] if not player_ids.is_empty() else "")
 
-
-# ============================================================================
-# 退出确认对话框
-# ============================================================================
-
-func _create_exit_dialog() -> void:
+func _on_exit_cancelled() -> void:
 	pass
 
-func _input(event: InputEvent) -> void:
-	"""处理输入事件 - ESC 直接返回主菜单"""
+func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		print("[SelectionPanel] 返回主菜单")
+		_on_back_pressed()
 		get_viewport().set_input_as_handled()
-		get_tree().change_scene_to_file("res://scenes/ui/main_menu/main_menu_root.tscn")

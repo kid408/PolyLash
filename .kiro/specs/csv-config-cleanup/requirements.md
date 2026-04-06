@@ -37,10 +37,10 @@
 
 1. WHEN 检测到PlayerButcher中的硬编码变量时，THE System SHALL 将其迁移到player_config.csv或skill_params.csv
 2. WHEN 检测到PlayerHerder中的硬编码变量时，THE System SHALL 将其迁移到对应的CSV配置表
-3. WHEN 检测到PlayerPyro中的硬编码变量时，THE System SHALL 将其迁移到对应的CSV配置表
-4. WHEN 检测到PlayerWeaver中的硬编码变量时，THE System SHALL 将其迁移到对应的CSV配置表
-5. WHEN 检测到PlayerWind中的硬编码变量时，THE System SHALL 将其迁移到对应的CSV配置表
-6. WHEN 检测到PlayerSapper中的硬编码变量时，THE System SHALL 将其迁移到对应的CSV配置表
+3. WHEN 检测到PlayerIgnis中的硬编码变量时，THE System SHALL 将其迁移到对应的CSV配置表
+4. WHEN 检测到PlayerNexus中的硬编码变量时，THE System SHALL 将其迁移到对应的CSV配置表
+5. WHEN 检测到PlayerWindblade中的硬编码变量时，THE System SHALL 将其迁移到对应的CSV配置表
+6. WHEN 检测到PlayerDiva中的硬编码变量时，THE System SHALL 将其迁移到对应的CSV配置表
 
 ### Requirement 3: 迁移技能硬编码变量
 

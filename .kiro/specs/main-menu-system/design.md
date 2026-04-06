@@ -510,7 +510,7 @@ func _on_link_button_pressed() -> void:
 ```csv
 id,category,asset_name,author,license_type,url,description
 -1,分类,素材名称,作者,协议类型,链接,描述
-art_relics,Art,Necromancer Item Pack,Penzilla,CC-BY 4.0,https://penzilla.itch.io/,Tier 3 Relic Icons
+art_relics,Art,Illusionistmancer Item Pack,Penzilla,CC-BY 4.0,https://penzilla.itch.io/,Tier 3 Relic Icons
 audio_bgm,Audio,Dark Ambient Vol.1,GhostWolf,CC0,https://ghostwolf.itch.io/,Main Menu Theme
 font_main,Font,Bake Soda,Unknown,Free,,,Main UI Font
 engine,Special,Godot Engine,Godot Community,MIT,https://godotengine.org/,Game Engine

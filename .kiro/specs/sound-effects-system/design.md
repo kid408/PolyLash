@@ -193,7 +193,7 @@ ConfigManager 不需要大幅修改。SoundManager 在 `_ready()` 中直接调�
 |--------|--------|---------|
 | `Global.play_enemy_death()` | `SoundManager.play("enemy_death")` | `enemy.gd: destroy_enemy()` |
 | `Global.play_player_death()` | `SoundManager.play("player_death")` | `player_base.gd: _on_death()` |
-| `Global.play_player_dash()` | `SoundManager.play("player_dash")` | `skill_dash.gd`, `skill_fire_path.gd`, `skill_mine_path.gd`, `skill_herder_loop.gd`, `skill_wind_path.gd` |
+| `Global.play_player_dash()` | `SoundManager.play("player_dash")` | `skill_dash.gd`, `skill_fire_path.gd`, `skill_mine_path.gd`, `skill_herder_loop.gd`, `skill_windblade_path.gd` |
 | `Global.play_player_explosion()` | `SoundManager.play("player_explosion")` | `explosion_area.gd`, `skill_herder_explosion.gd` |
 | `Global.play_loop_kill_impact()` | `SoundManager.play("loop_kill")` | `skill_herder_loop.gd` (2处) |
 | `Global.play_sfx(Global.sfx_player_shatter, ...)` | `SoundManager.play("ui_error")` | `arena.gd: _on_switch_rejected()` |
@@ -317,8 +317,8 @@ bond_small_shape_crit,res://assets/audio/environment/bond_crit.wav,0,0.9,1.1,0.1
 player_id,...,q_closure_sfx
 -1,...,Q闭合专属音效路径
 butcher,...,res://assets/audio/skill/q_closure/butcher.wav
-pyro,...,res://assets/audio/skill/q_closure/pyro.wav
-weaver,...,res://assets/audio/skill/q_closure/weaver.wav
+ignis,...,res://assets/audio/skill/q_closure/ignis.wav
+nexus,...,res://assets/audio/skill/q_closure/nexus.wav
 ```
 
 ### 音频资源目录结构
@@ -372,8 +372,8 @@ assets/audio/
 │   ├── ult_deactivate.wav
 │   └── q_closure/               # 每角色 Q 闭合音效
 │       ├── butcher.wav
-│       ├── pyro.wav
-│       ├── weaver.wav
+│       ├── ignis.wav
+│       ├── nexus.wav
 │       └── ... (27 个角色)
 ├── enemy/                       # 敌人音效（预留）
 ├── environment/                 # 环境/游戏状态音效

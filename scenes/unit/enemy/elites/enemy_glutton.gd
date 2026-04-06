@@ -183,7 +183,7 @@ func _perform_aoe_stomp() -> void:
 		if distance <= stage3_aoe_radius:
 			var damage = int(stage3_aoe_damage)
 			if player.has_method("take_damage"):
-				player.take_damage(damage)
+				player.take_damage(damage, {"source": self, "kind": "glutton_aoe"})
 				hit_count += 1
 				
 				# 显示浮动文本
@@ -301,7 +301,7 @@ func _execute_charge() -> void:
 				hit_targets[player] = true
 				var damage = int(stage4_charge_damage)
 				if player.has_method("take_damage"):
-					player.take_damage(damage)
+					player.take_damage(damage, {"source": self, "kind": "glutton_charge"})
 					print("[EnemyGlutton] 冲撞击中玩家，造成 %d 伤害！" % damage)
 					
 					if Global.has_method("spawn_floating_text"):

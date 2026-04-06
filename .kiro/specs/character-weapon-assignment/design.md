@@ -58,7 +58,7 @@ The `assign_character_weapons.gd` tool was run and updated `player_available_wea
 ### Issue 1: Missing Characters in player_available_weapons.csv
 **Characters missing:**
 - `tempest`
-- `sapper`
+- `diva`
 
 **Impact:** These characters cannot be selected properly
 
@@ -90,7 +90,7 @@ The `assign_character_weapons.gd` tool was run and updated `player_available_wea
 **Rationale:**
 - User requested 28 characters with weapon assignments
 - Currently only 26 characters are configured
-- Need to assign weapons to `tempest` and `sapper`
+- Need to assign weapons to `tempest` and `diva`
 
 **Implementation:**
 - Assign unique default weapons to missing characters
@@ -116,7 +116,7 @@ The `assign_character_weapons.gd` tool was run and updated `player_available_wea
 **Purpose:** Generate consistent weapon assignments for all 28 characters
 
 **Changes:**
-1. Add missing characters (`tempest`, `sapper`)
+1. Add missing characters (`tempest`, `diva`)
 2. Output to both CSV files
 3. Add validation logic
 4. Add deprecation notice for `player_weapons.csv`
@@ -161,7 +161,7 @@ The `assign_character_weapons.gd` tool was run and updated `player_available_wea
 - Alt 1: `smg` (shared)
 - Alt 2: `single_sniper` (shared)
 
-**sapper (后勤 - Alchemist):**
+**diva (后勤 - Alchemist):**
 - Default: `spread_fan` (unique support weapon)
 - Alt 1: `magic_heal_aoe` (shared)
 - Alt 2: `heal_bolt` (shared)

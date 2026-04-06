@@ -136,7 +136,7 @@ func _update_colors() -> void:
 ### 测试用例1：选择2个相同标签的角色
 
 **输入：**
-- 选择 butcher (martial) 和 wind (martial)
+- 选择 butcher (martial) 和 windblade (martial)
 - martial 标签数量 = 2
 
 **期望输出：**
@@ -152,7 +152,7 @@ func _update_colors() -> void:
 ### 测试用例2：选择3个相同标签的角色
 
 **输入：**
-- 选择 butcher (martial), wind (martial), sapper (martial)
+- 选择 butcher (martial), windblade (martial), diva (martial)
 - martial 标签数量 = 3
 
 **期望输出：**

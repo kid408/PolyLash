@@ -44,7 +44,7 @@ func take_damage(value:float) -> void:
 	
 	# 检查 marked 状态（伤害放大）
 	var owner_node = get_parent()
-	if owner_node and owner_node.has_method("has_status") and owner_node.has_status("marked"):
+	if owner_node and owner_node.has_method("has_status") and owner_node.has_status("marked") and not owner_node.has_meta("ignore_incoming_damage_multiplier_once"):
 		var marked_value = 0.0
 		if "active_statuses" in owner_node and owner_node.active_statuses.has("marked"):
 			marked_value = owner_node.active_statuses["marked"].value
@@ -52,13 +52,20 @@ func take_damage(value:float) -> void:
 			marked_value = owner_node.get_node("StatusComponent").get_status_value("marked")
 		if marked_value > 0:
 			value *= (1.0 + marked_value)
-	
+	if owner_node and owner_node.has_method("get_incoming_damage_multiplier") and not owner_node.has_meta("ignore_incoming_damage_multiplier_once"):
+		value *= float(owner_node.call("get_incoming_damage_multiplier"))
+
+	var previous_health: float = current_health
 	current_health -= value
 	
 	# 【修改】强制归零逻辑
 	# 避免出现 0.000001 血量的情况
 	if current_health < 0.01: 
 		current_health = 0
+
+	var applied_damage: float = max(0.0, previous_health - current_health)
+	if owner_node and owner_node.has_method("on_health_component_damage_applied") and applied_damage > 0.0:
+		owner_node.call("on_health_component_damage_applied", applied_damage)
 	
 	on_unit_hit.emit()
 	on_health_changed.emit(current_health, max_health)

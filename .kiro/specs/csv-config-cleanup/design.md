@@ -78,7 +78,7 @@ chain_radius, stake_throw_speed, stake_impact_damage, recall_fly_speed,
 recall_damage, recall_execute_mult, auto_recall_delay, stun_radius, 
 stun_duration, explosion_radius, fire_line_damage, fire_line_duration, 
 fire_line_width, fire_sea_damage, fire_sea_duration, fire_nova_radius, 
-fire_nova_damage, fire_nova_duration, wind_wall_pull_force, wind_wall_damage, 
+fire_nova_damage, fire_nova_duration, windblade_wall_pull_force, windblade_wall_damage, 
 storm_zone_damage, storm_eye_radius, storm_eye_damage, mine_damage, 
 mine_trigger_radius, mine_explosion_radius, totem_duration, totem_max_health, 
 energy_per_10px, energy_threshold_distance, energy_scale_multiplier
@@ -119,7 +119,7 @@ energy_per_10px, energy_threshold_distance, energy_scale_multiplier
 | explosion_radius | 200.0 | ✅ 在CSV | 从CSV加载 |
 | explosion_damage | 100 | ❌ 未在CSV | 添加到skill_params.csv |
 
-### 2.3 PlayerPyro (player_pyro.gd)
+### 2.3 PlayerIgnis (player_ignis.gd)
 
 | 变量名 | 硬编码值 | CSV状态 | 建议 |
 |--------|----------|---------|------|
@@ -132,7 +132,7 @@ energy_per_10px, energy_threshold_distance, energy_scale_multiplier
 | fire_nova_damage | 35 | ✅ 在CSV | 从CSV加载 |
 | fire_nova_duration | 3.0 | ✅ 在CSV | 从CSV加载 |
 
-### 2.4 PlayerWeaver (player_weaver.gd)
+### 2.4 PlayerNexus (player_nexus.gd)
 
 | 变量名 | 硬编码值 | CSV状态 | 建议 |
 |--------|----------|---------|------|
@@ -145,15 +145,15 @@ energy_per_10px, energy_threshold_distance, energy_scale_multiplier
 | stun_duration | 2.5 | ✅ 在CSV | 从CSV加载 |
 | stun_color | Color(...) | ❌ 未在CSV | 可保留为代码常量 |
 
-### 2.5 PlayerWind (player_wind.gd)
+### 2.5 PlayerWindblade (player_windblade.gd)
 
 | 变量名 | 硬编码值 | CSV状态 | 建议 |
 |--------|----------|---------|------|
-| wind_wall_pull_force | 350.0 | ✅ 在CSV | 从CSV加载 |
-| wind_wall_damage | 15 | ✅ 在CSV | 从CSV加载 |
-| wind_wall_duration | 3.0 | ❌ 未在CSV | 添加到skill_params.csv |
-| wind_wall_width | 24.0 | ❌ 未在CSV | 添加到skill_params.csv |
-| wind_wall_effect_radius | 120.0 | ❌ 未在CSV | 添加到skill_params.csv |
+| windblade_wall_pull_force | 350.0 | ✅ 在CSV | 从CSV加载 |
+| windblade_wall_damage | 15 | ✅ 在CSV | 从CSV加载 |
+| windblade_wall_duration | 3.0 | ❌ 未在CSV | 添加到skill_params.csv |
+| windblade_wall_width | 24.0 | ❌ 未在CSV | 添加到skill_params.csv |
+| windblade_wall_effect_radius | 120.0 | ❌ 未在CSV | 添加到skill_params.csv |
 | storm_zone_damage | 30 | ✅ 在CSV | 从CSV加载 |
 | storm_zone_pull_force | 400.0 | ❌ 未在CSV | 添加到skill_params.csv |
 | storm_zone_duration | 3.0 | ❌ 未在CSV | 添加到skill_params.csv |
@@ -162,7 +162,7 @@ energy_per_10px, energy_threshold_distance, energy_scale_multiplier
 | storm_eye_pull_force | 500.0 | ❌ 未在CSV | 添加到skill_params.csv |
 | storm_eye_duration | 3.0 | ❌ 未在CSV | 添加到skill_params.csv |
 
-### 2.6 PlayerSapper (player_sapper.gd)
+### 2.6 PlayerDiva (player_diva.gd)
 
 | 变量名 | 硬编码值 | CSV状态 | 建议 |
 |--------|----------|---------|------|
@@ -326,8 +326,8 @@ func _apply_visual_from_config() -> void:
 #### skill_params.csv 新增列
 ```
 stake_duration, saw_rotation_speed, saw_push_force, dismember_damage, 
-saw_max_distance, dash_base_damage, explosion_damage, wind_wall_duration, 
-wind_wall_width, wind_wall_effect_radius, storm_zone_pull_force, 
+saw_max_distance, dash_base_damage, explosion_damage, windblade_wall_duration, 
+windblade_wall_width, windblade_wall_effect_radius, storm_zone_pull_force, 
 storm_zone_duration, storm_eye_pull_force, storm_eye_duration, 
 mine_density_distance, mine_area_density, dash_knockback
 ```

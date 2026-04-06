@@ -1,0 +1,7 @@
+interface:
+  display_name: "角色技能验收"
+  short_description: "检查角色技能文档、代码、CSV、配置和运行是否一致"
+  default_prompt: "Use $character-skill-acceptance to verify a character skill against docs, code, CSV, config, and runtime behavior."
+
+policy:
+  allow_implicit_invocation: true

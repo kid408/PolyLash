@@ -8,34 +8,33 @@ class_name ConfigRepository
 # ============================================================================
 
 const BOND_CONFIG_PATH := "res://config/player/bond_config.csv"
-const BOND_CONFIG_V3_PATH := "res://config/player/bond_config_v3.csv"
 const BOND_RESONANCE_CONFIG_PATH := "res://config/player/bond_resonance_config.csv"
 const SHOP_ITEM_CONFIG_PATH := "res://config/item/shop_item_config.csv"
 const SHOP_ATTRIBUTE_CONFIG_PATH := "res://config/wave/shop_attribute_config.csv"
 const SHOP_WAVE_CONFIG_PATH := "res://config/wave/shop_wave_config.csv"
 const ULT_CONFIG_PATH := "res://config/player/ult_config.csv"
-const ENEMY_CONFIG_V2_PATH := "res://config/enemy/enemy_config_v2.csv"
+const ENEMY_CONFIG_PATH := "res://config/enemy/enemy_config.csv"
 const BOSS_PHASE_CONFIG_PATH := "res://config/enemy/boss_phase_config.csv"
-const WAVE_CONFIG_V2_PATH := "res://config/wave/wave_config_v2.csv"
-const WAVE_UNITS_CONFIG_V2_PATH := "res://config/wave/wave_units_config_v2.csv"
+const WAVE_CONFIG_PATH := "res://config/wave/wave_config.csv"
+const WAVE_UNITS_CONFIG_PATH := "res://config/wave/wave_units_config.csv"
 const LEGACY_PLAYER_ID_ALIASES := {
-	"new_pyro": "runeblazer",
-	"new_totem": "spiritcaller",
-	"new_tempest": "stormseer",
-	"tempest": "stormseer",
-	"train": "breachmarshal",
-	"goo": "mirebinder",
-	"herder": "lurewarden",
-	"hunter": "trapper",
-	"ammo": "quartermaster",
-	"turret_eng": "turretwright",
-	"vacuum": "singularist",
-	"tesla": "arcstriker",
-	"voodoo": "hexwarden",
-	"gambler": "fatebinder",
-	"merchant": "broker",
-	"midas": "gildhand",
-	"vampire": "bloodsworn"
+	"new_ignis": "frostbite",
+	"new_totem": "plague",
+	"new_tempest": "snareweaver",
+	"tempest": "snareweaver",
+	"train": "polaris",
+	"goo": "chronomancer",
+	"herder": "shaman",
+	"hunter": "botanist",
+	"ammo": "medium",
+	"turret_eng": "shadow",
+	"vacuum": "beastmaster",
+	"tesla": "flashblade",
+	"voodoo": "leviathan",
+	"gambler": "demolitionist",
+	"merchant": "pathfinder",
+	"midas": "necromancer",
+	"vampire": "astrologer"
 }
 
 static func load_bond_configs() -> Dictionary:
@@ -82,8 +81,6 @@ static func load_bond_configs() -> Dictionary:
 	return bond_configs
 
 static func _resolve_bond_config_path() -> String:
-	if FileAccess.file_exists(BOND_CONFIG_V3_PATH):
-		return BOND_CONFIG_V3_PATH
 	return BOND_CONFIG_PATH
 
 static func load_shop_item_configs() -> Dictionary:
@@ -243,33 +240,24 @@ static func load_shop_wave_configs() -> Array:
 
 static func load_enemy_v2_configs() -> Dictionary:
 	var configs: Dictionary = {}
-	var file := _open_csv_file(ENEMY_CONFIG_V2_PATH)
-	if file == null:
+	var rows: Array[Dictionary] = _load_csv_rows_with_headers(ENEMY_CONFIG_PATH)
+	if rows.is_empty():
 		return configs
 
-	_skip_csv_header_and_comment(file)
-	while not file.eof_reached():
-		var line := file.get_csv_line()
-		if not _is_data_row(line):
-			continue
-		if line.size() < 7:
-			continue
-
-		var enemy_id := line[0].strip_edges()
+	for row: Dictionary in rows:
+		var enemy_id := str(row.get("enemy_id", "")).strip_edges()
 		if enemy_id.is_empty():
 			continue
 
 		configs[enemy_id] = {
 			"enemy_id": enemy_id,
-			"role": line[1].strip_edges().to_lower(),
-			"cost": _to_float(line[2], 1.0),
-			"hp": _to_float(line[3], 0.0),
-			"speed": _to_float(line[4], 0.0),
-			"damage": _to_float(line[5], 0.0),
-			"behavior_params": line[6].strip_edges()
+			"role": str(row.get("role", "")).strip_edges().to_lower(),
+			"cost": _to_float(row.get("cost", 1.0), 1.0),
+			"hp": _to_float(row.get("health", 0.0), 0.0),
+			"speed": _to_float(row.get("speed", 0.0), 0.0),
+			"damage": _to_float(row.get("damage", 0.0), 0.0),
+			"behavior_params": str(row.get("behavior_params", "")).strip_edges()
 		}
-
-	file.close()
 	return configs
 
 static func load_boss_phase_configs() -> Dictionary:
@@ -313,53 +301,39 @@ static func load_boss_phase_configs() -> Dictionary:
 
 static func load_wave_v2_configs() -> Dictionary:
 	var configs: Dictionary = {}
-	var file := _open_csv_file(WAVE_CONFIG_V2_PATH)
-	if file == null:
+	var rows: Array[Dictionary] = _load_csv_rows_with_headers(WAVE_CONFIG_PATH)
+	if rows.is_empty():
 		return configs
 
-	_skip_csv_header_and_comment(file)
-	while not file.eof_reached():
-		var line := file.get_csv_line()
-		if not _is_data_row(line):
-			continue
-		if line.size() < 10:
-			continue
-
-		var wave_id := line[0].strip_edges()
+	for row: Dictionary in rows:
+		var wave_id := str(row.get("wave_id", "")).strip_edges()
 		if wave_id.is_empty():
+			continue
+		if wave_id.find("wave_") != 0:
 			continue
 
 		configs[wave_id] = {
 			"wave_id": wave_id,
-			"from_wave": _to_int(line[1], 1),
-			"to_wave": _to_int(line[2], 1),
-			"wave_time": _to_float(line[3], 100.0),
-			"spawn_type": line[4].strip_edges(),
-			"fixed_spawn_time": _to_float(line[5], 2.0),
-			"spawn_interval_min": _to_float(line[6], 1.5),
-			"spawn_interval_max": _to_float(line[7], 2.5),
-			"budget_multiplier": _to_float(line[8], 1.0),
-			"peak_event": line[9].strip_edges()
+			"from_wave": _to_int(row.get("from_wave", 1), 1),
+			"to_wave": _to_int(row.get("to_wave", 1), 1),
+			"wave_time": _to_float(row.get("wave_time", 100.0), 100.0),
+			"spawn_type": str(row.get("spawn_type", "")).strip_edges(),
+			"fixed_spawn_time": _to_float(row.get("fixed_spawn_time", 2.0), 2.0),
+			"spawn_interval_min": _to_float(row.get("min_spawn_time", 1.5), 1.5),
+			"spawn_interval_max": _to_float(row.get("max_spawn_time", 2.5), 2.5),
+			"budget_multiplier": _to_float(row.get("budget_multiplier", 1.0), 1.0),
+			"peak_event": str(row.get("peak_event", "")).strip_edges()
 		}
-
-	file.close()
 	return configs
 
 static func load_wave_units_v2_grouped() -> Dictionary:
 	var grouped: Dictionary = {}
-	var file := _open_csv_file(WAVE_UNITS_CONFIG_V2_PATH)
-	if file == null:
+	var rows: Array[Dictionary] = _load_csv_rows_with_headers(WAVE_UNITS_CONFIG_PATH)
+	if rows.is_empty():
 		return grouped
 
-	_skip_csv_header_and_comment(file)
-	while not file.eof_reached():
-		var line := file.get_csv_line()
-		if not _is_data_row(line):
-			continue
-		if line.size() < 4:
-			continue
-
-		var wave_id := line[0].strip_edges()
+	for row: Dictionary in rows:
+		var wave_id := str(row.get("wave_id", "")).strip_edges()
 		if wave_id.is_empty():
 			continue
 
@@ -368,12 +342,10 @@ static func load_wave_units_v2_grouped() -> Dictionary:
 
 		grouped[wave_id].append({
 			"wave_id": wave_id,
-			"enemy_scene": line[1].strip_edges(),
-			"enemy_id": line[2].strip_edges(),
-			"weight": _to_float(line[3], 1.0)
+			"enemy_scene": str(row.get("enemy_scene", "")).strip_edges(),
+			"enemy_id": str(row.get("enemy_id", "")).strip_edges(),
+			"weight": _to_float(row.get("weight", 1.0), 1.0)
 		})
-
-	file.close()
 	return grouped
 
 static func load_ult_configs() -> Dictionary:
@@ -440,6 +412,36 @@ static func _open_csv_file(path: String) -> FileAccess:
 	if file == null:
 		printerr("[ConfigRepository] 无法打开配置文件: %s" % path)
 	return file
+
+static func _load_csv_rows_with_headers(path: String) -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
+	var file := _open_csv_file(path)
+	if file == null:
+		return rows
+
+	var headers: PackedStringArray = PackedStringArray()
+	while not file.eof_reached():
+		var line := file.get_csv_line()
+		if line.is_empty():
+			continue
+		var first: String = line[0].strip_edges()
+		if first.is_empty():
+			continue
+		if headers.is_empty():
+			headers = line
+			continue
+		if first == "-1":
+			continue
+		var row: Dictionary = {}
+		for i: int in range(headers.size()):
+			var header_name: String = headers[i].strip_edges()
+			if header_name.is_empty():
+				continue
+			row[header_name] = _csv_get(line, i, "")
+		rows.append(row)
+
+	file.close()
+	return rows
 
 static func _skip_csv_header_and_comment(file: FileAccess) -> void:
 	if file == null:

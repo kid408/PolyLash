@@ -79,6 +79,7 @@ var path_points: Array[Vector2] = []
 
 ## 璺緞绾挎鍒楄〃锛堢敤浜庝氦鍙夋娴嬶級
 var path_segments: Array[Dictionary] = []
+var _pending_open_asset_payload: Dictionary = {}
 
 ## death_brush 鑺傛祦璁℃椂鍣紙閬垮厤姣忓抚楂橀鎵弿锛?
 var _death_brush_tick_cooldown: float = 0.0
@@ -152,18 +153,6 @@ func _apply_thorns_damage(enemy: Node2D, thorns_damage: float) -> void:
 # 函数：_spawn_area_effect
 func _spawn_area_effect(polygon: PackedVector2Array) -> void:
 	push_warning("[SkillDrawingBase] _spawn_area_effect() not implemented for %s" % skill_id)
-
-func _before_execute_path(_is_closed_path: bool) -> void:
-	pass
-
-func _transform_open_segment_for_execution(start: Vector2, end_pos: Vector2) -> Dictionary:
-	return {
-		"start": start,
-		"end": end_pos,
-	}
-
-func _transform_polygon_for_execution(polygon: PackedVector2Array) -> PackedVector2Array:
-	return polygon
 
 
 ## @return: 搴旂敤鍔犳垚鍚庣殑浼ゅ
@@ -300,9 +289,6 @@ func _get_ultimate_runtime_damage_amp(is_closed_path: bool) -> float:
 
 	var key := "q_closure_amp" if is_closed_path else "q_line_amp"
 	var amp := float(profile.get(key, 1.0))
-	if is_closed_path:
-		var slot_payload: Dictionary = QEFRuntimeService.get_q_bonus(skill_owner, true)
-		amp += float(slot_payload.get("q_damage_amp_bonus", 0.0))
 	return max(0.1, amp)
 
 func _push_runtime_effect_damage_multiplier(is_closed_path: bool) -> void:
@@ -729,11 +715,6 @@ func _process(delta: float) -> void:
 	super._process(delta)
 	if _death_brush_tick_cooldown > 0.0:
 		_death_brush_tick_cooldown = max(0.0, _death_brush_tick_cooldown - delta)
-	
-	# 条件判断
-	if is_planning and Engine.time_scale > 0.2:
-		Engine.time_scale = 0.1
-	
 
 	_update_visuals()
 
@@ -800,14 +781,12 @@ func _enter_planning_mode() -> void:
 	print("[%s] ===== 鏉╂稑鍙嗙憴鍕灊濡€崇础 ===== 鐠ч鍋? %s, line_2d閺堝鏅? %s" % [skill_id, start_pos, is_instance_valid(line_2d)])
 	
 	SoundManager.play("skill_q_planning")
-	Engine.time_scale = 0.1
 
 # 函数：_exit_planning_mode_and_execute
 func _exit_planning_mode_and_execute() -> void:
 	is_planning = false
 	is_charging = false
 	is_drawing = false
-	Engine.time_scale = 1.0
 	
 	print("[%s] ===== 退出规划模式 ===== 点数: %d, 闭合: %s" % [skill_id, path_points.size(), has_closure])
 	
@@ -815,18 +794,10 @@ func _exit_planning_mode_and_execute() -> void:
 		_perform_final_closure_check()
 		
 		print("[%s] 最终闭合判定: %s" % [skill_id, has_closure])
-		_before_execute_path(has_closure)
 		
 		# 条件判断
 		if has_closure:
-			var free_q_close: bool = _try_apply_free_q_close_refund()
-			if free_q_close or _try_consume_q_close_cost():
-				_execute_closed_path()
-			else:
-				has_closure = false
-				if Global != null and is_instance_valid(skill_owner):
-					Global.spawn_floating_text(skill_owner.global_position, "闭合降级", Color(1.0, 0.82, 0.36))
-				_execute_open_path()
+			_execute_closed_path()
 		else:
 			_execute_open_path()
 		
@@ -838,36 +809,10 @@ func _exit_planning_mode_and_execute() -> void:
 		print("[%s] 鐠侯垰绶為悙閫涚瑝鐡掔绱濈捄瀹犵箖閹笛嗩攽" % skill_id)
 		_clear_all_points(false)
 
-func _try_apply_free_q_close_refund() -> bool:
-	if not is_instance_valid(skill_owner):
-		return false
-	if not QEFRuntimeService.try_consume_free_cost_target(skill_owner, "q_close"):
-		return false
-
-	var refund_amount: float = _calculate_total_consumed_energy()
-	if refund_amount > 0.0 and "energy" in skill_owner and "max_energy" in skill_owner:
-		var next_energy: float = min(float(skill_owner.get("max_energy")), float(skill_owner.get("energy")) + refund_amount)
-		skill_owner.set("energy", next_energy)
-		if skill_owner.has_method("update_ui_signals"):
-			skill_owner.call("update_ui_signals")
-
-	if Global != null and is_instance_valid(skill_owner):
-		Global.spawn_floating_text(skill_owner.global_position, "Q闭合免耗", Color(0.82, 1.0, 0.74))
-	return true
-
-func _try_consume_q_close_cost() -> bool:
-	if not is_instance_valid(skill_owner):
-		return false
-	var close_cost: float = _get_q_close_cost_value()
-	if close_cost <= 0.0:
-		return true
-	return skill_owner.consume_energy(close_cost)
-
 func cancel_planning_state(refund_energy: bool = false) -> void:
 	is_planning = false
 	is_charging = false
 	is_drawing = false
-	Engine.time_scale = 1.0
 	if is_instance_valid(line_2d):
 		line_2d.clear_points()
 	_clear_all_points(refund_energy)
@@ -882,24 +827,17 @@ func _execute_closed_path() -> void:
 	
 	# P0-3: 浣跨敤缇佺粖鍔犳垚鍚庣殑瀹归敊璺濈
 	var tolerance = _get_closure_tolerance()
-	var source_polygons = PolygonUtils.find_all_closing_polygons(path_points, tolerance)
-	var polygons: Array[PackedVector2Array] = []
-	for poly_obj: Variant in source_polygons:
-		if not (poly_obj is PackedVector2Array):
-			continue
-		polygons.append(_transform_polygon_for_execution(poly_obj))
+	var polygons = PolygonUtils.find_all_closing_polygons(path_points, tolerance)
 	
-	var transformed_points: Array[Vector2] = []
-	for point: Vector2 in path_points:
-		transformed_points.append(_transform_open_segment_for_execution(point, point).get("start", point))
-	var context_center: Vector2 = _calculate_points_center(transformed_points)
-	var context_radius: float = _calculate_points_radius(transformed_points, context_center)
+	var context_center: Vector2 = _calculate_points_center(path_points)
+	var context_radius: float = _calculate_points_radius(path_points, context_center)
+	var max_area: float = 0.0
 
 	if polygons.size() > 0:
 		print("[%s] detected %d closed polygons" % [skill_id, polygons.size()])
 
 		var primary_polygon: PackedVector2Array = polygons[0]
-		var max_area: float = _calculate_polygon_area(primary_polygon)
+		max_area = _calculate_polygon_area(primary_polygon)
 		for poly_obj: Variant in polygons:
 			if not (poly_obj is PackedVector2Array):
 				continue
@@ -929,6 +867,17 @@ func _execute_closed_path() -> void:
 
 	_cache_q_execution_context(true, path_points.size(), polygons.size(), context_center, context_radius)
 	_notify_ultimate_path_executed(true, path_points.size(), polygons.size())
+	if is_instance_valid(skill_owner) and skill_owner.has_method("notify_space_draw_release"):
+		skill_owner.notify_space_draw_release({
+			"source": "space",
+			"skill_id": skill_id,
+			"is_closed": true,
+			"points": path_points.duplicate(),
+			"centroid": context_center,
+			"approx_area": max_area,
+			"draw_cost": _calculate_total_consumed_energy(),
+			"polygon_count": polygons.size(),
+		})
 
 ## 閹笛嗩攽瀵偓閺€鎹愮熅瀵?
 func _execute_open_path() -> void:
@@ -956,26 +905,31 @@ func _execute_open_path() -> void:
 			accumulated = 0.0
 	
 	print("[%s] 閻㈢喐鍨氬鈧弨鎹愮熅瀵板嫭鏅ラ弸婊愮礉閸樼喎顫愰悙瑙勬殶: %d, 閸氬牆鑻熺痪鎸庮唽閺? %d" % [skill_id, path_points.size(), merged_segments.size()])
+	_pending_open_asset_payload = _build_open_path_asset_payload(merged_segments)
 	var line_duration: float = _get_line_duration()
-	var transformed_points: Array[Vector2] = []
-	for point: Vector2 in path_points:
-		var transformed_point: Dictionary = _transform_open_segment_for_execution(point, point)
-		transformed_points.append(transformed_point.get("start", point))
-	var context_center: Vector2 = _calculate_points_center(transformed_points)
-	var context_radius: float = _calculate_points_radius(transformed_points, context_center)
+	var context_center: Vector2 = _calculate_points_center(path_points)
+	var context_radius: float = _calculate_points_radius(path_points, context_center)
 	
 	for seg in merged_segments:
-		var transformed_seg: Dictionary = _transform_open_segment_for_execution(seg["start"], seg["end"])
-		var seg_start_exec: Vector2 = transformed_seg.get("start", seg["start"])
-		var seg_end_exec: Vector2 = transformed_seg.get("end", seg["end"])
 		_push_runtime_effect_damage_multiplier(false)
-		_spawn_line_effect(seg_start_exec, seg_end_exec)
+		_spawn_line_effect(seg["start"], seg["end"])
 		_pop_runtime_effect_damage_multiplier()
-		_spawn_thorns_wall_trigger(seg_start_exec, seg_end_exec, line_duration)
+		_spawn_thorns_wall_trigger(seg["start"], seg["end"], line_duration)
 	
 	print("[%s] open-path effects spawned" % skill_id)
 	_cache_q_execution_context(false, merged_segments.size(), 0, context_center, context_radius)
 	_notify_ultimate_path_executed(false, merged_segments.size(), 0)
+	if is_instance_valid(skill_owner) and skill_owner.has_method("notify_space_draw_release"):
+		skill_owner.notify_space_draw_release({
+			"source": "space",
+			"skill_id": skill_id,
+			"is_closed": false,
+			"points": path_points.duplicate(),
+			"centroid": context_center,
+			"approx_area": 0.0,
+			"draw_cost": _calculate_total_consumed_energy(),
+			"segment_count": merged_segments.size(),
+		})
 
 func _notify_ultimate_path_executed(is_closed: bool, segment_count: int, polygon_count: int) -> void:
 	if not is_instance_valid(skill_owner):
@@ -1032,6 +986,52 @@ func _estimate_closed_shape_damage(polygon: PackedVector2Array) -> int:
 	final_damage = _apply_small_shape_crit(polygon, final_damage)
 	return max(1, int(round(final_damage)))
 
+func _build_open_path_asset_payload(merged_segments: Array[Dictionary]) -> Dictionary:
+	var payload: Dictionary = {
+		"is_closed": false,
+		"segments": [],
+		"aabb": Rect2(),
+	}
+	if merged_segments.is_empty():
+		return payload
+	
+	var first_start: Vector2 = (merged_segments[0] as Dictionary).get("start", Vector2.ZERO)
+	var asset_rect := Rect2(first_start, Vector2.ZERO)
+	var serialized_segments: Array[Dictionary] = []
+	for seg_var: Variant in merged_segments:
+		if not (seg_var is Dictionary):
+			continue
+		var seg: Dictionary = seg_var
+		var start: Vector2 = seg.get("start", Vector2.ZERO)
+		var end_pos: Vector2 = seg.get("end", Vector2.ZERO)
+		var seg_rect: Rect2 = _build_segment_aabb(start, end_pos)
+		asset_rect = asset_rect.merge(seg_rect)
+		serialized_segments.append({
+			"start": start,
+			"end": end_pos,
+			"aabb": seg_rect,
+		})
+	
+	payload["aabb"] = asset_rect
+	payload["segments"] = serialized_segments
+	if path_points.size() >= 2:
+		payload["path_start"] = path_points[0]
+		payload["path_end"] = path_points[path_points.size() - 1]
+	return payload
+
+func _build_segment_aabb(start: Vector2, end_pos: Vector2, padding: float = 0.0) -> Rect2:
+	var min_x: float = min(start.x, end_pos.x)
+	var min_y: float = min(start.y, end_pos.y)
+	var max_x: float = max(start.x, end_pos.x)
+	var max_y: float = max(start.y, end_pos.y)
+	var rect := Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
+	return rect.grow(max(0.0, padding))
+
+func _get_pending_q_asset_payload(is_closed_path: bool) -> Dictionary:
+	if is_closed_path:
+		return {}
+	return _pending_open_asset_payload.duplicate(true)
+
 func _trigger_secondary_explode(polygon: PackedVector2Array, main_damage: int) -> void:
 	if not BondManager.has_mechanic("secondary_explode"):
 		return
@@ -1068,6 +1068,7 @@ func _start_drawing() -> void:
 	
 	path_points.clear()
 	path_segments.clear()
+	_pending_open_asset_payload.clear()
 	has_closure = false
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
@@ -1256,61 +1257,34 @@ func _apply_polygon_effect(polygon: PackedVector2Array) -> void:
 		Global.spawn_floating_text(center, "POLYGON x%d" % sides, Color(0.9, 1.3, 2.0))
 		SoundManager.play("bond_trigger_generic")
 
-func _get_f_q_line_energy_discount() -> float:
-	if not is_f_window_active():
-		return 0.0
-	var role_energy_cfg: Dictionary = _get_role_f_energy_config()
-	return clamp(float(role_energy_cfg.get("q_line_cost_discount", 0.0)), 0.0, 0.5)
-
-func _get_f_q_close_cost_discount() -> float:
-	if not is_f_window_active():
-		return 0.0
-	var role_energy_cfg: Dictionary = _get_role_f_energy_config()
-	return clamp(float(role_energy_cfg.get("q_close_cost_discount", 0.0)), 0.0, 0.5)
-
-func _get_q_close_cost_value() -> float:
-	var spec: Dictionary = get_role_spec()
-	if spec.is_empty():
-		return 0.0
-	var energy_cfg: Variant = spec.get("energy", {})
-	if not (energy_cfg is Dictionary):
-		return 0.0
-	var close_cost: float = float((energy_cfg as Dictionary).get("q_close_cost", 0.0))
-	if close_cost <= 0.0:
-		return 0.0
-	close_cost *= (1.0 - _get_f_q_close_cost_discount())
-	return max(0.0, close_cost)
-
 # ==============================================================================
 
 # ==============================================================================
 
 # 函数：_calculate_current_energy_cost
 func _calculate_current_energy_cost() -> float:
-	var line_discount: float = _get_f_q_line_energy_discount()
 	if total_distance_drawn <= energy_threshold_distance:
 		# 鍩虹闃舵
-		return energy_per_10px * (1.0 - line_discount)
+		return energy_per_10px
 	else:
 		# 閫掑闃舵
 		var excess_distance = total_distance_drawn - energy_threshold_distance
 		var multiplier = 1.0 + excess_distance * energy_scale_multiplier
-		return energy_per_10px * multiplier * (1.0 - line_discount)
+		return energy_per_10px * multiplier
 
 # 函数：_calculate_total_consumed_energy
 func _calculate_total_consumed_energy() -> float:
 	var total = 0.0
 	var distance = 0.0
-	var line_discount: float = _get_f_q_line_energy_discount()
 	
 	# 循环处理
 	while distance < total_distance_drawn:
 		if distance <= energy_threshold_distance:
-			total += energy_per_10px * (1.0 - line_discount)
+			total += energy_per_10px
 		else:
 			var excess = distance - energy_threshold_distance
 			var multiplier = 1.0 + excess * energy_scale_multiplier
-			total += energy_per_10px * multiplier * (1.0 - line_discount)
+			total += energy_per_10px * multiplier
 		
 		distance += POINT_INTERVAL
 	
@@ -1405,6 +1379,7 @@ func _clear_all_points(refund_energy: bool = false) -> void:
 	# 娓呯┖鏁版嵁
 	path_points.clear()
 	path_segments.clear()
+	_pending_open_asset_payload.clear()
 	has_closure = false
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
@@ -1479,9 +1454,9 @@ func cleanup() -> void:
 	has_shown_no_energy_hint = false
 	path_points.clear()
 	path_segments.clear()
+	_pending_open_asset_payload.clear()
 	accumulated_distance = 0.0
 	total_distance_drawn = 0.0
 	has_closure = false
-	Engine.time_scale = 1.0
 	
 	print("[%s] cleanup() finished" % skill_id)

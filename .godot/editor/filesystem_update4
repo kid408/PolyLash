@@ -1,3 +1,4 @@
-res://scripts/qef/services/qef_loot_pack.gd
-res://scripts/qef/colossus/colossus_q_base.gd
-res://scripts/qef/services/f_signature_pickup_service.gd
+res://scenes/effects/phalanx_barrier.gd
+res://scenes/effects/phalanx_pinball_arena.gd
+res://scenes/unit/players/player_phalanx.gd
+res://scenes/unit/enemy/enemy.gd

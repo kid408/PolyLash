@@ -79,7 +79,7 @@
 ```csv
 item_id,item_name,item_tier,effect_type,effect_target,effect_param,effect_value,icon_path,description
 attr_hp_1,生命药水,1,stat_mod,player,health,50,Icon1.png,增加50点生命值
-magic_fire_1,火焰之心,2,skill_mod,pyro_q,damage,0.3,Icon8.png,火焰技能伤害+30%
+magic_fire_1,火焰之心,2,skill_mod,ignis_q,damage,0.3,Icon8.png,火焰技能伤害+30%
 relic_martial_1,武道圣物,3,bond_tag,origin,martial,1,Icon10.png,提供1个武道标签
 ```
 

@@ -1,17 +1,15 @@
 extends SkillUltimate
 class_name SkillFBase
 
-const FSignaturePickupService = preload("res://scripts/qef/services/f_signature_pickup_service.gd")
-
 const MIN_TICK_INTERVAL: float = 0.25
 
 var _tick_accum: float = 0.0
 var _line_event_count: int = 0
 var _closure_event_count: int = 0
 var _tick_event_count: int = 0
-var _sapper_mines: Array = []
+var _diva_mines: Array = []
 var _turret_pylons: Array = []
-var _mirebinder_pools: Array = []
+var _chronomancer_pools: Array = []
 var _signature_pickups: Array = []
 
 func _on_ultimate_activated() -> void:
@@ -79,6 +77,19 @@ func _apply_q_link_signature(_phase: String, _packet: Dictionary, _center: Vecto
 
 func _resolve_recent_q_context(max_age_msec: int = 6000) -> Dictionary:
 	return SkillContextBridge.get_q_context(player_ref, max_age_msec)
+
+func get_q_skill() -> Node:
+	if not is_instance_valid(player_ref):
+		return null
+	var skill_manager: Node = player_ref.get_node_or_null("SkillManager")
+	if skill_manager == null or not is_instance_valid(skill_manager):
+		return null
+	if not skill_manager.has_method("get_skill"):
+		return null
+	var q_skill_var: Variant = skill_manager.call("get_skill", "q")
+	if q_skill_var is Node:
+		return q_skill_var as Node
+	return null
 
 func _resolve_recent_q_asset(kind_filter: String = "", max_age_msec: int = 6000) -> Dictionary:
 	return SkillContextBridge.get_recent_q_asset(player_ref, kind_filter, max_age_msec)
@@ -210,9 +221,7 @@ func _damage_enemy(enemy: Node, amount: float, text: String = "", text_color: Co
 		if health_component != null and health_component.has_method("take_damage"):
 			health_component.call("take_damage", max(1.0, amount))
 	if text != "" and enemy is Node2D:
-		var global_node: Node = _get_autoload_node("Global")
-		if global_node != null and global_node.has_method("spawn_floating_text"):
-			global_node.call("spawn_floating_text", (enemy as Node2D).global_position, text, text_color)
+		Global.spawn_floating_text((enemy as Node2D).global_position, text, text_color)
 
 func _apply_enemy_status(enemy: Node, status: String, duration: float, value: float, stacks: int = 1, tick_interval: float = 0.6) -> void:
 	if not is_instance_valid(enemy):
@@ -287,23 +296,21 @@ func _add_player_armor(value: int) -> void:
 		player_ref.emit_signal("armor_changed", after)
 
 func _drop_coins(count: int) -> void:
-	var global_node: Node = _get_autoload_node("Global")
-	if count <= 0 or not is_instance_valid(player_ref) or global_node == null or not global_node.has_method("spawn_coin"):
+	if count <= 0 or not is_instance_valid(player_ref) or not Global.has_method("spawn_coin"):
 		return
 	var player_node := _get_player_node()
 	if player_node == null:
 		return
 	for _i in range(count):
 		var offset := Vector2(randf_range(-70.0, 70.0), randf_range(-70.0, 70.0))
-		global_node.call("spawn_coin", player_node.global_position + offset, 1)
+		Global.spawn_coin(player_node.global_position + offset, 1)
 
 func _drop_coins_at(center: Vector2, count: int) -> void:
-	var global_node: Node = _get_autoload_node("Global")
-	if count <= 0 or global_node == null or not global_node.has_method("spawn_coin"):
+	if count <= 0 or not Global.has_method("spawn_coin"):
 		return
 	for _i in range(count):
 		var offset := Vector2(randf_range(-45.0, 45.0), randf_range(-45.0, 45.0))
-		global_node.call("spawn_coin", center + offset, 1)
+		Global.spawn_coin(center + offset, 1)
 
 func _apply_temp_attack_boost(duration: float, bonus: float) -> void:
 	_apply_temp_meta_delta("attack_boost", bonus, duration)
@@ -465,12 +472,9 @@ func _spawn_parallel_wall_pair(
 		dir = Vector2.RIGHT
 	var side := Vector2(-dir.y, dir.x)
 	var half_len: float = max(12.0, length * 0.5)
-	var skill_effect_manager: Node = _get_autoload_node("SkillEffectManager")
-	if skill_effect_manager == null:
-		return
 	for sign in [-1.0, 1.0]:
 		var offset_center: Vector2 = center + side * gap * 0.5 * sign
-		skill_effect_manager.call("create_wall_effect", {
+		SkillEffectManager.create_wall_effect({
 			"start": offset_center - dir * half_len,
 			"end": offset_center + dir * half_len,
 			"width": 12.0,
@@ -482,20 +486,17 @@ func _spawn_parallel_wall_pair(
 			"color": color,
 		})
 
-func _spawn_pyro_patch(center: Vector2, radius: float, duration: float, damage_scale: float) -> void:
-	var skill_effect_manager: Node = _get_autoload_node("SkillEffectManager")
-	if skill_effect_manager == null:
-		return
+func _spawn_ignis_patch(center: Vector2, radius: float, duration: float, damage_scale: float) -> void:
 	var polygon := _build_circle_polygon(center, radius, 16)
 	var damage: int = max(1, int(round(_get_player_base_damage() * max(0.0, damage_scale))))
-	skill_effect_manager.call("create_area_effect", {
+	SkillEffectManager.create_area_effect({
 		"polygon": polygon,
 		"damage": damage,
 		"damage_interval": 0.35,
 		"duration": max(0.1, duration),
 		"color": Color(1.0, 0.38, 0.12, 0.32),
 	})
-	skill_effect_manager.call("create_debuff_zone", {
+	SkillEffectManager.create_debuff_zone({
 		"polygon": polygon,
 		"duration": max(0.1, duration),
 		"debuff_type": "burn",
@@ -505,7 +506,7 @@ func _spawn_pyro_patch(center: Vector2, radius: float, duration: float, damage_s
 		"color": Color(1.0, 0.45, 0.16, 0.18),
 	})
 
-func _spawn_glacier_ring_walls(
+func _spawn_bulwark_ring_walls(
 	center: Vector2,
 	radius: float,
 	duration: float,
@@ -514,16 +515,13 @@ func _spawn_glacier_ring_walls(
 	contact_interval: float,
 	block_bullets: bool
 ) -> void:
-	var skill_effect_manager: Node = _get_autoload_node("SkillEffectManager")
-	if skill_effect_manager == null:
-		return
 	var points := _build_circle_polygon(center, radius, max(6, segment_count))
 	if points.size() < 3:
 		return
 	for i in range(points.size()):
 		var start := points[i]
 		var finish := points[(i + 1) % points.size()]
-		skill_effect_manager.call("create_wall_effect", {
+		SkillEffectManager.create_wall_effect({
 			"start": start,
 			"end": finish,
 			"width": 10.0,
@@ -535,19 +533,16 @@ func _spawn_glacier_ring_walls(
 			"color": Color(0.65, 0.92, 1.0, 0.74),
 		})
 
-func _spawn_glacier_core_zone(center: Vector2, radius: float, duration: float, damage: int, slow_value: float) -> void:
-	var skill_effect_manager: Node = _get_autoload_node("SkillEffectManager")
-	if skill_effect_manager == null:
-		return
+func _spawn_bulwark_core_zone(center: Vector2, radius: float, duration: float, damage: int, slow_value: float) -> void:
 	var polygon := _build_circle_polygon(center, radius, 16)
-	skill_effect_manager.call("create_area_effect", {
+	SkillEffectManager.create_area_effect({
 		"polygon": polygon,
 		"damage": max(0, damage),
 		"damage_interval": 0.28,
 		"duration": max(0.1, duration),
 		"color": Color(0.58, 0.88, 1.0, 0.24),
 	})
-	skill_effect_manager.call("create_debuff_zone", {
+	SkillEffectManager.create_debuff_zone({
 		"polygon": polygon,
 		"duration": max(0.1, duration),
 		"debuff_type": "slow",
@@ -557,7 +552,7 @@ func _spawn_glacier_core_zone(center: Vector2, radius: float, duration: float, d
 		"color": Color(0.52, 0.85, 1.0, 0.16),
 	})
 
-func _signature_banner(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_gunslinger(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(120.0, float(packet.get("radius", 120.0)) * 1.08)
 	var aim_dir: Vector2 = _get_player_aim_direction()
 	var base_damage: float = _get_player_base_damage()
@@ -632,25 +627,25 @@ func _signature_banner(phase: String, packet: Dictionary, center: Vector2) -> vo
 			140.0
 		)
 
-func _signature_fatebinder(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_demolitionist(phase: String, packet: Dictionary, center: Vector2) -> void:
 	if not is_instance_valid(player_ref):
 		return
 	var radius: float = max(100.0, float(packet.get("radius", 120.0)) * 1.00)
 	var base_damage: float = _get_player_base_damage()
 	var streak: int = 0
-	if player_ref.has_meta("fatebinder_jackpot_streak"):
-		streak = int(player_ref.get_meta("fatebinder_jackpot_streak"))
+	if player_ref.has_meta("demolitionist_jackpot_streak"):
+		streak = int(player_ref.get_meta("demolitionist_jackpot_streak"))
 	var roll: float = randf() - min(0.28, float(streak) * 0.08)
 	var jackpot: bool = roll < 0.22
 	if jackpot:
-		player_ref.set_meta("fatebinder_jackpot_streak", 0)
+		player_ref.set_meta("demolitionist_jackpot_streak", 0)
 		for enemy in _get_enemies_in_radius(center, radius * 0.75):
 			_damage_enemy(enemy, base_damage * (0.74 if phase != "closure" else 1.05), "JACKPOT", Color(1.0, 0.82, 0.3))
 			_apply_enemy_status(enemy, "marked", 1.6, 0.24, 1, 0.3)
 		_drop_coins(2 if phase != "closure" else 4)
 		_apply_temp_attack_boost(2.0 if phase != "closure" else 2.8, 0.10 if phase != "closure" else 0.16)
 		return
-	player_ref.set_meta("fatebinder_jackpot_streak", streak + 1)
+	player_ref.set_meta("demolitionist_jackpot_streak", streak + 1)
 	var safe_outcome: bool = roll < 0.72
 	if safe_outcome:
 		for enemy in _get_enemies_in_radius(center, radius):
@@ -665,7 +660,7 @@ func _signature_fatebinder(phase: String, packet: Dictionary, center: Vector2) -
 		_gain_energy(3.2 if phase != "closure" else 4.5)
 		_drop_coins(1)
 
-func _signature_quartermaster(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_medium(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(110.0, float(packet.get("radius", 120.0)))
 	var energy_gain: float = 5.0 if phase == "tick" else (8.0 if phase == "line" else 12.0)
 	_gain_energy(energy_gain)
@@ -678,11 +673,11 @@ func _signature_quartermaster(phase: String, packet: Dictionary, center: Vector2
 	for enemy in _get_enemies_in_radius(center, radius):
 		_damage_enemy(enemy, base_damage * damage_scale)
 		_apply_enemy_status(enemy, "marked", 1.1, 0.18, 1, 0.3)
-	var quartermaster_dir: Vector2 = _get_player_aim_direction()
+	var medium_dir: Vector2 = _get_player_aim_direction()
 	if phase == "line":
 		_schedule_line_sweep_sequence(
 			center,
-			quartermaster_dir,
+			medium_dir,
 			radius * 1.5,
 			30.0,
 			2,
@@ -698,7 +693,7 @@ func _signature_quartermaster(phase: String, packet: Dictionary, center: Vector2
 	elif phase == "closure":
 		_schedule_line_sweep_sequence(
 			center,
-			quartermaster_dir,
+			medium_dir,
 			radius * 1.65,
 			34.0,
 			3,
@@ -712,7 +707,7 @@ func _signature_quartermaster(phase: String, packet: Dictionary, center: Vector2
 			150.0
 		)
 
-func _signature_medic(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_inkweaver(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(120.0, float(packet.get("radius", 120.0)) * 1.06)
 	var heal_ratio: float = 0.10 if phase == "line" else (0.16 if phase == "closure" else 0.08)
 	var aim_dir: Vector2 = _get_player_aim_direction()
@@ -779,7 +774,7 @@ func _signature_medic(phase: String, packet: Dictionary, center: Vector2) -> voi
 			150.0
 		)
 
-func _signature_paladin(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_earthshaker(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(115.0, float(packet.get("radius", 120.0)) * 1.05)
 	var enemies: Array = _get_enemies_in_radius(center, radius)
 	var base_damage: float = _get_player_base_damage()
@@ -857,7 +852,7 @@ func _signature_paladin(phase: String, packet: Dictionary, center: Vector2) -> v
 			Color(1.0, 0.92, 0.65, 0.70)
 		)
 
-func _signature_gildhand(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_necromancer(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(95.0, float(packet.get("radius", 120.0)) * 0.95)
 	var target: Node2D = _pick_nearest_enemy(center, radius, [])
 	if target == null:
@@ -874,11 +869,11 @@ func _signature_gildhand(phase: String, packet: Dictionary, center: Vector2) -> 
 		_damage_enemy(target, amount, "GILD", Color(0.95, 0.72, 0.24))
 	_apply_enemy_status(target, "slow", 1.0 + (0.4 if phase == "closure" else 0.0), 0.28, 1, 0.1)
 	_drop_coins_at(target.global_position, coin_count)
-	var gildhand_dir: Vector2 = _get_player_aim_direction()
+	var necromancer_dir: Vector2 = _get_player_aim_direction()
 	if phase == "line":
 		_schedule_line_sweep_sequence(
 			center,
-			gildhand_dir,
+			necromancer_dir,
 			radius * 1.4,
 			30.0,
 			2,
@@ -894,7 +889,7 @@ func _signature_gildhand(phase: String, packet: Dictionary, center: Vector2) -> 
 	elif phase == "closure":
 		_schedule_line_sweep_sequence(
 			center,
-			gildhand_dir,
+			necromancer_dir,
 			radius * 1.55,
 			36.0,
 			3,
@@ -909,7 +904,7 @@ func _signature_gildhand(phase: String, packet: Dictionary, center: Vector2) -> 
 		)
 		_schedule_line_sweep_sequence(
 			center,
-			Vector2(-gildhand_dir.y, gildhand_dir.x),
+			Vector2(-necromancer_dir.y, necromancer_dir.x),
 			radius * 1.25,
 			28.0,
 			2,
@@ -924,7 +919,7 @@ func _signature_gildhand(phase: String, packet: Dictionary, center: Vector2) -> 
 		)
 		_drop_coins_at(center, 1)
 
-func _signature_runeblazer(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_frostbite(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(90.0, float(packet.get("radius", 120.0)) * 0.78)
 	var aim_dir: Vector2 = _get_player_aim_direction()
 	var rune_count: int = 1
@@ -947,11 +942,11 @@ func _signature_runeblazer(phase: String, packet: Dictionary, center: Vector2) -
 		var spread: float = randf_range(-0.42, 0.42)
 		var dir: Vector2 = aim_dir.rotated(spread)
 		var pos: Vector2 = center + dir * (56.0 + float(i) * 52.0)
-		_spawn_pyro_patch(pos, radius * 0.44, 1.2 + 0.25 * float(rune_count), patch_scale)
+		_spawn_ignis_patch(pos, radius * 0.44, 1.2 + 0.25 * float(rune_count), patch_scale)
 		var delay: float = delay_base + float(i) * 0.09
-		get_tree().create_timer(delay).timeout.connect(_on_runeblazer_rune_timeout.bind(pos, radius * 0.58, patch_scale + 0.12))
+		get_tree().create_timer(delay).timeout.connect(_on_frostbite_rune_timeout.bind(pos, radius * 0.58, patch_scale + 0.12))
 
-func _signature_plague(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_matrix(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(110.0, float(packet.get("radius", 120.0)) * 1.08)
 	var targets: Array = _sort_enemies_by_distance(_get_enemies_in_radius(center, radius), center)
 	if targets.is_empty():
@@ -970,12 +965,12 @@ func _signature_plague(phase: String, packet: Dictionary, center: Vector2) -> vo
 	var delay: float = 0.42 if phase != "closure" else 0.28
 	var bloom_radius: float = radius * (0.28 if phase != "closure" else 0.34)
 	var bloom_scale: float = 0.34 if phase != "closure" else 0.56
-	get_tree().create_timer(delay).timeout.connect(_on_plague_bloom_timeout.bind(refs, bloom_radius, bloom_scale))
-	var plague_dir: Vector2 = _get_player_aim_direction()
+	get_tree().create_timer(delay).timeout.connect(_on_matrix_bloom_timeout.bind(refs, bloom_radius, bloom_scale))
+	var matrix_dir: Vector2 = _get_player_aim_direction()
 	if phase == "line":
 		_schedule_line_sweep_sequence(
 			center,
-			plague_dir,
+			matrix_dir,
 			radius * 1.55,
 			40.0,
 			2,
@@ -991,7 +986,7 @@ func _signature_plague(phase: String, packet: Dictionary, center: Vector2) -> vo
 	elif phase == "closure":
 		_schedule_line_sweep_sequence(
 			center,
-			plague_dir,
+			matrix_dir,
 			radius * 1.65,
 			48.0,
 			3,
@@ -1006,7 +1001,7 @@ func _signature_plague(phase: String, packet: Dictionary, center: Vector2) -> vo
 		)
 		_schedule_line_sweep_sequence(
 			center,
-			Vector2(-plague_dir.y, plague_dir.x),
+			Vector2(-matrix_dir.y, matrix_dir.x),
 			radius * 1.45,
 			36.0,
 			2,
@@ -1020,7 +1015,7 @@ func _signature_plague(phase: String, packet: Dictionary, center: Vector2) -> vo
 			120.0
 		)
 
-func _signature_jailer(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_warden(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(100.0, float(packet.get("radius", 120.0)) * 1.02)
 	var targets: Array = _sort_enemies_by_distance(_get_enemies_in_radius(center, radius), center)
 	if targets.is_empty():
@@ -1043,12 +1038,12 @@ func _signature_jailer(phase: String, packet: Dictionary, center: Vector2) -> vo
 			if phase == "line" and i < 3:
 				verdict_refs.append(weakref(enemy))
 	if phase == "line" and not verdict_refs.is_empty():
-		get_tree().create_timer(0.24).timeout.connect(_on_jailer_verdict_timeout.bind(verdict_refs, 0.48))
-	var jailer_dir: Vector2 = _get_player_aim_direction()
+		get_tree().create_timer(0.24).timeout.connect(_on_warden_verdict_timeout.bind(verdict_refs, 0.48))
+	var warden_dir: Vector2 = _get_player_aim_direction()
 	if phase == "line":
 		_schedule_line_sweep_sequence(
 			center,
-			jailer_dir,
+			warden_dir,
 			radius * 1.35,
 			32.0,
 			2,
@@ -1064,7 +1059,7 @@ func _signature_jailer(phase: String, packet: Dictionary, center: Vector2) -> vo
 	elif phase == "closure":
 		_spawn_parallel_wall_pair(
 			center,
-			jailer_dir,
+			warden_dir,
 			radius * 1.2,
 			56.0,
 			1.3,
@@ -1073,7 +1068,7 @@ func _signature_jailer(phase: String, packet: Dictionary, center: Vector2) -> vo
 		)
 		_schedule_line_sweep_sequence(
 			center,
-			jailer_dir,
+			warden_dir,
 			radius * 1.45,
 			36.0,
 			3,
@@ -1087,7 +1082,7 @@ func _signature_jailer(phase: String, packet: Dictionary, center: Vector2) -> vo
 			160.0
 		)
 
-func _signature_stormseer(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_snareweaver(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(110.0, float(packet.get("radius", 120.0)) * 1.12)
 	var core_count: int = 1 if phase == "tick" else (2 if phase == "line" else 3)
 	var pull_force: float = 12.0 if phase == "tick" else (18.0 if phase == "line" else 24.0)
@@ -1102,11 +1097,11 @@ func _signature_stormseer(phase: String, packet: Dictionary, center: Vector2) ->
 			_apply_enemy_status(enemy, "slow", 1.1 + (0.3 if phase == "closure" else 0.0), 0.30, 1, 0.1)
 	if phase != "tick":
 		_apply_temp_meta_delta("buff_speed_boost", 0.08 if phase == "line" else 0.13, 1.6 if phase == "line" else 2.3)
-	var stormseer_dir: Vector2 = _get_player_aim_direction()
+	var snareweaver_dir: Vector2 = _get_player_aim_direction()
 	if phase == "line":
 		_schedule_line_sweep_sequence(
 			center,
-			stormseer_dir,
+			snareweaver_dir,
 			radius * 1.55,
 			36.0,
 			2,
@@ -1122,7 +1117,7 @@ func _signature_stormseer(phase: String, packet: Dictionary, center: Vector2) ->
 	elif phase == "closure":
 		_schedule_line_sweep_sequence(
 			center,
-			stormseer_dir,
+			snareweaver_dir,
 			radius * 1.7,
 			40.0,
 			3,
@@ -1137,7 +1132,7 @@ func _signature_stormseer(phase: String, packet: Dictionary, center: Vector2) ->
 		)
 		_schedule_line_sweep_sequence(
 			center,
-			Vector2(-stormseer_dir.y, stormseer_dir.x),
+			Vector2(-snareweaver_dir.y, snareweaver_dir.x),
 			radius * 1.45,
 			34.0,
 			2,
@@ -1151,7 +1146,7 @@ func _signature_stormseer(phase: String, packet: Dictionary, center: Vector2) ->
 			150.0
 		)
 
-func _signature_bloodsworn(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_astrologer(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(95.0, float(packet.get("radius", 120.0)) * 0.96)
 	var targets: Array = _sort_enemies_by_distance(_get_enemies_in_radius(center, radius), center)
 	if targets.is_empty():
@@ -1171,11 +1166,11 @@ func _signature_bloodsworn(phase: String, packet: Dictionary, center: Vector2) -
 		drained += 1
 	if drained > 0:
 		_heal_player(base_damage * heal_scale * float(drained))
-	var bloodsworn_dir: Vector2 = _get_player_aim_direction()
+	var astrologer_dir: Vector2 = _get_player_aim_direction()
 	if phase == "line":
 		_schedule_line_sweep_sequence(
 			center,
-			bloodsworn_dir,
+			astrologer_dir,
 			radius * 1.35,
 			30.0,
 			2,
@@ -1191,7 +1186,7 @@ func _signature_bloodsworn(phase: String, packet: Dictionary, center: Vector2) -
 	elif phase == "closure":
 		_schedule_line_sweep_sequence(
 			center,
-			bloodsworn_dir,
+			astrologer_dir,
 			radius * 1.5,
 			34.0,
 			3,
@@ -1205,7 +1200,7 @@ func _signature_bloodsworn(phase: String, packet: Dictionary, center: Vector2) -
 			160.0
 		)
 
-func _signature_breachmarshal(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_polaris(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(120.0, float(packet.get("radius", 120.0)) * 1.18)
 	var lane_len: float = radius * (0.95 if phase == "tick" else 1.14)
 	var half_width: float = radius * (0.24 if phase == "tick" else 0.30)
@@ -1230,7 +1225,7 @@ func _signature_breachmarshal(phase: String, packet: Dictionary, center: Vector2
 	if phase != "tick":
 		var delay: float = 0.22 if phase == "line" else 0.15
 		var second_scale: float = 0.40 if phase == "line" else 0.72
-		get_tree().create_timer(delay).timeout.connect(_on_breachmarshal_aftershock_timeout.bind(center, aim_dir, lane_len, half_width * 1.16, second_scale))
+		get_tree().create_timer(delay).timeout.connect(_on_polaris_aftershock_timeout.bind(center, aim_dir, lane_len, half_width * 1.16, second_scale))
 	if phase == "line":
 		_schedule_line_sweep_sequence(
 			center,
@@ -1264,7 +1259,7 @@ func _signature_breachmarshal(phase: String, packet: Dictionary, center: Vector2
 			240.0
 		)
 
-func _signature_spiritcaller(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_plague(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(100.0, float(packet.get("radius", 120.0)) * 1.02)
 	var pulse_count: int = 1 if phase == "tick" else (2 if phase == "line" else 3)
 	var pulse_scale: float = 0.26 if phase == "tick" else (0.40 if phase == "line" else 0.58)
@@ -1275,7 +1270,7 @@ func _signature_spiritcaller(phase: String, packet: Dictionary, center: Vector2)
 		var dir: Vector2 = aim_dir.rotated(angle)
 		var pos: Vector2 = center + dir * (54.0 + 24.0 * float(i))
 		var delay: float = 0.11 * float(i)
-		get_tree().create_timer(delay).timeout.connect(_on_spiritcaller_pulse_timeout.bind(pos, radius * 0.52, pulse_scale + 0.08 * float(i), phase == "closure"))
+		get_tree().create_timer(delay).timeout.connect(_on_plague_pulse_timeout.bind(pos, radius * 0.52, pulse_scale + 0.08 * float(i), phase == "closure"))
 	if phase != "tick":
 		_gain_energy(2.0 if phase == "line" else 3.5)
 	var totem_dir: Vector2 = _get_player_aim_direction()
@@ -1312,7 +1307,7 @@ func _signature_spiritcaller(phase: String, packet: Dictionary, center: Vector2)
 			150.0
 		)
 
-func _signature_mirebinder(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_chronomancer(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(96.0, float(packet.get("radius", 120.0)) * 1.06)
 	var pool_count: int = 1 if phase == "tick" else (2 if phase == "line" else 3)
 	var duration: float = 1.6 if phase == "tick" else (2.3 if phase == "line" else 3.0)
@@ -1323,20 +1318,20 @@ func _signature_mirebinder(phase: String, packet: Dictionary, center: Vector2) -
 		var angle: float = randf_range(0.0, TAU)
 		var offset_len: float = radius * (0.18 + 0.26 * randf())
 		var pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * offset_len
-		_spawn_mirebinder_pool(pos, radius * (0.30 + 0.06 * float(i)), duration, scale, split_count)
+		_spawn_chronomancer_pool(pos, radius * (0.30 + 0.06 * float(i)), duration, scale, split_count)
 	if phase == "line":
 		for step in range(3):
 			var t: float = float(step) / 2.0
 			var trail_pos: Vector2 = center + aim_dir * radius * (0.25 + 0.55 * t)
-			_spawn_mirebinder_pool(trail_pos, radius * (0.22 + 0.05 * float(step)), 1.7, 0.26, 0)
+			_spawn_chronomancer_pool(trail_pos, radius * (0.22 + 0.05 * float(step)), 1.7, 0.26, 0)
 	elif phase == "closure":
 		for step in range(4):
 			var t2: float = float(step) / 3.0
 			var front: Vector2 = center + aim_dir * radius * (0.20 + 0.70 * t2)
 			var back: Vector2 = center - aim_dir * radius * (0.20 + 0.45 * t2)
-			_spawn_mirebinder_pool(front, radius * (0.24 + 0.05 * float(step)), 2.1, 0.30, 1 if step >= 2 else 0)
+			_spawn_chronomancer_pool(front, radius * (0.24 + 0.05 * float(step)), 2.1, 0.30, 1 if step >= 2 else 0)
 			if step <= 2:
-				_spawn_mirebinder_pool(back, radius * (0.20 + 0.04 * float(step)), 1.8, 0.24, 0)
+				_spawn_chronomancer_pool(back, radius * (0.20 + 0.04 * float(step)), 1.8, 0.24, 0)
 		_schedule_line_sweep_sequence(
 			center,
 			aim_dir,
@@ -1353,7 +1348,7 @@ func _signature_mirebinder(phase: String, packet: Dictionary, center: Vector2) -
 			110.0
 		)
 
-func _signature_illusionist(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_viper(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(105.0, float(packet.get("radius", 120.0)) * 1.04)
 	var targets: Array = _sort_enemies_by_distance(_get_enemies_in_radius(center, radius), center)
 	if targets.is_empty():
@@ -1371,7 +1366,7 @@ func _signature_illusionist(phase: String, packet: Dictionary, center: Vector2) 
 		var mirror_dir: Vector2 = (center - enemy_node.global_position).normalized()
 		var mirror_pos: Vector2 = center + mirror_dir * min(radius * 0.45, 92.0)
 		var delay: float = 0.16 + 0.04 * float(i)
-		get_tree().create_timer(delay).timeout.connect(_on_illusionist_mirror_timeout.bind(weakref(enemy), mirror_pos, shot_scale))
+		get_tree().create_timer(delay).timeout.connect(_on_viper_mirror_timeout.bind(weakref(enemy), mirror_pos, shot_scale))
 	var illusion_dir: Vector2 = _get_player_aim_direction()
 	if phase == "line":
 		_schedule_line_sweep_sequence(
@@ -1421,7 +1416,7 @@ func _signature_illusionist(phase: String, packet: Dictionary, center: Vector2) 
 			100.0
 		)
 
-func _signature_hexwarden(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_leviathan(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(105.0, float(packet.get("radius", 120.0)) * 1.00)
 	var targets: Array = _sort_enemies_by_distance(_get_enemies_in_radius(center, radius), center)
 	if targets.is_empty():
@@ -1437,12 +1432,12 @@ func _signature_hexwarden(phase: String, packet: Dictionary, center: Vector2) ->
 		return
 	var delay: float = 0.38 if phase != "closure" else 0.24
 	var link_scale: float = 0.30 if phase != "closure" else 0.52
-	get_tree().create_timer(delay).timeout.connect(_on_hexwarden_link_timeout.bind(refs, center, link_scale))
-	var hexwarden_dir: Vector2 = _get_player_aim_direction()
+	get_tree().create_timer(delay).timeout.connect(_on_leviathan_link_timeout.bind(refs, center, link_scale))
+	var leviathan_dir: Vector2 = _get_player_aim_direction()
 	if phase == "line":
 		_schedule_line_sweep_sequence(
 			center,
-			hexwarden_dir,
+			leviathan_dir,
 			radius * 1.4,
 			30.0,
 			2,
@@ -1458,7 +1453,7 @@ func _signature_hexwarden(phase: String, packet: Dictionary, center: Vector2) ->
 	elif phase == "closure":
 		_schedule_line_sweep_sequence(
 			center,
-			hexwarden_dir,
+			leviathan_dir,
 			radius * 1.55,
 			36.0,
 			3,
@@ -1473,7 +1468,7 @@ func _signature_hexwarden(phase: String, packet: Dictionary, center: Vector2) ->
 		)
 		_schedule_line_sweep_sequence(
 			center,
-			Vector2(-hexwarden_dir.y, hexwarden_dir.x),
+			Vector2(-leviathan_dir.y, leviathan_dir.x),
 			radius * 1.3,
 			28.0,
 			2,
@@ -1487,7 +1482,7 @@ func _signature_hexwarden(phase: String, packet: Dictionary, center: Vector2) ->
 			110.0
 		)
 
-func _signature_broker(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_pathfinder(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(100.0, float(packet.get("radius", 120.0)) * 0.98)
 	var targets: Array = _sort_enemies_by_distance(_get_enemies_in_radius(center, radius), center)
 	if targets.is_empty():
@@ -1508,11 +1503,11 @@ func _signature_broker(phase: String, packet: Dictionary, center: Vector2) -> vo
 		_gain_energy(1.6 if phase == "line" else 2.6)
 	if phase == "closure" and coin_total >= 3:
 		_drop_coins(1)
-	var broker_dir: Vector2 = _get_player_aim_direction()
+	var pathfinder_dir: Vector2 = _get_player_aim_direction()
 	if phase == "line":
 		_schedule_line_sweep_sequence(
 			center,
-			broker_dir,
+			pathfinder_dir,
 			radius * 1.45,
 			34.0,
 			2,
@@ -1528,7 +1523,7 @@ func _signature_broker(phase: String, packet: Dictionary, center: Vector2) -> vo
 	elif phase == "closure":
 		_spawn_parallel_wall_pair(
 			center,
-			broker_dir,
+			pathfinder_dir,
 			radius * 1.25,
 			52.0,
 			1.3,
@@ -1537,7 +1532,7 @@ func _signature_broker(phase: String, packet: Dictionary, center: Vector2) -> vo
 		)
 		_schedule_line_sweep_sequence(
 			center,
-			broker_dir,
+			pathfinder_dir,
 			radius * 1.55,
 			38.0,
 			3,
@@ -1553,7 +1548,7 @@ func _signature_broker(phase: String, packet: Dictionary, center: Vector2) -> vo
 		if coin_total >= 2:
 			_drop_coins_at(center, 1)
 
-func _signature_singularist(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_beastmaster(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(130.0, float(packet.get("radius", 120.0)) * 1.20)
 	var pull_force: float = 12.0 if phase == "tick" else (18.0 if phase == "line" else 28.0)
 	var base_damage: float = _get_player_base_damage()
@@ -1565,12 +1560,12 @@ func _signature_singularist(phase: String, packet: Dictionary, center: Vector2) 
 	if phase != "tick":
 		var delay: float = 0.22 if phase == "line" else 0.16
 		var implode_scale: float = 0.44 if phase == "line" else 0.72
-		get_tree().create_timer(delay).timeout.connect(_on_singularist_implode_timeout.bind(center, radius * 0.56, implode_scale))
-	var singularist_dir: Vector2 = _get_player_aim_direction()
+		get_tree().create_timer(delay).timeout.connect(_on_beastmaster_implode_timeout.bind(center, radius * 0.56, implode_scale))
+	var beastmaster_dir: Vector2 = _get_player_aim_direction()
 	if phase == "line":
 		_schedule_line_sweep_sequence(
 			center,
-			singularist_dir,
+			beastmaster_dir,
 			radius * 1.6,
 			40.0,
 			2,
@@ -1586,7 +1581,7 @@ func _signature_singularist(phase: String, packet: Dictionary, center: Vector2) 
 	elif phase == "closure":
 		_schedule_line_sweep_sequence(
 			center,
-			singularist_dir,
+			beastmaster_dir,
 			radius * 1.75,
 			46.0,
 			3,
@@ -1601,7 +1596,7 @@ func _signature_singularist(phase: String, packet: Dictionary, center: Vector2) 
 		)
 		_schedule_line_sweep_sequence(
 			center,
-			Vector2(-singularist_dir.y, singularist_dir.x),
+			Vector2(-beastmaster_dir.y, beastmaster_dir.x),
 			radius * 1.55,
 			38.0,
 			2,
@@ -1615,7 +1610,7 @@ func _signature_singularist(phase: String, packet: Dictionary, center: Vector2) 
 			180.0
 		)
 
-func _signature_executioner(phase: String, packet: Dictionary, center: Vector2) -> void:
+func _signature_bloodhowl(phase: String, packet: Dictionary, center: Vector2) -> void:
 	var radius: float = max(95.0, float(packet.get("radius", 120.0)) * 0.90)
 	var targets: Array = _sort_enemies_by_distance(_get_enemies_in_radius(center, radius), center)
 	if targets.is_empty():
@@ -1638,7 +1633,7 @@ func _signature_executioner(phase: String, packet: Dictionary, center: Vector2) 
 		_gain_energy(1.0 + float(execute_count) * 0.6)
 	if phase == "closure":
 		var guillotine_scale: float = 0.74 + 0.08 * float(min(3, execute_count))
-		get_tree().create_timer(0.18).timeout.connect(_on_executioner_guillotine_timeout.bind(center, radius * 0.58, guillotine_scale))
+		get_tree().create_timer(0.18).timeout.connect(_on_bloodhowl_guillotine_timeout.bind(center, radius * 0.58, guillotine_scale))
 	var exec_dir: Vector2 = _get_player_aim_direction()
 	if phase == "line":
 		_schedule_line_sweep_sequence(
@@ -1688,14 +1683,14 @@ func _signature_executioner(phase: String, packet: Dictionary, center: Vector2) 
 			130.0
 		)
 
-func _on_runeblazer_rune_timeout(center: Vector2, radius: float, damage_scale: float) -> void:
+func _on_frostbite_rune_timeout(center: Vector2, radius: float, damage_scale: float) -> void:
 	var damage: float = _get_player_base_damage() * damage_scale
 	for enemy in _get_enemies_in_radius(center, radius):
 		_damage_enemy(enemy, damage, "RUNE", Color(1.0, 0.45, 0.2))
 		_apply_enemy_status(enemy, "burn", 1.5, max(1.0, damage * 0.42), 1, 0.5)
 		_knock_enemy(enemy, center, 90.0)
 
-func _on_plague_bloom_timeout(target_refs: Array, bloom_radius: float, bloom_scale: float) -> void:
+func _on_matrix_bloom_timeout(target_refs: Array, bloom_radius: float, bloom_scale: float) -> void:
 	var damage: float = _get_player_base_damage() * bloom_scale
 	for ref_obj in target_refs:
 		var target = ref_obj.get_ref() if ref_obj != null else null
@@ -1709,7 +1704,7 @@ func _on_plague_bloom_timeout(target_refs: Array, bloom_radius: float, bloom_sca
 			_apply_enemy_status(enemy, "poison", 1.4, max(1.0, damage * 0.36), 1, 0.6)
 			_apply_enemy_status(enemy, "slow", 0.8, 0.22, 1, 0.1)
 
-func _on_jailer_verdict_timeout(target_refs: Array, damage_scale: float) -> void:
+func _on_warden_verdict_timeout(target_refs: Array, damage_scale: float) -> void:
 	var damage: float = _get_player_base_damage() * damage_scale
 	for ref_obj in target_refs:
 		var target = ref_obj.get_ref() if ref_obj != null else null
@@ -1718,7 +1713,7 @@ func _on_jailer_verdict_timeout(target_refs: Array, damage_scale: float) -> void
 		_damage_enemy(target, damage, "LOCK", Color(0.95, 0.7, 0.5))
 		_apply_enemy_status(target, "stun", 0.34, 0.0, 1, 0.1)
 
-func _on_breachmarshal_aftershock_timeout(center: Vector2, aim_dir: Vector2, lane_len: float, half_width: float, damage_scale: float) -> void:
+func _on_polaris_aftershock_timeout(center: Vector2, aim_dir: Vector2, lane_len: float, half_width: float, damage_scale: float) -> void:
 	var damage: float = _get_player_base_damage() * damage_scale
 	for enemy in _get_enemies_in_radius(center, lane_len):
 		if not is_instance_valid(enemy) or not (enemy is Node2D):
@@ -1734,7 +1729,7 @@ func _on_breachmarshal_aftershock_timeout(center: Vector2, aim_dir: Vector2, lan
 		_damage_enemy(enemy, damage, "AFTERSHOCK", Color(1.0, 0.88, 0.45))
 		_knock_enemy(enemy, center, 170.0)
 
-func _on_spiritcaller_pulse_timeout(center: Vector2, radius: float, damage_scale: float, apply_stun: bool) -> void:
+func _on_plague_pulse_timeout(center: Vector2, radius: float, damage_scale: float, apply_stun: bool) -> void:
 	var damage: float = _get_player_base_damage() * damage_scale
 	for enemy in _get_enemies_in_radius(center, radius):
 		_damage_enemy(enemy, damage, "PULSE", Color(0.62, 0.95, 1.0))
@@ -1743,7 +1738,7 @@ func _on_spiritcaller_pulse_timeout(center: Vector2, radius: float, damage_scale
 		if apply_stun:
 			_apply_enemy_status(enemy, "stun", 0.24, 0.0, 1, 0.1)
 
-func _on_illusionist_mirror_timeout(target_ref: WeakRef, mirror_pos: Vector2, damage_scale: float) -> void:
+func _on_viper_mirror_timeout(target_ref: WeakRef, mirror_pos: Vector2, damage_scale: float) -> void:
 	var target = target_ref.get_ref() if target_ref != null else null
 	if target == null or not is_instance_valid(target):
 		return
@@ -1756,7 +1751,7 @@ func _on_illusionist_mirror_timeout(target_ref: WeakRef, mirror_pos: Vector2, da
 		_damage_enemy(enemy, damage * 0.42)
 		_apply_enemy_status(enemy, "slow", 0.8, 0.24, 1, 0.1)
 
-func _on_hexwarden_link_timeout(target_refs: Array, center: Vector2, damage_scale: float) -> void:
+func _on_leviathan_link_timeout(target_refs: Array, center: Vector2, damage_scale: float) -> void:
 	var damage: float = _get_player_base_damage() * damage_scale
 	var valid_targets: Array = []
 	for ref_obj in target_refs:
@@ -1771,13 +1766,13 @@ func _on_hexwarden_link_timeout(target_refs: Array, center: Vector2, damage_scal
 		_apply_enemy_status(target, "curse", 1.6, max(1.0, damage * 0.45), 1, 0.7)
 		_pull_enemy(target, center, 8.0)
 
-func _on_singularist_implode_timeout(center: Vector2, radius: float, damage_scale: float) -> void:
+func _on_beastmaster_implode_timeout(center: Vector2, radius: float, damage_scale: float) -> void:
 	var damage: float = _get_player_base_damage() * damage_scale
 	for enemy in _get_enemies_in_radius(center, radius):
 		_damage_enemy(enemy, damage, "IMPLODE", Color(0.7, 0.95, 1.0))
 		_knock_enemy(enemy, center, 210.0)
 
-func _on_executioner_guillotine_timeout(center: Vector2, radius: float, damage_scale: float) -> void:
+func _on_bloodhowl_guillotine_timeout(center: Vector2, radius: float, damage_scale: float) -> void:
 	var damage: float = _get_player_base_damage() * damage_scale
 	var targets: Array = _sort_enemies_by_distance(_get_enemies_in_radius(center, radius), center)
 	for i in range(min(5, targets.size())):
@@ -1785,7 +1780,7 @@ func _on_executioner_guillotine_timeout(center: Vector2, radius: float, damage_s
 		_damage_enemy(enemy, damage, "GUILLOTINE", Color(1.0, 0.26, 0.26))
 		_apply_enemy_status(enemy, "slow", 0.9, 0.30, 1, 0.1)
 
-func _on_necro_reap_timeout(target_refs: Array, damage_scale: float, center: Vector2) -> void:
+func _on_illusionist_reap_timeout(target_refs: Array, damage_scale: float, center: Vector2) -> void:
 	var base_damage: float = _get_player_base_damage()
 	for ref_obj in target_refs:
 		var target = ref_obj.get_ref() if ref_obj != null else null
@@ -1795,7 +1790,7 @@ func _on_necro_reap_timeout(target_refs: Array, damage_scale: float, center: Vec
 		_pull_enemy(target, center, 10.0)
 		_apply_enemy_status(target, "slow", 0.9, 0.26, 1, 0.1)
 
-func _on_trapper_shot_timeout(target_ref: WeakRef, damage_scale: float) -> void:
+func _on_botanist_shot_timeout(target_ref: WeakRef, damage_scale: float) -> void:
 	var target = target_ref.get_ref() if target_ref != null else null
 	if target == null or not is_instance_valid(target):
 		return
@@ -1838,7 +1833,7 @@ func _pick_nearest_enemy(origin: Vector2, radius: float, used: Array) -> Node2D:
 			nearest_dist = dist
 	return nearest
 
-func _pick_trapper_target(center: Vector2, radius: float) -> Node2D:
+func _pick_botanist_target(center: Vector2, radius: float) -> Node2D:
 	var enemies: Array = _sort_enemies_by_distance(_get_enemies_in_radius(center, radius), center)
 	if enemies.is_empty():
 		return null
@@ -1903,14 +1898,14 @@ func _on_turret_pylon_timeout(pylon: Node2D) -> void:
 		pylon.queue_free()
 	_erase_node_from_array(_turret_pylons, pylon)
 
-func _spawn_mirebinder_pool(pos: Vector2, radius: float, duration: float, damage_scale: float, split_count: int) -> void:
+func _spawn_chronomancer_pool(pos: Vector2, radius: float, duration: float, damage_scale: float, split_count: int) -> void:
 	if not is_inside_tree():
 		return
-	if _mirebinder_pools.size() >= 8:
-		var oldest: Node = _mirebinder_pools[0]
+	if _chronomancer_pools.size() >= 8:
+		var oldest: Node = _chronomancer_pools[0]
 		if is_instance_valid(oldest):
 			oldest.queue_free()
-		_erase_node_from_array(_mirebinder_pools, oldest)
+		_erase_node_from_array(_chronomancer_pools, oldest)
 	var pool: Node2D = Node2D.new()
 	pool.global_position = pos
 	pool.z_index = 55
@@ -1924,21 +1919,21 @@ func _spawn_mirebinder_pool(pos: Vector2, radius: float, duration: float, damage
 	pool.add_child(visual)
 	var scene: Node = get_tree().current_scene if get_tree() else self
 	scene.add_child(pool)
-	_mirebinder_pools.append(pool)
+	_chronomancer_pools.append(pool)
 	var tick_timer: Timer = Timer.new()
 	tick_timer.wait_time = 0.35
 	tick_timer.one_shot = false
 	tick_timer.autostart = true
 	pool.add_child(tick_timer)
-	tick_timer.timeout.connect(_on_mirebinder_pool_tick.bind(pool))
+	tick_timer.timeout.connect(_on_chronomancer_pool_tick.bind(pool))
 	var life_timer: Timer = Timer.new()
 	life_timer.wait_time = max(0.45, duration)
 	life_timer.one_shot = true
 	life_timer.autostart = true
 	pool.add_child(life_timer)
-	life_timer.timeout.connect(_on_mirebinder_pool_timeout.bind(pool))
+	life_timer.timeout.connect(_on_chronomancer_pool_timeout.bind(pool))
 
-func _on_mirebinder_pool_tick(pool: Node2D) -> void:
+func _on_chronomancer_pool_tick(pool: Node2D) -> void:
 	if not is_instance_valid(pool):
 		return
 	var radius: float = float(pool.get_meta("radius", 50.0))
@@ -1949,29 +1944,29 @@ func _on_mirebinder_pool_tick(pool: Node2D) -> void:
 		_apply_enemy_status(enemy, "poison", 1.4, max(1.0, damage * 0.38), 1, 0.6)
 		_apply_enemy_status(enemy, "slow", 0.9, 0.26, 1, 0.1)
 
-func _on_mirebinder_pool_timeout(pool: Node2D) -> void:
+func _on_chronomancer_pool_timeout(pool: Node2D) -> void:
 	if not is_instance_valid(pool):
-		_erase_node_from_array(_mirebinder_pools, pool)
+		_erase_node_from_array(_chronomancer_pools, pool)
 		return
 	var split_count: int = int(pool.get_meta("split_count", 0))
 	var radius: float = float(pool.get_meta("radius", 50.0))
 	var scale: float = float(pool.get_meta("damage_scale", 0.25))
 	var center: Vector2 = pool.global_position
 	pool.queue_free()
-	_erase_node_from_array(_mirebinder_pools, pool)
+	_erase_node_from_array(_chronomancer_pools, pool)
 	if split_count <= 0:
 		return
 	for _i in range(2):
 		var angle: float = randf_range(0.0, TAU)
 		var offset: Vector2 = Vector2(cos(angle), sin(angle)) * radius * 0.65
-		_spawn_mirebinder_pool(center + offset, max(26.0, radius * 0.62), 1.2, max(0.12, scale * 0.75), split_count - 1)
+		_spawn_chronomancer_pool(center + offset, max(26.0, radius * 0.62), 1.2, max(0.12, scale * 0.75), split_count - 1)
 
-func _spawn_sapper_mine(pos: Vector2, delay: float, radius: float, damage_scale: float) -> void:
+func _spawn_diva_mine(pos: Vector2, delay: float, radius: float, damage_scale: float) -> void:
 	if not is_inside_tree():
 		return
-	if _sapper_mines.size() >= 6:
-		var oldest: Node = _sapper_mines[0]
-		_detonate_sapper_mine(oldest, false)
+	if _diva_mines.size() >= 6:
+		var oldest: Node = _diva_mines[0]
+		_detonate_diva_mine(oldest, false)
 	var mine: Node2D = Node2D.new()
 	mine.global_position = pos
 	mine.set_meta("radius", radius)
@@ -1988,25 +1983,25 @@ func _spawn_sapper_mine(pos: Vector2, delay: float, radius: float, damage_scale:
 	mine.add_child(marker)
 	var scene: Node = get_tree().current_scene if get_tree() else self
 	scene.add_child(mine)
-	_sapper_mines.append(mine)
+	_diva_mines.append(mine)
 	var timer: Timer = Timer.new()
 	timer.wait_time = max(0.25, delay)
 	timer.one_shot = true
 	timer.autostart = true
 	mine.add_child(timer)
-	timer.timeout.connect(_on_sapper_mine_timeout.bind(mine))
+	timer.timeout.connect(_on_diva_mine_timeout.bind(mine))
 
-func _on_sapper_mine_timeout(mine: Node) -> void:
-	_detonate_sapper_mine(mine, false)
+func _on_diva_mine_timeout(mine: Node) -> void:
+	_detonate_diva_mine(mine, false)
 
-func _detonate_all_sapper_mines(from_closure: bool) -> void:
-	var snapshot: Array = _sapper_mines.duplicate()
+func _detonate_all_diva_mines(from_closure: bool) -> void:
+	var snapshot: Array = _diva_mines.duplicate()
 	for mine in snapshot:
-		_detonate_sapper_mine(mine, from_closure)
+		_detonate_diva_mine(mine, from_closure)
 
-func _detonate_sapper_mine(mine: Node, from_closure: bool) -> void:
+func _detonate_diva_mine(mine: Node, from_closure: bool) -> void:
 	if not is_instance_valid(mine):
-		_erase_node_from_array(_sapper_mines, mine)
+		_erase_node_from_array(_diva_mines, mine)
 		return
 	var center: Vector2 = (mine as Node2D).global_position
 	var radius: float = float(mine.get_meta("radius", 52.0))
@@ -2021,34 +2016,47 @@ func _detonate_sapper_mine(mine: Node, from_closure: bool) -> void:
 		_apply_enemy_status(enemy, "slow", 0.8, 0.28, 1, 0.1)
 	spawn_skill_vfx(center, Color(1.2, 0.8, 0.25, 0.85), 0.4)
 	mine.queue_free()
-	_erase_node_from_array(_sapper_mines, mine)
+	_erase_node_from_array(_diva_mines, mine)
 
-func _erase_node_from_array(arr: Array, node: Variant) -> void:
-	var target_is_object: bool = typeof(node) == TYPE_OBJECT
-	var target_valid: bool = target_is_object and node != null and is_instance_valid(node)
-	for idx: int in range(arr.size() - 1, -1, -1):
-		var entry: Variant = arr[idx]
-		if entry == null:
-			arr.remove_at(idx)
-			continue
-		var entry_is_object: bool = typeof(entry) == TYPE_OBJECT
-		if entry_is_object and not is_instance_valid(entry):
-			arr.remove_at(idx)
-			continue
-		if target_valid and entry_is_object and entry == node:
-			arr.remove_at(idx)
-			return
+func _erase_node_from_array(arr: Array, node: Node) -> void:
+	var idx: int = arr.find(node)
+	if idx >= 0:
+		arr.remove_at(idx)
 
 func _spawn_signature_pickup(center: Vector2, color: Color, reward: Dictionary, lifetime_sec: float = 6.0) -> void:
-	FSignaturePickupService.spawn_pickup(
-		self,
-		_signature_pickups,
-		_resolve_f_role_id(),
-		center,
-		color,
-		reward,
-		lifetime_sec
-	)
+	if not is_inside_tree():
+		return
+	var scene: Node = get_tree().current_scene if get_tree() else null
+	if scene == null:
+		return
+	if _signature_pickups.size() >= 8:
+		var oldest: Node = _signature_pickups[0]
+		if is_instance_valid(oldest):
+			oldest.queue_free()
+		_erase_node_from_array(_signature_pickups, oldest)
+
+	var pickup: Node2D = Node2D.new()
+	pickup.global_position = center
+	pickup.z_index = 59
+	pickup.set_meta("expire_msec", Time.get_ticks_msec() + int(round(max(0.8, lifetime_sec) * 1000.0)))
+	pickup.set_meta("reward", reward.duplicate(true))
+	pickup.set_meta("bob_seed", randf() * TAU)
+
+	var visual: Polygon2D = Polygon2D.new()
+	visual.name = "Visual"
+	visual.polygon = PackedVector2Array([
+		Vector2(0.0, -9.0),
+		Vector2(9.0, 0.0),
+		Vector2(0.0, 9.0),
+		Vector2(-9.0, 0.0),
+	])
+	visual.color = color
+	visual.z_index = 59
+	pickup.add_child(visual)
+
+	scene.add_child(pickup)
+	_signature_pickups.append(pickup)
+	_sync_pickup_runtime_count()
 
 func _spawn_signature_pickup_burst(
 	center: Vector2,
@@ -2058,26 +2066,165 @@ func _spawn_signature_pickup_burst(
 	reward: Dictionary,
 	lifetime_sec: float = 6.0
 ) -> void:
-	FSignaturePickupService.spawn_pickup_burst(
-		self,
-		_signature_pickups,
-		_resolve_f_role_id(),
-		center,
-		count,
-		spread_radius,
-		color,
-		reward,
-		lifetime_sec
-	)
+	var burst_count: int = max(1, count)
+	var safe_radius: float = max(18.0, spread_radius)
+	for i in range(burst_count):
+		var angle: float = randf() * TAU
+		if burst_count > 1:
+			angle = TAU * float(i) / float(burst_count) + randf_range(-0.28, 0.28)
+		var offset_len: float = randf_range(safe_radius * 0.25, safe_radius)
+		var pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * offset_len
+		_spawn_signature_pickup(pos, color, reward, lifetime_sec)
 
 func _update_signature_pickups(delta: float) -> void:
-	FSignaturePickupService.update_pickups(self, _signature_pickups, delta)
+	if _signature_pickups.is_empty():
+		return
+	var now_msec: int = Time.get_ticks_msec()
+	var player_node: Node2D = _get_player_node()
+	var player_pos: Vector2 = player_node.global_position if player_node != null else Vector2.ZERO
+	var snapshot: Array = _signature_pickups.duplicate()
+	for pickup_var in snapshot:
+		if pickup_var == null or not is_instance_valid(pickup_var):
+			_erase_node_from_array(_signature_pickups, pickup_var)
+			continue
+		if not (pickup_var is Node2D):
+			continue
+		var pickup: Node2D = pickup_var
+		if now_msec > int(pickup.get_meta("expire_msec", 0)):
+			pickup.queue_free()
+			_erase_node_from_array(_signature_pickups, pickup)
+			continue
+		var visual: Polygon2D = pickup.get_node_or_null("Visual") as Polygon2D
+		var bob_seed: float = float(pickup.get_meta("bob_seed", 0.0))
+		pickup.rotation += delta * 2.8
+		if is_instance_valid(visual):
+			var bob_scale: float = 0.92 + 0.08 * sin((Time.get_ticks_msec() / 180.0) + bob_seed)
+			visual.scale = Vector2.ONE * bob_scale
+		if player_node != null and pickup.global_position.distance_to(player_pos) <= 26.0:
+			_collect_signature_pickup(pickup)
 
 func _collect_signature_pickup(pickup: Node2D) -> void:
-	FSignaturePickupService.collect_pickup(self, _signature_pickups, pickup)
+	if pickup == null or not is_instance_valid(pickup):
+		return
+	var reward_var: Variant = pickup.get_meta("reward", {})
+	var reward: Dictionary = reward_var if reward_var is Dictionary else {}
+	var center: Vector2 = pickup.global_position
+	_apply_signature_pickup_reward(center, reward)
+	pickup.queue_free()
+	_erase_node_from_array(_signature_pickups, pickup)
+	_sync_pickup_runtime_count()
 
 func _apply_signature_pickup_reward(center: Vector2, reward: Dictionary) -> void:
-	FSignaturePickupService.apply_reward(self, center, reward)
+	if reward.is_empty():
+		return
+	var player_node: Node2D = _get_player_node()
+	var effect_id: String = str(reward.get("effect_id", "")).strip_edges()
+	var text: String = str(reward.get("pickup_text", "PICKUP")).strip_edges()
+	var text_color: Color = reward.get("text_color", Color(1.0, 0.9, 0.4)) as Color
+	var vfx_color: Color = reward.get("vfx_color", Color(1.0, 0.9, 0.4, 0.9)) as Color
+	var effect_scale: float = float(reward.get("effect_scale", 0.58))
+	var reward_radius: float = max(60.0, float(reward.get("radius", 120.0)))
+
+	match effect_id:
+		"butcher_hook":
+			var butcher_dir: Vector2 = _get_player_aim_direction()
+			_line_slice_burst(
+				center - butcher_dir * reward_radius * 0.42,
+				center + butcher_dir * reward_radius * 0.62,
+				18.0,
+				0.28,
+				"marked",
+				1.1,
+				0.18,
+				true,
+				160.0
+			)
+			_gain_energy(2.0)
+		"frostbite_rune":
+			_spawn_ignis_patch(center, reward_radius * 0.34, 1.2, 0.20)
+			_apply_status_burst(center, reward_radius * 0.62, 6, "burn", 1.4, 8.0)
+			_gain_energy(1.6)
+		"shaman_decoy":
+			_knock_enemies_burst(center, reward_radius * 0.68, 5, 150.0)
+			_apply_status_burst(center, reward_radius * 0.72, 6, "marked", 1.2, 0.18)
+			_apply_temp_meta_delta("buff_speed_boost", 0.05, 1.4)
+		"nexus_recall":
+			_pull_enemies_burst(center, reward_radius * 0.78, 6, 18.0)
+			_apply_status_burst(center, reward_radius * 0.72, 6, "slow", 1.0, 0.30)
+			_gain_energy(1.8)
+		"bulwark_wedge":
+			_add_player_armor(1)
+			_spawn_bulwark_core_zone(center, reward_radius * 0.42, 1.2, int(max(1.0, _get_player_base_damage() * 0.18)), 0.34)
+			for enemy in _get_enemies_in_radius(center, reward_radius * 0.56):
+				_apply_enemy_status(enemy, "freeze", 0.55, 0.0, 1, 0.1)
+		"windblade_gust":
+			var windblade_dir: Vector2 = _get_player_aim_direction()
+			_line_slice_burst(
+				center - windblade_dir * reward_radius * 0.32,
+				center + windblade_dir * reward_radius * 0.72,
+				18.0,
+				0.22,
+				"slow",
+				1.0,
+				0.28,
+				true,
+				180.0
+			)
+			_apply_temp_meta_delta("buff_speed_boost", 0.08, 1.4)
+		"polaris_badge":
+			var breach_dir: Vector2 = _get_player_aim_direction()
+			_line_slice_burst(
+				center - breach_dir * reward_radius * 0.18,
+				center + breach_dir * reward_radius * 0.88,
+				20.0,
+				0.28,
+				"marked",
+				1.1,
+				0.18,
+				false,
+				220.0
+			)
+			_gain_energy(1.8)
+		"bloodhowl_order":
+			var execute_count: int = 0
+			for enemy in _sort_enemies_by_distance(_get_enemies_in_radius(center, reward_radius * 0.68), center):
+				if _is_enemy_below_threshold(enemy, 0.30):
+					_damage_enemy(enemy, _get_player_base_damage() * 1.2, "ORDER", Color(1.0, 0.24, 0.24))
+					execute_count += 1
+				else:
+					_apply_enemy_status(enemy, "marked", 1.4, 0.22, 1, 0.3)
+			if execute_count > 0:
+				_gain_energy(1.2 + float(execute_count) * 0.4)
+		"beastmaster_dust":
+			_pull_enemies_burst(center, reward_radius * 0.84, 8, 22.0)
+			get_tree().create_timer(0.18).timeout.connect(
+				_on_beastmaster_implode_timeout.bind(center, reward_radius * 0.42, 0.52),
+				CONNECT_ONE_SHOT
+			)
+		"medium_reload":
+			_gain_energy(2.0)
+			_apply_temp_attack_boost(1.8, 0.10)
+			_refund_skill_cooldown("q", 0.8)
+			_refund_skill_cooldown("e", 0.8)
+		_:
+			if float(reward.get("energy_gain", 0.0)) > 0.0:
+				_gain_energy(float(reward.get("energy_gain", 0.0)))
+
+	if reward.has("energy_gain"):
+		_gain_energy(float(reward.get("energy_gain", 0.0)))
+	if reward.has("armor_gain"):
+		_add_player_armor(int(reward.get("armor_gain", 0)))
+	if reward.has("cooldown_slot") and reward.has("cooldown_refund"):
+		_refund_skill_cooldown(str(reward.get("cooldown_slot", "")), float(reward.get("cooldown_refund", 0.0)))
+	if reward.has("temp_meta_key") and reward.has("temp_meta_delta") and reward.has("temp_meta_duration"):
+		_apply_temp_meta_delta(
+			str(reward.get("temp_meta_key", "")),
+			float(reward.get("temp_meta_delta", 0.0)),
+			float(reward.get("temp_meta_duration", 0.0))
+		)
+	if player_node != null:
+		Global.spawn_floating_text(player_node.global_position, text, text_color)
+	spawn_skill_vfx(center, vfx_color, effect_scale)
 
 func _refund_skill_cooldown(slot_name: String, seconds: float) -> void:
 	if slot_name.strip_edges().is_empty() or seconds <= 0.0 or not is_instance_valid(player_ref):
@@ -2098,22 +2245,28 @@ func _refund_skill_cooldown(slot_name: String, seconds: float) -> void:
 	skill.set_cooldown_remaining(max(0.0, remaining - seconds))
 
 func _clear_signature_nodes() -> void:
-	for mine in _sapper_mines:
+	for mine in _diva_mines:
 		if is_instance_valid(mine):
 			mine.queue_free()
-	_sapper_mines.clear()
+	_diva_mines.clear()
 	for pylon in _turret_pylons:
 		if is_instance_valid(pylon):
 			pylon.queue_free()
 	_turret_pylons.clear()
-	for pool in _mirebinder_pools:
+	for pool in _chronomancer_pools:
 		if is_instance_valid(pool):
 			pool.queue_free()
-	_mirebinder_pools.clear()
-	FSignaturePickupService.clear_pickups(self, _signature_pickups)
+	_chronomancer_pools.clear()
+	for pickup in _signature_pickups:
+		if is_instance_valid(pickup):
+			pickup.queue_free()
+	_signature_pickups.clear()
+	_sync_pickup_runtime_count()
 
 func _sync_pickup_runtime_count() -> void:
-	FSignaturePickupService.sync_runtime(self, _signature_pickups)
+	update_runtime_profile({
+		"active_pickup_count": _signature_pickups.size()
+	})
 
 func _build_local_circle_polygon(radius: float, segments: int) -> PackedVector2Array:
 	var points: PackedVector2Array = PackedVector2Array()
@@ -2130,3 +2283,4 @@ func _build_circle_polygon(center: Vector2, radius: float, segments: int) -> Pac
 		var angle := TAU * float(i) / float(safe_segments)
 		points.append(center + Vector2(cos(angle), sin(angle)) * radius)
 	return points
+

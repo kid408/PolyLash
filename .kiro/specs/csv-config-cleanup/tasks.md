@@ -12,7 +12,7 @@
     - 支持新增列：offset_x, offset_y, collision_radius, hitbox_width, hitbox_height, animation_speed, flash_color_r/g/b
     - _Requirements: 6.1_
   - [x] 1.2 扩展 skill_params.csv 加载支持
-    - 添加新列支持：stake_duration, saw_rotation_speed, saw_push_force, dismember_damage, saw_max_distance, dash_base_damage, explosion_damage, wind_wall_duration, wind_wall_width, wind_wall_effect_radius, storm_zone_pull_force, storm_zone_duration, storm_eye_pull_force, storm_eye_duration, mine_density_distance, mine_area_density, dash_knockback
+    - 添加新列支持：stake_duration, saw_rotation_speed, saw_push_force, dismember_damage, saw_max_distance, dash_base_damage, explosion_damage, windblade_wall_duration, windblade_wall_width, windblade_wall_effect_radius, storm_zone_pull_force, storm_zone_duration, storm_eye_pull_force, storm_eye_duration, mine_density_distance, mine_area_density, dash_knockback
     - _Requirements: 6.1_
   - [x] 1.3 扩展 enemy_config.csv 加载支持
     - 添加新列支持：flock_push, stop_distance, charge_prep_time, charge_duration, charge_speed_mult, charge_cooldown, break_radius, can_charge
@@ -69,10 +69,10 @@
   - [x] 5.2 迁移 PlayerHerder 硬编码变量
     - 从 skill_params.csv 加载：dash_base_damage, explosion_damage
     - _Requirements: 2.2_
-  - [x] 5.3 迁移 PlayerWind 硬编码变量
-    - 从 skill_params.csv 加载：wind_wall_duration, wind_wall_width, wind_wall_effect_radius, storm_zone_pull_force, storm_zone_duration, storm_eye_pull_force, storm_eye_duration
+  - [x] 5.3 迁移 PlayerWindblade 硬编码变量
+    - 从 skill_params.csv 加载：windblade_wall_duration, windblade_wall_width, windblade_wall_effect_radius, storm_zone_pull_force, storm_zone_duration, storm_eye_pull_force, storm_eye_duration
     - _Requirements: 2.5_
-  - [x] 5.4 迁移 PlayerSapper 硬编码变量
+  - [x] 5.4 迁移 PlayerDiva 硬编码变量
     - 从 skill_params.csv 加载：mine_density_distance, mine_area_density
     - _Requirements: 2.6_
   - [x] 5.5 迁移 PlayerBase 硬编码变量

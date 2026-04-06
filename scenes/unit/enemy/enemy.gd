@@ -1,7 +1,9 @@
-﻿extends Unit
+extends Unit
 class_name Enemy
 
 const DEBUG_VERBOSE := false
+const COMBAT_MODIFIER_COMPONENT := preload("res://scenes/components/combat_modifier_component.gd")
+const SILK_LINK_UTILS := preload("res://scenes/effects/silk_link_utils.gd")
 
 # ==============================================================================
 # 1. 灞炴€ч厤缃?
@@ -29,6 +31,19 @@ enum AIState {
 @export_group("Movement")
 @export var flock_push: float = 20.0 
 @export var stop_distance: float = 60.0 
+@export_group("Swarm Encircle")
+@export var tangential_slip_enabled: bool = true
+@export var tangential_slip_strength: float = 0.75
+@export var tangential_front_dot_threshold: float = 0.2
+@export var tangential_distance_falloff: float = 90.0
+@export var desired_separation: float = 60.0
+@export var engagement_radius: float = 120.0
+@export var engagement_band: float = 56.0
+@export var chase_radial_weight: float = 1.2
+@export var chase_separation_weight: float = 1.0
+@export var chase_tangent_weight: float = 1.8
+@export var ring_tangent_boost: float = 2.2
+@export var flank_bias_strength: float = 1.15
 
 @export_group("Charge Settings")
 @export var can_charge: bool = false       # 鏄惁寮€鍚啿閿嬫妧鑳?(寤鸿鍦↖nspector缁欏埡鐚?纭３榫熷嬀閫?
@@ -36,6 +51,36 @@ enum AIState {
 @export var charge_duration: float = 0.6   # 鍐查攱鎸佺画鏃堕棿
 @export var charge_speed_mult: float = 3.5 # 鍐查攱閫熷害鍊嶇巼
 @export var charge_cooldown: float = 3.0   # 鍐峰嵈鏃堕棿
+
+@export_group("Charge Collision")
+@export var charge_cage_collision_mask: int = 4
+@export var charge_cast_radius: float = 18.0
+@export var charge_cast_backoff: float = 0.02
+@export var charge_wall_stun_duration: float = 0.45
+@export var charge_wall_rebound_distance: float = 12.0
+@export var charge_open_line_check_enabled: bool = true
+@export var charge_open_line_radius: float = 36.0
+@export var charge_open_line_max_age_msec: int = 2500
+@export var charge_open_line_hit_interval: float = 0.12
+@export var charge_open_line_damage_ratio: float = 0.35
+@export var charge_local_hitstop_duration: float = 0.04
+@export_group("Parasite")
+@export var parasite_duration_max: float = 8.0
+@export var parasite_pulse_interval: float = 0.4
+@export var parasite_pulse_radius: float = 80.0
+@export var parasite_pulse_damage_ratio: float = 0.15
+@export var parasite_slow_ratio: float = 0.20
+@export var parasite_pull_collision_mask: int = 4
+@export var parasite_catalyst_death_window: float = 0.5
+@export var parasite_catalyst_spread_radius: float = 300.0
+@export var parasite_catalyst_spread_count: int = 3
+@export var parasite_catalyst_pull_duration: float = 0.35
+@export var parasite_catalyst_pull_speed: float = 450.0
+@export var parasite_f_detonation_delay: float = 0.5
+@export var parasite_f_detonation_radius: float = 120.0
+@export var parasite_f_detonation_damage_ratio: float = 1.80
+@export var parasite_pit_damage_taken_bonus: float = 0.15
+@export var parasite_pit_slow_ratio: float = 0.15
 
 @export_group("Visual & Effects")
 @export var death_vfx_scene: PackedScene 
@@ -92,6 +137,51 @@ var current_ai_state: AIState = AIState.CHASE
 var charge_vector: Vector2 = Vector2.ZERO # 鍐查攱鏂瑰悜
 var ai_timer: float = 0.0 # 閫氱敤璁℃椂鍣?
 var original_modulate: Color
+var local_hitstop_timer: float = 0.0
+var _resume_base_anim_after_hitstop: bool = false
+var _resume_charge_anim_after_hitstop: bool = false
+var _charge_shape_cast: ShapeCast2D = null
+var _charge_line_hit_msec_by_asset: Dictionary = {}
+var _encircle_side_preference: float = 1.0
+var _flank_direction: float = 1.0
+var is_parasitized: bool = false
+var parasite_timer: float = 0.0
+var parasite_pulse_timer: float = 0.0
+var parasite_source_attack: float = 0.0
+var parasite_pull_timer: float = 0.0
+var parasite_pull_speed: float = 0.0
+var parasite_pull_target: Vector2 = Vector2.ZERO
+var _parasite_visual_active: bool = false
+var parasite_catalyst_timer: float = 0.0
+var parasite_catalyst_attack: float = 0.0
+var parasite_pending_detonation: bool = false
+var parasite_detonation_timer: float = 0.0
+var parasite_detonation_attack: float = 0.0
+var parasite_rooted: bool = false
+var _parasite_ring: Line2D = null
+var _parasite_visual_pulse: float = 0.0
+var _parasite_pit_sources: Dictionary = {}
+var _joule_tar_ring: Line2D = null
+var _joule_tar_visual_pulse: float = 0.0
+var _soul_link_ring: Line2D = null
+var _soul_link_tether: Line2D = null
+var _soul_link_visual_pulse: float = 0.0
+var combat_modifier_component: CombatModifierComponent = null
+var phalanx_motion_lock_count: int = 0
+var phalanx_ballistic_active: bool = false
+var phalanx_ballistic_velocity: Vector2 = Vector2.ZERO
+var phalanx_ballistic_remaining_distance: float = 0.0
+var phalanx_ballistic_remaining_time: float = 0.0
+var phalanx_ballistic_source_attack: float = 0.0
+var phalanx_ballistic_collision_damage_ratio: float = 0.0
+var phalanx_ballistic_impact_push_distance: float = 0.0
+var phalanx_ballistic_source: Variant = null
+var phalanx_ballistic_hit_radius: float = 26.0
+var phalanx_ballistic_stop_on_hit: bool = true
+var phalanx_ballistic_target_hit_cooldowns: Dictionary = {}
+
+const ASSIST_BACKEND_KILL_META: String = "assist_backend_kill"
+const ASSIST_BACKEND_KILL_OWNER_META: String = "assist_backend_kill_owner"
 
 # ==============================================================================
 # P2-3/P2-4: 鐘舵€佺郴缁燂紙Status/Debuff System锛?
@@ -105,6 +195,7 @@ var status_damage_timers: Dictionary = {}
 # 4. 鍒濆鍖?
 # ==============================================================================
 func _ready() -> void:
+	_ensure_combat_modifier_component()
 	super._ready() 
 	if not is_in_group("enemies"):
 		add_to_group("enemies")
@@ -124,6 +215,7 @@ func _ready() -> void:
 	warning_line.end_cap_mode = Line2D.LINE_CAP_ROUND
 	warning_line.top_level = true # 蹇呴』椤剁骇锛屼笉闅忔€墿鏃嬭浆
 	add_child(warning_line)
+	_setup_charge_shape_cast()
 	
 	# 鏍规嵁 enemy_id 璁剧疆鏁屼汉绫诲瀷
 	_set_enemy_type_from_id()
@@ -135,6 +227,12 @@ func _ready() -> void:
 	_sync_contact_hitbox_damage()
 	
 	original_modulate = visuals.modulate
+	var initial_flank_direction: float = -1.0 if randf() < 0.5 else 1.0
+	_flank_direction = initial_flank_direction
+	_encircle_side_preference = initial_flank_direction
+	_setup_parasite_ring()
+	_setup_soul_link_visuals()
+	_refresh_parasite_visual()
 	
 	_setup_special_nodes()
 	_init_boss_phase_template()
@@ -428,10 +526,22 @@ func _setup_charge_animation() -> void:
 # ==============================================================================
 func _process(delta: float) -> void:
 	if Global.game_paused or is_dead: return
-	
+
 	_process_status_effects(delta)
+	_process_parasite_timers(delta)
+	_process_parasite_runtime(delta)
+	_process_modifier_visuals(delta)
 	_process_elite_affix(delta)
 	_process_boss_phase_template(delta)
+	if _process_phalanx_ballistic(delta):
+		return
+	if local_hitstop_timer > 0.0:
+		local_hitstop_timer = max(0.0, local_hitstop_timer - delta)
+		if local_hitstop_timer <= 0.0:
+			_resume_local_hitstop_visuals()
+		return
+	if _process_parasite_pull(delta):
+		return
 	
 	# 鍓垁鎵嬪垏绾?
 	if enemy_type == EnemyType.LINE_BREAKER:
@@ -588,15 +698,95 @@ func _state_chase(delta: float) -> void:
 		return
 	
 	# 4. 鎵ц绉诲姩
-	var move_vec = get_move_direction() + (knockback_dir * knockback_power)
-		
-	position += move_vec * speed * delta
+	var move_vec: Vector2 = _get_chase_steering(Global.player)
+	move_vec += knockback_dir * knockback_power
+	move_vec = move_vec.limit_length(1.0)
+	if _is_movement_locked():
+		return
+	position += move_vec * _current_move_speed() * delta
 	update_rotation()
 	
 	# 5. 鍐查攱鍒ゅ畾
 	if can_charge:
 		if dist < 300.0 and dist > 100.0: 
 			start_charge_sequence()
+
+func _get_chase_steering(target_node: Node2D) -> Vector2:
+	if not is_instance_valid(target_node):
+		return Vector2.ZERO
+
+	var to_player: Vector2 = target_node.global_position - global_position
+	var distance_to_player: float = to_player.length()
+	if distance_to_player <= 0.001:
+		return Vector2.ZERO
+
+	var dir_to_player: Vector2 = to_player / distance_to_player
+	var tangent: Vector2 = Vector2(-dir_to_player.y, dir_to_player.x)
+	var ring_offset: float = distance_to_player - engagement_radius
+	var safe_band: float = max(1.0, engagement_band)
+	var radial_weight: float = clamp(ring_offset / safe_band, -1.0, 1.0)
+	var ring_closeness: float = 1.0 - clamp(abs(ring_offset) / safe_band, 0.0, 1.0)
+	var safe_separation: float = max(1.0, desired_separation)
+
+	var separation_force := Vector2.ZERO
+	var tangent_force := Vector2.ZERO
+	var flank_force := Vector2.ZERO
+
+	if ring_closeness > 0.0:
+		flank_force = tangent * _flank_direction * flank_bias_strength * ring_closeness
+
+	for area: Node2D in vision_area.get_overlapping_areas():
+		if area == self or not area.is_inside_tree():
+			continue
+		if not area.is_in_group("enemies"):
+			continue
+
+		var to_other: Vector2 = area.global_position - global_position
+		var distance: float = to_other.length()
+		if distance <= 0.001:
+			continue
+
+		var away_from_other: Vector2 = -to_other / distance
+		var push_strength: float = clamp(1.0 - (distance / safe_separation), 0.0, 1.0)
+		if push_strength <= 0.0:
+			continue
+		separation_force += away_from_other * push_strength
+
+		if not tangential_slip_enabled:
+			continue
+
+		var forward_dot: float = dir_to_player.dot(to_other / distance)
+		if forward_dot <= tangential_front_dot_threshold:
+			continue
+
+		var side_sign: float = -sign(dir_to_player.cross(to_other))
+		if is_zero_approx(side_sign):
+			side_sign = _encircle_side_preference
+
+		var distance_weight: float = clamp(1.0 - (distance / max(1.0, tangential_distance_falloff)), 0.0, 1.0)
+		var slip_strength: float = push_strength * forward_dot * distance_weight
+		tangent_force += tangent * side_sign * slip_strength
+
+	if separation_force.length_squared() > 0.0:
+		separation_force = separation_force.normalized()
+	if tangent_force.length_squared() > 0.0:
+		tangent_force = tangent_force.normalized()
+
+	var tangent_weight: float = chase_tangent_weight
+	if ring_closeness > 0.0:
+		tangent_weight *= lerp(1.0, ring_tangent_boost, ring_closeness)
+
+	var blocker_tangent_force: Vector2 = tangent_force * tangential_slip_strength
+	if flank_force.length_squared() > 0.0 and blocker_tangent_force.length_squared() > 0.0:
+		var tangent_alignment: float = flank_force.normalized().dot(blocker_tangent_force.normalized())
+		var flank_blend: float = lerp(0.2, 0.65, (tangent_alignment + 1.0) * 0.5)
+		flank_force *= flank_blend
+
+	var steering := dir_to_player * (radial_weight * chase_radial_weight)
+	steering += separation_force * chase_separation_weight
+	steering += flank_force * tangent_weight
+	steering += blocker_tangent_force * tangent_weight
+	return steering
 
 # --- 1. 瑙﹀彂鍐查攱搴忓垪 (鐢熸垚绾㈢嚎) ---
 func start_charge_sequence() -> void:
@@ -633,7 +823,10 @@ func _state_preparing(delta: float) -> void:
 	ai_timer -= delta
 	
 	# 瑙嗚闇囧姩
-	visuals.position = Vector2(randf_range(-2, 2), randf_range(-2, 2))
+	if _is_movement_locked():
+		visuals.position = Vector2.ZERO
+	else:
+		visuals.position = Vector2(randf_range(-2, 2), randf_range(-2, 2))
 	
 	# 鏇存柊绾㈢嚎璧风偣 (璺熼殢鎬墿)锛岀粓鐐瑰浐瀹?(涓嶈拷韪帺瀹朵簡锛岃繖灏辨槸缁欑帺瀹惰翰閬跨殑鏈轰細)
 	if warning_line.points.size() > 1:
@@ -673,7 +866,21 @@ func _state_charging(delta: float) -> void:
 	# 涓嶄娇鐢?move_and_slide锛岀洿鎺ヤ慨鏀?position锛岄伩鍏嶇墿鐞嗙鎾炲鑷寸殑濂囨€粦姝ワ紙濡傛灉鏄疉rea2D绫诲瀷鐨勫崟浣嶏級
 	# 濡傛灉鏄?CharacterBody2D锛岃鐢?velocity = ... move_and_slide()
 	
-	position += charge_vector * speed * charge_speed_mult * delta
+	if _is_movement_locked():
+		if ai_timer <= 0:
+			current_ai_state = AIState.COOLDOWN
+			ai_timer = charge_cooldown
+		return
+	var motion: Vector2 = charge_vector * _current_move_speed() * charge_speed_mult * delta
+	var start_pos: Vector2 = global_position
+	if _handle_charge_cage_collision(motion):
+		return
+	var next_pos: Vector2 = start_pos + motion
+	var hit_result := _charge_hits_open_assets(start_pos, next_pos)
+	if bool(hit_result.get("hit", false)):
+		_apply_charge_open_line_hit(hit_result)
+		return
+	position = next_pos
 	
 	# 杩欓噷涓嶆洿鏂版湞鍚戯紝淇濇寔鍐查攱鏃剁殑闇镐綋鎰?
 	
@@ -686,12 +893,834 @@ func _state_cooldown(delta: float) -> void:
 	ai_timer -= delta
 	
 	# 缂撴參绉诲姩
+	if _is_movement_locked():
+		if ai_timer <= 0:
+			current_ai_state = AIState.CHASE
+		return
 	var move_vec = get_move_direction() * 0.2
-	position += move_vec * speed * delta
+	position += move_vec * _current_move_speed() * delta
 	update_rotation()
 	
 	if ai_timer <= 0:
 		current_ai_state = AIState.CHASE
+
+func is_tactical_reject_elite_immune() -> bool:
+	return self is EnemyElites or not elite_affix_id.is_empty() or enemy_id == "boss_enemy"
+
+func is_boss_enemy() -> bool:
+	return enemy_id == "boss_enemy"
+
+func apply_tactical_reject(origin: Vector2, push_distance: float, stun_duration: float) -> Dictionary:
+	var result: Dictionary = {
+		"pushed": false,
+		"interrupted": false,
+		"immune": false,
+	}
+	if is_dead:
+		return result
+
+	var push_dir: Vector2 = global_position - origin
+	if push_dir.length_squared() <= 0.0001:
+		push_dir = Vector2.RIGHT.rotated(randf() * TAU)
+	else:
+		push_dir = push_dir.normalized()
+
+	var immune_to_push: bool = is_tactical_reject_elite_immune()
+	result["immune"] = immune_to_push
+	var can_interrupt: bool = _can_be_interrupted_by_tactical_reject()
+	if can_interrupt:
+		_interrupt_for_tactical_reject(stun_duration, immune_to_push)
+		result["interrupted"] = true
+
+	if immune_to_push:
+		return result
+
+	global_position = _resolve_tactical_reject_target(push_dir, push_distance)
+	if not can_interrupt:
+		apply_status("stun", stun_duration, 0.0, 1, 1.0)
+		_play_charge_hit_feedback("PUSH!", Color(0.82, 0.96, 1.0), false)
+	result["pushed"] = true
+	return result
+
+func _can_be_interrupted_by_tactical_reject() -> bool:
+	return current_ai_state == AIState.PREPARING or current_ai_state == AIState.CHARGING
+
+func _interrupt_for_tactical_reject(stun_duration: float, show_break_feedback: bool = true) -> void:
+	current_ai_state = AIState.COOLDOWN
+	ai_timer = max(max(stun_duration, 0.2), charge_cooldown * 0.35)
+	charge_vector = Vector2.ZERO
+	visuals.position = Vector2.ZERO
+	visuals.modulate = original_modulate
+	if warning_line:
+		warning_line.default_color = Color(1, 0, 0, 0)
+		warning_line.clear_points()
+	apply_status("stun", stun_duration, 0.0, 1, 1.0)
+	if show_break_feedback:
+		_play_charge_hit_feedback("BREAK!", Color(0.92, 0.98, 1.0), false)
+
+func _resolve_tactical_reject_target(push_dir: Vector2, push_distance: float) -> Vector2:
+	var start_pos: Vector2 = global_position
+	var target_pos: Vector2 = start_pos + push_dir * push_distance
+	var world := get_world_2d()
+	if world == null:
+		return target_pos
+	var space_state := world.direct_space_state
+	var query := PhysicsRayQueryParameters2D.create(start_pos, target_pos)
+	query.collide_with_bodies = true
+	query.collide_with_areas = false
+	var hit: Dictionary = space_state.intersect_ray(query)
+	if hit.is_empty():
+		return target_pos
+	var hit_position: Vector2 = hit.get("position", target_pos)
+	return hit_position - push_dir * 8.0
+
+func _setup_charge_shape_cast() -> void:
+	if is_instance_valid(_charge_shape_cast):
+		return
+	_charge_shape_cast = ShapeCast2D.new()
+	_charge_shape_cast.name = "ChargeShapeCast"
+	_charge_shape_cast.enabled = true
+	_charge_shape_cast.collide_with_areas = false
+	_charge_shape_cast.collide_with_bodies = true
+	_charge_shape_cast.collision_mask = charge_cage_collision_mask
+	var cast_shape := CircleShape2D.new()
+	cast_shape.radius = max(1.0, charge_cast_radius)
+	_charge_shape_cast.shape = cast_shape
+	add_child(_charge_shape_cast)
+
+func _handle_charge_cage_collision(motion: Vector2) -> bool:
+	if not is_instance_valid(_charge_shape_cast):
+		return false
+	if motion.length_squared() <= 0.0001:
+		return false
+	_charge_shape_cast.global_position = global_position
+	_charge_shape_cast.target_position = motion
+	_charge_shape_cast.force_shapecast_update()
+	if not _charge_shape_cast.is_colliding():
+		return false
+	var safe_fraction: float = _charge_shape_cast.get_closest_collision_safe_fraction()
+	var clamped_fraction: float = clamp(safe_fraction - charge_cast_backoff, 0.0, 1.0)
+	global_position += motion * clamped_fraction
+	var collision_normal: Vector2 = _charge_shape_cast.get_collision_normal(0)
+	_on_charge_cage_crash(collision_normal)
+	return true
+
+func _on_charge_cage_crash(collision_normal: Vector2) -> void:
+	current_ai_state = AIState.COOLDOWN
+	ai_timer = max(ai_timer, charge_cooldown)
+	if collision_normal.length_squared() > 0.0001:
+		global_position += collision_normal.normalized() * charge_wall_rebound_distance
+	apply_status("stun", charge_wall_stun_duration, 0.0, 1, 1.0)
+	_play_charge_hit_feedback("THUD!", Color(1.0, 0.82, 0.72), true)
+
+func _charge_hits_open_assets(from_pos: Vector2, to_pos: Vector2) -> Dictionary:
+	var result: Dictionary = {"hit": false}
+	if not charge_open_line_check_enabled:
+		return result
+	var sweep_rect: Rect2 = _build_rect_between_points(from_pos, to_pos, charge_open_line_radius)
+	var assets: Array[Dictionary] = SkillAssetRegistry.list_scene_assets(self, "", "", charge_open_line_max_age_msec)
+	var now_msec: int = Time.get_ticks_msec()
+	var min_interval_msec: int = int(round(charge_open_line_hit_interval * 1000.0))
+	for asset: Dictionary in assets:
+		var asset_id: String = str(asset.get("asset_id", ""))
+		if not asset_id.is_empty():
+			var last_hit_msec: int = int(_charge_line_hit_msec_by_asset.get(asset_id, -999999))
+			if now_msec - last_hit_msec < min_interval_msec:
+				continue
+		var payload_var: Variant = asset.get("payload", {})
+		if not (payload_var is Dictionary):
+			continue
+		var payload: Dictionary = payload_var
+		if bool(payload.get("is_closed", false)):
+			continue
+		var asset_rect: Rect2 = payload.get("aabb", Rect2())
+		if asset_rect == Rect2() or not asset_rect.intersects(sweep_rect):
+			continue
+		var segments_var: Variant = payload.get("segments", [])
+		if not (segments_var is Array):
+			continue
+		for seg_var: Variant in segments_var:
+			if not (seg_var is Dictionary):
+				continue
+			var seg: Dictionary = seg_var
+			var seg_rect: Rect2 = seg.get("aabb", Rect2())
+			if seg_rect != Rect2() and not seg_rect.intersects(sweep_rect):
+				continue
+			var start: Vector2 = seg.get("start", Vector2.ZERO)
+			var end_pos: Vector2 = seg.get("end", Vector2.ZERO)
+			if _segment_distance(from_pos, to_pos, start, end_pos) > charge_open_line_radius:
+				continue
+			result["hit"] = true
+			result["asset"] = asset
+			result["segment"] = seg
+			return result
+	return result
+
+func _apply_charge_open_line_hit(hit_result: Dictionary) -> void:
+	var asset: Dictionary = hit_result.get("asset", {})
+	var damage_amount: int = _resolve_charge_open_line_damage(asset)
+	if damage_amount > 0 and health_component:
+		health_component.take_damage(damage_amount)
+	var asset_id: String = str(asset.get("asset_id", ""))
+	if not asset_id.is_empty():
+		_charge_line_hit_msec_by_asset[asset_id] = Time.get_ticks_msec()
+	_play_charge_hit_feedback("CUT!", Color(1.0, 1.0, 1.0), false)
+
+func _resolve_charge_open_line_damage(asset: Dictionary) -> int:
+	var owner_instance_id: int = int(asset.get("owner_instance_id", 0))
+	if owner_instance_id > 0:
+		var owner_obj: Object = instance_from_id(owner_instance_id)
+		if owner_obj != null and is_instance_valid(owner_obj) and owner_obj is Node:
+			var owner_node: Node = owner_obj
+			if "damage" in owner_node:
+				return max(1, int(round(float(owner_node.get("damage")) * charge_open_line_damage_ratio)))
+	return max(1, int(round(damage * charge_open_line_damage_ratio)))
+
+func _play_charge_hit_feedback(label: String, flash_color: Color, heavy_hit: bool) -> void:
+	set_flash_material()
+	local_hitstop_timer = max(local_hitstop_timer, charge_local_hitstop_duration)
+	_pause_local_hitstop_visuals()
+	var tween = create_tween()
+	tween.tween_property(visuals, "modulate", flash_color, 0.02)
+	tween.tween_property(visuals, "modulate", original_modulate, 0.08 if heavy_hit else 0.06)
+	Global.spawn_floating_text(global_position, label, flash_color)
+	if heavy_hit:
+		Global.on_camera_shake.emit(4.0, 0.08)
+
+func _pause_local_hitstop_visuals() -> void:
+	if anim_player and anim_player.is_playing():
+		anim_player.pause()
+		_resume_base_anim_after_hitstop = true
+	var charge_anim := get_node_or_null("AnimationEffects") as AnimationPlayer
+	if charge_anim and charge_anim.is_playing():
+		charge_anim.pause()
+		_resume_charge_anim_after_hitstop = true
+
+func _resume_local_hitstop_visuals() -> void:
+	if _resume_base_anim_after_hitstop and anim_player:
+		anim_player.play()
+	_resume_base_anim_after_hitstop = false
+	var charge_anim := get_node_or_null("AnimationEffects") as AnimationPlayer
+	if _resume_charge_anim_after_hitstop and charge_anim:
+		charge_anim.play()
+	_resume_charge_anim_after_hitstop = false
+
+func _build_rect_between_points(from_pos: Vector2, to_pos: Vector2, padding: float = 0.0) -> Rect2:
+	var min_x: float = min(from_pos.x, to_pos.x)
+	var min_y: float = min(from_pos.y, to_pos.y)
+	var max_x: float = max(from_pos.x, to_pos.x)
+	var max_y: float = max(from_pos.y, to_pos.y)
+	var rect := Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
+	return rect.grow(max(0.0, padding))
+
+func _segment_distance(a_start: Vector2, a_end: Vector2, b_start: Vector2, b_end: Vector2) -> float:
+	if Geometry2D.segment_intersects_segment(a_start, a_end, b_start, b_end) != null:
+		return 0.0
+	var min_distance: float = INF
+	min_distance = min(min_distance, a_start.distance_to(Geometry2D.get_closest_point_to_segment(a_start, b_start, b_end)))
+	min_distance = min(min_distance, a_end.distance_to(Geometry2D.get_closest_point_to_segment(a_end, b_start, b_end)))
+	min_distance = min(min_distance, b_start.distance_to(Geometry2D.get_closest_point_to_segment(b_start, a_start, a_end)))
+	min_distance = min(min_distance, b_end.distance_to(Geometry2D.get_closest_point_to_segment(b_end, a_start, a_end)))
+	return min_distance
+
+func apply_parasite_state(duration: float = 8.0, source_attack: float = 0.0) -> void:
+	if is_dead:
+		return
+	var was_parasitized: bool = is_parasitized
+	is_parasitized = true
+	parasite_timer = max(0.01, duration)
+	parasite_pulse_timer = max(0.05, parasite_pulse_interval)
+	if source_attack > 0.0:
+		parasite_source_attack = max(parasite_source_attack, source_attack)
+	apply_tag_marker("parasite_marker", "parasite", parasite_timer, CombatModifierComponent.STACK_REFRESH, Global.player)
+	_refresh_parasite_visual()
+	_share_parasite_state_to_linked(duration, source_attack)
+	if not was_parasitized:
+		Global.spawn_floating_text(global_position, "PARASITE", Color(0.62, 1.45, 0.62))
+
+func clear_parasite_state(reset_pull: bool = true) -> void:
+	is_parasitized = false
+	parasite_timer = 0.0
+	parasite_pulse_timer = 0.0
+	parasite_source_attack = 0.0
+	parasite_catalyst_timer = 0.0
+	parasite_catalyst_attack = 0.0
+	parasite_pending_detonation = false
+	parasite_detonation_timer = 0.0
+	parasite_detonation_attack = 0.0
+	parasite_rooted = false
+	if combat_modifier_component:
+		combat_modifier_component.clear_tag_marker("parasite")
+		combat_modifier_component.remove_modifier("parasite_pulse_slow")
+	_refresh_parasite_visual()
+	if reset_pull:
+		parasite_pull_timer = 0.0
+		parasite_pull_speed = 0.0
+		parasite_pull_target = global_position
+
+func start_parasite_pull(target_position: Vector2, duration: float = 0.35, speed_value: float = 450.0) -> void:
+	if is_dead:
+		return
+	parasite_pull_target = target_position
+	parasite_pull_timer = max(0.0, duration)
+	parasite_pull_speed = max(0.0, speed_value)
+
+func mark_parasite_catalyst_window(source_attack: float, duration: float = 0.5) -> void:
+	if is_dead or not is_parasitized:
+		return
+	parasite_catalyst_timer = max(parasite_catalyst_timer, duration)
+	parasite_catalyst_attack = max(parasite_catalyst_attack, source_attack)
+
+func trigger_parasite_detonation(source_attack: float, delay: float = 0.5) -> void:
+	if is_dead or not is_parasitized:
+		return
+	parasite_pending_detonation = true
+	parasite_rooted = true
+	parasite_detonation_timer = max(delay, parasite_f_detonation_delay)
+	parasite_detonation_attack = max(parasite_detonation_attack, source_attack)
+	parasite_pull_timer = 0.0
+	parasite_pull_speed = 0.0
+	Global.spawn_floating_text(global_position + Vector2(0, -18), "ARMED", Color(1.0, 0.38, 0.32))
+	_refresh_parasite_visual()
+
+func set_parasite_pit_presence(source_key: String, inside: bool, damage_bonus: float = 0.15, slow_ratio: float = 0.15) -> void:
+	if source_key.is_empty():
+		return
+	if inside:
+		_parasite_pit_sources[source_key] = {
+			"damage_bonus": damage_bonus,
+			"slow_ratio": slow_ratio,
+		}
+	else:
+		_parasite_pit_sources.erase(source_key)
+
+func get_incoming_damage_multiplier() -> float:
+	var multiplier: float = 1.0
+	if not _parasite_pit_sources.is_empty():
+		var max_bonus: float = 0.0
+		for source_data_var: Variant in _parasite_pit_sources.values():
+			if source_data_var is Dictionary:
+				var source_data: Dictionary = source_data_var
+				max_bonus = max(max_bonus, float(source_data.get("damage_bonus", parasite_pit_damage_taken_bonus)))
+		multiplier += max_bonus
+	if combat_modifier_component:
+		multiplier *= combat_modifier_component.get_damage_taken_multiplier()
+	return multiplier
+
+func _process_parasite_timers(delta: float) -> void:
+	if not is_parasitized:
+		return
+
+	if not parasite_pending_detonation:
+		parasite_timer -= delta
+		if parasite_timer <= 0.0:
+			clear_parasite_state(false)
+			return
+
+	parasite_pulse_timer -= delta
+	var pulse_interval: float = max(0.05, parasite_pulse_interval)
+	while parasite_pulse_timer <= 0.0:
+		parasite_pulse_timer += pulse_interval
+		_emit_parasite_pulse()
+
+func _emit_parasite_pulse() -> void:
+	if not is_parasitized or is_dead:
+		return
+
+	var source_attack: float = parasite_source_attack if parasite_source_attack > 0.0 else damage
+	var pulse_damage: int = max(1, int(round(max(1.0, source_attack) * parasite_pulse_damage_ratio)))
+	Global.spawn_floating_text(global_position + Vector2(0, -14), "Pulse", Color(0.72, 1.18, 0.72))
+	for enemy_node in get_tree().get_nodes_in_group("enemies"):
+		if enemy_node == self:
+			continue
+		if not (enemy_node is Enemy):
+			continue
+		var enemy := enemy_node as Enemy
+		if not is_instance_valid(enemy) or enemy.is_dead:
+			continue
+		if global_position.distance_to(enemy.global_position) > parasite_pulse_radius:
+			continue
+		enemy.apply_modifier_damage(pulse_damage, self, {"kind": "parasite_pulse"})
+		enemy.apply_move_speed_modifier(
+			"parasite_pulse_slow",
+			max(0.0, 1.0 - parasite_slow_ratio),
+			parasite_pulse_interval,
+			CombatModifierComponent.STACK_REPLACE_STRONGER,
+			self,
+			{"kind": "parasite_pulse"}
+		)
+
+func _process_parasite_pull(delta: float) -> bool:
+	if parasite_rooted:
+		parasite_pull_timer = 0.0
+		parasite_pull_speed = 0.0
+		return false
+	if parasite_pull_timer <= 0.0 or parasite_pull_speed <= 0.0:
+		return false
+
+	var to_target: Vector2 = parasite_pull_target - global_position
+	var distance_to_target: float = to_target.length()
+	parasite_pull_timer = max(0.0, parasite_pull_timer - delta)
+
+	if distance_to_target <= 2.0 or parasite_pull_timer <= 0.0:
+		parasite_pull_timer = 0.0
+		parasite_pull_speed = 0.0
+		return true
+
+	var motion: Vector2 = to_target.normalized() * min(distance_to_target, parasite_pull_speed * delta)
+	if _is_parasite_pull_blocked(motion):
+		parasite_pull_timer = 0.0
+		parasite_pull_speed = 0.0
+		return true
+
+	global_position += motion
+	update_rotation()
+	return true
+
+func _refresh_parasite_visual() -> void:
+	if not is_instance_valid(visuals):
+		return
+	_refresh_modifier_visual_tint()
+	if is_instance_valid(_parasite_ring):
+		_parasite_ring.visible = is_parasitized or parasite_pending_detonation
+
+func _process_parasite_runtime(delta: float) -> void:
+	if parasite_catalyst_timer > 0.0:
+		parasite_catalyst_timer = max(0.0, parasite_catalyst_timer - delta)
+	if parasite_pending_detonation:
+		parasite_detonation_timer = max(0.0, parasite_detonation_timer - delta)
+		if parasite_detonation_timer <= 0.0:
+			_execute_parasite_detonation()
+			return
+	_update_parasite_visual_fx(delta)
+
+func _setup_parasite_ring() -> void:
+	if is_instance_valid(_parasite_ring):
+		return
+	_parasite_ring = Line2D.new()
+	_parasite_ring.name = "ParasiteRing"
+	_parasite_ring.closed = true
+	_parasite_ring.width = 5.0
+	_parasite_ring.default_color = Color(0.58, 1.2, 0.52, 0.9)
+	_parasite_ring.z_index = 3
+	var ring_points := PackedVector2Array()
+	var ring_segments: int = 24
+	var ring_center: Vector2 = collision_shape.position if is_instance_valid(collision_shape) else Vector2.ZERO
+	var ring_radius: float = 34.0
+	if is_instance_valid(collision_shape) and collision_shape.shape is CircleShape2D:
+		ring_radius = float((collision_shape.shape as CircleShape2D).radius) + 12.0
+	for i in range(ring_segments + 1):
+		var angle := (float(i) / float(ring_segments)) * TAU
+		ring_points.append(ring_center + Vector2.RIGHT.rotated(angle) * ring_radius)
+	_parasite_ring.points = ring_points
+	_parasite_ring.visible = false
+	add_child(_parasite_ring)
+	_setup_joule_tar_ring()
+
+func _update_parasite_visual_fx(delta: float) -> void:
+	if not is_instance_valid(_parasite_ring):
+		return
+	if not (is_parasitized or parasite_pending_detonation):
+		_parasite_ring.visible = false
+		return
+	_parasite_ring.visible = true
+	_parasite_visual_pulse += delta * (8.0 if parasite_pending_detonation else 4.0)
+	var pulse: float = 0.5 + 0.5 * sin(_parasite_visual_pulse)
+	if parasite_pending_detonation:
+		_parasite_ring.default_color = Color(1.0, 0.28, 0.22, lerp(0.35, 0.95, pulse))
+		_parasite_ring.width = lerp(4.0, 8.0, pulse)
+	else:
+		_parasite_ring.default_color = Color(0.52, 1.0, 0.48, lerp(0.55, 0.92, pulse))
+		_parasite_ring.width = lerp(4.0, 6.0, pulse)
+
+func _get_parasite_visual_tint() -> Color:
+	if parasite_pending_detonation:
+		return Color(1.0, 0.42, 0.38, 1.0)
+	return Color(0.58, 1.2, 0.52, 1.0)
+
+func _setup_joule_tar_ring() -> void:
+	if is_instance_valid(_joule_tar_ring):
+		return
+	_joule_tar_ring = Line2D.new()
+	_joule_tar_ring.name = "JouleTarRing"
+	_joule_tar_ring.closed = true
+	_joule_tar_ring.width = 4.0
+	_joule_tar_ring.default_color = Color(1.0, 0.58, 0.14, 0.92)
+	_joule_tar_ring.z_index = 2
+	var ring_points: PackedVector2Array = PackedVector2Array()
+	var ring_segments: int = 24
+	var ring_center: Vector2 = collision_shape.position if is_instance_valid(collision_shape) else Vector2.ZERO
+	var ring_radius: float = 30.0
+	if is_instance_valid(collision_shape) and collision_shape.shape is CircleShape2D:
+		ring_radius = float((collision_shape.shape as CircleShape2D).radius) + 8.0
+	for i: int in range(ring_segments + 1):
+		var angle: float = (float(i) / float(ring_segments)) * TAU
+		ring_points.append(ring_center + Vector2.RIGHT.rotated(angle) * ring_radius)
+	_joule_tar_ring.points = ring_points
+	_joule_tar_ring.visible = false
+	add_child(_joule_tar_ring)
+
+func _setup_soul_link_visuals() -> void:
+	if not is_instance_valid(_soul_link_ring):
+		_soul_link_ring = Line2D.new()
+		_soul_link_ring.name = "SoulLinkRing"
+		_soul_link_ring.closed = true
+		_soul_link_ring.width = 4.0
+		_soul_link_ring.default_color = Color(1.0, 0.22, 0.30, 0.90)
+		_soul_link_ring.z_index = 4
+		var ring_points: PackedVector2Array = PackedVector2Array()
+		var ring_segments: int = 24
+		var ring_center: Vector2 = collision_shape.position if is_instance_valid(collision_shape) else Vector2.ZERO
+		var ring_radius: float = 28.0
+		if is_instance_valid(collision_shape) and collision_shape.shape is CircleShape2D:
+			ring_radius = float((collision_shape.shape as CircleShape2D).radius) + 10.0
+		for i: int in range(ring_segments + 1):
+			var angle: float = (float(i) / float(ring_segments)) * TAU
+			ring_points.append(ring_center + Vector2.RIGHT.rotated(angle) * ring_radius)
+		_soul_link_ring.points = ring_points
+		_soul_link_ring.visible = false
+		add_child(_soul_link_ring)
+	if not is_instance_valid(_soul_link_tether):
+		_soul_link_tether = Line2D.new()
+		_soul_link_tether.name = "SoulLinkTether"
+		_soul_link_tether.top_level = true
+		_soul_link_tether.width = 3.0
+		_soul_link_tether.default_color = Color(1.0, 0.30, 0.38, 0.72)
+		_soul_link_tether.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		_soul_link_tether.end_cap_mode = Line2D.LINE_CAP_ROUND
+		_soul_link_tether.antialiased = true
+		_soul_link_tether.z_index = 58
+		_soul_link_tether.visible = false
+		add_child(_soul_link_tether)
+
+func _process_modifier_visuals(delta: float) -> void:
+	_update_joule_tar_visual_fx(delta)
+	_update_soul_link_visual_fx(delta)
+	if current_ai_state != AIState.PREPARING and local_hitstop_timer <= 0.0:
+		_refresh_modifier_visual_tint()
+
+func _refresh_modifier_visual_tint() -> void:
+	if not is_instance_valid(visuals):
+		return
+	var tint_target: Color = original_modulate
+	var has_tar: bool = _has_joule_tar()
+	var has_tar_max: bool = _has_joule_tar_max()
+	var has_soul_link: bool = _has_soul_link()
+	var has_soul_link_empowered: bool = _has_empowered_soul_link()
+	if has_tar:
+		tint_target = tint_target.lerp(_get_joule_tar_visual_tint(has_tar_max), 0.48 if not has_tar_max else 0.66)
+	if has_soul_link:
+		tint_target = tint_target.lerp(_get_soul_link_visual_tint(has_soul_link_empowered), 0.42 if not has_soul_link_empowered else 0.62)
+	if is_parasitized or parasite_pending_detonation:
+		tint_target = tint_target.lerp(_get_parasite_visual_tint(), 0.58)
+		_parasite_visual_active = true
+	else:
+		_parasite_visual_active = false
+	visuals.modulate = tint_target
+
+func _update_joule_tar_visual_fx(delta: float) -> void:
+	if not is_instance_valid(_joule_tar_ring):
+		return
+	var has_tar: bool = _has_joule_tar()
+	var has_tar_max: bool = _has_joule_tar_max()
+	if not has_tar:
+		_joule_tar_ring.visible = false
+		return
+	_joule_tar_ring.visible = true
+	_joule_tar_visual_pulse += delta * (7.5 if has_tar_max else 4.5)
+	var pulse: float = 0.5 + 0.5 * sin(_joule_tar_visual_pulse)
+	if has_tar_max:
+		_joule_tar_ring.default_color = Color(1.0, 0.34, 0.08, lerp(0.58, 0.98, pulse))
+		_joule_tar_ring.width = lerp(4.0, 7.5, pulse)
+	else:
+		_joule_tar_ring.default_color = Color(1.0, 0.58, 0.12, lerp(0.46, 0.88, pulse))
+		_joule_tar_ring.width = lerp(3.0, 5.5, pulse)
+
+func _get_joule_tar_visual_tint(is_empowered: bool) -> Color:
+	if is_empowered:
+		return Color(1.0, 0.46, 0.16, 1.0)
+	return Color(1.0, 0.66, 0.20, 1.0)
+
+func _update_soul_link_visual_fx(delta: float) -> void:
+	if not is_instance_valid(_soul_link_ring) or not is_instance_valid(_soul_link_tether):
+		return
+	var has_link: bool = _has_soul_link()
+	var has_empowered_link: bool = _has_empowered_soul_link()
+	if not has_link:
+		_soul_link_ring.visible = false
+		_soul_link_tether.visible = false
+		return
+	_soul_link_ring.visible = true
+	_soul_link_visual_pulse += delta * (8.0 if has_empowered_link else 5.0)
+	var pulse: float = 0.5 + 0.5 * sin(_soul_link_visual_pulse)
+	if has_empowered_link:
+		_soul_link_ring.default_color = Color(1.0, 0.14, 0.20, lerp(0.56, 0.98, pulse))
+		_soul_link_ring.width = lerp(4.0, 7.0, pulse)
+	else:
+		_soul_link_ring.default_color = Color(1.0, 0.26, 0.34, lerp(0.42, 0.86, pulse))
+		_soul_link_ring.width = lerp(3.0, 5.0, pulse)
+	var nearest_linked_enemy: Enemy = _find_nearest_soul_linked_enemy()
+	if nearest_linked_enemy == null:
+		_soul_link_tether.visible = false
+		return
+	_soul_link_tether.visible = true
+	_soul_link_tether.default_color = Color(1.0, 0.30, 0.38, lerp(0.28, 0.82, pulse))
+	_soul_link_tether.width = lerp(2.0, 4.5, pulse)
+	_soul_link_tether.points = PackedVector2Array([global_position, nearest_linked_enemy.global_position])
+
+func _get_soul_link_visual_tint(is_empowered: bool) -> Color:
+	if is_empowered:
+		return Color(1.0, 0.32, 0.38, 1.0)
+	return Color(1.0, 0.46, 0.52, 1.0)
+
+func _has_joule_tar() -> bool:
+	return combat_modifier_component != null and combat_modifier_component.has_tag_marker("joule_tar")
+
+func _has_joule_tar_max() -> bool:
+	return combat_modifier_component != null and combat_modifier_component.has_tag_marker("joule_tar_max")
+
+func _has_soul_link() -> bool:
+	return SILK_LINK_UTILS.has_link(self)
+
+func _has_empowered_soul_link() -> bool:
+	return SILK_LINK_UTILS.has_empowered_link(self)
+
+func _ensure_combat_modifier_component() -> void:
+	if combat_modifier_component and is_instance_valid(combat_modifier_component):
+		return
+	combat_modifier_component = get_node_or_null("CombatModifierComponent") as CombatModifierComponent
+	if combat_modifier_component == null:
+		combat_modifier_component = COMBAT_MODIFIER_COMPONENT.new()
+		combat_modifier_component.name = "CombatModifierComponent"
+		add_child(combat_modifier_component)
+
+func apply_modifier_damage(raw_amount: float, _source: Variant = null, _payload: Dictionary = {}) -> void:
+	if is_dead or health_component == null:
+		return
+	var final_damage: float = raw_amount
+	var is_true_damage: bool = bool(_payload.get("true_damage", false))
+	if not is_true_damage:
+		final_damage *= get_incoming_damage_multiplier()
+	if is_true_damage:
+		set_meta("ignore_incoming_damage_multiplier_once", true)
+	if bool(_payload.get("soul_link_propagated", false)):
+		set_meta("soul_link_silent_damage", true)
+	health_component.take_damage(final_damage)
+	if has_meta("ignore_incoming_damage_multiplier_once"):
+		remove_meta("ignore_incoming_damage_multiplier_once")
+	if has_meta("soul_link_silent_damage"):
+		remove_meta("soul_link_silent_damage")
+
+func apply_move_speed_modifier(modifier_id: String, multiplier: float, duration: float, stacking_rule: String = CombatModifierComponent.STACK_REFRESH, source: Variant = null, payload: Dictionary = {}) -> String:
+	_ensure_combat_modifier_component()
+	var applied_id: String = combat_modifier_component.apply_move_speed_multiplier(modifier_id, multiplier, duration, stacking_rule, source, payload)
+	if _should_share_modifier_to_linked(modifier_id, payload, ""):
+		for linked_enemy: Enemy in _get_other_soul_linked_enemies():
+			var linked_payload: Dictionary = payload.duplicate(true)
+			linked_payload["soul_link_skip_share"] = true
+			linked_enemy.apply_move_speed_modifier(modifier_id, multiplier, duration, stacking_rule, source, linked_payload)
+	return applied_id
+
+func apply_damage_over_time_modifier(modifier_id: String, damage_per_tick: float, duration: float, tick_interval: float, stacking_rule: String = CombatModifierComponent.STACK_REFRESH, source: Variant = null, payload: Dictionary = {}) -> String:
+	_ensure_combat_modifier_component()
+	var applied_id: String = combat_modifier_component.apply_damage_over_time(modifier_id, damage_per_tick, duration, tick_interval, stacking_rule, source, payload)
+	if _should_share_modifier_to_linked(modifier_id, payload, ""):
+		for linked_enemy: Enemy in _get_other_soul_linked_enemies():
+			var linked_payload: Dictionary = payload.duplicate(true)
+			linked_payload["soul_link_skip_share"] = true
+			linked_enemy.apply_damage_over_time_modifier(modifier_id, damage_per_tick, duration, tick_interval, stacking_rule, source, linked_payload)
+	return applied_id
+
+func apply_vulnerable_modifier(modifier_id: String, multiplier: float, duration: float, stacking_rule: String = CombatModifierComponent.STACK_REFRESH, source: Variant = null, payload: Dictionary = {}) -> String:
+	_ensure_combat_modifier_component()
+	var applied_id: String = combat_modifier_component.apply_vulnerable(modifier_id, multiplier, duration, stacking_rule, source, payload)
+	if _should_share_modifier_to_linked(modifier_id, payload, ""):
+		for linked_enemy: Enemy in _get_other_soul_linked_enemies():
+			var linked_payload: Dictionary = payload.duplicate(true)
+			linked_payload["soul_link_skip_share"] = true
+			linked_enemy.apply_vulnerable_modifier(modifier_id, multiplier, duration, stacking_rule, source, linked_payload)
+	return applied_id
+
+func apply_tag_marker(modifier_id: String, tag_name: String, duration: float, stacking_rule: String = CombatModifierComponent.STACK_REFRESH, source: Variant = null, payload: Dictionary = {}) -> String:
+	_ensure_combat_modifier_component()
+	var applied_id: String = combat_modifier_component.apply_tag_marker(modifier_id, tag_name, duration, stacking_rule, source, payload)
+	if _should_share_modifier_to_linked(modifier_id, payload, tag_name):
+		for linked_enemy: Enemy in _get_other_soul_linked_enemies():
+			var linked_payload: Dictionary = payload.duplicate(true)
+			linked_payload["soul_link_skip_share"] = true
+			linked_enemy.apply_tag_marker(modifier_id, tag_name, duration, stacking_rule, source, linked_payload)
+	return applied_id
+
+func on_health_component_damage_applied(applied_damage: float) -> void:
+	if applied_damage <= 0.0:
+		return
+	if has_meta("soul_link_silent_damage"):
+		return
+	if not _has_soul_link():
+		return
+	var transmission_ratio: float = 1.5 if _has_empowered_soul_link() else 0.8
+	var shared_damage: float = applied_damage * transmission_ratio
+	if shared_damage <= 0.0:
+		return
+	for linked_enemy: Enemy in _get_other_soul_linked_enemies():
+		linked_enemy.apply_modifier_damage(shared_damage, self, {
+			"true_damage": true,
+			"soul_link_propagated": true,
+			"kind": "soul_link_damage",
+		})
+		if linked_enemy.has_method("set_flash_material"):
+			linked_enemy.set_flash_material()
+		Global.spawn_floating_text(linked_enemy.global_position + Vector2(0, -14), "LINK", Color(1.0, 0.42, 0.50))
+
+func _should_share_modifier_to_linked(modifier_id: String, payload: Dictionary, tag_name: String) -> bool:
+	if not _has_soul_link():
+		return false
+	if bool(payload.get("soul_link_skip_share", false)):
+		return false
+	if modifier_id.begins_with("soul_link"):
+		return false
+	if tag_name == SILK_LINK_UTILS.LINK_TAG or tag_name == SILK_LINK_UTILS.LINK_EMPOWERED_TAG:
+		return false
+	return true
+
+func _get_other_soul_linked_enemies() -> Array[Enemy]:
+	var linked_enemies: Array[Enemy] = []
+	for enemy_node: Node in get_tree().get_nodes_in_group("enemies"):
+		if not (enemy_node is Enemy):
+			continue
+		var enemy: Enemy = enemy_node as Enemy
+		if enemy == self or not is_instance_valid(enemy) or enemy.is_dead:
+			continue
+		if not SILK_LINK_UTILS.has_link(enemy):
+			continue
+		linked_enemies.append(enemy)
+	return linked_enemies
+
+func _find_nearest_soul_linked_enemy() -> Enemy:
+	var nearest_enemy: Enemy = null
+	var nearest_distance_sq: float = INF
+	for linked_enemy: Enemy in _get_other_soul_linked_enemies():
+		var distance_sq: float = global_position.distance_squared_to(linked_enemy.global_position)
+		if distance_sq < nearest_distance_sq:
+			nearest_distance_sq = distance_sq
+			nearest_enemy = linked_enemy
+	return nearest_enemy
+
+func _share_parasite_state_to_linked(duration: float, source_attack: float) -> void:
+	if not _has_soul_link():
+		return
+	if has_meta("soul_link_parasite_share"):
+		return
+	for linked_enemy: Enemy in _get_other_soul_linked_enemies():
+		linked_enemy.set_meta("soul_link_parasite_share", true)
+		linked_enemy.apply_parasite_state(duration, source_attack)
+		if linked_enemy.has_meta("soul_link_parasite_share"):
+			linked_enemy.remove_meta("soul_link_parasite_share")
+
+func _current_move_speed() -> float:
+	var pit_slow: float = 0.0
+	for source_data_var: Variant in _parasite_pit_sources.values():
+		if source_data_var is Dictionary:
+			var source_data: Dictionary = source_data_var
+			pit_slow = max(pit_slow, float(source_data.get("slow_ratio", parasite_pit_slow_ratio)))
+	var move_speed: float = speed * max(0.0, 1.0 - pit_slow)
+	if combat_modifier_component:
+		move_speed *= combat_modifier_component.get_move_speed_multiplier()
+	return move_speed
+
+func _is_movement_locked() -> bool:
+	return not can_move or parasite_rooted or phalanx_motion_lock_count > 0
+
+func _execute_parasite_detonation() -> void:
+	if is_dead:
+		return
+	parasite_pending_detonation = false
+	parasite_rooted = false
+	var detonation_center: Vector2 = global_position
+	var source_attack: float = parasite_detonation_attack if parasite_detonation_attack > 0.0 else parasite_source_attack
+	var detonation_damage: int = max(1, int(round(max(1.0, source_attack) * parasite_f_detonation_damage_ratio)))
+	clear_parasite_state(false)
+	Global.spawn_floating_text(detonation_center, "BURST!", Color(1.0, 0.46, 0.34))
+	for enemy_node in get_tree().get_nodes_in_group("enemies"):
+		if not (enemy_node is Enemy):
+			continue
+		var enemy := enemy_node as Enemy
+		if not is_instance_valid(enemy) or enemy.is_dead or enemy == self:
+			continue
+		if detonation_center.distance_to(enemy.global_position) > parasite_f_detonation_radius:
+			continue
+		if enemy.health_component:
+			enemy.health_component.take_damage(detonation_damage)
+
+func _trigger_parasite_catalyst_spread_on_death() -> void:
+	if parasite_catalyst_timer <= 0.0:
+		return
+	var spread_origin: Vector2 = global_position
+	var source_attack: float = parasite_catalyst_attack if parasite_catalyst_attack > 0.0 else parasite_source_attack
+	var candidates: Array[Enemy] = []
+	for enemy_node in get_tree().get_nodes_in_group("enemies"):
+		if not (enemy_node is Enemy):
+			continue
+		var enemy := enemy_node as Enemy
+		if not is_instance_valid(enemy) or enemy.is_dead or enemy == self or enemy.is_parasitized:
+			continue
+		if spread_origin.distance_to(enemy.global_position) > parasite_catalyst_spread_radius:
+			continue
+		candidates.append(enemy)
+	var infected_count: int = 0
+	for _i in range(min(parasite_catalyst_spread_count, candidates.size())):
+		var closest_enemy: Enemy = null
+		var closest_distance: float = INF
+		for candidate in candidates:
+			if not is_instance_valid(candidate):
+				continue
+			var candidate_distance: float = spread_origin.distance_to(candidate.global_position)
+			if candidate_distance < closest_distance:
+				closest_distance = candidate_distance
+				closest_enemy = candidate
+		if closest_enemy == null:
+			break
+		closest_enemy.apply_parasite_state(parasite_duration_max, source_attack)
+		closest_enemy.start_parasite_pull(spread_origin, parasite_catalyst_pull_duration, parasite_catalyst_pull_speed)
+		_spawn_parasite_tentacle(spread_origin, closest_enemy.global_position)
+		candidates.erase(closest_enemy)
+		infected_count += 1
+	if infected_count > 0:
+		Global.spawn_floating_text(spread_origin + Vector2(0, -24), "SPREAD x%d" % infected_count, Color(0.86, 1.0, 0.52))
+	parasite_catalyst_timer = 0.0
+	parasite_catalyst_attack = 0.0
+
+func _spawn_parasite_tentacle(from_pos: Vector2, to_pos: Vector2) -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var line := Line2D.new()
+	line.top_level = true
+	line.z_index = 60
+	line.width = 10.0
+	line.default_color = Color(0.72, 1.0, 0.52, 0.92)
+	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	line.points = PackedVector2Array([from_pos, to_pos])
+	scene.add_child(line)
+	var tween := line.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(line, "width", 2.0, 0.22)
+	tween.tween_property(line, "default_color:a", 0.0, 0.22)
+	tween.chain().tween_callback(line.queue_free)
+
+func _is_parasite_pull_blocked(motion: Vector2) -> bool:
+	if motion.length_squared() <= 0.0001:
+		return false
+	var world_2d := get_world_2d()
+	if world_2d == null:
+		return false
+	var params := PhysicsRayQueryParameters2D.create(global_position, global_position + motion)
+	params.collide_with_areas = false
+	params.collide_with_bodies = true
+	params.collision_mask = parasite_pull_collision_mask
+	var hit: Dictionary = world_2d.direct_space_state.intersect_ray(params)
+	return not hit.is_empty()
 
 # ==============================================================================
 # 鍘熸湁杈呭姪鍑芥暟
@@ -722,15 +1751,39 @@ func get_move_direction() -> Vector2:
 	if not is_instance_valid(target_node): return Vector2.ZERO
 	
 	# 2. 璁＄畻鏂瑰悜
-	var direction := global_position.direction_to(target_node.global_position)
+	var dir_to_player := global_position.direction_to(target_node.global_position)
+	var direction := dir_to_player
+	var tangent := Vector2(-dir_to_player.y, dir_to_player.x)
 	
 	# 3. 缇よ仛閫昏緫 (淇濇寔涓嶅彉)
 	for area: Node2D in vision_area.get_overlapping_areas():
-		if area != self and area.is_inside_tree():
-			var vector := global_position - area.global_position
-			if vector.length() > 0:
-				direction += flock_push * vector.normalized() / vector.length()
-	return direction
+		if area == self or not area.is_inside_tree():
+			continue
+		var to_other := area.global_position - global_position
+		var distance := to_other.length()
+		if distance <= 0.001:
+			continue
+		var away_from_other := -to_other / distance
+		direction += flock_push * away_from_other / distance
+		
+		if not tangential_slip_enabled:
+			continue
+		
+		var forward_dot: float = dir_to_player.dot(to_other / distance)
+		if forward_dot <= tangential_front_dot_threshold:
+			continue
+		
+		var side_sign: float = -sign(dir_to_player.cross(to_other))
+		if is_zero_approx(side_sign):
+			side_sign = _encircle_side_preference
+		
+		var distance_weight: float = clamp(1.0 - (distance / max(1.0, tangential_distance_falloff)), 0.0, 1.0)
+		var slip_strength: float = tangential_slip_strength * forward_dot * distance_weight
+		direction += tangent * side_sign * slip_strength
+	
+	if direction.length_squared() <= 0.0001:
+		return Vector2.ZERO
+	return direction.normalized()
 
 func can_move_towards_player() -> bool:
 	var target_node = Global.player
@@ -965,8 +2018,119 @@ func reset_knockback() -> void:
 func _on_knockback_timer_timeout() -> void:
 	reset_knockback()
 
+func set_phalanx_motion_locked(active: bool) -> void:
+	if active:
+		phalanx_motion_lock_count += 1
+	else:
+		phalanx_motion_lock_count = max(0, phalanx_motion_lock_count - 1)
+
+func apply_phalanx_ballistic(direction: Vector2, speed_value: float, max_distance: float, max_duration: float, source_attack: float, collision_damage_ratio: float, source: Variant = null, impact_push_distance: float = 10.0, stop_on_hit: bool = true) -> void:
+	var ballistic_direction: Vector2 = direction.normalized()
+	if ballistic_direction.length_squared() <= 0.0001:
+		return
+	phalanx_ballistic_active = true
+	phalanx_ballistic_velocity = ballistic_direction * max(0.0, speed_value)
+	phalanx_ballistic_remaining_distance = max(0.0, max_distance)
+	phalanx_ballistic_remaining_time = max(0.0, max_duration)
+	phalanx_ballistic_source_attack = max(0.0, source_attack)
+	phalanx_ballistic_collision_damage_ratio = max(0.0, collision_damage_ratio)
+	phalanx_ballistic_impact_push_distance = max(0.0, impact_push_distance)
+	phalanx_ballistic_source = source
+	phalanx_ballistic_stop_on_hit = stop_on_hit
+	phalanx_ballistic_target_hit_cooldowns.clear()
+
+func clear_phalanx_ballistic() -> void:
+	phalanx_ballistic_active = false
+	phalanx_ballistic_velocity = Vector2.ZERO
+	phalanx_ballistic_remaining_distance = 0.0
+	phalanx_ballistic_remaining_time = 0.0
+	phalanx_ballistic_source_attack = 0.0
+	phalanx_ballistic_collision_damage_ratio = 0.0
+	phalanx_ballistic_impact_push_distance = 0.0
+	phalanx_ballistic_source = null
+	phalanx_ballistic_stop_on_hit = true
+	phalanx_ballistic_target_hit_cooldowns.clear()
+
+func _process_phalanx_ballistic(delta: float) -> bool:
+	if not phalanx_ballistic_active or is_dead:
+		return false
+	_decay_phalanx_ballistic_hit_cooldowns(delta)
+	var speed_value: float = phalanx_ballistic_velocity.length()
+	if speed_value <= 0.001:
+		clear_phalanx_ballistic()
+		return false
+	var direction: Vector2 = phalanx_ballistic_velocity / speed_value
+	var step_distance: float = min(phalanx_ballistic_remaining_distance, speed_value * delta)
+	var start_pos: Vector2 = global_position
+	var end_pos: Vector2 = start_pos + direction * step_distance
+	var collided_enemies: Array[Enemy] = _find_phalanx_ballistic_enemy_hits(start_pos, end_pos)
+	if not collided_enemies.is_empty():
+		var damage_amount: float = max(1.0, phalanx_ballistic_source_attack * phalanx_ballistic_collision_damage_ratio)
+		for collided_enemy: Enemy in collided_enemies:
+			if collided_enemy == null or not is_instance_valid(collided_enemy) or collided_enemy.is_dead:
+				continue
+			apply_modifier_damage(damage_amount, phalanx_ballistic_source, {"kind": "phalanx_ballistic_collision"})
+			collided_enemy.apply_modifier_damage(damage_amount, phalanx_ballistic_source, {"kind": "phalanx_ballistic_collision"})
+			collided_enemy.global_position += direction * phalanx_ballistic_impact_push_distance
+			phalanx_ballistic_target_hit_cooldowns[collided_enemy.get_instance_id()] = 0.08
+			if has_method("set_flash_material"):
+				set_flash_material()
+			if collided_enemy.has_method("set_flash_material"):
+				collided_enemy.set_flash_material()
+			if phalanx_ballistic_stop_on_hit:
+				clear_phalanx_ballistic()
+				return true
+	global_position = end_pos
+	phalanx_ballistic_remaining_distance = max(0.0, phalanx_ballistic_remaining_distance - step_distance)
+	phalanx_ballistic_remaining_time = max(0.0, phalanx_ballistic_remaining_time - delta)
+	if phalanx_ballistic_remaining_distance <= 0.0 or phalanx_ballistic_remaining_time <= 0.0:
+		clear_phalanx_ballistic()
+	return true
+
+func _find_phalanx_ballistic_enemy_hits(from_pos: Vector2, to_pos: Vector2) -> Array[Enemy]:
+	var hits: Array[Dictionary] = []
+	for enemy_node in get_tree().get_nodes_in_group("enemies"):
+		if not (enemy_node is Enemy):
+			continue
+		var other_enemy: Enemy = enemy_node as Enemy
+		if other_enemy == self or not is_instance_valid(other_enemy) or other_enemy.is_dead:
+			continue
+		if float(phalanx_ballistic_target_hit_cooldowns.get(other_enemy.get_instance_id(), 0.0)) > 0.0:
+			continue
+		var closest_point: Vector2 = Geometry2D.get_closest_point_to_segment(other_enemy.global_position, from_pos, to_pos)
+		if other_enemy.global_position.distance_to(closest_point) <= phalanx_ballistic_hit_radius:
+			hits.append({
+				"enemy": other_enemy,
+				"distance": from_pos.distance_squared_to(closest_point),
+			})
+	hits.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a.get("distance", 0.0)) < float(b.get("distance", 0.0))
+	)
+	var result: Array[Enemy] = []
+	for hit_entry: Dictionary in hits:
+		var hit_enemy_variant: Variant = hit_entry.get("enemy", null)
+		if hit_enemy_variant is Enemy:
+			result.append(hit_enemy_variant as Enemy)
+	return result
+
+func _decay_phalanx_ballistic_hit_cooldowns(delta: float) -> void:
+	if phalanx_ballistic_target_hit_cooldowns.is_empty():
+		return
+	var expired_ids: Array[int] = []
+	for enemy_id_variant: Variant in phalanx_ballistic_target_hit_cooldowns.keys():
+		var enemy_id: int = int(enemy_id_variant)
+		var remaining: float = max(0.0, float(phalanx_ballistic_target_hit_cooldowns.get(enemy_id, 0.0)) - delta)
+		if remaining <= 0.0:
+			expired_ids.append(enemy_id)
+		else:
+			phalanx_ballistic_target_hit_cooldowns[enemy_id] = remaining
+	for enemy_id: int in expired_ids:
+		phalanx_ballistic_target_hit_cooldowns.erase(enemy_id)
+
 func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 	if is_dead: return
+	var original_damage: float = hitbox.damage
+	hitbox.damage = original_damage * get_incoming_damage_multiplier()
 
 	# 1. 纭３榫熷弽浼ら€昏緫 (淇敼涓哄噺浼よ€屼笉鏄畬鍏ㄦ牸鎸?
 	if enemy_type == EnemyType.SHIELDED and hitbox.source == Global.player:
@@ -977,12 +2141,15 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 		
 		# 杞诲井鍙嶄激鐜╁
 		if Global.player.has_method("take_damage"):
-			Global.player.take_damage(1) 
+			Global.player.take_damage(1, {"source": self, "kind": "shielded_reflect"})
 		
 		# 涓嶅啀 return锛岀户缁墽琛屾甯镐激瀹抽€昏緫
 
 	# 2. 姝ｅ父浼ゅ
 	super._on_hurtbox_component_on_damaged(hitbox)
+	hitbox.damage = original_damage
+	if current_ai_state == AIState.CHARGING:
+		_play_charge_hit_feedback("CUT!", Color(1.0, 1.0, 1.0), false)
 	
 	if hitbox.knockback_power > 0:
 		# 瀹夊叏妫€鏌ワ細纭繚 source 浠嶇劧鏈夋晥
@@ -1003,6 +2170,7 @@ func despawn_for_wave_end() -> void:
 		return
 	is_dead = true
 	can_move = false
+	clear_parasite_state()
 
 	if warning_line and is_instance_valid(warning_line):
 		warning_line.queue_free()
@@ -1017,10 +2185,25 @@ func despawn_for_wave_end() -> void:
 	clear_all_statuses()
 	queue_free()
 
+func mark_backend_kill(source_role_id: String = "") -> void:
+	set_meta(ASSIST_BACKEND_KILL_META, true)
+	if source_role_id.is_empty():
+		if has_meta(ASSIST_BACKEND_KILL_OWNER_META):
+			remove_meta(ASSIST_BACKEND_KILL_OWNER_META)
+	else:
+		set_meta(ASSIST_BACKEND_KILL_OWNER_META, source_role_id)
+
+func is_backend_kill() -> bool:
+	return has_meta(ASSIST_BACKEND_KILL_META) and bool(get_meta(ASSIST_BACKEND_KILL_META))
+
 func destroy_enemy() -> void:
 	if is_dead: return
 	is_dead = true
 	can_move = false
+	_trigger_parasite_catalyst_spread_on_death()
+	clear_parasite_state()
+	var backend_kill: bool = is_backend_kill()
+	var assist_service: Node = get_node_or_null("/root/AssistRuntimeService")
 	
 	# 姝讳骸鏃舵竻鐞嗙孩绾?
 	if warning_line:
@@ -1037,23 +2220,24 @@ func destroy_enemy() -> void:
 	if is_instance_valid(Global.player):
 		var enemy_config = ConfigManager.get_enemy_config(enemy_id)
 		
-		# P1-1: 鍑绘潃鍥炶兘锛堝ⅷ鐏电緛缁婏級
-		if Global.player.has_method("gain_energy"):
-			var energy_drop = enemy_config.get("energy_drop", 5)
-			
-			# 妫€鏌ュⅷ鐏电緛缁?- 鍑绘潃鍥炶兘
-			if BondManager.has_mechanic("kill_regen"):
-				var bonus_energy = BondManager.get_mechanic_value("kill_regen")
-				energy_drop += bonus_energy
-				if DEBUG_VERBOSE: print("[Enemy] [P1-1] 鍑绘潃鍥炶兘瑙﹀彂: 鍩虹%d + 澧ㄧ伒%d = %d" % [
-					enemy_config.get("energy_drop", 5),
+		# P1-1: 击杀掉落能量球
+		var energy_drop: float = float(enemy_config.get("energy_drop", 5))
+		if BondManager.has_mechanic("kill_regen"):
+			var bonus_energy: float = float(BondManager.get_mechanic_value("kill_regen"))
+			energy_drop += bonus_energy
+			if DEBUG_VERBOSE:
+				print("[Enemy] [P1-1] kill energy orb boosted: base=%.1f bonus=%.1f total=%.1f" % [
+					float(enemy_config.get("energy_drop", 5)),
 					bonus_energy,
 					energy_drop
 				])
-				# 瑙嗚鍙嶉锛堝湪鐜╁浣嶇疆鏄剧ず锛?
-				Global.spawn_floating_text(Global.player.global_position, "+%d ENERGY" % bonus_energy, Color(0.5, 1.5, 2.0))
-			
-			Global.player.gain_energy(energy_drop)
+			if bonus_energy > 0.0:
+				Global.spawn_floating_text(global_position + Vector2(0, -18), "+%.0f ORB" % bonus_energy, Color(0.5, 1.5, 2.0))
+		if energy_drop > 0.0 and not backend_kill:
+			if Global.has_method("spawn_energy_orb"):
+				Global.spawn_energy_orb(global_position, energy_drop)
+			elif Global.player.has_method("gain_energy"):
+				Global.player.gain_energy(energy_drop)
 		
 		# 缁忛獙濂栧姳
 		if Global.player.has_method("add_xp"):
@@ -1062,7 +2246,7 @@ func destroy_enemy() -> void:
 		
 		# 閲戝竵濂栧姳 - 鏀逛负鐢熸垚閲戝竵瀹炰綋
 		var gold_value = int(enemy_config.get("gold_value", 5))
-		if gold_value > 0:
+		if gold_value > 0 and not backend_kill:
 			Global.spawn_coin(global_position, gold_value)
 	
 	Global.add_session_kill()
@@ -1071,8 +2255,10 @@ func destroy_enemy() -> void:
 	if arena and arena.has_method("record_enemy_wave_loot_drop"):
 		arena.record_enemy_wave_loot_drop(enemy_id, self is EnemyElites)
 	
-	if Global.player and Global.player.has_method("on_enemy_killed"):
+	if not backend_kill and Global.player and Global.player.has_method("on_enemy_killed"):
 		Global.player.on_enemy_killed(self)
+	if not backend_kill and assist_service != null and assist_service.has_method("on_front_enemy_killed"):
+		assist_service.call("on_front_enemy_killed", self)
 	
 	var is_elite_target: bool = self is EnemyElites
 	if Global.has_method("apply_enemy_kill_feedback"):

@@ -155,7 +155,7 @@ const PARAM_DEFINITIONS = {
         "rotation_speed": 25.0,
         "duration": 5.0
     },
-    "pyro_q": {
+    "ignis_q": {
         "damage": 20,
         "line_width": 24.0,
         "duration": 5.0
@@ -336,7 +336,7 @@ itemType,description,resourcePath
 item_id,item_name,item_tier,effect_type,effect_target,effect_param,effect_value,icon_path,description
 attr_hp_1,生命药水,1,stat_mod,player,health,50,Icon1.png,增加50点生命值
 attr_dmg_1,锋利匕首,1,stat_mod,player,damage,10,Icon4.png,增加10点攻击力
-magic_fire_1,火焰之心,2,skill_mod,pyro_q,damage,0.3,Icon8.png,火焰技能伤害+30%
+magic_fire_1,火焰之心,2,skill_mod,ignis_q,damage,0.3,Icon8.png,火焰技能伤害+30%
 relic_martial_1,武道圣物,3,bond_tag,origin,martial,1,Icon10.png,提供1个武道标签
 ```
 
@@ -625,19 +625,19 @@ func test_stat_modifier_application():
     assert(player.stats.get_modified_health() == 150.0, "HP 应该增加到 150")
 
 func test_skill_modifier_application():
-    var pyro = PlayerPyro.new()
+    var ignis = PlayerIgnis.new()
     var items = ["magic_fire_1"]  # 火焰伤害 +30%
     
-    ItemEffectManager.apply_item_effects_to_player(pyro, items)
+    ItemEffectManager.apply_item_effects_to_player(ignis, items)
     
-    var q_skill = pyro.skill_manager.get_skill("q")
+    var q_skill = ignis.skill_manager.get_skill("q")
     var base_damage = 20
     var modified = q_skill.get_modified_param("damage", base_damage)
     
     assert(modified == 26, "火焰伤害应该从 20 增加到 26")
 
 func test_relic_tag_application():
-    var team = ["butcher", "pyro"]
+    var team = ["butcher", "ignis"]
     var relic_tags = {"martial": 1}  # 圣物提供 1 个武道标签
     
     BondManager.recalculate_active_bonds(team, relic_tags)
@@ -749,8 +749,8 @@ attr_hp_1,小型生命药水,1,stat_mod,player,health,50,Icon1.png,增加50点�
 attr_hp_2,中型生命药水,1,stat_mod,player,health,100,Icon1.png,增加100点生命值
 attr_dmg_1,锋利匕首,1,stat_mod,player,damage,10,Icon4.png,增加10点攻击力
 attr_speed_1,疾风靴,1,stat_mod,player,speed,50,Icon7.png,增加50点移动速度
-magic_fire_dmg,火焰之心,2,skill_mod,pyro_q,damage,0.3,Icon8.png,火焰技能伤害+30%
-magic_fire_dur,永恒火焰,2,skill_mod,pyro_q,duration,0.5,Icon8.png,火焰持续时间+50%
+magic_fire_dmg,火焰之心,2,skill_mod,ignis_q,damage,0.3,Icon8.png,火焰技能伤害+30%
+magic_fire_dur,永恒火焰,2,skill_mod,ignis_q,duration,0.5,Icon8.png,火焰持续时间+50%
 magic_saw_speed,锯齿加速器,2,skill_mod,butcher_q,rotation_speed,0.4,Icon10.png,锯条旋转速度+40%
 relic_martial,武道圣物,3,bond_tag,origin,martial,1,Icon20.png,提供1个武道标签
 relic_arcane,秘术圣物,3,bond_tag,origin,arcane,1,Icon21.png,提供1个秘术标签

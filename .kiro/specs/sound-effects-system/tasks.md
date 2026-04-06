@@ -85,7 +85,7 @@
     - `skill_fire_path.gd` → `Global.play_player_dash()` 改为 `SoundManager.play("player_dash")`
     - `skill_mine_path.gd` → `Global.play_player_dash()` 改为 `SoundManager.play("player_dash")`
     - `skill_herder_loop.gd` → `Global.play_player_dash()` 改为 `SoundManager.play("player_dash")`，`Global.play_loop_kill_impact()` 改为 `SoundManager.play("loop_kill")`（2处）
-    - `skill_wind_path.gd` → `Global.play_player_dash()` 改为 `SoundManager.play("player_dash")`
+    - `skill_windblade_path.gd` → `Global.play_player_dash()` 改为 `SoundManager.play("player_dash")`
     - `explosion_area.gd` → `Global.play_player_explosion()` 改为 `SoundManager.play("player_explosion")`
     - `skill_herder_explosion.gd` → `Global.play_player_explosion()` 改为 `SoundManager.play("player_explosion")`
     - `arena.gd` → `Global.play_sfx(Global.sfx_player_shatter, 1.5, 1.8, -15.0)` 改为 `SoundManager.play("ui_error")`

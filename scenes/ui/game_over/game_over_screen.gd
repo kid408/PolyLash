@@ -94,38 +94,15 @@ func _on_return_button_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/selection_panel/selection_panel.tscn")
 
 func _sync_selection_cache_from_global() -> void:
-	"""将当前开局角色写入 SelectionPanel 缓存文件（失败返回仅显示1个角色）。"""
-	var leader_id: String = ""
-	if Global.has_method("get_leader_player_id"):
-		leader_id = str(Global.get_leader_player_id())
-	if leader_id.is_empty() and Global.selected_player_ids.size() > 0:
-		leader_id = str(Global.selected_player_ids[0])
+	"""将当前小队写入正式选角缓存。"""
+	if not Global.has_method("save_selection_preset"):
+		return
 
-	var selection_cache: Array = []
-	var weapon_cache: Dictionary = {}
-	if not leader_id.is_empty():
-		var weapon_type: String = str(Global.selected_player_weapons.get(leader_id, ""))
-		if weapon_type.is_empty():
-			var weapon_types: Array[String] = ConfigManager.get_player_available_weapon_types(leader_id)
-			if weapon_types.size() > 0:
-				weapon_type = weapon_types[0]
-		selection_cache.append({
-			"player_id": leader_id,
-			"weapon_type": weapon_type,
-			"slot_index": 0
-		})
-		if not weapon_type.is_empty():
-			weapon_cache[leader_id] = weapon_type
-	
-	var sel_file := FileAccess.open("user://player_selection_cache.json", FileAccess.WRITE)
-	if sel_file:
-		sel_file.store_string(JSON.stringify(selection_cache))
-		sel_file.close()
-		print("[GameOverScreen] 已同步角色选择缓存: %s" % str(selection_cache))
-	
-	# 写入 player_weapon_cache.json
-	var wpn_file := FileAccess.open("user://player_weapon_cache.json", FileAccess.WRITE)
-	if wpn_file:
-		wpn_file.store_string(JSON.stringify(weapon_cache))
-		wpn_file.close()
-		print("[GameOverScreen] 已同步武器选择缓存: %s" % str(weapon_cache))
+	var player_ids: Array[String] = Global.selected_player_ids.duplicate()
+	var player_weapons: Dictionary = Global.selected_player_weapons.duplicate(true)
+	var leader_id: String = ""
+	if not player_ids.is_empty():
+		leader_id = player_ids[0]
+
+	Global.save_selection_preset(player_ids, player_weapons, leader_id)
+	print("[GameOverScreen] 已同步角色选择缓存: %s" % str(player_ids))

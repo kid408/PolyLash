@@ -1,7 +1,6 @@
 ﻿extends Node
 
 const DEBUG_VERBOSE := false
-const QEFModels = preload("res://scripts/qef/core/qef_models.gd")
 
 # 闪避文字
 signal on_create_block_text(unit:Node2D)
@@ -48,6 +47,8 @@ var pending_battle_state: Dictionary = {}
 # 已选角色ID列表（从选择界面传入）
 var selected_player_ids: Array[String] = []
 var leader_player_id: String = ""
+var last_selected_player_ids: Array[String] = []
+var last_leader_player_id: String = ""
 
 # 波次招募模式：后备队（开局仅1人上场，后续波次招募扩编）
 const RECRUIT_TRIGGER_WAVES: Array[int] = [3, 7]
@@ -72,6 +73,7 @@ var switch_synergy_player_id: String = ""
 
 # 已选角色武器配置 {player_id: weapon_type}
 var selected_player_weapons: Dictionary = {}
+var last_selected_player_weapons: Dictionary = {}
 
 # 当前激活角色索引
 var current_player_index: int = 0
@@ -96,6 +98,9 @@ var session_gold: int = 0  # 局内获得金币，每局重置
 # 最近一次作画快照（用于 mirror_draw）
 var recent_draw_snapshots: Dictionary = {}
 var _last_mirror_draw_time: float = -999.0
+
+const PLAYER_SELECTION_CACHE_PATH := "user://player_selection_cache.json"
+const PLAYER_WEAPON_CACHE_PATH := "user://player_weapon_cache.json"
 
 func _ready() -> void:
 	# 设置全局 Tooltip 样式
@@ -275,19 +280,35 @@ func _play_sound_with_fallback(sound_id: String, fallback_id: String) -> void:
 func spawn_floating_text(pos: Vector2, value: String, color: Color) -> void:
 	if not FLOATING_TEXT_SCENE:
 		return
-	# 安全检查：场景切换期间 current_scene 可能为 null
-	var scene := get_tree().current_scene
+	if _is_validation_test_mode_active():
+		return
+	call_deferred("_spawn_floating_text", pos, value, color)
+		
+
+func _is_validation_test_mode_active() -> bool:
+	return (
+		(has_meta("qef_test_mode_active") and bool(get_meta("qef_test_mode_active")))
+		or (has_meta("skill_synergy_test_mode_active") and bool(get_meta("skill_synergy_test_mode_active")))
+	)
+
+
+func _spawn_floating_text(pos: Vector2, value: String, color: Color) -> void:
+	# 延后一帧创建，避开场景切换/节点装配期间的 add_child 冲突
+	var tree := get_tree()
+	if tree == null:
+		return
+	var scene := tree.current_scene
 	if not is_instance_valid(scene):
 		return
 	var text_instance = FLOATING_TEXT_SCENE.instantiate()
 	scene.add_child(text_instance)
-	
+
 	# 随机偏移位置（在主角四周）
 	var random_offset = Vector2(randf_range(-40, 40), randf_range(-40, 40))
 	text_instance.global_position = pos + random_offset
-	
+
 	text_instance.setup(value, color)
-		
+
 
 
 # ============================================================================
@@ -334,6 +355,13 @@ func enter_wave_recruit_mode() -> void:
 		return
 	if selected_player_ids.size() <= 0:
 		reserve_player_ids.clear()
+		return
+	if selected_player_ids.size() > 1:
+		# 正式选人界面已支持 3 人整队进场，此时保留整队逻辑用于后台/切人测试。
+		reserve_player_ids.clear()
+		for player_id in selected_player_ids:
+			_ensure_selected_weapon_for_player(str(player_id))
+		leader_player_id = get_leader_player_id()
 		return
 
 	# 每次进入新战局都根据当前选择重建后备队，避免沿用旧局残留
@@ -855,9 +883,136 @@ func reset_selection() -> void:
 	current_player_index = 0
 	is_game_over = false
 	_clear_switch_synergy()
+
+func save_selection_preset(player_ids: Array[String], player_weapons: Dictionary, leader_id: String = "") -> void:
+	last_selected_player_ids = player_ids.duplicate()
+	last_selected_player_weapons = player_weapons.duplicate(true)
+	last_leader_player_id = leader_id if not leader_id.is_empty() else (player_ids[0] if not player_ids.is_empty() else "")
+	_write_selection_cache_files(last_selected_player_ids, last_selected_player_weapons)
+	_persist_selection_preset_to_save_slot(last_selected_player_ids, last_selected_player_weapons, last_leader_player_id)
+
+func clear_selection_preset() -> void:
+	last_selected_player_ids.clear()
+	last_selected_player_weapons.clear()
+	last_leader_player_id = ""
+	_write_selection_cache_files([], {})
+
+func get_selection_preset() -> Dictionary:
+	if last_selected_player_ids.is_empty():
+		_load_selection_preset_from_disk()
+	return {
+		"player_ids": last_selected_player_ids.duplicate(),
+		"player_weapons": last_selected_player_weapons.duplicate(true),
+		"leader_player_id": last_leader_player_id
+	}
 	
 	# 重置武器商店购买记录（购买的武器仅本局生效）
 	DataManager.reset_weapon_shop()
+
+func _write_selection_cache_files(player_ids: Array[String], player_weapons: Dictionary) -> void:
+	var selection_cache: Array[Dictionary] = []
+	for i: int in range(player_ids.size()):
+		var player_id: String = str(player_ids[i]).strip_edges()
+		if player_id.is_empty():
+			continue
+		selection_cache.append({
+			"player_id": player_id,
+			"weapon_type": str(player_weapons.get(player_id, "")).strip_edges(),
+			"slot_index": i,
+		})
+
+	var selection_file: FileAccess = FileAccess.open(PLAYER_SELECTION_CACHE_PATH, FileAccess.WRITE)
+	if selection_file != null:
+		selection_file.store_string(JSON.stringify(selection_cache))
+		selection_file.close()
+
+	var weapon_cache: Dictionary = {}
+	for player_id_var: Variant in player_weapons.keys():
+		var player_id: String = str(player_id_var).strip_edges()
+		if player_id.is_empty():
+			continue
+		var weapon_type: String = str(player_weapons.get(player_id_var, "")).strip_edges()
+		if weapon_type.is_empty():
+			continue
+		weapon_cache[player_id] = weapon_type
+
+	var weapon_file: FileAccess = FileAccess.open(PLAYER_WEAPON_CACHE_PATH, FileAccess.WRITE)
+	if weapon_file != null:
+		weapon_file.store_string(JSON.stringify(weapon_cache))
+		weapon_file.close()
+
+func _load_selection_preset_from_disk() -> void:
+	var restored_ids: Array[String] = []
+	var restored_weapons: Dictionary = {}
+
+	if FileAccess.file_exists(PLAYER_SELECTION_CACHE_PATH):
+		var selection_file: FileAccess = FileAccess.open(PLAYER_SELECTION_CACHE_PATH, FileAccess.READ)
+		if selection_file != null:
+			var selection_json: String = selection_file.get_as_text()
+			selection_file.close()
+			var selection_parse: Variant = JSON.parse_string(selection_json)
+			if selection_parse is Array:
+				var sorted_entries: Array = (selection_parse as Array).duplicate()
+				sorted_entries.sort_custom(func(a: Variant, b: Variant) -> bool:
+					var a_slot: int = int((a as Dictionary).get("slot_index", 0)) if a is Dictionary else 0
+					var b_slot: int = int((b as Dictionary).get("slot_index", 0)) if b is Dictionary else 0
+					return a_slot < b_slot
+				)
+				for entry_var: Variant in sorted_entries:
+					if not (entry_var is Dictionary):
+						continue
+					var entry: Dictionary = entry_var
+					var player_id: String = str(entry.get("player_id", "")).strip_edges()
+					if player_id.is_empty():
+						continue
+					restored_ids.append(player_id)
+					var weapon_type: String = str(entry.get("weapon_type", "")).strip_edges()
+					if not weapon_type.is_empty():
+						restored_weapons[player_id] = weapon_type
+
+	if FileAccess.file_exists(PLAYER_WEAPON_CACHE_PATH):
+		var weapon_file: FileAccess = FileAccess.open(PLAYER_WEAPON_CACHE_PATH, FileAccess.READ)
+		if weapon_file != null:
+			var weapon_json: String = weapon_file.get_as_text()
+			weapon_file.close()
+			var weapon_parse: Variant = JSON.parse_string(weapon_json)
+			if weapon_parse is Dictionary:
+				for key_var: Variant in (weapon_parse as Dictionary).keys():
+					var player_id: String = str(key_var).strip_edges()
+					if player_id.is_empty():
+						continue
+					restored_weapons[player_id] = str((weapon_parse as Dictionary).get(key_var, "")).strip_edges()
+
+	last_selected_player_ids = restored_ids
+	last_selected_player_weapons = restored_weapons
+	last_leader_player_id = restored_ids[0] if not restored_ids.is_empty() else ""
+
+func _persist_selection_preset_to_save_slot(player_ids: Array[String], player_weapons: Dictionary, leader_id: String) -> void:
+	if current_save_slot < 0:
+		return
+
+	var serialized_players: Array[Dictionary] = []
+	for player_id in player_ids:
+		var normalized_id: String = str(player_id).strip_edges()
+		if normalized_id.is_empty():
+			continue
+		serialized_players.append({
+			"player_id": normalized_id,
+			"weapon_type": str(player_weapons.get(normalized_id, "")).strip_edges(),
+		})
+
+	if SaveManager.is_slot_empty(current_save_slot):
+		if serialized_players.is_empty():
+			return
+		SaveFacade.create_new_slot_save(current_save_slot, leader_id, serialized_players)
+		return
+
+	SaveManager.save_game_progress(current_save_slot, {
+		"selected_players": serialized_players,
+		"leader_id": leader_id,
+		"current_player_index": 0,
+		"game_state": "character_selection",
+	})
 
 # ============================================================================
 # 局内数据管理 (Session Data)
@@ -971,6 +1126,7 @@ func _mirror_point(p: Vector2, pivot: Vector2) -> Vector2:
 
 # 金币场景预加载
 const GOLD_COIN_SCENE = preload("res://scenes/items/gold_coin.tscn")
+const ENERGY_ORB_SCENE = preload("res://scenes/items/energy_orb.tscn")
 
 ## 生成金币实体
 ## @param pos: 生成位置
@@ -994,6 +1150,23 @@ func spawn_coin(pos: Vector2, amount: int = 1) -> void:
 	tree.current_scene.call_deferred("add_child", coin)
 	
 	#print("[Global] 生成金币: %d at (%.0f, %.0f)" % [amount, pos.x, pos.y])
+
+func spawn_energy_orb(pos: Vector2, amount: float = 1.0, launch_velocity: Vector2 = Vector2.ZERO) -> void:
+	if not ENERGY_ORB_SCENE:
+		printerr("[Global] 错误: 能量球场景未加载")
+		return
+
+	var tree = Engine.get_main_loop() as SceneTree
+	if not tree or not tree.current_scene:
+		printerr("[Global] 错误: 无法获取场景树")
+		return
+
+	var orb = ENERGY_ORB_SCENE.instantiate()
+	orb.global_position = pos
+	if orb.has_method("setup"):
+		orb.setup(amount, launch_velocity)
+
+	tree.current_scene.call_deferred("add_child", orb)
 
 # ============================================================================
 # 小队切换系统 (1-2-3 键精准切换)
@@ -1230,10 +1403,47 @@ func _build_default_player_state(player_id: String) -> Dictionary:
 	}
 
 func _build_default_f_runtime(player_id: String = "") -> Dictionary:
-	return QEFModels.build_default_runtime(player_id, player_id, "")
+	return {
+		"owner_player_id": player_id,
+		"active": false,
+		"time_left": 0.0,
+		"duration": 0.0,
+		"window_seq": 0,
+		"mode_name": "",
+		"f_role_id": player_id,
+		"ult_id": "",
+		"q_line_amp": 1.0,
+		"q_closure_amp": 1.0,
+		"internal_cd": 0.0,
+		"special_1": 0.0,
+		"special_2": 0.0,
+		"special_3": 0.0,
+		"line_events": 0,
+		"closure_events": 0,
+		"tick_events": 0,
+		"active_pickup_count": 0,
+		"unopened_count": 0,
+		"slot_e": _build_default_f_slot("e"),
+		"slot_q": _build_default_f_slot("q_close"),
+		"utility_buff": {},
+		"utility_buff_list": [],
+		"jackpot_linked": false
+	}
 
 func _build_default_f_slot(target_slot: String = "") -> Dictionary:
-	return QEFModels.build_default_slot(target_slot)
+	return {
+		"active": false,
+		"reward_id": "",
+		"display_name": "",
+		"rarity": "",
+		"target_slot": target_slot,
+		"behavior_tags": [],
+		"payload": {},
+		"link_group_id": "",
+		"source_pack_id": "",
+		"source_type": "",
+		"loaded_window_seq": 0
+	}
 
 func _capture_player_f_runtime(player_id: String, fallback_runtime: Variant = {}) -> Dictionary:
 	var runtime: Dictionary = _build_default_f_runtime(player_id)

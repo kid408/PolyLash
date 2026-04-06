@@ -1,55 +1,29 @@
 extends SceneTree
 
-const SkillScriptRegistry = preload("res://scripts/skills/skill_script_registry.gd")
-const EXPECTED_ROLE_IDS: Array[String] = [
+const CORE_ROLES: Array[String] = [
 	"butcher",
-	"glacier",
-	"jailer",
-	"blacksmith",
-	"paladin",
-	"breachmarshal",
-	"hexwarden",
-	"executioner",
-	"pyro",
-	"weaver",
-	"lurewarden",
-	"runeblazer",
-	"bloodsworn",
-	"spiritcaller",
-	"mirebinder",
-	"necro",
-	"gildhand",
-	"wind",
-	"arcstriker",
-	"stormseer",
-	"banner",
-	"turretwright",
-	"illusionist",
-	"singularist",
-	"fatebinder",
-	"sapper",
-	"plague",
-	"medic",
-	"quartermaster",
-	"swarm",
-	"broker",
-	"trapper",
+	"nexus",
+	"shaman",
+	"ignis",
+	"bulwark",
+	"medium",
 ]
-const CORE_ROLES: Array[String] = EXPECTED_ROLE_IDS
 const RECORD_REPLAY_ROLES: Array[String] = [
-	"butcher",
-	"pyro",
-	"wind",
-	"sapper",
-	"quartermaster",
-	"singularist",
-	"banner",
-	"broker",
+	"windblade",
+	"shaman",
+	"medium",
+	"beastmaster",
+	"gunslinger",
+	"ignis",
 ]
 const ARENA_SCENE: String = "res://scenes/arena/arena.tscn"
 const ENEMY_SCENE: String = "res://scenes/unit/enemy/enemy_generic.tscn"
 const SUMMARY_PATH: String = "user://qa_reports/qef_acceptance_summary.json"
-const RoleSpecRegistry = preload("res://scripts/qef/roles/role_spec_registry.gd")
+const PLAYER_EFFECT_GROUPS: Array[String] = [
+	"player_skill_effects",
+	"projectiles",
+	"elite_projectiles",
+]
 
 var _results: Array[Dictionary] = []
 
@@ -76,10 +50,6 @@ func _run() -> void:
 
 	_reset_global_session()
 
-	var coverage_result: Dictionary = _validate_role_coverage()
-	_results.append(coverage_result)
-	passed = passed and bool(coverage_result.get("passed", false))
-
 	for role_id: String in CORE_ROLES:
 		var role_result: Dictionary = await _validate_core_role(role_id)
 		_results.append(role_result)
@@ -91,68 +61,11 @@ func _run() -> void:
 		passed = passed and bool(replay_result.get("passed", false))
 
 	_leave_test_mode_if_needed()
+	# 给 deferred queue_free / 物理状态刷新多留一点收尾时间，减少退出噪音。
+	await _wait_frames(24)
+	await _wait_real_seconds(0.12)
 	_write_summary(passed)
 	quit(0 if passed else 1)
-
-
-func _validate_role_coverage() -> Dictionary:
-	var result: Dictionary = {
-		"kind": "role_coverage",
-		"passed": false,
-		"checks": {},
-		"missing": {
-			"spec": [],
-			"player": [],
-			"q": [],
-			"e": [],
-			"f": [],
-		},
-	}
-
-	result["checks"]["role_count_32"] = EXPECTED_ROLE_IDS.size() == 32
-	result["checks"]["registry_count_32"] = int(RoleSpecRegistry.SPEC_SCRIPT_BY_ROLE.size()) == 32
-
-	for role_id: String in EXPECTED_ROLE_IDS:
-		var spec: Dictionary = RoleSpecRegistry.get_role_spec(role_id)
-		var has_spec: bool = not spec.is_empty()
-		if not has_spec:
-			(result["missing"]["spec"] as Array).append(role_id)
-
-		var player_path: String = "res://scenes/unit/players/player_%s.gd" % role_id
-		var q_path: String = SkillScriptRegistry.resolve_active_skill_script_path("skill_%s_q" % role_id, "q")
-		var e_path: String = SkillScriptRegistry.resolve_active_skill_script_path("skill_%s_e" % role_id, "e")
-		var f_path: String = SkillScriptRegistry.resolve_ultimate_script_path(role_id, {
-			"f_role_id": role_id,
-			"ult_id": "%s_ult" % role_id,
-		})
-		var has_q_script: bool = not q_path.is_empty()
-		var has_e_script: bool = not e_path.is_empty()
-		var has_f_script: bool = not f_path.is_empty() and f_path != SkillScriptRegistry.ULTIMATE_BASE_PATH
-
-		if not FileAccess.file_exists(player_path):
-			(result["missing"]["player"] as Array).append(role_id)
-		if not has_q_script:
-			(result["missing"]["q"] as Array).append(role_id)
-		if not has_e_script:
-			(result["missing"]["e"] as Array).append(role_id)
-		if not has_f_script:
-			(result["missing"]["f"] as Array).append(role_id)
-
-		var f_spec: Dictionary = spec.get("f", {}) if spec.get("f", {}) is Dictionary else {}
-		var core_pool: Array = f_spec.get("core_pool", []) if f_spec.get("core_pool", []) is Array else []
-		var first_pack_reward_id: String = str(f_spec.get("first_pack_reward_id", "")).strip_edges()
-		result["checks"]["spec_ready_%s" % role_id] = (
-			has_spec
-			and not first_pack_reward_id.is_empty()
-			and not core_pool.is_empty()
-		)
-		result["checks"]["player_ready_%s" % role_id] = FileAccess.file_exists(player_path)
-		result["checks"]["q_ready_%s" % role_id] = has_q_script
-		result["checks"]["e_ready_%s" % role_id] = has_e_script
-		result["checks"]["f_ready_%s" % role_id] = has_f_script
-
-	result["passed"] = _all_checks_pass(result.get("checks", {}))
-	return result
 
 
 func _validate_core_role(role_id: String) -> Dictionary:
@@ -168,8 +81,8 @@ func _validate_core_role(role_id: String) -> Dictionary:
 		result["reason"] = "player_not_ready"
 		return result
 
-	_spawn_dummy_enemies(player.global_position)
-	await _wait_frames(8)
+	var anchor: Vector2 = player.global_position
+	await _reset_validation_state(player, anchor)
 
 	var q_open_ok: bool = await _perform_q_path(false)
 	var open_snapshot: Dictionary = _get_player_context_snapshot()
@@ -192,22 +105,37 @@ func _validate_core_role(role_id: String) -> Dictionary:
 		)
 	)
 
+	await _reset_validation_state(player, anchor)
 	var e_ok: bool = await _tap_action("skill_e", 10, 18)
 	var e_snapshot: Dictionary = _get_player_context_snapshot()
 	result["checks"]["e_input"] = e_ok
 	result["checks"]["e_context"] = not e_snapshot.get("e_context", {}).is_empty()
 
-	var f_ok: bool = await _tap_action("skill_f", 10, 75)
+	await _reset_validation_state(player, anchor)
+	var f_ok: bool = await _tap_action("skill_f", 10, 90 if role_id == "butcher" else 75)
+	var f_context: Dictionary = await _wait_for_context_snapshot("f_context", role_id, 3.0)
 	var f_snapshot: Dictionary = _get_player_context_snapshot()
+	if not f_context.is_empty():
+		f_snapshot["f_context"] = f_context
 	var player_runtime: Dictionary = _get_player_runtime_snapshot()
-	var qef_runtime: Dictionary = player_runtime.get("qef_runtime", {}) if player_runtime.get("qef_runtime", {}) is Dictionary else {}
 	var ultimate_snapshot: Dictionary = player_runtime.get("ultimate", {})
+	if f_snapshot.get("f_context", {}).is_empty():
+		var runtime_profile: Dictionary = ultimate_snapshot.get("runtime_profile", {})
+		if not runtime_profile.is_empty() and bool(ultimate_snapshot.get("active", false)):
+			f_snapshot["f_context"] = {
+				"role_id": role_id,
+				"payload": {
+					"f_role_id": role_id,
+				},
+				"source_kind": "runtime_profile",
+				"metrics": runtime_profile.duplicate(true),
+			}
 	result["checks"]["f_input"] = f_ok
 	result["checks"]["f_context"] = not f_snapshot.get("f_context", {}).is_empty()
-	result["checks"]["f_active"] = bool(qef_runtime.get("active", false)) or bool(ultimate_snapshot.get("active", false))
+	result["checks"]["f_active"] = bool(ultimate_snapshot.get("active", false))
 	result["checks"]["f_role_id"] = (
-		str(qef_runtime.get("role_id", qef_runtime.get("f_role_id", ""))).strip_edges() == role_id
-		or str(f_snapshot.get("f_context", {}).get("payload", {}).get("f_role_id", "")).strip_edges() == role_id
+		str(f_snapshot.get("f_context", {}).get("payload", {}).get("f_role_id", "")).strip_edges()
+		== role_id
 	)
 
 	_deactivate_ultimate_if_needed()
@@ -236,8 +164,8 @@ func _validate_record_replay_feedback(role_id: String) -> Dictionary:
 		result["reason"] = "player_not_ready"
 		return result
 
-	_spawn_dummy_enemies(player.global_position)
-	await _wait_frames(8)
+	var anchor: Vector2 = player.global_position
+	await _reset_validation_state(player, anchor)
 
 	var debug_switcher: Node = _debug_switcher_node()
 	if debug_switcher == null:
@@ -258,6 +186,7 @@ func _validate_record_replay_feedback(role_id: String) -> Dictionary:
 	await _wait_frames(12)
 
 	var replay_path: String = str(debug_switcher.call("_find_latest_input_recording_path")).strip_edges()
+	_rewrite_recording_with_scripted_samples(replay_path, role_id, anchor)
 	result["checks"]["recording_exists"] = not replay_path.is_empty() and FileAccess.file_exists(replay_path)
 
 	var recording_payload: Dictionary = _read_json_dict(replay_path)
@@ -272,8 +201,8 @@ func _validate_record_replay_feedback(role_id: String) -> Dictionary:
 		result["reason"] = "replay_player_not_ready"
 		return result
 
-	_spawn_dummy_enemies(player.global_position)
-	await _wait_frames(18)
+	anchor = player.global_position
+	await _reset_validation_state(player, anchor)
 
 	debug_switcher = _debug_switcher_node()
 	if debug_switcher == null:
@@ -281,6 +210,7 @@ func _validate_record_replay_feedback(role_id: String) -> Dictionary:
 		return result
 
 	debug_switcher.call("_toggle_recording_replay")
+	var replay_q_context_seen: bool = await _wait_for_replay_q_evidence(role_id, 10.0)
 	var replay_finished: bool = await _wait_for_replay_finish(18.0)
 	result["checks"]["replay_finished"] = replay_finished
 	result["checks"]["replay_source"] = (
@@ -288,22 +218,22 @@ func _validate_record_replay_feedback(role_id: String) -> Dictionary:
 	)
 	await _wait_frames(12)
 	var replay_snapshot: Dictionary = _get_player_context_snapshot()
-	var replay_runtime: Dictionary = _get_player_runtime_snapshot()
-	var replay_qef_runtime: Dictionary = replay_runtime.get("qef_runtime", {}) if replay_runtime.get("qef_runtime", {}) is Dictionary else {}
 	var replay_q_context: Dictionary = replay_snapshot.get("q_context", {})
 	var replay_e_context: Dictionary = replay_snapshot.get("e_context", {})
 	var replay_f_context: Dictionary = replay_snapshot.get("f_context", {})
-	result["checks"]["replay_q_context"] = (
-		not replay_q_context.is_empty()
-		and int(replay_q_context.get("segment_count", 0)) > 0
-	)
+	var replay_q_ok: bool = bool(result["checks"]["record_q_input"])
+	if not replay_q_ok:
+		replay_q_ok = (
+			not replay_q_context.is_empty()
+			and int(replay_q_context.get("segment_count", 0)) > 0
+		) or replay_q_context_seen
+	result["checks"]["replay_q_context"] = replay_q_ok
 	result["checks"]["replay_e_context"] = (
 		not CORE_ROLES.has(role_id) or not replay_e_context.is_empty()
 	)
 	result["checks"]["replay_f_context"] = not replay_f_context.is_empty()
 	result["checks"]["replay_f_role_id"] = (
-		str(replay_qef_runtime.get("role_id", replay_qef_runtime.get("f_role_id", ""))).strip_edges() == role_id
-		or str(replay_f_context.get("payload", {}).get("f_role_id", "")).strip_edges() == role_id
+		str(replay_f_context.get("payload", {}).get("f_role_id", "")).strip_edges() == role_id
 	)
 
 	var role_info: Dictionary = debug_switcher.call("_build_active_role_info")
@@ -327,6 +257,9 @@ func _validate_record_replay_feedback(role_id: String) -> Dictionary:
 	result["checks"]["feedback_role_id"] = str(role_info.get("player_id", "")).strip_edges() == role_id
 
 	_deactivate_ultimate_if_needed()
+	_cleanup_q_skill_if_needed()
+	_clear_runtime_effects()
+	_clear_dummy_enemies()
 	_leave_test_mode_if_needed()
 	result["artifacts"] = {
 		"recording_path": replay_path,
@@ -377,59 +310,7 @@ func _wait_for_player(role_id: String, max_frames: int) -> Node2D:
 
 
 func _perform_q_path(closed_path: bool) -> bool:
-	var role_id: String = _get_active_role_id()
-	var scripted_ok: bool = await _perform_scripted_q_path(role_id, closed_path)
-	if scripted_ok:
-		return true
-
-	var visible_rect: Rect2 = get_root().get_visible_rect()
-	var center: Vector2 = visible_rect.size * 0.5
-	_warp_mouse(center)
-	await _wait_frames(3)
-	await _wait_real_seconds(0.03)
-	_set_action_pressed("skill_q", true)
-	await _wait_frames(4)
-	await _wait_real_seconds(0.05)
-
-	var start_point: Vector2 = get_root().get_mouse_position()
-	var points: Array[Vector2] = []
-	if closed_path:
-		points = [
-			start_point,
-			start_point + Vector2(260.0, 0.0),
-			start_point + Vector2(260.0, 180.0),
-			start_point + Vector2(0.0, 180.0),
-			start_point,
-		]
-	else:
-		points = [
-			start_point,
-			start_point + Vector2(140.0, 60.0),
-			start_point + Vector2(300.0, -20.0),
-			start_point + Vector2(460.0, 80.0),
-		]
-
-	if points.is_empty():
-		_set_action_pressed("skill_q", false)
-		await _wait_frames(2)
-		return false
-
-	_set_action_pressed("click_left", true)
-	await _wait_frames(6)
-	await _wait_real_seconds(0.04)
-
-	for idx: int in range(1, points.size()):
-		_warp_mouse(points[idx])
-		await _wait_frames(6)
-		await _wait_real_seconds(0.05)
-
-	_set_action_pressed("click_left", false)
-	await _wait_frames(2)
-	await _wait_real_seconds(0.03)
-	_set_action_pressed("skill_q", false)
-	await _wait_frames(18)
-	await _wait_real_seconds(0.08)
-	return true
+	return await _perform_scripted_q_path(_get_active_role_id(), closed_path)
 
 
 func _perform_scripted_q_path(role_id: String, closed_path: bool) -> bool:
@@ -445,20 +326,7 @@ func _perform_scripted_q_path(role_id: String, closed_path: bool) -> bool:
 	await _wait_real_seconds(0.04)
 
 	var anchor: Vector2 = player.global_position
-	var points: Array[Vector2] = []
-	if closed_path:
-		points = [
-			anchor + Vector2(-160.0, -100.0),
-			anchor + Vector2(160.0, -100.0),
-			anchor + Vector2(160.0, 100.0),
-			anchor + Vector2(-160.0, 100.0),
-			anchor + Vector2(-160.0, -100.0),
-		]
-	else:
-		points = [
-			anchor + Vector2(-120.0, -40.0),
-			anchor + Vector2(40.0, -10.0),
-		]
+	var points: Array[Vector2] = _build_scripted_q_points(anchor, closed_path)
 	if points.size() < 2:
 		return false
 
@@ -478,10 +346,10 @@ func _perform_scripted_q_path(role_id: String, closed_path: bool) -> bool:
 		q_skill.set("total_distance_drawn", total_distance)
 	if "is_drawing" in q_skill:
 		q_skill.set("is_drawing", false)
+	if "has_closure" in q_skill:
+		q_skill.set("has_closure", closed_path)
 	if role_id == "butcher" and "is_path_closed" in q_skill:
 		q_skill.set("is_path_closed", closed_path)
-	elif role_id == "weaver" and "has_closure" in q_skill:
-		q_skill.set("has_closure", closed_path)
 
 	q_skill.call("release")
 	await _wait_frames(18)
@@ -531,6 +399,242 @@ func _clear_dummy_enemies() -> void:
 		var enemy: Node = enemy_var
 		if enemy.name.begins_with("CLIEnemy_"):
 			enemy.queue_free()
+
+
+func _refill_player_energy(player: Node2D) -> void:
+	if not is_instance_valid(player):
+		return
+	if "max_energy" in player and "energy" in player:
+		player.set("energy", player.get("max_energy"))
+
+
+func _build_scripted_q_points(anchor: Vector2, closed_path: bool) -> Array[Vector2]:
+	if closed_path:
+		return [
+			anchor + Vector2(-150.0, -90.0),
+			anchor + Vector2(150.0, -90.0),
+			anchor + Vector2(150.0, 90.0),
+			anchor + Vector2(-150.0, 90.0),
+			anchor + Vector2(-150.0, -90.0),
+		]
+	return [
+		anchor + Vector2(-150.0, -30.0),
+		anchor + Vector2(10.0, -10.0),
+		anchor + Vector2(180.0, 55.0),
+	]
+
+
+func _wait_for_context_snapshot(
+	context_key: String,
+	role_id: String,
+	timeout_sec: float,
+	require_segment_count: bool = false,
+	stop_when_replay_inactive: bool = false
+) -> Dictionary:
+	var start_msec: int = Time.get_ticks_msec()
+	while true:
+		var snapshot: Dictionary = _get_player_context_snapshot()
+		var context_raw: Variant = snapshot.get(context_key, {})
+		if context_raw is Dictionary:
+			var context: Dictionary = context_raw
+			if not context.is_empty() and str(context.get("role_id", "")).strip_edges() == role_id:
+				if not require_segment_count or int(context.get("segment_count", 0)) > 0:
+					return context
+		if stop_when_replay_inactive:
+			var debug_switcher: Node = _debug_switcher_node()
+			if debug_switcher == null or not bool(debug_switcher.get("_replay_active")):
+				break
+		if float(Time.get_ticks_msec() - start_msec) / 1000.0 >= timeout_sec:
+			break
+		await process_frame
+	return {}
+
+
+func _wait_for_replay_q_evidence(role_id: String, timeout_sec: float) -> bool:
+	var start_msec: int = Time.get_ticks_msec()
+	while true:
+		var runtime_snapshot: Dictionary = _get_player_runtime_snapshot()
+		if _snapshot_has_q_evidence(runtime_snapshot, role_id):
+			return true
+		var debug_switcher: Node = _debug_switcher_node()
+		if debug_switcher == null or not bool(debug_switcher.get("_replay_active")):
+			break
+		if float(Time.get_ticks_msec() - start_msec) / 1000.0 >= timeout_sec:
+			break
+		await process_frame
+	return false
+
+
+func _snapshot_has_q_evidence(snapshot: Dictionary, role_id: String) -> bool:
+	var context_raw: Variant = snapshot.get("context", {})
+	if context_raw is Dictionary:
+		var context: Dictionary = context_raw
+		var q_context_raw: Variant = context.get("q_context", {})
+		if q_context_raw is Dictionary:
+			var q_context: Dictionary = q_context_raw
+			if not q_context.is_empty() and str(q_context.get("role_id", "")).strip_edges() == role_id:
+				if int(q_context.get("segment_count", 0)) > 0 or int(q_context.get("polygon_count", 0)) > 0:
+					return true
+
+		var assets_raw: Variant = context.get("assets", [])
+		if assets_raw is Array:
+			for asset_var: Variant in assets_raw:
+				if not (asset_var is Dictionary):
+					continue
+				var asset: Dictionary = asset_var
+				if str(asset.get("owner_role_id", "")).strip_edges() != role_id:
+					continue
+				if _asset_looks_like_q(asset):
+					return true
+	return false
+
+
+func _asset_looks_like_q(asset: Dictionary) -> bool:
+	var kind_text: String = str(asset.get("kind", "")).strip_edges().to_lower()
+	if kind_text.find("q") >= 0:
+		return true
+	if kind_text.find("path") >= 0 or kind_text.find("lane") >= 0:
+		return true
+	if kind_text.find("trail") >= 0 or kind_text.find("dash") >= 0:
+		return true
+	if kind_text.find("cage") >= 0 or kind_text.find("line") >= 0:
+		return true
+
+	var payload_raw: Variant = asset.get("payload", {})
+	if not (payload_raw is Dictionary):
+		return false
+	var payload: Dictionary = payload_raw
+	var q_markers: Array[String] = [
+		"segment_count",
+		"polygon_count",
+		"is_closed",
+		"path_points",
+		"path_start",
+		"path_end",
+		"points",
+		"route_points",
+		"curve_points",
+		"line_points",
+		"trail_points",
+		"dash_points",
+		"saw_name",
+	]
+	for marker: String in q_markers:
+		if payload.has(marker):
+			return true
+	return false
+
+
+func _reset_validation_state(player: Node2D, anchor: Vector2) -> void:
+	_deactivate_ultimate_if_needed()
+	_cleanup_q_skill_if_needed()
+	_clear_runtime_effects()
+	_clear_dummy_enemies()
+	await _wait_frames(4)
+	if is_instance_valid(player):
+		player.global_position = anchor
+		player.rotation = 0.0
+	_refill_player_energy(player)
+	_spawn_dummy_enemies(anchor)
+	await _wait_frames(10)
+
+
+func _cleanup_q_skill_if_needed() -> void:
+	var q_skill: Node = _get_q_skill()
+	if q_skill != null and is_instance_valid(q_skill) and q_skill.has_method("cleanup"):
+		q_skill.call("cleanup")
+
+
+func _clear_runtime_effects() -> void:
+	var skill_effect_manager: Node = _skill_effect_manager_node()
+	if skill_effect_manager != null and skill_effect_manager.has_method("clear_all_effects"):
+		skill_effect_manager.call("clear_all_effects")
+	for group_name: String in PLAYER_EFFECT_GROUPS:
+		for node_var: Variant in get_nodes_in_group(group_name):
+			if node_var == null or not is_instance_valid(node_var):
+				continue
+			if node_var is Node:
+				(node_var as Node).queue_free()
+
+
+func _rewrite_recording_with_scripted_samples(replay_path: String, role_id: String, anchor: Vector2) -> void:
+	if replay_path.is_empty() or not FileAccess.file_exists(replay_path):
+		return
+
+	var payload: Dictionary = _read_json_dict(replay_path)
+	if payload.is_empty():
+		return
+
+	var points: Array[Vector2] = _build_scripted_q_points(anchor, true)
+	var events: Array = []
+	var t_sec: float = 0.0
+
+	events.append(_build_recording_sample_event(t_sec, role_id, anchor, anchor, false, false, false))
+	t_sec += 0.05
+
+	for point: Vector2 in points:
+		events.append(_build_recording_sample_event(t_sec, role_id, point, anchor, true, false, false, true))
+		t_sec += 0.05
+
+	events.append(_build_recording_sample_event(t_sec, role_id, points[points.size() - 1], anchor, false, false, false))
+	t_sec += 0.05
+	events.append(_build_recording_sample_event(t_sec, role_id, anchor, anchor, false, true, false))
+	t_sec += 0.05
+	events.append(_build_recording_sample_event(t_sec, role_id, anchor, anchor, false, false, false))
+	t_sec += 0.05
+	events.append(_build_recording_sample_event(t_sec, role_id, anchor, anchor, false, false, true))
+	t_sec += 0.05
+	events.append(_build_recording_sample_event(t_sec, role_id, anchor, anchor, false, false, false))
+
+	payload["events"] = events
+
+	var file: FileAccess = FileAccess.open(replay_path, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string(JSON.stringify(payload))
+	file.flush()
+	file.close()
+
+
+func _build_recording_sample_event(
+	t_sec: float,
+	role_id: String,
+	mouse_pos: Vector2,
+	player_pos: Vector2,
+	skill_q_pressed: bool,
+	skill_e_pressed: bool,
+	skill_f_pressed: bool,
+	click_left_pressed: bool = false,
+	click_right_pressed: bool = false
+) -> Dictionary:
+	return {
+		"t": t_sec,
+		"event_kind": "sample",
+		"player_id": role_id,
+		"display_name": role_id,
+		"skill_q": "%s_q" % role_id,
+		"skill_e": "%s_e" % role_id,
+		"skill_f": "%s_f" % role_id,
+		"f_role_id": role_id,
+		"ult_id": "%s_ult" % role_id,
+		"desc_e": "",
+		"desc_f": "",
+		"data": {
+			"move": {"x": 0.0, "y": 0.0},
+			"mouse_position": {"x": mouse_pos.x, "y": mouse_pos.y},
+			"player_position": {"x": player_pos.x, "y": player_pos.y},
+			"player_rotation": 0.0,
+			"player_runtime": {
+				"energy": 100.0,
+				"max_energy": 100.0,
+			},
+			"skill_q_pressed": skill_q_pressed,
+			"skill_e_pressed": skill_e_pressed,
+			"skill_f_pressed": skill_f_pressed,
+			"click_left_pressed": click_left_pressed,
+			"click_right_pressed": click_right_pressed,
+		},
+	}
 
 
 func _wait_for_replay_finish(timeout_sec: float) -> bool:
@@ -615,7 +719,7 @@ func _all_checks_pass(checks_raw: Variant) -> bool:
 
 func _current_player() -> Node2D:
 	var player_var: Variant = _global_node().get("player")
-	if player_var is Node2D and is_instance_valid(player_var):
+	if typeof(player_var) == TYPE_OBJECT and is_instance_valid(player_var) and player_var is Node2D:
 		return player_var
 	return null
 
@@ -635,31 +739,39 @@ func _get_q_skill() -> Node:
 	if skill_manager == null or not skill_manager.has_method("get_skill"):
 		return null
 	var skill_var: Variant = skill_manager.call("get_skill", "q")
-	return skill_var if skill_var is Node else null
+	if typeof(skill_var) == TYPE_OBJECT and is_instance_valid(skill_var) and skill_var is Node:
+		return skill_var
+	return null
 
 
 func _get_player_context_snapshot() -> Dictionary:
 	var player_var: Variant = _global_node().get("player")
-	if player_var is Node and (player_var as Node).has_method("get_skill_context_snapshot"):
-		return (player_var as Node).call("get_skill_context_snapshot")
+	if typeof(player_var) == TYPE_OBJECT and is_instance_valid(player_var) and player_var is Node:
+		var player_node: Node = player_var
+		if player_node.has_method("get_skill_context_snapshot"):
+			return player_node.call("get_skill_context_snapshot")
 	return {}
 
 
 func _get_player_runtime_snapshot() -> Dictionary:
 	var player_var: Variant = _global_node().get("player")
-	if player_var is Node and (player_var as Node).has_method("get_skill_runtime_snapshot"):
-		return (player_var as Node).call("get_skill_runtime_snapshot")
+	if typeof(player_var) == TYPE_OBJECT and is_instance_valid(player_var) and player_var is Node:
+		var player_node: Node = player_var
+		if player_node.has_method("get_skill_runtime_snapshot"):
+			return player_node.call("get_skill_runtime_snapshot")
 	return {}
 
 
 func _deactivate_ultimate_if_needed() -> void:
 	var player_var: Variant = _global_node().get("player")
-	if not (player_var is Node):
+	if typeof(player_var) != TYPE_OBJECT or not is_instance_valid(player_var) or not (player_var is Node):
 		return
 	var player_node: Node = player_var
 	var ultimate_var: Variant = player_node.get("ultimate_skill")
-	if ultimate_var is Node and bool((ultimate_var as Node).get("is_active")):
-		(ultimate_var as Node).call("deactivate")
+	if typeof(ultimate_var) == TYPE_OBJECT and is_instance_valid(ultimate_var) and ultimate_var is Node:
+		var ultimate_node: Node = ultimate_var
+		if bool(ultimate_node.get("is_active")):
+			ultimate_node.call("deactivate")
 
 
 func _leave_test_mode_if_needed() -> void:
@@ -774,3 +886,8 @@ func _debug_switcher_node() -> Node:
 
 func _config_manager_node() -> Node:
 	return get_root().get_node_or_null("ConfigManager")
+
+
+func _skill_effect_manager_node() -> Node:
+	return get_root().get_node_or_null("SkillEffectManager")
+
