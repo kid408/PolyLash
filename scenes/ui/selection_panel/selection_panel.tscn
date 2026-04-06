@@ -1,33 +1,8 @@
-[gd_scene load_steps=9 format=3 uid="uid://c4v80wbm6lca5"]
+[gd_scene load_steps=4 format=3 uid="uid://c4v80wbm6lca5"]
 
-[ext_resource type="Texture2D" uid="uid://b02x7h4bntic6" path="res://icon.png" id="1_3miu1"]
-[ext_resource type="Script" uid="uid://bejgc7t8weklg" path="res://scenes/ui/selection_panel/selection_panel.gd" id="1_u3ono"]
-[ext_resource type="Texture2D" uid="uid://byggcc877ibn7" path="res://assets/sprites/Players/Player_1.png" id="3_7k3kw"]
-[ext_resource type="PackedScene" path="res://scenes/ui/exit_confirm_dialog.tscn" id="4_exit_dialog"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_u3ono"]
-bg_color = Color(0.12, 0.12, 0.12, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_info"]
-bg_color = Color(0.18, 0.18, 0.18, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
-bg_color = Color(0.15, 0.5, 0.3, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_upgrade_btn"]
-bg_color = Color(0.6, 0.4, 0.15, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
+[ext_resource type="Script" path="res://scenes/ui/selection_panel/selection_panel.gd" id="1_selection"]
+[ext_resource type="Script" path="res://scenes/ui/selection_panel/selection_radar_chart.gd" id="2_radar"]
+[ext_resource type="PackedScene" path="res://scenes/ui/exit_confirm_dialog.tscn" id="3_exit"]
 
 [node name="SelectionPanel" type="Panel"]
 anchors_preset = 15
@@ -35,8 +10,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_u3ono")
-script = ExtResource("1_u3ono")
+script = ExtResource("1_selection")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -45,239 +19,374 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 40
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 40
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 24
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+[node name="RootVBox" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2
-theme_override_constants/separation = 16
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 18
 
-[node name="LeftPanel" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(120, 0)
+[node name="HeaderRow" type="VBoxContainer" parent="MarginContainer/RootVBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="HeaderLabel" type="Label" parent="MarginContainer/RootVBox/HeaderRow"]
+layout_mode = 2
+text = "角色选择"
+
+[node name="SubHeaderLabel" type="Label" parent="MarginContainer/RootVBox/HeaderRow"]
+layout_mode = 2
+text = "副标题"
+
+[node name="Body" type="HBoxContainer" parent="MarginContainer/RootVBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="LeftPanel" type="PanelContainer" parent="MarginContainer/RootVBox/Body"]
+custom_minimum_size = Vector2(340, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.25
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/RootVBox/Body/LeftPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="LeftContent" type="VBoxContainer" parent="MarginContainer/RootVBox/Body/LeftPanel/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="SquadTitle" type="Label" parent="MarginContainer/RootVBox/Body/LeftPanel/MarginContainer/LeftContent"]
+layout_mode = 2
+text = "战术编队"
+
+[node name="SquadHint" type="Label" parent="MarginContainer/RootVBox/Body/LeftPanel/MarginContainer/LeftContent"]
+layout_mode = 2
+autowrap_mode = 3
+text = "提示"
+
+[node name="SelectedList" type="HBoxContainer" parent="MarginContainer/RootVBox/Body/LeftPanel/MarginContainer/LeftContent"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SynergyTitle" type="Label" parent="MarginContainer/RootVBox/Body/LeftPanel/MarginContainer/LeftContent"]
+layout_mode = 2
+text = "职能统计"
+
+[node name="SynergyList" type="VBoxContainer" parent="MarginContainer/RootVBox/Body/LeftPanel/MarginContainer/LeftContent"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TabBar" type="HBoxContainer" parent="MarginContainer/RootVBox/Body/LeftPanel/MarginContainer/LeftContent"]
 layout_mode = 2
 theme_override_constants/separation = 8
-alignment = 1
 
-[node name="Label" type="Label" parent="MarginContainer/HBoxContainer/LeftPanel"]
+[node name="CharacterScroll" type="ScrollContainer" parent="MarginContainer/RootVBox/Body/LeftPanel/MarginContainer/LeftContent"]
+custom_minimum_size = Vector2(0, 320)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
-theme_override_font_sizes/font_size = 28
-text = "已选"
-horizontal_alignment = 1
-
-[node name="SelectedList" type="VBoxContainer" parent="MarginContainer/HBoxContainer/LeftPanel"]
-layout_mode = 2
-theme_override_constants/separation = 8
-alignment = 1
-
-[node name="SelectedPlayer1" type="Button" parent="MarginContainer/HBoxContainer/LeftPanel/SelectedList"]
-custom_minimum_size = Vector2(110, 110)
-layout_mode = 2
-
-[node name="SynergyLabel" type="Label" parent="MarginContainer/HBoxContainer/LeftPanel"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-theme_override_font_sizes/font_size = 20
-text = "队伍羁绊"
-horizontal_alignment = 1
-
-[node name="SynergyScrollContainer" type="ScrollContainer" parent="MarginContainer/HBoxContainer/LeftPanel"]
-custom_minimum_size = Vector2(0, 200)
-layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="SynergyList" type="VBoxContainer" parent="MarginContainer/HBoxContainer/LeftPanel/SynergyScrollContainer"]
+[node name="CharacterGrid" type="GridContainer" parent="MarginContainer/RootVBox/Body/LeftPanel/MarginContainer/LeftContent/CharacterScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
+columns = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
 
-[node name="MainContent" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+[node name="CenterPanel" type="PanelContainer" parent="MarginContainer/RootVBox/Body"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 8
+size_flags_stretch_ratio = 0.4
 
-[node name="TopSection" type="VBoxContainer" parent="MarginContainer/HBoxContainer/MainContent"]
-custom_minimum_size = Vector2(0, 420)
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/RootVBox/Body/CenterPanel"]
 layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 32
 
-[node name="InfoPanel" type="Panel" parent="MarginContainer/HBoxContainer/MainContent/TopSection"]
+[node name="CenterContent" type="VBoxContainer" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_info")
+theme_override_constants/separation = 16
 
-[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel"]
+[node name="HeroStage" type="Control" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent"]
+custom_minimum_size = Vector2(0, 330)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.82
+
+[node name="PortraitBackdrop" type="PanelContainer" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/HeroStage"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 24
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 24
 
-[node name="PlayerInfo" type="HBoxContainer" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/separation = 16
-
-[node name="PlayerIco" type="TextureRect" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo"]
-custom_minimum_size = Vector2(128, 128)
-layout_mode = 2
-size_flags_vertical = 0
-texture = ExtResource("1_3miu1")
+[node name="PlayerIco" type="TextureRect" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/HeroStage"]
+layout_mode = 1
+anchor_left = 0.12
+anchor_top = 0.02
+anchor_right = 0.88
+anchor_bottom = 0.72
+grow_horizontal = 2
+grow_vertical = 2
 expand_mode = 1
 stretch_mode = 6
 
-[node name="StatsColumn" type="VBoxContainer" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo"]
-custom_minimum_size = Vector2(200, 0)
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.8
-theme_override_constants/separation = 4
-
-[node name="PlayerName" type="Label" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "角色名称"
-
-[node name="PlayerTies" type="Label" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn"]
-modulate = Color(0.9, 0.75, 0.2, 1)
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "[羁绊]"
-
-[node name="BondIconsContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="HSeparator" type="HSeparator" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn"]
-layout_mode = 2
-
-[node name="StatsScroll" type="ScrollContainer" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn"]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-
-[node name="PlayerDescription" type="RichTextLabel" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/StatsColumn/StatsScroll"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_font_sizes/normal_font_size = 18
-bbcode_enabled = true
-text = "点击角色查看详情"
-fit_content = true
-
-[node name="SkillColumn" type="ScrollContainer" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.2
-horizontal_scroll_mode = 0
-
-[node name="SkillDescription" type="RichTextLabel" parent="MarginContainer/HBoxContainer/MainContent/TopSection/InfoPanel/MarginContainer/PlayerInfo/SkillColumn"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_font_sizes/normal_font_size = 20
-theme_override_font_sizes/bold_font_size = 20
-bbcode_enabled = true
-text = ""
-fit_content = true
-
-[node name="MiddleSection" type="VBoxContainer" parent="MarginContainer/HBoxContainer/MainContent"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 4
-
-[node name="Label" type="Label" parent="MarginContainer/HBoxContainer/MainContent/MiddleSection"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
-theme_override_font_sizes/font_size = 28
-text = "选择角色"
-
-[node name="PlayerContainerWrapper" type="Control" parent="MarginContainer/HBoxContainer/MainContent/MiddleSection"]
-custom_minimum_size = Vector2(0, 260)
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="PlayerScrollContainer" type="ScrollContainer" parent="MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper"]
+[node name="PortraitFade" type="TextureRect" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/HeroStage"]
 layout_mode = 1
-anchors_preset = 15
+anchor_top = 0.55
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-horizontal_scroll_mode = 0
-vertical_scroll_mode = 2
+stretch_mode = 2
 
-[node name="PlayerContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper/PlayerScrollContainer"]
+[node name="WatermarkLabel" type="Label" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/HeroStage"]
+z_index = -1
+layout_mode = 1
+anchor_left = 0.04
+anchor_top = 0.15
+anchor_right = 0.96
+anchor_bottom = 0.78
+grow_horizontal = 2
+grow_vertical = 2
+rotation = -0.08
+text = "SELECT  OPERATIVE"
+clip_text = true
+vertical_alignment = 1
+
+[node name="HeroHeader" type="VBoxContainer" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/HeroStage"]
+layout_mode = 1
+anchor_left = 0.04
+anchor_top = 0.04
+anchor_right = 0.52
+anchor_bottom = 0.28
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 6
+
+[node name="PlayerName" type="Label" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/HeroStage/HeroHeader"]
+layout_mode = 2
+horizontal_alignment = 0
+text = "选择角色"
+
+[node name="PlayerTies" type="Label" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/HeroStage/HeroHeader"]
+layout_mode = 2
+horizontal_alignment = 0
+text = ""
+
+[node name="BondIconsContainer" type="HBoxContainer" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/HeroStage/HeroHeader"]
+layout_mode = 2
+alignment = 0
+theme_override_constants/separation = 6
+
+[node name="SignatureBar" type="MarginContainer" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent"]
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 1
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+
+[node name="SignatureLabel" type="Label" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/SignatureBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 3
+horizontal_alignment = 1
+text = ""
+
+[node name="StatsPanel" type="PanelContainer" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent"]
+custom_minimum_size = Vector2(0, 260)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/StatsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="StatsRow" type="HBoxContainer" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/StatsPanel/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="StatsColumn" type="VBoxContainer" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/StatsPanel/MarginContainer/StatsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+
+[node name="PlayerDescription" type="MarginContainer" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/StatsPanel/MarginContainer/StatsRow/StatsColumn"]
+layout_mode = 2
+size_flags_horizontal = 1
+size_flags_vertical = 1
+theme_override_constants/margin_left = 8
+
+[node name="StatsGrid" type="GridContainer" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/StatsPanel/MarginContainer/StatsRow/StatsColumn/PlayerDescription"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 40
+theme_override_constants/v_separation = 6
+
+[node name="RadarColumn" type="CenterContainer" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/StatsPanel/MarginContainer/StatsRow"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+
+[node name="RadarCenter" type="CenterContainer" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/StatsPanel/MarginContainer/StatsRow/RadarColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="RadarChart" type="Control" parent="MarginContainer/RootVBox/Body/CenterPanel/MarginContainer/CenterContent/StatsPanel/MarginContainer/StatsRow/RadarColumn/RadarCenter"]
+custom_minimum_size = Vector2(260, 220)
+layout_mode = 2
+script = ExtResource("2_radar")
+
+[node name="RightPanel" type="PanelContainer" parent="MarginContainer/RootVBox/Body"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.35
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/RootVBox/Body/RightPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="RightContent" type="VBoxContainer" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="DetailScroll" type="ScrollContainer" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="DetailContent" type="VBoxContainer" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent/DetailScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 18
+
+[node name="ExperienceCard" type="PanelContainer" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent/DetailScroll/DetailContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent/DetailScroll/DetailContent/ExperienceCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="ExperienceContent" type="VBoxContainer" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent/DetailScroll/DetailContent/ExperienceCard/MarginContainer"]
+layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="SecetionCard1" type="Button" parent="MarginContainer/HBoxContainer/MainContent/MiddleSection/PlayerContainerWrapper/PlayerScrollContainer/PlayerContainer"]
-custom_minimum_size = Vector2(120, 120)
+[node name="ExperienceTitle" type="Label" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent/DetailScroll/DetailContent/ExperienceCard/MarginContainer/ExperienceContent"]
 layout_mode = 2
-icon = ExtResource("3_7k3kw")
+text = "体验目标"
 
-[node name="BottomSection" type="VBoxContainer" parent="MarginContainer/HBoxContainer/MainContent"]
-custom_minimum_size = Vector2(0, 80)
+[node name="ExperienceGoal" type="RichTextLabel" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent/DetailScroll/DetailContent/ExperienceCard/MarginContainer/ExperienceContent"]
 layout_mode = 2
-size_flags_vertical = 3
-size_flags_stretch_ratio = 0.8
+size_flags_horizontal = 3
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+
+[node name="SkillTitle" type="Label" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent/DetailScroll/DetailContent"]
+layout_mode = 2
+text = "机制说明"
+
+[node name="SkillList" type="VBoxContainer" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent/DetailScroll/DetailContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="WeaponTitle" type="Label" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent/DetailScroll/DetailContent"]
+layout_mode = 2
+text = "武器选择"
+
+[node name="WeaponContainer" type="GridContainer" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent/DetailScroll/DetailContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+
+[node name="ActionBar" type="HBoxContainer" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="WarehouseButton" type="Button" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent/ActionBar"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "返回"
+
+[node name="Continue" type="Button" parent="MarginContainer/RootVBox/Body/RightPanel/MarginContainer/RightContent/ActionBar"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "进入"
+
+[node name="TooltipPanel" type="PanelContainer" parent="."]
+visible = false
+z_index = 50
+mouse_filter = 2
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 220.0
+offset_bottom = 74.0
+
+[node name="MarginContainer" type="MarginContainer" parent="TooltipPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="TooltipContent" type="VBoxContainer" parent="TooltipPanel/MarginContainer"]
+layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="Label2" type="Label" parent="MarginContainer/HBoxContainer/MainContent/BottomSection"]
+[node name="TooltipName" type="Label" parent="TooltipPanel/MarginContainer/TooltipContent"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
-theme_override_font_sizes/font_size = 28
-text = "选择武器"
+text = "角色名"
 
-[node name="WeaponContainerWrapper" type="Control" parent="MarginContainer/HBoxContainer/MainContent/BottomSection"]
+[node name="TooltipClass" type="Label" parent="TooltipPanel/MarginContainer/TooltipContent"]
 layout_mode = 2
-size_flags_vertical = 3
+text = "职能"
 
-[node name="WeaponContainer" type="GridContainer" parent="MarginContainer/HBoxContainer/MainContent/BottomSection/WeaponContainerWrapper"]
-layout_mode = 1
-theme_override_constants/h_separation = 10
-theme_override_constants/v_separation = 10
-columns = 16
+[node name="HoverTimer" type="Timer" parent="."]
+wait_time = 0.2
+one_shot = true
 
-[node name="SecetionCard" type="Button" parent="MarginContainer/HBoxContainer/MainContent/BottomSection/WeaponContainerWrapper/WeaponContainer"]
-custom_minimum_size = Vector2(60, 60)
-layout_mode = 2
-
-[node name="RightPanel" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(220, 0)
-layout_mode = 2
-theme_override_constants/separation = 16
-alignment = 1
-
-[node name="Continue" type="Button" parent="MarginContainer/HBoxContainer/RightPanel"]
-custom_minimum_size = Vector2(200, 60)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 24
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_btn")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
-text = "开始游戏"
-
-[node name="WarehouseButton" type="Button" parent="MarginContainer/HBoxContainer/RightPanel"]
-custom_minimum_size = Vector2(200, 50)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 20
-theme_override_styles/normal = SubResource("StyleBoxFlat_upgrade_btn")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_upgrade_btn")
-theme_override_styles/hover = SubResource("StyleBoxFlat_upgrade_btn")
-text = "仓库"
-
-[node name="ExitConfirmDialog" parent="." instance=ExtResource("4_exit_dialog")]
+[node name="ExitConfirmDialog" parent="." instance=ExtResource("3_exit")]

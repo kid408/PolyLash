@@ -1,70 +1,58 @@
-extends PanelContainer
-# ============================================================================
-# 致谢条目预制体 - 60px 高长条卡片，显示素材信息和链接
-# ============================================================================
+extends MarginContainer
 
-# 颜色常量
-const COLOR_ITEM_BG := Color("#222222")
-const COLOR_ITEM_HOVER := Color("#2a2a2a")
+const COLOR_ALERT := Color("#FF4655")
+const COLOR_TEXT := Color("#E6EDF3")
+const COLOR_DIM := Color("#8B949E")
+const COLOR_LINK := Color("#00F0FF")
 
-# 链接地址
-var _url: String = ""
+var _url := ""
+var _ui_font: Font
 
-# 节点引用
-@onready var category_label: Label = $HBox/CategoryLabel
-@onready var name_label: Label = $HBox/InfoVBox/NameLabel
-@onready var author_label: Label = $HBox/InfoVBox/AuthorLabel
-@onready var link_button: Button = $HBox/LinkButton
-
-# ============================================================================
-# 初始化
-# ============================================================================
+@onready var category_label: Label = $VBox/Line1/CategoryLabel
+@onready var title_label: Label = $VBox/Line1/TitleLabel
+@onready var link_button: Button = $VBox/Line1/LinkButton
+@onready var meta_label: Label = $VBox/MetaLabel
 
 func _ready() -> void:
-	mouse_entered.connect(_on_hover.bind(true))
-	mouse_exited.connect(_on_hover.bind(false))
+	_ui_font = _create_font()
+	_apply_theme()
 	link_button.pressed.connect(_on_link_pressed)
 
-# ============================================================================
-# 数据填充
-# ============================================================================
-
 func setup(data: Dictionary) -> void:
-	# 分类标签
-	category_label.text = "[%s]" % data.get("category", "")
-	# 素材名称
-	name_label.text = data.get("asset_name", "")
-	# 作者 + 协议
-	var author: String = data.get("author", "")
-	var license_type: String = data.get("license_type", "")
-	author_label.text = "by %s • %s" % [author, license_type]
-	# 链接
-	_url = data.get("url", "")
-	link_button.visible = _url != ""
-	# tooltip 显示描述
-	tooltip_text = data.get("description", "")
+	category_label.text = "[%s]" % str(data.get("category", ""))
+	title_label.text = str(data.get("asset_name", ""))
+	meta_label.text = "%s / %s" % [str(data.get("author", "")), str(data.get("license_type", ""))]
+	_url = str(data.get("url", "")).strip_edges()
+	link_button.visible = not _url.is_empty()
+	tooltip_text = str(data.get("description", ""))
 
-# ============================================================================
-# 悬停效果：背景色 #222222 → #2a2a2a
-# ============================================================================
-
-func _on_hover(hovered: bool) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = COLOR_ITEM_HOVER if hovered else COLOR_ITEM_BG
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_right = 4
-	style.corner_radius_bottom_left = 4
-	style.content_margin_left = 12
-	style.content_margin_right = 12
-	style.content_margin_top = 6
-	style.content_margin_bottom = 6
-	add_theme_stylebox_override("panel", style)
-
-# ============================================================================
-# 链接按钮点击 → 打开浏览器
-# ============================================================================
+func _apply_theme() -> void:
+	category_label.add_theme_font_override("font", _ui_font)
+	category_label.add_theme_font_size_override("font_size", 14)
+	category_label.add_theme_color_override("font_color", COLOR_ALERT)
+	title_label.add_theme_font_override("font", _ui_font)
+	title_label.add_theme_font_size_override("font_size", 20)
+	title_label.add_theme_color_override("font_color", COLOR_TEXT)
+	meta_label.add_theme_font_override("font", _ui_font)
+	meta_label.add_theme_font_size_override("font_size", 16)
+	meta_label.add_theme_color_override("font_color", COLOR_DIM)
+	link_button.add_theme_font_override("font", _ui_font)
+	link_button.add_theme_font_size_override("font_size", 18)
+	link_button.add_theme_color_override("font_color", COLOR_LINK)
 
 func _on_link_pressed() -> void:
-	if _url != "":
+	if not _url.is_empty():
 		OS.shell_open(_url)
+
+func _create_font() -> Font:
+	var font := SystemFont.new()
+	font.font_names = PackedStringArray([
+		"Noto Sans SC",
+		"Source Han Sans SC",
+		"Microsoft YaHei UI",
+		"Microsoft YaHei",
+		"Segoe UI",
+		"Arial",
+	])
+	font.font_weight = 500
+	return font

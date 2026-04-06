@@ -1,16 +1,13 @@
 extends PanelContainer
-# ============================================================================
-# 图鉴详情面板 - 显示角色/圣物/怪物的详细信息
-# ============================================================================
 
-# Tier 颜色
 const TIER_COLORS := {
 	1: Color.WHITE,
 	2: Color("#4488FF"),
 	3: Color("#AA44FF"),
 }
 
-# 节点引用
+var _ui_font: Font
+
 @onready var close_button: Button = $MarginContainer/VBoxContainer/TopBar/CloseButton
 @onready var portrait: TextureRect = $MarginContainer/VBoxContainer/Portrait
 @onready var name_label: Label = $MarginContainer/VBoxContainer/NameLabel
@@ -20,161 +17,136 @@ const TIER_COLORS := {
 @onready var desc_label: Label = $MarginContainer/VBoxContainer/DescLabel
 
 func _ready() -> void:
+	_ui_font = _create_ui_font()
+	_apply_theme()
 	close_button.pressed.connect(hide_panel)
 	visible = false
 
-# ============================================================================
-# 角色详情
-# ============================================================================
+func _create_ui_font() -> Font:
+	var font := SystemFont.new()
+	font.font_names = PackedStringArray([
+		"Noto Sans SC",
+		"Source Han Sans SC",
+		"Microsoft YaHei UI",
+		"Microsoft YaHei",
+		"Segoe UI",
+		"Arial",
+	])
+	font.font_weight = 500
+	return font
 
-func show_character_detail(id: String) -> void:
-	var config: Dictionary = ConfigManager.player_configs.get(id, {})
-	var visual: Dictionary = ConfigManager.player_visual_configs.get(id, {})
+func _apply_theme() -> void:
+	for label in [name_label, tags_label, stats_label, desc_label]:
+		label.add_theme_font_override("font", _ui_font)
+	close_button.text = "关闭"
+	close_button.add_theme_font_override("font", _ui_font)
+	close_button.flat = true
+	close_button.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_font_size_override("font_size", 24)
+	name_label.add_theme_color_override("font_color", Color("#E6EDF3"))
+	tags_label.add_theme_font_size_override("font_size", 14)
+	tags_label.add_theme_color_override("font_color", Color("#8B949E"))
+	stats_label.add_theme_font_size_override("font_size", 16)
+	stats_label.add_theme_color_override("font_color", Color("#E6EDF3"))
+	desc_label.add_theme_font_size_override("font_size", 15)
+	desc_label.add_theme_color_override("font_color", Color("#8B949E"))
+
+func show_character_detail(player_id: String) -> void:
+	var config: Dictionary = ConfigManager.get_player_config(player_id)
 	if config.is_empty():
 		return
+	var intro: Dictionary = ConfigManager.get_player_intro(player_id)
+	var visual: Dictionary = ConfigManager.get_player_visual(player_id)
 
-	# 头像
-	var sprite_path: String = visual.get("sprite_path", "")
-	if sprite_path != "" and ResourceLoader.exists(sprite_path):
-		portrait.texture = load(sprite_path)
-	else:
-		portrait.texture = null
+	portrait.texture = _load_texture(_resolve_player_portrait(player_id, config, visual))
 	portrait.modulate = Color.WHITE
-	portrait.visible = true
+	portrait.visible = portrait.texture != null
 
-	# 名称
-	name_label.text = config.get("display_name", id)
+	name_label.text = str(intro.get("display_name", config.get("display_name", player_id)))
 	name_label.add_theme_color_override("font_color", Color.WHITE)
 
-	# 羁绊标签
-	var ties_str: String = config.get("ties", "")
-	if ties_str != "":
-		tags_label.text = ties_str.replace("|", "  •  ")
-		tags_label.visible = true
-	else:
-		tags_label.visible = false
+	var ties_text := str(config.get("ties", "")).replace("|", " / ")
+	tags_label.text = ties_text
+	tags_label.visible = not ties_text.is_empty()
 
-	# 基础属性
-	var hp: String = str(config.get("health", "?"))
-	var armor: String = str(config.get("max_armor", "?"))
-	var spd: String = str(config.get("base_speed", "?"))
-	var energy: String = str(config.get("max_energy", "?"))
-	stats_label.text = "生命值: %s    护甲: %s\n速度: %s    能量: %s" % [hp, armor, spd, energy]
+	stats_label.text = "生命值 %s    护甲 %s\n速度 %s    能量 %s" % [
+		str(int(config.get("health", 0))),
+		str(int(config.get("max_armor", 0))),
+		str(int(config.get("base_speed", 0))),
+		str(int(config.get("max_energy", 0))),
+	]
 	stats_label.visible = true
 
-	# 技能描述
-	var desc: String = config.get("description", "")
-	if desc != "":
-		desc_label.text = desc
-		desc_label.visible = true
-	else:
-		desc_label.visible = false
-
+	var desc := str(intro.get("experience_goal", config.get("description", "")))
+	desc_label.text = desc
+	desc_label.visible = not desc.is_empty()
 	separator.visible = true
 	_show()
 
-# ============================================================================
-# 圣物详情
-# ============================================================================
-
-func show_relic_detail(id: String) -> void:
-	var config: Dictionary = ConfigManager.item_configs_new.get(id, {})
+func show_relic_detail(item_id: String) -> void:
+	var config: Dictionary = ConfigManager.item_configs_new.get(item_id, {})
 	if config.is_empty():
 		return
 
-	# 图标
-	var icon_path: String = config.get("icon_path", "")
-	if icon_path != "" and ResourceLoader.exists(icon_path):
-		portrait.texture = load(icon_path)
-	else:
-		portrait.texture = null
+	portrait.texture = _load_texture(str(config.get("icon_path", "")))
 	portrait.modulate = Color.WHITE
-	portrait.visible = true
+	portrait.visible = portrait.texture != null
 
-	# 名称 + Tier 颜色
-	var tier: int = int(config.get("tier", 1))
-	var tier_color: Color = TIER_COLORS.get(tier, Color.WHITE)
-	name_label.text = "%s  (Tier %d)" % [config.get("name", id), tier]
-	name_label.add_theme_color_override("font_color", tier_color)
+	var tier := int(config.get("tier", 1))
+	name_label.text = "%s  (Tier %d)" % [str(config.get("name", item_id)), tier]
+	name_label.add_theme_color_override("font_color", TIER_COLORS.get(tier, Color.WHITE))
 
-	# 标签隐藏
 	tags_label.visible = false
 
-	# 修正属性
-	var modifiers: Array = config.get("modifiers", [])
-	var base_stat: String = config.get("base_stat", "")
-	var base_value: String = str(config.get("base_value", ""))
 	var stats_text := ""
-	if base_stat != "" and base_value != "" and base_value != "0":
-		stats_text = "基础属性: %s +%s" % [base_stat, base_value]
-	if modifiers.size() > 0:
-		for mod in modifiers:
-			var mod_name: String = mod.get("type", "")
-			var mod_val = mod.get("value", 0)
-			if stats_text != "":
+	var base_stat := str(config.get("base_stat", ""))
+	var base_value := str(config.get("base_value", ""))
+	if not base_stat.is_empty() and not base_value.is_empty() and base_value != "0":
+		stats_text = "基础属性：%s +%s" % [base_stat, base_value]
+	var modifiers: Array = config.get("modifiers", [])
+	for modifier_variant in modifiers:
+		if modifier_variant is Dictionary:
+			var modifier: Dictionary = modifier_variant
+			if not stats_text.is_empty():
 				stats_text += "\n"
-			stats_text += "修正: %s %s" % [mod_name, str(mod_val)]
-	if stats_text != "":
-		stats_label.text = stats_text
-		stats_label.visible = true
-	else:
-		stats_label.visible = false
+			stats_text += "修正：%s %s" % [str(modifier.get("type", "")), str(modifier.get("value", 0))]
+	stats_label.text = stats_text
+	stats_label.visible = not stats_text.is_empty()
 
-	# 效果描述
-	var desc: String = config.get("description", "")
-	if desc != "":
-		desc_label.text = desc
-		desc_label.visible = true
-	else:
-		desc_label.visible = false
-
+	desc_label.text = str(config.get("description", ""))
+	desc_label.visible = not desc_label.text.is_empty()
 	separator.visible = true
 	_show()
 
-# ============================================================================
-# 怪物详情
-# ============================================================================
-
-func show_monster_detail(id: String) -> void:
-	var config: Dictionary = ConfigManager.enemy_configs.get(id, {})
-	var visual: Dictionary = ConfigManager.enemy_visual_configs.get(id, {})
+func show_monster_detail(enemy_id: String) -> void:
+	var config: Dictionary = ConfigManager.enemy_configs.get(enemy_id, {})
 	if config.is_empty():
 		return
+	var visual: Dictionary = ConfigManager.enemy_visual_configs.get(enemy_id, {})
 
-	# 头像
-	var sprite_path: String = visual.get("sprite_path", "")
-	if sprite_path != "" and ResourceLoader.exists(sprite_path):
-		portrait.texture = load(sprite_path)
-	else:
-		portrait.texture = null
+	portrait.texture = _load_texture(str(visual.get("sprite_path", "")))
 	portrait.modulate = Color.WHITE
-	portrait.visible = true
+	portrait.visible = portrait.texture != null
 
-	# 名称
-	name_label.text = config.get("display_name", id)
+	name_label.text = str(config.get("display_name", enemy_id))
 	name_label.add_theme_color_override("font_color", Color.WHITE)
-
-	# 标签隐藏
 	tags_label.visible = false
 
-	# 基础属性
-	var hp: String = str(config.get("health", "?"))
-	var atk: String = str(config.get("damage", "?"))
-	var spd: String = str(config.get("speed", "?"))
-	stats_label.text = "生命值: %s    攻击力: %s\n移动速度: %s" % [hp, atk, spd]
+	stats_label.text = "生命值 %s    攻击 %s\n速度 %s" % [
+		str(int(config.get("health", 0))),
+		str(int(config.get("damage", 0))),
+		str(int(config.get("speed", 0))),
+	]
 	stats_label.visible = true
 
-	# 描述（敌人配置中无 description 字段，留空）
-	desc_label.visible = false
-
+	desc_label.text = str(config.get("description", ""))
+	desc_label.visible = not desc_label.text.is_empty()
 	separator.visible = true
 	_show()
-
-# ============================================================================
-# 显示/隐藏
-# ============================================================================
 
 func hide_panel() -> void:
+	if not visible:
+		return
 	var tween := create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, 0.15)
 	tween.tween_callback(func(): visible = false)
@@ -184,3 +156,14 @@ func _show() -> void:
 	visible = true
 	var tween := create_tween()
 	tween.tween_property(self, "modulate:a", 1.0, 0.15)
+
+func _resolve_player_portrait(player_id: String, config: Dictionary, visual: Dictionary) -> String:
+	var portrait_path := str(config.get("portrait_sprite_path", "")).strip_edges()
+	if not portrait_path.is_empty() and ResourceLoader.exists(portrait_path):
+		return portrait_path
+	return str(visual.get("sprite_path", "")).strip_edges()
+
+func _load_texture(path: String) -> Texture2D:
+	if path.is_empty() or not ResourceLoader.exists(path):
+		return null
+	return load(path)

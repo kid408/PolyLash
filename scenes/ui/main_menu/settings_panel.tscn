@@ -1,14 +1,6 @@
-[gd_scene load_steps=4 format=3 uid="uid://settings_panel_main_menu"]
+[gd_scene load_steps=2 format=3 uid="uid://settings_panel_main_menu"]
 
 [ext_resource type="Script" path="res://scenes/ui/main_menu/settings_panel.gd" id="1_script"]
-[ext_resource type="FontFile" uid="uid://kfh6ooeul77g" path="res://assets/font/Bake Soda.otf" id="2_font"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0.102, 0.102, 0.102, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
 
 [node name="SettingsPanel" type="CanvasLayer"]
 layer = 10
@@ -20,54 +12,35 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.7)
+color = Color(0.0509804, 0.0666667, 0.0901961, 0.6)
 
-[node name="Panel" type="PanelContainer" parent="."]
+[node name="MainPanel" type="PanelContainer" parent="."]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -350.0
-offset_top = -250.0
-offset_right = 350.0
-offset_bottom = 250.0
+offset_left = -540.0
+offset_top = -300.0
+offset_right = 540.0
+offset_bottom = 300.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
-
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Header" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="TitleLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/Header"]
+[node name="Layout" type="HBoxContainer" parent="MainPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 24
-text = "设置"
-
-[node name="CloseButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/Header"]
-layout_mode = 2
-custom_minimum_size = Vector2(32, 32)
-theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 18
-flat = true
-text = "✕"
-
-[node name="TabContainer" type="TabContainer" parent="Panel/MarginContainer/VBoxContainer"]
-layout_mode = 2
 size_flags_vertical = 3
+
+[node name="CategoryList" type="VBoxContainer" parent="MainPanel/Layout"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+
+[node name="ContentArea" type="MarginContainer" parent="MainPanel/Layout"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40

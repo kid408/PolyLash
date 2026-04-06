@@ -1,92 +1,96 @@
 [gd_scene load_steps=3 format=3 uid="uid://main_menu_scene"]
 
 [ext_resource type="Script" path="res://scenes/ui/main_menu/main_menu.gd" id="1_script"]
-[ext_resource type="FontFile" path="res://assets/font/Bake Soda.otf" id="2_font"]
+[ext_resource type="PackedScene" path="res://scenes/ui/main_menu/menu_button.tscn" id="2_button"]
 
-[node name="MainMenu" type="Control"]
-layout_mode = 1
+[node name="MainMenu" type="MarginContainer"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 64
+theme_override_constants/margin_top = 80
+theme_override_constants/margin_right = 64
+theme_override_constants/margin_bottom = 80
 script = ExtResource("1_script")
 
-[node name="ButtonContainer" type="VBoxContainer" parent="."]
-layout_mode = 1
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_left = 80.0
-offset_top = -200.0
-offset_right = 380.0
-offset_bottom = 200.0
-grow_vertical = 2
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 120
+
+[node name="NavList" type="VBoxContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+
+[node name="QuickStartPanel" type="PanelContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+mouse_filter = 1
+
+[node name="QuickMargin" type="MarginContainer" parent="HBoxContainer/QuickStartPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 20
+
+[node name="QuickVBox" type="VBoxContainer" parent="HBoxContainer/QuickStartPanel/QuickMargin"]
+layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="ContinueInfoCard" type="PanelContainer" parent="."]
-visible = false
-layout_mode = 0
-offset_left = 420.0
-offset_top = 200.0
-offset_right = 740.0
-offset_bottom = 400.0
-
-[node name="CardMargin" type="MarginContainer" parent="ContinueInfoCard"]
+[node name="QuickTitle" type="Label" parent="HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 12
+text = "快速启动"
 
-[node name="CardVBox" type="VBoxContainer" parent="ContinueInfoCard/CardMargin"]
+[node name="QuickSubtitle" type="Label" parent="HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox"]
+layout_mode = 2
+text = "存档 1 实时摘要"
+
+[node name="QuickHeader" type="HBoxContainer" parent="HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="QuickPortraits" type="HBoxContainer" parent="HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickHeader"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CardHeader" type="HBoxContainer" parent="ContinueInfoCard/CardMargin/CardVBox"]
+[node name="QuickPortrait1" type="TextureRect" parent="HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickHeader/QuickPortraits"]
+custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
-theme_override_constants/separation = 12
+expand_mode = 1
+stretch_mode = 5
 
-[node name="CardPortraits" type="HBoxContainer" parent="ContinueInfoCard/CardMargin/CardVBox/CardHeader"]
+[node name="QuickPortrait2" type="TextureRect" parent="HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickHeader/QuickPortraits"]
+custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="QuickPortrait3" type="TextureRect" parent="HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickHeader/QuickPortraits"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="QuickInfo" type="VBoxContainer" parent="HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="CardPortrait1" type="TextureRect" parent="ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardPortraits"]
+[node name="QuickName" type="Label" parent="HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickHeader/QuickInfo"]
 layout_mode = 2
-custom_minimum_size = Vector2(40, 40)
-expand_mode = 1
-stretch_mode = 5
+text = "暂无存档"
 
-[node name="CardPortrait2" type="TextureRect" parent="ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardPortraits"]
+[node name="QuickTime" type="Label" parent="HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickHeader/QuickInfo"]
 layout_mode = 2
-custom_minimum_size = Vector2(40, 40)
-expand_mode = 1
-stretch_mode = 5
+text = "--:--:--"
 
-[node name="CardPortrait3" type="TextureRect" parent="ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardPortraits"]
+[node name="QuickDetail" type="Label" parent="HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(40, 40)
-expand_mode = 1
-stretch_mode = 5
-
-[node name="CardNameLabel" type="Label" parent="ContinueInfoCard/CardMargin/CardVBox/CardHeader"]
-layout_mode = 2
-size_flags_vertical = 1
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 28
-text = "队长名称"
-
-[node name="CardFloorLabel" type="Label" parent="ContinueInfoCard/CardMargin/CardVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 20
-text = "第1层 - 波次1"
-
-[node name="CardTimeLabel" type="Label" parent="ContinueInfoCard/CardMargin/CardVBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.667, 0.667, 0.667, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 20
-text = "00:00:00"
+autowrap_mode = 3
+text = "创建新存档后，这里会显示角色、进度与游戏时长。"

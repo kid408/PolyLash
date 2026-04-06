@@ -1,179 +1,207 @@
-extends Control
+extends MarginContainer
 
 signal menu_action(action: String)
 
-const MENU_BUTTON_SCENE = preload("res://scenes/ui/main_menu/menu_button.tscn")
-
-const CONTINUE_FONT_SIZE := 47
-const CONTINUE_COLOR := Color("#4CAF50")
+const MENU_BUTTON_SCENE := preload("res://scenes/ui/main_menu/menu_button.tscn")
+const COLOR_BG_PANEL := Color("#161B22")
+const COLOR_BORDER := Color("#30363D")
+const COLOR_TEXT := Color("#E6EDF3")
+const COLOR_TEXT_DIM := Color("#8B949E")
 
 const BUTTON_DEFS: Array = [
-	["继续游戏", "continue", true],
-	["新游戏", "new_game", false],
-	["读取存档", "load_game", false],
-	["图鉴", "compendium", false],
-	["设置", "settings", false],
-	["制作名单", "credits", false],
-	["退出游戏", "quit", false],
+	["新游戏", "new_game"],
+	["读取存档", "load_game"],
+	["图鉴", "compendium"],
+	["设置", "settings"],
+	["鸣谢", "credits"],
+	["退出游戏", "quit"],
 ]
 
-@onready var button_container: VBoxContainer = $ButtonContainer
-@onready var continue_info_card: PanelContainer = $ContinueInfoCard
-@onready var card_portrait_1: TextureRect = $ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardPortraits/CardPortrait1
-@onready var card_portrait_2: TextureRect = $ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardPortraits/CardPortrait2
-@onready var card_portrait_3: TextureRect = $ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardPortraits/CardPortrait3
-@onready var card_name_label: Label = $ContinueInfoCard/CardMargin/CardVBox/CardHeader/CardNameLabel
-@onready var card_floor_label: Label = $ContinueInfoCard/CardMargin/CardVBox/CardFloorLabel
-@onready var card_time_label: Label = $ContinueInfoCard/CardMargin/CardVBox/CardTimeLabel
+@onready var nav_list: VBoxContainer = $HBoxContainer/NavList
+@onready var quick_start_panel: PanelContainer = $HBoxContainer/QuickStartPanel
+@onready var quick_title: Label = $HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickTitle
+@onready var quick_subtitle: Label = $HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickSubtitle
+@onready var quick_portrait_1: TextureRect = $HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickHeader/QuickPortraits/QuickPortrait1
+@onready var quick_portrait_2: TextureRect = $HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickHeader/QuickPortraits/QuickPortrait2
+@onready var quick_portrait_3: TextureRect = $HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickHeader/QuickPortraits/QuickPortrait3
+@onready var quick_name: Label = $HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickHeader/QuickInfo/QuickName
+@onready var quick_time: Label = $HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickHeader/QuickInfo/QuickTime
+@onready var quick_detail: Label = $HBoxContainer/QuickStartPanel/QuickMargin/QuickVBox/QuickDetail
 
 var _buttons: Array[Button] = []
-var _continue_button: Button = null
-var _card_portrait_slots: Array[TextureRect] = []
+var _quick_portraits: Array[TextureRect] = []
+var _ui_font: Font
 
 func _ready() -> void:
-	_card_portrait_slots = [card_portrait_1, card_portrait_2, card_portrait_3]
-	continue_info_card.visible = false
+	_ui_font = _create_font()
+	_quick_portraits = [quick_portrait_1, quick_portrait_2, quick_portrait_3]
+	_apply_theme()
+	if not quick_start_panel.gui_input.is_connected(_on_quick_start_gui_input):
+		quick_start_panel.gui_input.connect(_on_quick_start_gui_input)
 	_build_menu_buttons()
+	_refresh_quick_start_panel()
 	await get_tree().process_frame
-	_focus_first_visible_button()
+	if not _buttons.is_empty():
+		_buttons[0].grab_focus()
+
+func refresh() -> void:
+	_build_menu_buttons()
+	_refresh_quick_start_panel()
+	await get_tree().process_frame
+	if not _buttons.is_empty():
+		_buttons[0].grab_focus()
+
+func _apply_theme() -> void:
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = COLOR_BG_PANEL
+	panel_style.border_width_left = 1
+	panel_style.border_width_top = 1
+	panel_style.border_width_right = 1
+	panel_style.border_width_bottom = 1
+	panel_style.border_color = COLOR_BORDER
+	panel_style.corner_radius_top_left = 12
+	panel_style.corner_radius_top_right = 12
+	panel_style.corner_radius_bottom_left = 12
+	panel_style.corner_radius_bottom_right = 12
+	quick_start_panel.add_theme_stylebox_override("panel", panel_style)
+
+	for label in [quick_title, quick_name]:
+		label.add_theme_font_override("font", _ui_font)
+		label.add_theme_color_override("font_color", COLOR_TEXT)
+	quick_title.add_theme_font_size_override("font_size", 24)
+	quick_name.add_theme_font_size_override("font_size", 20)
+
+	for label in [quick_subtitle, quick_time, quick_detail]:
+		label.add_theme_font_override("font", _ui_font)
+		label.add_theme_color_override("font_color", COLOR_TEXT_DIM)
+	quick_subtitle.add_theme_font_size_override("font_size", 12)
+	quick_time.add_theme_font_size_override("font_size", 14)
+	quick_detail.add_theme_font_size_override("font_size", 15)
 
 func _build_menu_buttons() -> void:
-	for child in button_container.get_children():
+	for child in nav_list.get_children():
 		child.queue_free()
 	_buttons.clear()
-	_continue_button = null
 
-	var has_save: bool = SaveManager.has_any_save()
-	for def: Array in BUTTON_DEFS:
-		var label_text: String = str(def[0])
-		var action: String = str(def[1])
-		var is_continue: bool = bool(def[2])
-
-		if is_continue and not has_save:
-			continue
-
-		var btn := MENU_BUTTON_SCENE.instantiate() as Button
-		button_container.add_child(btn)
-		btn.setup(label_text, action)
-
-		if is_continue:
-			_continue_button = btn
-			btn.add_theme_font_size_override("font_size", CONTINUE_FONT_SIZE)
-			btn.add_theme_color_override("font_color", CONTINUE_COLOR)
-			btn.mouse_entered.connect(_on_continue_hover_enter)
-			btn.mouse_exited.connect(_on_continue_hover_exit)
-			btn.focus_entered.connect(_on_continue_hover_enter)
-			btn.focus_exited.connect(_on_continue_hover_exit)
-
-		btn.button_action.connect(_on_button_action)
-		_buttons.append(btn)
+	for def in BUTTON_DEFS:
+		var button := MENU_BUTTON_SCENE.instantiate() as Button
+		nav_list.add_child(button)
+		button.setup(str(def[0]), str(def[1]))
+		button.button_action.connect(_on_button_action)
+		_buttons.append(button)
 
 	_setup_focus_neighbors()
 
 func _setup_focus_neighbors() -> void:
 	for i in range(_buttons.size()):
-		var btn: Button = _buttons[i]
-		var prev_idx: int = i - 1 if i > 0 else _buttons.size() - 1
-		var next_idx: int = i + 1 if i < _buttons.size() - 1 else 0
-		btn.focus_neighbor_top = _buttons[prev_idx].get_path()
-		btn.focus_neighbor_bottom = _buttons[next_idx].get_path()
-		btn.focus_neighbor_left = btn.get_path()
-		btn.focus_neighbor_right = btn.get_path()
+		var button := _buttons[i]
+		var prev_idx := i - 1 if i > 0 else _buttons.size() - 1
+		var next_idx := i + 1 if i < _buttons.size() - 1 else 0
+		button.focus_neighbor_top = _buttons[prev_idx].get_path()
+		button.focus_neighbor_bottom = _buttons[next_idx].get_path()
+		button.focus_neighbor_left = button.get_path()
+		button.focus_neighbor_right = button.get_path()
 
-func _focus_first_visible_button() -> void:
-	if not _buttons.is_empty():
-		_buttons[0].grab_focus()
-
-func _on_continue_hover_enter() -> void:
-	var slot_index: int = SaveManager.get_most_recent_slot()
-	if slot_index < 0:
-		return
-
-	var data: Dictionary = SaveManager.get_slot_data(slot_index)
+func _refresh_quick_start_panel() -> void:
+	var data := SaveManager.get_slot_data(0)
 	if data.is_empty():
+		_clear_quick_portraits()
+		quick_name.text = "暂无存档"
+		quick_time.text = "--:--:--"
+		quick_detail.text = "创建新存档后，这里会显示三人小队、进度与游戏时长。"
+		quick_start_panel.mouse_default_cursor_shape = Control.CURSOR_ARROW
 		return
 
-	var player_ids: Array[String] = _extract_saved_player_ids(data)
-	_update_continue_portraits(player_ids)
-	card_name_label.text = _build_team_name_text(player_ids)
+	var player_ids := _extract_saved_player_ids(data)
+	_update_quick_portraits(player_ids)
+	quick_name.text = _build_team_name_text(player_ids) if not player_ids.is_empty() else "未记录小队"
+	quick_time.text = SaveManager.format_play_time(int(data.get("play_time_seconds", 0)))
 
-	var game_state: String = str(data.get("game_state", "in_progress"))
-	if game_state == "character_selection":
-		card_floor_label.text = "角色选择"
-	elif game_state == "in_battle" and data.has("battle_state"):
+	var floor_num := int(data.get("current_floor", 1))
+	var wave_num := int(data.get("current_wave", 1))
+	if str(data.get("game_state", "")) == "in_battle" and data.has("battle_state"):
 		var battle_state: Dictionary = data.get("battle_state", {})
-		var floor_num_battle: int = int(battle_state.get("current_floor", data.get("current_floor", 1)))
-		var wave_num_battle: int = int(battle_state.get("current_wave", data.get("current_wave", 1)))
-		card_floor_label.text = "第 %d 层 - 第 %d 波" % [floor_num_battle, wave_num_battle]
-	else:
-		var floor_num: int = int(data.get("current_floor", 1))
-		var wave_num: int = int(data.get("current_wave", 1))
-		card_floor_label.text = "第 %d 层 - 第 %d 波" % [floor_num, wave_num]
+		floor_num = int(battle_state.get("current_floor", floor_num))
+		wave_num = int(battle_state.get("current_wave", wave_num))
+	quick_detail.text = "进度：第 %d 层 / 波次 %d" % [floor_num, wave_num]
+	quick_start_panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
-	var play_seconds: int = int(data.get("play_time_seconds", 0))
-	card_time_label.text = SaveManager.format_play_time(play_seconds)
-	continue_info_card.visible = true
-
-func _on_continue_hover_exit() -> void:
-	continue_info_card.visible = false
-
-func _update_continue_portraits(player_ids: Array[String]) -> void:
-	for i in range(_card_portrait_slots.size()):
-		var slot: TextureRect = _card_portrait_slots[i]
+func _update_quick_portraits(player_ids: Array[String]) -> void:
+	for i in range(_quick_portraits.size()):
+		var portrait := _quick_portraits[i]
 		if i < player_ids.size():
-			var tex: Texture2D = _load_player_portrait(player_ids[i])
-			slot.texture = tex
-			slot.visible = tex != null
-			slot.tooltip_text = _get_player_display_name(player_ids[i])
+			portrait.texture = _load_player_portrait(player_ids[i])
+			portrait.visible = true
 		else:
-			slot.texture = null
-			slot.visible = false
-			slot.tooltip_text = ""
+			portrait.texture = null
+			portrait.visible = false
 
-func _build_team_name_text(player_ids: Array[String]) -> String:
-	if player_ids.is_empty():
-		return "暂无队伍"
-	var names: Array[String] = []
-	for pid in player_ids:
-		names.append(_get_player_display_name(pid))
-	return " / ".join(names)
+func _clear_quick_portraits() -> void:
+	for portrait in _quick_portraits:
+		portrait.texture = null
+		portrait.visible = false
 
 func _extract_saved_player_ids(data: Dictionary) -> Array[String]:
 	var result: Array[String] = []
 	var selected_players: Variant = data.get("selected_players", [])
 	if selected_players is Array:
 		for entry in selected_players:
-			var pid: String = ""
+			var player_id := ""
 			if entry is Dictionary:
-				pid = str(entry.get("player_id", "")).strip_edges()
+				player_id = str(entry.get("player_id", "")).strip_edges()
 			elif entry is String:
-				pid = str(entry).strip_edges()
-			if pid.is_empty():
+				player_id = str(entry).strip_edges()
+			if player_id.is_empty():
 				continue
-			result.append(pid)
-			if result.size() >= _card_portrait_slots.size():
-				return result
-
-	var leader_id: String = str(data.get("leader_id", "")).strip_edges()
-	if result.is_empty() and not leader_id.is_empty():
-		result.append(leader_id)
+			result.append(player_id)
+	if result.is_empty():
+		var leader_id := str(data.get("leader_id", "")).strip_edges()
+		if not leader_id.is_empty():
+			result.append(leader_id)
 	return result
 
+func _build_team_name_text(player_ids: Array[String]) -> String:
+	var names: Array[String] = []
+	for player_id in player_ids:
+		var intro := ConfigManager.get_player_intro(player_id)
+		var config := ConfigManager.get_player_config(player_id)
+		names.append(str(intro.get("display_name", config.get("display_name", player_id))))
+	return " / ".join(names)
+
 func _load_player_portrait(player_id: String) -> Texture2D:
-	var visual: Dictionary = ConfigManager.get_player_visual(player_id)
-	var sprite_path: String = str(visual.get("sprite_path", "")).strip_edges()
+	var config := ConfigManager.get_player_config(player_id)
+	var portrait_path := str(config.get("portrait_sprite_path", "")).strip_edges()
+	if not portrait_path.is_empty() and ResourceLoader.exists(portrait_path):
+		return load(portrait_path) as Texture2D
+	var visual := ConfigManager.get_player_visual(player_id)
+	var sprite_path := str(visual.get("sprite_path", "")).strip_edges()
 	if sprite_path.is_empty() or not ResourceLoader.exists(sprite_path):
 		return null
 	return load(sprite_path) as Texture2D
 
-func _get_player_display_name(player_id: String) -> String:
-	var config: Dictionary = ConfigManager.get_player_config(player_id)
-	return str(config.get("display_name", player_id))
-
 func _on_button_action(action: String) -> void:
 	menu_action.emit(action)
 
-func refresh() -> void:
-	_build_menu_buttons()
-	await get_tree().process_frame
-	_focus_first_visible_button()
+func _on_quick_start_gui_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	var mouse_event := event as InputEventMouseButton
+	if not mouse_event.pressed or mouse_event.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if SaveManager.get_slot_data(0).is_empty():
+		return
+	SoundManager.play("ui_click")
+	menu_action.emit("continue")
+
+func _create_font() -> Font:
+	var font := SystemFont.new()
+	font.font_names = PackedStringArray([
+		"Noto Sans SC",
+		"Source Han Sans SC",
+		"Microsoft YaHei UI",
+		"Microsoft YaHei",
+		"Segoe UI",
+		"Arial",
+	])
+	font.font_weight = 600
+	return font

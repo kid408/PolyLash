@@ -33,6 +33,7 @@ extends Node
 
 # 玩家相关配置
 var player_configs: Dictionary = {}              # 玩家基础属性配置 (player_id -> config)
+var player_intro_cn_configs: Dictionary = {}     # 玩家UI本地化文本配置 (player_id -> intro)
 var player_visual_configs: Dictionary = {}       # 玩家视觉配置 (player_id -> visual)
 var player_weapon_configs: Dictionary = {}       # 玩家武器配置 (player_id -> weapons)
 var player_skill_bindings: Dictionary = {}       # 玩家技能绑定 (player_id -> bindings)
@@ -78,6 +79,7 @@ var credits_configs: Array[Dictionary] = []      # 致谢条目配置 (数组，
 # 配置文件路径
 const CONFIG_DIR = "res://config/"
 const PLAYER_CONFIG = CONFIG_DIR + "player/player_config.csv"
+const PLAYER_INTRO_CN = CONFIG_DIR + "player/player_intro_cn.csv"
 const PLAYER_VISUAL = CONFIG_DIR + "player/player_visual.csv"
 const PLAYER_WEAPONS = CONFIG_DIR + "player/player_weapons.csv"
 const PLAYER_SKILL_BINDINGS = CONFIG_DIR + "player/player_skill_bindings.csv"
@@ -152,6 +154,7 @@ func load_all_configs() -> void:
 	"""
 	# 玩家配置
 	player_configs = load_csv_as_dict(PLAYER_CONFIG, "player_id")
+	player_intro_cn_configs = load_csv_as_dict(PLAYER_INTRO_CN, "player_id")
 	player_visual_configs = load_csv_as_dict(PLAYER_VISUAL, "player_id")
 	player_weapon_configs = load_csv_as_dict(PLAYER_WEAPONS, "player_id")
 	player_skill_bindings = load_csv_as_dict(PLAYER_SKILL_BINDINGS, "player_id")
@@ -553,6 +556,10 @@ func get_player_config(player_id: String) -> Dictionary:
 func get_player_visual(player_id: String) -> Dictionary:
 	var normalized_player_id := normalize_player_id(player_id)
 	return player_visual_configs.get(normalized_player_id, {})
+
+func get_player_intro(player_id: String) -> Dictionary:
+	var normalized_player_id := normalize_player_id(player_id)
+	return player_intro_cn_configs.get(normalized_player_id, {})
 
 func get_player_weapons(player_id: String) -> Dictionary:
 	var normalized_player_id := normalize_player_id(player_id)

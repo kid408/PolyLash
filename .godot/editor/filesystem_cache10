@@ -1,5 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1775432267
+::res://::1775455608
 .codex_compile_check.gd::GDScript::249297523337565491::1774717328::0::1::::<>SceneTree<><>0<>0<><>::
 icon.png::CompressedTexture2D::4198334022768452939::1768136923::1768747875::1::::<><><>0<>0<>fb6e1e7bfd910f0a20703a7a13bf3a7f<>res://.godot/imported/icon.png-487276ed1e3a0c39cad0279d744ee560.ctex::
 ::res://assets/::1768090587
@@ -420,7 +420,7 @@ assist_runtime_service.gd::GDScript::7420534866343715052::1775430928::0::1::::<>
 battle_state_manager.gd::GDScript::6408040933165968426::1771850234::0::1::::<>Node<><>0<>0<><>::
 bond_manager.gd::GDScript::2114479458212321404::1774652772::0::1::::<>Node<><>0<>0<><>::
 bond_ui_loader.gd::GDScript::-1::1774693608::0::1::::<>Node<><>0<>0<><>::
-config_manager.gd::GDScript::6161209431084733178::1775364414::0::1::::<>Node<><>0<>0<><>::
+config_manager.gd::GDScript::6161209431084733178::1775438473::0::1::::<>Node<><>0<>0<><>::
 config_repository.gd::GDScript::6918911428555931362::1775385262::0::1::::ConfigRepository<>RefCounted<><>0<>0<><>::
 config_repository_v2.gd::GDScript::1659290446943147699::1775386093::0::1::::<>Node<><>0<>0<><>::
 data_manager.gd::GDScript::1168783571837414416::1773460026::0::1::::<>Node<><>0<>0<><>::
@@ -455,8 +455,6 @@ weapon_stats.gd::GDScript::890474426820918786::1770521678::0::1::::WeaponStats<>
 ::res://effects/::1768090588
 flash.gdshader::Shader::1257744766663505236::1767256173::0::1::::<><><>0<>0<><>::
 flash_material.tres::ShaderMaterial::5773785310553720342::1759655675::0::1::::<><><>0<>0<><>::uid://r6i4wwvquocy::::res://effects/flash.gdshader
-::res://export_templates/::1773509580
-::res://feature_profiles/::1773509580
 ::res://resouce/::1770519202
 ::res://resouce/unit/::1769299476
 ::res://resouce/unit/enemies/::1768624809
@@ -516,8 +514,8 @@ overtone_drum.gd::GDScript::37073348388635327::1775398275::0::1::::OvertoneDrum<
 overtone_string.gd::GDScript::4792458023440477620::1775428754::0::1::::OvertoneString<>Node2D<><>0<>0<><>::
 parasite_blood_pit.gd::GDScript::6280514358643095384::1775310315::0::1::::ParasiteBloodPit<>Node2D<><>0<>0<><>::
 parasite_blood_pit.tscn::PackedScene::-1::1775310315::0::1::::<><><>0<>0<><>::res://scenes/effects/parasite_blood_pit.gd
-phalanx_barrier.gd::GDScript::75960501259101366::1775431263::0::1::::PhalanxBarrier<>Node2D<><>0<>0<><>::
-phalanx_pinball_arena.gd::GDScript::8919188871261392986::1775432043::0::1::::PhalanxPinballArena<>Node2D<><>0<>0<><>::
+phalanx_barrier.gd::GDScript::75960501259101366::1775434976::0::1::::PhalanxBarrier<>Node2D<><>0<>0<><>::
+phalanx_pinball_arena.gd::GDScript::8919188871261392986::1775433288::0::1::::PhalanxPinballArena<>Node2D<><>0<>0<><>::
 silk_link_utils.gd::GDScript::7603491870265013334::1775381941::0::1::::SilkLinkUtils<>RefCounted<><>0<>0<><>::
 ::res://scenes/items/::1775279872
 chest.gd::GDScript::2636734244960201034::1773460026::0::1::::Chest<>Area2D<><>0<>0<><>::
@@ -595,30 +593,30 @@ README.md::TextFile::-1::1769827682::0::1::::<><><>0<>0<><>::
 ::res://scenes/ui/global_hud/::1774669148
 global_hud.gd::GDScript::5884398511240847816::1774669148::0::1::::GlobalHUD<>Control<><>0<>0<><>::
 global_hud.tscn::PackedScene::-1::1768233530::0::1::::<><><>0<>0<><>::res://scenes/ui/global_hud/global_hud.gd
-::res://scenes/ui/main_menu/::1775372974
+::res://scenes/ui/main_menu/::1775455593
 background_lines.gd::GDScript::2577794475628517084::1771811777::0::1::::<>Node2D<><>0<>0<><>::
-compendium_detail_panel.gd::GDScript::8672393109445996365::1771811777::0::1::::<>PanelContainer<><>0<>0<><>::
-compendium_detail_panel.tscn::PackedScene::-1::1771811777::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/compendium_detail_panel.gd<>res://assets/font/Bake Soda.otf
-compendium_screen.gd::GDScript::2903225757756189450::1774653773::0::1::::<>Control<><>0<>0<><>::
-compendium_screen.tscn::PackedScene::-1::1771811777::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/compendium_screen.gd<>res://assets/font/Bake Soda.otf<>res://scenes/ui/main_menu/compendium_detail_panel.tscn
+compendium_detail_panel.gd::GDScript::8672393109445996365::1775449093::0::1::::<>PanelContainer<><>0<>0<><>::
+compendium_detail_panel.tscn::PackedScene::-1::1775449025::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/compendium_detail_panel.gd
+compendium_screen.gd::GDScript::2903225757756189450::1775448930::0::1::::<>Control<><>0<>0<><>::
+compendium_screen.tscn::PackedScene::-1::1775448863::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/compendium_screen.gd<>res://scenes/ui/main_menu/compendium_detail_panel.tscn
 confirm_dialog.gd::GDScript::558117829907582095::1771811777::0::1::::ConfirmDialog<>CanvasLayer<><>0<>0<><>::
 confirm_dialog.tscn::PackedScene::-1::1771811777::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/confirm_dialog.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf
-credits_item.gd::GDScript::2515623108242743168::1771811777::0::1::::<>PanelContainer<><>0<>0<><>::
-credits_item.tscn::PackedScene::-1::1771811777::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/credits_item.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf
-credits_screen.gd::GDScript::4462765540091945647::1771811777::0::1::::<>Control<><>0<>0<><>::
-credits_screen.tscn::PackedScene::-1::1771811777::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/credits_screen.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf
-main_menu.gd::GDScript::4596754618584738448::1775372974::0::1::::<>Control<><>0<>0<><>::
-main_menu.tscn::PackedScene::-1::1773460026::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/main_menu.gd<>res://assets/font/Bake Soda.otf
+credits_item.gd::GDScript::2515623108242743168::1775449546::0::1::::<>MarginContainer<><>0<>0<><>::
+credits_item.tscn::PackedScene::-1::1775449437::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/credits_item.gd
+credits_screen.gd::GDScript::4462765540091945647::1775449794::0::1::::<>MarginContainer<><>0<>0<><>::
+credits_screen.tscn::PackedScene::-1::1775449682::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/credits_screen.gd
+main_menu.gd::GDScript::4596754618584738448::1775448016::0::1::::<>MarginContainer<><>0<>0<><>::
+main_menu.tscn::PackedScene::-1::1775447909::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/main_menu.gd<>res://scenes/ui/main_menu/menu_button.tscn
 main_menu_root.gd::GDScript::465763968516467504::1775387582::0::1::::<>Control<><>0<>0<><>::
 main_menu_root.tscn::PackedScene::8062997660888927537::1771811777::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/main_menu_root.gd<>res://scenes/ui/main_menu/title_screen.tscn<>res://scenes/ui/main_menu/main_menu.tscn<>res://scenes/ui/main_menu/confirm_dialog.tscn<>res://scenes/ui/main_menu/save_slot_panel.tscn<>res://scenes/ui/main_menu/settings_panel.tscn<>res://scenes/ui/main_menu/compendium_screen.tscn<>res://scenes/ui/main_menu/credits_screen.tscn
-menu_button.gd::GDScript::3289169751519815178::1771811777::0::1::::<>Button<><>0<>0<><>::
-menu_button.tscn::PackedScene::-1::1771811777::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/menu_button.gd<>res://assets/font/Bake Soda.otf
-save_slot_card.gd::GDScript::7610453755252205267::1773460026::0::1::::<>PanelContainer<><>0<>0<><>::
-save_slot_card.tscn::PackedScene::-1::1773460026::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/save_slot_card.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf
-save_slot_panel.gd::GDScript::7766287943961573775::1773460026::0::1::::<>Control<><>0<>0<><>::
-save_slot_panel.tscn::PackedScene::-1::1771811777::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/save_slot_panel.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf
-settings_panel.gd::GDScript::6684721651645166133::1771811777::0::1::::<>CanvasLayer<><>0<>0<><>::
-settings_panel.tscn::PackedScene::-1::1771811777::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/settings_panel.gd<>uid://kfh6ooeul77g::::res://assets/font/Bake Soda.otf
+menu_button.gd::GDScript::3289169751519815178::1775447778::0::1::::<>Button<><>0<>0<><>::
+menu_button.tscn::PackedScene::-1::1775447673::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/menu_button.gd
+save_slot_card.gd::GDScript::7610453755252205267::1775448328::0::1::::<>PanelContainer<><>0<>0<><>::
+save_slot_card.tscn::PackedScene::-1::1775448173::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/save_slot_card.gd
+save_slot_panel.gd::GDScript::7766287943961573775::1775448623::0::1::::<>Control<><>0<>0<><>::
+save_slot_panel.tscn::PackedScene::-1::1775448543::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/save_slot_panel.gd<>res://scenes/ui/main_menu/save_slot_card.tscn
+settings_panel.gd::GDScript::8940424086205214937::1775449368::0::1::::<>CanvasLayer<><>0<>0<><>::
+settings_panel.tscn::PackedScene::-1::1775449242::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/settings_panel.gd
 splash_screen.gd::GDScript::6947806604179224761::1771811777::0::1::::<>Control<><>0<>0<><>::
 splash_screen.tscn::PackedScene::8455206501741856093::1771811777::0::1::::<><><>0<>0<><>::res://scenes/ui/main_menu/splash_screen.gd<>uid://b02x7h4bntic6::::res://icon.png
 title_screen.gd::GDScript::8937091879767028987::1771811777::0::1::::<>Control<><>0<>0<><>::
@@ -626,13 +624,14 @@ title_screen.tscn::PackedScene::6919343010507711517::1771811777::0::1::::<><><>0
 ::res://scenes/ui/pause_menu/::1773460026
 pause_menu.gd::GDScript::3711071141727288789::1773460026::0::1::::PauseMenu<>CanvasLayer<><>0<>0<><>::
 pause_menu.tscn::PackedScene::-1::1773460026::0::1::::<><><>0<>0<><>::res://scenes/ui/pause_menu/pause_menu.gd
-::res://scenes/ui/selection_panel/::1775364607
+::res://scenes/ui/selection_panel/::1775441176
 character_upgrade.gd::GDScript::2994815284368660252::1773460026::0::1::::CharacterUpgradePanel<>Panel<><>0<>0<><>::
 character_upgrade.tscn::PackedScene::1392345570707975973::1769331572::0::1::::<><><>0<>0<><>::uid://biwyf1y8dhch5::::res://scenes/ui/selection_panel/character_upgrade.gd
 player_select_button.gd::GDScript::1724180135034001988::1768699099::0::1::::PlayerSelectButton<>Button<><>0<>0<><>::
 selected_slot_button.gd::GDScript::7103104506879643123::1768699104::0::1::::SelectedSlotButton<>Button<><>0<>0<><>::
-selection_panel.gd::GDScript::2686125043203603204::1775432043::0::1::::SelectionPanel<>Panel<><>0<>0<><>::
-selection_panel.tscn::PackedScene::6853719228978906030::1773460026::0::1::::<><><>0<>0<><>::uid://b02x7h4bntic6::::res://icon.png<>uid://bejgc7t8weklg::::res://scenes/ui/selection_panel/selection_panel.gd<>uid://byggcc877ibn7::::res://assets/sprites/Players/Player_1.png<>res://scenes/ui/exit_confirm_dialog.tscn
+selection_panel.gd::GDScript::2686125043203603204::1775445303::0::1::::SelectionPanel<>Panel<><>0<>0<><>::
+selection_panel.tscn::PackedScene::6853719228978906030::1775445235::0::1::::<><><>0<>0<><>::res://scenes/ui/selection_panel/selection_panel.gd<>res://scenes/ui/selection_panel/selection_radar_chart.gd<>res://scenes/ui/exit_confirm_dialog.tscn
+selection_radar_chart.gd::GDScript::8894590345661341969::1775439326::0::1::::SelectionRadarChart<>Control<><>0<>0<><>::
 ::res://scenes/ui/shop_panel/::1773460026
 attribute_shop_panel.gd::GDScript::8664979596605734974::1773460026::0::1::::AttributeShopPanel<>Control<><>0<>0<><>::
 attribute_shop_panel.tscn::PackedScene::-1::1773460026::0::1::::<><><>0<>0<><>::res://scenes/ui/shop_panel/attribute_shop_panel.gd
@@ -661,7 +660,7 @@ unit.gd::GDScript::7544997064344766831::1771811777::0::1::::Unit<>Node2D<><>0<>0
 unit.tscn::PackedScene::6458692425737336959::1769299877::0::1::::<><><>0<>0<><>::uid://dfq388g7pq4pn::::res://scenes/unit/unit.gd<>uid://devt2xbk78rej::::res://assets/sprites/shadow.png<>uid://dp3xumk1n2wmf::::res://scenes/components/hurtbox_component.tscn<>uid://cstyo4wiq71vi::::res://scenes/components/health_component.gd<>uid://dhoadina0xqh5::::res://scenes/ui/health_bar.tscn
 ::res://scenes/unit/enemy/::1774653773
 charge_behavior.gd::GDScript::4664305334423848685::1769299097::0::1::::ChargeBehavior<>Node2D<><>0<>0<><>::
-enemy.gd::GDScript::6059441820808193018::1775431163::0::1::::Enemy<>Unit<><>0<>0<><>::
+enemy.gd::GDScript::6059441820808193018::1775434976::0::1::::Enemy<>Unit<><>0<>0<><>::
 enemy_generic.tscn::PackedScene::9068223106054438876::1774653773::0::1::::<><><>0<>0<><>::uid://cyavyrbpj6jjb::::res://scenes/unit/unit.tscn<>uid://sc5iyxovnkla::::res://assets/sprites/Enemies/Enemy_1.png<>uid://cslieepfyhg7k::::res://scenes/unit/enemy/enemy.gd<>uid://dvfjoyutjx5jf::::res://scenes/particles/Explosion.tscn<>uid://3t6iqc1kav5h::::res://scenes/components/hitbox_component.tscn
 shooting_behavior.gd::GDScript::8247039190910686396::1769299453::0::1::::ShootingBehavior<>Node2D<><>0<>0<><>::
 ::res://scenes/unit/enemy/elites/::1771811777
@@ -683,7 +682,7 @@ player_overtone.gd::GDScript::674565851631123523::1775428772::0::1::::PlayerOver
 player_overtone.tscn::PackedScene::-1::1775394610::0::1::::<><><>0<>0<><>::res://scenes/unit/players/player_generic.tscn<>res://scenes/unit/players/player_overtone.gd
 player_parasite.gd::GDScript::5964146611791620580::1775394843::0::1::::PlayerParasite<>PlayerBase<><>0<>0<><>::
 player_parasite.tscn::PackedScene::-1::1775368405::0::1::::<><><>0<>0<><>::res://scenes/unit/players/player_generic.tscn<>res://scenes/unit/players/player_parasite.gd
-player_phalanx.gd::GDScript::7253725892593414198::1775431471::0::1::::PlayerPhalanx<>PlayerBase<><>0<>0<><>::
+player_phalanx.gd::GDScript::7253725892593414198::1775435184::0::1::::PlayerPhalanx<>PlayerBase<><>0<>0<><>::
 player_phalanx.tscn::PackedScene::-1::1775432043::0::1::::<><><>0<>0<><>::res://scenes/unit/players/player_generic.tscn<>res://scenes/unit/players/player_phalanx.gd
 player_silk.gd::GDScript::1597310692268064804::1775384494::0::1::::PlayerSilk<>PlayerBase<><>0<>0<><>::
 player_silk.tscn::PackedScene::-1::1775381941::0::1::::<><><>0<>0<><>::res://scenes/unit/players/player_generic.tscn<>res://scenes/unit/players/player_silk.gd
@@ -708,8 +707,6 @@ weapon_range_magic.tscn::PackedScene::-1::1775365199::0::1::::<><><>0<>0<><>::re
 weapon_range_physical.tscn::PackedScene::-1::1775365199::0::1::::<><><>0<>0<><>::res://scenes/weapons/weapon.gd<>res://scenes/components/hitbox_component.tscn<>res://scenes/weapons/range/range_behavior.gd
 ::res://scripts/::1775386035
 generate_full_weapon_csv.gd::GDScript::3343064059885769383::1770523959::0::1::::<>Node<><>0<>0<><>::
-::res://script_templates/::1773509580
-::res://text_editor_themes/::1773509580
 ::res://tools/::1774669148
 assign_character_weapons.gd::GDScript::1315600565615142047::1773460026::0::1::::<>EditorScript<><>0<>1<><>::
 check_shop_usage.gd::GDScript::5200912382626178749::1774653773::0::1::::<>EditorScript<><>0<>1<><>::

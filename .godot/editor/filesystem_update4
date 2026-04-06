@@ -1,4 +1,1 @@
-res://scenes/effects/phalanx_barrier.gd
-res://scenes/effects/phalanx_pinball_arena.gd
-res://scenes/unit/players/player_phalanx.gd
-res://scenes/unit/enemy/enemy.gd
+res://scenes/ui/main_menu/main_menu.gd
