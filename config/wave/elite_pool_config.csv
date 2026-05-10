@@ -1,0 +1,11 @@
+elite_id,min_wave,base_weight,is_unique,difficulty_score,enabled
+siege_behemoth,3,100,TRUE,4.0,TRUE
+zealot_martyr,6,80,TRUE,4.6,TRUE
+gravity_anomaly,10,50,TRUE,5.4,TRUE
+echo_mimic,7,80,TRUE,5.0,TRUE
+mag_controller,11,60,TRUE,5.6,TRUE
+temporal_anchor,13,50,TRUE,6.0,TRUE
+gold_mite,4,40,TRUE,3.8,TRUE
+geo_locksmith,4,70,TRUE,5.2,TRUE
+resonance_guardian,6,80,TRUE,5.4,TRUE
+sigil_carver,8,60,TRUE,5.1,TRUE

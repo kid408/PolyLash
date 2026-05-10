@@ -1,0 +1,5 @@
+boss_id,tier,min_wave,base_weight,description
+-1,tier,min_wave,base_weight,description
+abyssal_broodmother,1,10,100,群聚与吞噬
+euclidean_shadow,2,15,80,空间切割与闭合反转
+fortress_titan,3,20,60,极限走位与 Dash 无敌帧

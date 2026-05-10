@@ -588,7 +588,13 @@ func _apply_wall_contact_damage(damage_area: Area2D, damage: int) -> void:
 			enemy = t.owner
 
 		if enemy and is_instance_valid(enemy) and enemy.has_node("HealthComponent"):
-			enemy.health_component.take_damage(damage)
+			enemy.health_component.take_damage(damage, {
+				"source": self,
+				"kind": "wall_contact_damage",
+				"damage_type": "DMG_AOE",
+				"skill_slot": "q",
+				"space_skill_mode": "open",
+			})
 			if DEBUG_VERBOSE:
 				print("[SkillEffectManager] 澧欎綋鎺ヨЕ浼ゅ: %d -> %s" % [damage, enemy.name])
 
@@ -1560,7 +1566,11 @@ func _summon_attack(effect_id: int) -> void:
 
 	# 閫犳垚浼ゅ
 	if target_enemy.has_node("HealthComponent"):
-		target_enemy.health_component.take_damage(damage)
+		target_enemy.health_component.take_damage(damage, {
+			"source": summon_node,
+			"kind": "summon_attack",
+			"damage_type": "DMG_DIRECT",
+		})
 
 	# 鏀诲嚮瑙嗚鍙嶉锛氱煭鏆傞棯鐧?
 	var vis_poly = effect_data["vis_poly"]
@@ -1641,7 +1651,11 @@ func _self_destruct_summon(effect_id: int) -> void:
 	for t in targets:
 		var enemy = _resolve_enemy(t)
 		if enemy and enemy.has_node("HealthComponent"):
-			enemy.health_component.take_damage(damage)
+			enemy.health_component.take_damage(damage, {
+				"source": summon_node,
+				"kind": "summon_explode",
+				"damage_type": "DMG_AOE",
+			})
 
 	# 鐖嗙偢瑙嗚鍙嶉锛氬揩閫熸斁澶?+ 娣″嚭
 	var vis_poly = effect_data["vis_poly"]
@@ -1794,7 +1808,13 @@ func _apply_damage(area: Area2D, damage: int) -> void:
 			enemy = t.owner
 		
 		if enemy and enemy.has_node("HealthComponent"):
-			enemy.health_component.take_damage(damage)
+			enemy.health_component.take_damage(damage, {
+				"source": self,
+				"kind": "area_effect_tick",
+				"damage_type": "DMG_AOE",
+				"skill_slot": "q",
+				"space_skill_mode": "closed",
+			})
 
 ## 搴旂敤鍚搁檮鍒颁腑蹇?
 func _apply_pull_to_center(area: Area2D, center: Vector2, force: float, dt: float) -> void:

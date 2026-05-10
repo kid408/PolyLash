@@ -70,14 +70,16 @@ func _process(delta: float) -> void:
 func apply_status(status_name: String, duration: float, value: float = 0.0, stacks: int = 1, tick_interval: float = 1.0, caster: Node2D = null) -> void:
 	# P2-3: Debuff 延长（咒术师 Lv.1）
 	var final_duration = duration
-	if BondManager.has_mechanic("debuff_duration"):
-		var extension = BondManager.get_mechanic_value("debuff_duration")
-		final_duration *= (1.0 + extension)
+	if BondManager.has_mechanic("abnormal_duration_scale") or BondManager.has_mechanic("debuff_duration"):
+		var duration_scale = BondManager.get_mechanic_value("abnormal_duration_scale")
+		if duration_scale <= 0.0:
+			duration_scale = 1.0 + max(0.0, BondManager.get_mechanic_value("debuff_duration"))
+		final_duration *= duration_scale
 		print("[StatusComponent] [P2-3] Debuff 延长: %s, %.1f秒 -> %.1f秒 (+%.0f%%)" % [
 			status_name,
 			duration,
 			final_duration,
-			extension * 100
+			(duration_scale - 1.0) * 100
 		])
 	
 	# 如果状态已存在，刷新持续时间并增加层数
@@ -232,7 +234,11 @@ func _apply_burn_damage(status: Dictionary) -> void:
 		return
 	
 	var damage = int(status.value)
-	owner_unit.get_node("HealthComponent").take_damage(damage)
+	owner_unit.get_node("HealthComponent").take_damage(damage, {
+		"source": self,
+		"kind": "burn_status",
+		"damage_type": "DMG_DOT",
+	})
 	Global.spawn_floating_text(owner_unit.global_position, "BURN!", Color(1.0, 0.5, 0.0))
 
 ## 应用诅咒伤害（P2-4）
@@ -244,7 +250,11 @@ func _apply_curse_damage(status: Dictionary) -> void:
 	var base_damage = status.value
 	var total_damage = int(base_damage * status.stacks)
 	
-	owner_unit.get_node("HealthComponent").take_damage(total_damage)
+	owner_unit.get_node("HealthComponent").take_damage(total_damage, {
+		"source": self,
+		"kind": "curse_status",
+		"damage_type": "DMG_DOT",
+	})
 	Global.spawn_floating_text(owner_unit.global_position, "CURSE x%d!" % status.stacks, Color(0.5, 0.0, 0.5))
 	
 	print("[StatusComponent] [P2-4] 诅咒伤害: %d (基础%.1f x %d层)" % [
@@ -507,7 +517,11 @@ func _apply_poison_damage(status: Dictionary) -> void:
 		return
 	
 	var damage = int(status.value * status.stacks)
-	owner_unit.get_node("HealthComponent").take_damage(damage)
+	owner_unit.get_node("HealthComponent").take_damage(damage, {
+		"source": self,
+		"kind": "poison_status",
+		"damage_type": "DMG_DOT",
+	})
 	Global.spawn_floating_text(owner_unit.global_position, "POISON!", Color(0.2, 0.8, 0.2))
 
 ## ============================================================================

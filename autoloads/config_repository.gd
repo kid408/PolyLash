@@ -17,6 +17,8 @@ const ENEMY_CONFIG_PATH := "res://config/enemy/enemy_config.csv"
 const BOSS_PHASE_CONFIG_PATH := "res://config/enemy/boss_phase_config.csv"
 const WAVE_CONFIG_PATH := "res://config/wave/wave_config.csv"
 const WAVE_UNITS_CONFIG_PATH := "res://config/wave/wave_units_config.csv"
+const ELITE_POOL_CONFIG_PATH := "res://config/wave/elite_pool_config.csv"
+const BOSS_POOL_CONFIG_PATH := "res://config/wave/boss_pool_config.csv"
 const LEGACY_PLAYER_ID_ALIASES := {
 	"new_ignis": "frostbite",
 	"new_totem": "plague",
@@ -322,8 +324,48 @@ static func load_wave_v2_configs() -> Dictionary:
 			"spawn_interval_min": _to_float(row.get("min_spawn_time", 1.5), 1.5),
 			"spawn_interval_max": _to_float(row.get("max_spawn_time", 2.5), 2.5),
 			"budget_multiplier": _to_float(row.get("budget_multiplier", 1.0), 1.0),
-			"peak_event": str(row.get("peak_event", "")).strip_edges()
+			"peak_event": str(row.get("peak_event", "")).strip_edges(),
+			"elite_slot_count": _to_int(row.get("elite_slot_count", 0), 0),
 		}
+	return configs
+
+static func load_elite_pool_configs() -> Array[Dictionary]:
+	var configs: Array[Dictionary] = []
+	var rows: Array[Dictionary] = _load_csv_rows_with_headers(ELITE_POOL_CONFIG_PATH)
+	if rows.is_empty():
+		return configs
+
+	for row: Dictionary in rows:
+		var elite_id: String = str(row.get("elite_id", "")).strip_edges()
+		if elite_id.is_empty():
+			continue
+		configs.append({
+			"elite_id": elite_id,
+			"min_wave": _to_int(row.get("min_wave", 1), 1),
+			"base_weight": _to_float(row.get("base_weight", 1.0), 1.0),
+			"is_unique": str(row.get("is_unique", "FALSE")).strip_edges().to_lower() == "true",
+			"difficulty_score": _to_float(row.get("difficulty_score", 1.0), 1.0),
+			"enabled": str(row.get("enabled", "TRUE")).strip_edges().to_lower() == "true",
+		})
+	return configs
+
+static func load_boss_pool_configs() -> Array[Dictionary]:
+	var configs: Array[Dictionary] = []
+	var rows: Array[Dictionary] = _load_csv_rows_with_headers(BOSS_POOL_CONFIG_PATH)
+	if rows.is_empty():
+		return configs
+
+	for row: Dictionary in rows:
+		var boss_id: String = str(row.get("boss_id", "")).strip_edges()
+		if boss_id.is_empty():
+			continue
+		configs.append({
+			"boss_id": boss_id,
+			"tier": _to_int(row.get("tier", 1), 1),
+			"min_wave": _to_int(row.get("min_wave", 1), 1),
+			"base_weight": _to_float(row.get("base_weight", 1.0), 1.0),
+			"description": str(row.get("description", "")).strip_edges(),
+		})
 	return configs
 
 static func load_wave_units_v2_grouped() -> Dictionary:

@@ -50,6 +50,14 @@ static func register_asset(
 		"node_ref": weakref(asset_node) if asset_node != null and is_instance_valid(asset_node) else null,
 	}
 
+	if asset_node != null and is_instance_valid(asset_node):
+		if not asset_node.is_in_group("player_summoned_entity"):
+			asset_node.add_to_group("player_summoned_entity")
+		if payload.has("logic_tags"):
+			asset_node.set_meta("logic_tags", payload.get("logic_tags"))
+		if payload.has("physics_tags"):
+			asset_node.set_meta("physics_tags", payload.get("physics_tags"))
+
 	registry[asset_id] = entry
 	root.set_meta(REGISTRY_META_KEY, registry)
 	return _sanitize_entry(entry)

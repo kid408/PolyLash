@@ -1,47 +1,73 @@
 bond_id,type,level,required_count,effect_type,effect_param,effect_value,icon_path_index,display_name,description
 -1,type,level,required_count,effect_type,effect_param,effect_value,icon_path_index,display_name,description
-inkborn,origin,1,2,stat_mod,energy_regen_pct,0.3,1,术理,Energy regen +30%
-inkborn,origin,2,4,mechanic,kill_regen,5,1,术理,Restore 5 energy on kill
-inkborn,origin,3,6,stat_mod,energy_regen_pct,0.8,1,术理,Energy regen +80%
-colossus,origin,1,2,stat_mod,max_health_pct,0.25,2,御阵,Team max health +25%
-colossus,origin,2,4,mechanic,super_armor,1,2,御阵,Super armor while drawing closed shape
-colossus,origin,3,6,stat_mod,max_health_pct,0.6,2,御阵,Team max health +60%
-nomad,origin,1,2,stat_mod,movement_speed_pct,0.15,3,锋芒,Move speed +15%
-nomad,origin,2,4,mechanic,speed_to_damage,1,3,锋芒,Convert move speed bonus to damage
-nomad,origin,3,6,stat_mod,movement_speed_pct,0.4,3,锋芒,Move speed +40%
-alchemist,origin,1,2,stat_mod,pickup_range_pct,0.5,4,协律,Pickup range +50%
-alchemist,origin,2,4,mechanic,gold_trail,1,4,协律,Trail generates gold
-alchemist,origin,3,6,stat_mod,pickup_range_pct,1.0,4,协律,Pickup range +100%
-blaster,mastery,1,2,mechanic,closed_shape_dmg,0.2,1,爆破,Closed shape damage +20%
-blaster,mastery,2,4,mechanic,secondary_explode,1,1,爆破,Secondary explosion on trigger
-blaster,mastery,3,6,mechanic,chain_reaction,1,1,爆破,Chain reaction on explosion
-architect,mastery,1,2,mechanic,line_duration,3.0,2,筑墙,Line duration +3s
-architect,mastery,2,4,mechanic,thorns_wall,1,2,筑墙,Walls gain thorns damage
-architect,mastery,3,6,mechanic,permanent_cage,10.0,2,筑墙,Closed shape becomes 10s cage
-hexer,mastery,1,2,mechanic,status_duration_pct,0.3,3,咒术,Status duration +30%
-hexer,mastery,2,4,mechanic,spread_on_kill,1,3,咒术,Spread status on kill
-hexer,mastery,3,6,mechanic,status_damage_pct,0.5,3,咒术,Status damage +50%
-geometrist,mastery,1,2,mechanic,line_size_pct,0.15,4,几何,Line size +15%
-geometrist,mastery,2,4,mechanic,auto_close_assist,1,4,几何,Improve closure tolerance
-geometrist,mastery,3,6,mechanic,shape_overlap_bonus,1,4,几何,Bonus on overlapping shapes
-assist,tactic,1,2,mechanic,bench_cd_reduce,0.3,1,协律,Backend skill cooldown -30%
-assist,tactic,2,4,mechanic,mirror_draw,1,1,协律,Mirror draw from benched role
-vanguard,tactic,1,2,mechanic,contact_damage_bonus,0.2,2,突击,Contact damage +20%
-vanguard,tactic,2,4,mechanic,execution_window,1,2,突击,Gain execution window
-commander,tactic,1,2,mechanic,mark_damage_bonus,0.12,3,指挥,Marked target damage taken +
-commander,tactic,2,4,mechanic,assist_refresh,1,3,指挥,Refresh one assist effect on swap
-arsenal,origin,1,2,stat_mod,energy_regen_pct,0.2,1,军工,Energy regen +20%
-arsenal,origin,2,4,mechanic,kill_regen,5,1,军工,Restore 5 energy on kill
-arsenal,origin,3,6,stat_mod,energy_regen_pct,0.6,1,军工,Energy regen +60%
-sentinel,mastery,1,2,stat_mod,max_health_pct,0.2,2,御阵,Team max health +20%
-sentinel,mastery,2,4,mechanic,super_armor,1,2,御阵,Super armor while drawing closed shape
-sentinel,mastery,3,6,stat_mod,max_health_pct,0.45,2,御阵,Team max health +45%
-relay,tactic,1,2,mechanic,mark_damage_bonus,0.12,3,连携,Marked target damage taken +
-relay,tactic,2,4,mechanic,assist_refresh,1,3,连携,Refresh one assist effect on swap
-relay,tactic,3,6,mechanic,bench_cd_reduce,0.5,3,连携,后台技能冷却减少50%
-
-machine,origin,1,2,stat_mod,max_health_pct,0.25,2,机械,Team max health +25%
-machine,origin,2,4,mechanic,super_armor,1,2,机械,Super armor while drawing closed shape
-machine,origin,3,6,stat_mod,max_health_pct,0.6,2,机械,Team max health +60%
-repel,tactic,1,2,mechanic,contact_damage_bonus,0.2,2,击退,Contact damage +20%
-repel,tactic,2,4,mechanic,execution_window,1,2,击退,Gain execution window
+military,origin,1,2,mechanic,aoe_radius_scale,1.25,1,军工,AOE 伤害范围扩大 25%
+military,origin,2,4,mechanic,aoe_apply_vulnerable,4.0,1,军工,AOE 命中附加 4 秒易伤
+military,origin,3,6,mechanic,aoe_shard_burst,1.0,1,军工,AOE 命中触发 3 发微型破片
+cyber,origin,1,2,stat_mod,max_energy,40,2,赛博,最大能量 +40
+cyber,origin,1,2,mechanic,cyber_entry_energy,20,2,赛博,入场额外获得 20 能量
+cyber,origin,2,4,mechanic,cyber_elite_skill_reset,1,2,赛博,技能击杀精英时重置 Dash 与 E
+cyber,origin,3,6,mechanic,cyber_last_stand,1,2,赛博,单局一次锁血并回满生命与能量
+esper,origin,1,2,mechanic,lifesteal,0.15,3,异能,造成伤害时吸取 15% 生命
+esper,origin,1,2,mechanic,dot_lifesteal,0.05,3,异能,持续伤害按 5% 比例吸血
+esper,origin,2,4,mechanic,blood_shield_overflow,0.5,3,异能,治疗溢出转化为鲜血护盾，上限为 50% 生命
+esper,origin,3,6,mechanic,blood_shield_true_damage,2.0,3,异能,拥有鲜血护盾时 DIRECT 伤害翻倍并转为 TRUE
+esper,origin,3,6,mechanic,shield_energy_buffer,1,3,异能,画线时优先消耗鲜血护盾
+mech,origin,1,2,stat_mod,max_armor,20,4,机械,基础护甲 +20
+mech,origin,1,2,mechanic,reactive_armor_on_hit,2,4,机械,每次受击获得 +2 临时护甲，持续 5 秒
+mech,origin,2,4,mechanic,armor_pulse,1.5,4,机械,护甲堆满后周期释放护甲震波
+mech,origin,3,6,mechanic,super_armor,1,4,机械,全队获得霸体
+mech,origin,3,6,mechanic,immune_knockback,1,4,机械,全队免疫击退
+mech,origin,3,6,mechanic,summoned_mass_lock,1,4,机械,召唤场资产不可被推动
+mech,origin,3,6,mechanic,summoned_durability_scale,2,4,机械,带耐久场资产最大耐久翻倍
+vanguard,mastery,1,2,mechanic,post_release_speed_boost,0.3,1,锋芒,Space 结算后获得 2 秒 30% 移速
+vanguard,mastery,1,2,mechanic,post_release_super_armor,2,1,锋芒,Space 结算后获得 2 秒霸体
+vanguard,mastery,2,4,mechanic,dash_wave,1.5,1,锋芒,Dash 结束释放 1.5A 剑气
+vanguard,mastery,3,6,mechanic,dash_track_append,1,1,锋芒,Dash 轨迹直接并入画线
+anomaly,mastery,1,2,mechanic,abnormal_duration_scale,1.5,2,术理,异常与 Modifier 持续时间延长 50%
+anomaly,mastery,2,4,mechanic,anomaly_reactor,2,2,术理,攻击带异常敌人时全队回蓝 2 点
+anomaly,mastery,3,6,mechanic,forced_closure,1,2,术理,满足角度与长度条件时强制闭合
+sentinel,mastery,1,2,mechanic,summoned_lifespan_scale,1.5,3,御阵,召唤场资产寿命延长 50%
+sentinel,mastery,2,4,mechanic,prism_stun,1,3,御阵,自交点生成棱镜眩晕体
+sentinel,mastery,3,6,mechanic,closure_static_barrier,1,3,御阵,闭合圈轮廓生成静态阻挡
+harmony,mastery,1,2,mechanic,bench_energy_gain,20,4,协律,E/F 释放时后排角色回 20 能量
+harmony,mastery,2,4,mechanic,switch_echo,1,4,协律,切人时重播上一角色最近一次成功画线
+harmony,mastery,3,6,mechanic,mirrored_draw,1,4,协律,画线同步生成镜像轨迹并双重结算
+knockback,tactic,1,2,mechanic,knockback_power_scale,0.4,1,击退,击退力度提高 40%
+knockback,tactic,2,4,mechanic,knockback_wall_blast,2.0,1,击退,撞墙时触发 2.0A 动能激波
+knockback,tactic,3,6,mechanic,knockback_fission,1,1,击退,撞墙时触发核裂变弹球
+link,tactic,1,2,mechanic,aoe_mark_amp,0.2,2,连携,AOE 命中异常或带标记者伤害提高 20%
+link,tactic,2,4,mechanic,mark_spread_on_death,2,2,连携,标记者死亡时向最近 2 名敌人扩散链接
+link,tactic,3,6,mechanic,global_damage_share,0.35,2,连携,全场伤害共享，分摊比例 35%
+shuttle,tactic,1,2,mechanic,dash_distance_scale,1.3,3,穿梭,Dash 距离提高 30% 且无视敌人体积
+shuttle,tactic,2,4,mechanic,dash_echo_blast,1.5,3,穿梭,Dash 结束后留下延迟爆炸残影
+shuttle,tactic,3,6,mechanic,dash_laser_wall,1,3,穿梭,Dash 轨迹生成持续切割激光墙
+inkborn,origin,1,2,stat_mod,max_energy,0,2,墨裔,旧版兼容羁绊占位，当前不提供额外效果
+inkborn,origin,2,4,stat_mod,max_energy,0,2,墨裔,旧版兼容羁绊占位，当前不提供额外效果
+inkborn,origin,3,6,stat_mod,max_energy,0,2,墨裔,旧版兼容羁绊占位，当前不提供额外效果
+colossus,origin,1,2,stat_mod,max_health,0,4,巨像,旧版兼容羁绊占位，当前不提供额外效果
+colossus,origin,2,4,stat_mod,max_health,0,4,巨像,旧版兼容羁绊占位，当前不提供额外效果
+colossus,origin,3,6,stat_mod,max_health,0,4,巨像,旧版兼容羁绊占位，当前不提供额外效果
+nomad,origin,1,2,stat_mod,speed,0,1,流浪,旧版兼容羁绊占位，当前不提供额外效果
+nomad,origin,2,4,stat_mod,speed,0,1,流浪,旧版兼容羁绊占位，当前不提供额外效果
+nomad,origin,3,6,stat_mod,speed,0,1,流浪,旧版兼容羁绊占位，当前不提供额外效果
+alchemist,origin,1,2,stat_mod,energy_regen,0,3,炼金,旧版兼容羁绊占位，当前不提供额外效果
+alchemist,origin,2,4,stat_mod,energy_regen,0,3,炼金,旧版兼容羁绊占位，当前不提供额外效果
+alchemist,origin,3,6,stat_mod,energy_regen,0,3,炼金,旧版兼容羁绊占位，当前不提供额外效果
+blaster,mastery,1,2,stat_mod,damage,0,1,爆破,旧版兼容羁绊占位，当前不提供额外效果
+blaster,mastery,2,4,stat_mod,damage,0,1,爆破,旧版兼容羁绊占位，当前不提供额外效果
+blaster,mastery,3,6,stat_mod,damage,0,1,爆破,旧版兼容羁绊占位，当前不提供额外效果
+architect,mastery,1,2,stat_mod,pickup_range,0,3,构筑,旧版兼容羁绊占位，当前不提供额外效果
+architect,mastery,2,4,stat_mod,pickup_range,0,3,构筑,旧版兼容羁绊占位，当前不提供额外效果
+architect,mastery,3,6,stat_mod,pickup_range,0,3,构筑,旧版兼容羁绊占位，当前不提供额外效果
+hexer,mastery,1,2,stat_mod,energy_regen,0,2,咒术,旧版兼容羁绊占位，当前不提供额外效果
+hexer,mastery,2,4,stat_mod,energy_regen,0,2,咒术,旧版兼容羁绊占位，当前不提供额外效果
+hexer,mastery,3,6,stat_mod,energy_regen,0,2,咒术,旧版兼容羁绊占位，当前不提供额外效果
+geometrist,mastery,1,2,stat_mod,speed,0,2,几何,旧版兼容羁绊占位，当前不提供额外效果
+geometrist,mastery,2,4,stat_mod,speed,0,2,几何,旧版兼容羁绊占位，当前不提供额外效果
+geometrist,mastery,3,6,stat_mod,speed,0,2,几何,旧版兼容羁绊占位，当前不提供额外效果
+assist,tactic,1,2,stat_mod,max_energy,0,2,辅助,旧版兼容羁绊占位，当前不提供额外效果
+assist,tactic,2,4,stat_mod,max_energy,0,2,辅助,旧版兼容羁绊占位，当前不提供额外效果
+assist,tactic,3,6,stat_mod,max_energy,0,2,辅助,旧版兼容羁绊占位，当前不提供额外效果
+commander,tactic,1,2,stat_mod,max_armor,0,1,指挥,旧版兼容羁绊占位，当前不提供额外效果
+commander,tactic,2,4,stat_mod,max_armor,0,1,指挥,旧版兼容羁绊占位，当前不提供额外效果
+commander,tactic,3,6,stat_mod,max_armor,0,1,指挥,旧版兼容羁绊占位，当前不提供额外效果

@@ -20,6 +20,7 @@ func setup(effect_radius: float, effect_lifetime: float, effect_slow_ratio: floa
 
 func _ready() -> void:
 	add_to_group("player_skill_effects")
+	add_to_group("player_summoned_entity")
 	collision_layer = 0
 	collision_mask = 0
 	_life_timer = lifetime

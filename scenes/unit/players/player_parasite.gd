@@ -32,6 +32,7 @@ var _dash_direction: Vector2 = Vector2.ZERO
 var _dash_remaining_distance: float = 0.0
 var _dash_total_distance: float = 0.0
 var _dash_spawned_enemy_ids: Dictionary = {}
+var _v2_bundle: Dictionary = {}
 
 func _ready() -> void:
 	if player_id.strip_edges().is_empty():
@@ -113,7 +114,10 @@ func _handle_input(delta: float) -> void:
 
 	if skill_manager != null:
 		if Input.is_action_just_pressed("skill_e"):
-			skill_manager.execute_skill("e")
+			var e_skill: Variant = skill_manager.get_skill("e")
+			if e_skill != null and is_instance_valid(e_skill) and not bool(e_skill.is_on_cooldown) and (float(e_skill.energy_cost) <= 0.0 or energy >= float(e_skill.energy_cost)):
+				skill_manager.execute_skill("e")
+				notify_front_skill_cast("e", {"skill_id": "e_parasite"})
 			return
 		if Input.is_action_just_pressed("skill_f"):
 			_activate_parasite_f()
@@ -135,6 +139,25 @@ func _handle_input(delta: float) -> void:
 		return
 
 func _load_config_from_csv() -> void:
+	super._load_config_from_csv()
+	_v2_bundle = RoleRuntimeService.get_v2_role_bundle(player_id)
+	var player_config: Dictionary = _v2_bundle.get("player_config", {})
+	var e_config: Dictionary = _v2_bundle.get("e_skill", {})
+	var f_config: Dictionary = _v2_bundle.get("f_skill", {})
+
+	base_health = float(player_config.get("health", base_health))
+	base_move_speed = float(player_config.get("base_speed", base_move_speed))
+	base_max_energy = float(player_config.get("max_energy", base_max_energy))
+	base_energy_regen = float(player_config.get("energy_regen", base_energy_regen))
+	base_pickup_range = float(player_config.get("pickup_range", base_pickup_range))
+
+	parasite_e_cost = float(e_config.get("energy_cost", parasite_e_cost))
+	parasite_e_cooldown = float(e_config.get("cooldown", parasite_e_cooldown))
+	var f_cost_mode: String = str(f_config.get("energy_cost_mode", "percent_current")).strip_edges()
+	if f_cost_mode in ["percent", "percent_current"]:
+		parasite_f_energy_percent = float(f_config.get("energy_cost", parasite_f_energy_percent))
+	parasite_f_delay = float(f_config.get("cast_delay", parasite_f_delay))
+
 	max_energy = base_max_energy
 	energy_regen = base_energy_regen
 	base_speed = base_move_speed
@@ -171,7 +194,7 @@ func _try_start_dash() -> void:
 		dash_dir = Vector2.RIGHT if is_facing_right() else Vector2.LEFT
 
 	_is_dashing = true
-	_dash_direction = dash_dir.normalized()
+	_dash_direction = get_modified_dash_direction(dash_dir.normalized())
 	_dash_remaining_distance = parasite_dash_distance
 	_dash_total_distance = parasite_dash_distance
 	_dash_spawned_enemy_ids.clear()
@@ -253,6 +276,7 @@ func _activate_parasite_f() -> void:
 		Global.spawn_floating_text(global_position, "MISS", Color(1.0, 0.45, 0.45))
 		return
 
+	notify_front_skill_cast("f", {"skill_id": "f_parasite"})
 	var source_attack: float = damage
 	for enemy in hosts:
 		if not is_instance_valid(enemy) or enemy.is_dead:

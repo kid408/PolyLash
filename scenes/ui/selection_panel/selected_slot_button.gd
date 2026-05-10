@@ -6,6 +6,7 @@ class_name SelectedSlotButton
 # ============================================================================
 
 signal player_dropped(slot_index: int, player_id: String, weapon_type: String)
+signal remove_requested(slot_index: int)
 
 var slot_index: int = 0
 
@@ -30,3 +31,8 @@ func _drop_data(_at_position: Vector2, data) -> void:
 				return
 		
 		player_dropped.emit(slot_index, player_id, weapon_type)
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		remove_requested.emit(slot_index)
+		accept_event()

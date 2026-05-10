@@ -263,7 +263,10 @@ func _try_trigger_arc_assist(owner: Node, player_id: String, assist_config: Dict
 		var closest: Vector2 = Geometry2D.get_closest_point_to_segment(enemy.global_position, start_pos, end_pos)
 		if enemy.global_position.distance_to(closest) > half_width:
 			continue
-		enemy.apply_modifier_damage(damage_amount, owner, {"kind": "arc_assist_afterimage"})
+		enemy.apply_modifier_damage(damage_amount, owner, {
+			"kind": "arc_assist_afterimage",
+			"damage_type": "DMG_AOE",
+		})
 		if enemy.has_method("set_flash_material"):
 			enemy.set_flash_material()
 		hit_count += 1
@@ -421,7 +424,10 @@ func _try_trigger_silk_assist(owner: Node, player_id: String, assist_config: Dic
 		return
 
 	for target: Enemy in targets:
-		target.apply_modifier_damage(base_damage, owner, {"kind": "silk_assist"})
+		target.apply_modifier_damage(base_damage, owner, {
+			"kind": "silk_assist",
+			"damage_type": "DMG_TRUE",
+		})
 		SILK_LINK_UTILS.apply_link(target, owner if is_instance_valid(owner) else source_enemy, link_duration, false, link_duration)
 		_spawn_silk_empathy_line(source_enemy.global_position, target.global_position)
 		if target.has_method("set_flash_material"):
@@ -821,7 +827,10 @@ func _trigger_overtone_echo(active_player: PlayerBase, enemy: Enemy, damage_amou
 	enemy.apply_modifier_damage(
 		damage_amount,
 		active_player,
-		{"kind": "overtone_echo_assist"}
+		{
+			"kind": "overtone_echo_assist",
+			"damage_type": "DMG_AOE",
+		}
 	)
 	if enemy.has_method("set_flash_material"):
 		enemy.set_flash_material()

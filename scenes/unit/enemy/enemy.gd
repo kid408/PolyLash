@@ -3,7 +3,35 @@ class_name Enemy
 
 const DEBUG_VERBOSE := false
 const COMBAT_MODIFIER_COMPONENT := preload("res://scenes/components/combat_modifier_component.gd")
+const COMBAT_EVENT_TYPES := preload("res://scenes/components/combat_event_types.gd")
 const SILK_LINK_UTILS := preload("res://scenes/effects/silk_link_utils.gd")
+const OPEN_LINE_DAMAGE_KINDS := {
+	"arc_travel": true,
+	"minimalist_slash": true,
+	"mirror_draw": true,
+	"overtone_sonic_boom": true,
+	"wall_contact_damage": true,
+}
+const CLOSED_SPACE_DAMAGE_KINDS := {
+	"area_effect_tick": true,
+	"collapse_singularity_tick": true,
+	"joule_closed_blast": true,
+	"minimalist_true_slash": true,
+	"overtone_drum_roll": true,
+	"phalanx_pinball_enemy": true,
+	"phalanx_pinball_wall": true,
+}
+const SKILL_E_DAMAGE_KINDS := {
+	"arc_drift_blast": true,
+	"silk_energy_reflow": true,
+}
+const SKILL_F_DAMAGE_KINDS := {
+	"collapse_event_horizon_final": true,
+	"collapse_event_horizon_tick": true,
+	"phalanx_rigid_body_boss": true,
+}
+
+signal knockback_requested(enemy: Enemy, payload: Dictionary)
 
 # ==============================================================================
 # 1. 灞炴€ч厤缃?
@@ -179,6 +207,15 @@ var phalanx_ballistic_source: Variant = null
 var phalanx_ballistic_hit_radius: float = 26.0
 var phalanx_ballistic_stop_on_hit: bool = true
 var phalanx_ballistic_target_hit_cooldowns: Dictionary = {}
+var _last_damage_payload: Dictionary = {}
+var _last_knockback_payload: Dictionary = {}
+var _split_spawned_on_death: bool = false
+var _slime_sprite_base_scale: Vector2 = Vector2.ONE
+var _slime_visual_time: float = 0.0
+var _slime_birth_invul_timer: float = 0.0
+var _slime_spawn_pop_timer: float = 0.0
+var _closure_dummy_vulnerable_timer: float = 0.0
+var _line_dummy_feedback_cooldown: float = 0.0
 
 const ASSIST_BACKEND_KILL_META: String = "assist_backend_kill"
 const ASSIST_BACKEND_KILL_OWNER_META: String = "assist_backend_kill_owner"
@@ -241,6 +278,7 @@ func _ready() -> void:
 		can_charge = true
 
 	_apply_split_spawn_profile()
+	_setup_fractal_slime_runtime()
 
 # 鏍规嵁 enemy_id 璁剧疆鏁屼汉绫诲瀷
 func _set_enemy_type_from_id() -> void:
@@ -526,11 +564,14 @@ func _setup_charge_animation() -> void:
 # ==============================================================================
 func _process(delta: float) -> void:
 	if Global.game_paused or is_dead: return
+	_closure_dummy_vulnerable_timer = max(0.0, _closure_dummy_vulnerable_timer - delta)
+	_line_dummy_feedback_cooldown = max(0.0, _line_dummy_feedback_cooldown - delta)
 
 	_process_status_effects(delta)
 	_process_parasite_timers(delta)
 	_process_parasite_runtime(delta)
 	_process_modifier_visuals(delta)
+	_process_fractal_slime_feedback(delta)
 	_process_elite_affix(delta)
 	_process_boss_phase_template(delta)
 	if _process_phalanx_ballistic(delta):
@@ -611,10 +652,9 @@ func _process_elite_affix(delta: float) -> void:
 	health_component.heal(heal_amount)
 
 func _init_boss_phase_template() -> void:
-	if enemy_id != "boss_enemy":
-		return
-
 	var grouped: Dictionary = ConfigRepository.load_boss_phase_configs()
+	if not grouped.has(enemy_id):
+		return
 	boss_phase_configs = grouped.get(enemy_id, [])
 	if boss_phase_configs.is_empty():
 		return
@@ -659,6 +699,8 @@ func _apply_boss_phase(phase_no: int, is_initial: bool) -> void:
 	boss_current_phase = phase_no
 	set_meta("boss_phase_budget_multiplier", budget_mul)
 	set_meta("boss_phase_event_tag", event_tag)
+	if has_method("on_boss_phase_changed"):
+		call("on_boss_phase_changed", phase_no, is_initial, event_tag)
 
 	if not is_initial:
 		Global.spawn_floating_text(global_position, "BOSS P%d" % phase_no, Color(1.6, 0.8, 0.2))
@@ -703,7 +745,15 @@ func _state_chase(delta: float) -> void:
 	move_vec = move_vec.limit_length(1.0)
 	if _is_movement_locked():
 		return
-	position += move_vec * _current_move_speed() * delta
+	var motion: Vector2 = move_vec * _current_move_speed() * delta
+	if knockback_power > 0.0:
+		var wall_hit: Dictionary = _detect_knockback_wall_hit(motion)
+		if not wall_hit.is_empty():
+			if BondManager != null and BondManager.has_method("on_enemy_knockback_wall_impact"):
+				BondManager.on_enemy_knockback_wall_impact(self, _last_knockback_payload.duplicate(true), wall_hit)
+			reset_knockback()
+			return
+	position += motion
 	update_rotation()
 	
 	# 5. 鍐查攱鍒ゅ畾
@@ -905,10 +955,13 @@ func _state_cooldown(delta: float) -> void:
 		current_ai_state = AIState.CHASE
 
 func is_tactical_reject_elite_immune() -> bool:
-	return self is EnemyElites or not elite_affix_id.is_empty() or enemy_id == "boss_enemy"
+	return self is EnemyElites or not elite_affix_id.is_empty() or is_boss_enemy()
 
 func is_boss_enemy() -> bool:
-	return enemy_id == "boss_enemy"
+	if not boss_phase_configs.is_empty():
+		return true
+	var config: Dictionary = ConfigManager.get_enemy_config(enemy_id)
+	return str(config.get("role", "")).strip_edges().to_lower() == "boss"
 
 func apply_tactical_reject(origin: Vector2, push_distance: float, stun_duration: float) -> Dictionary:
 	var result: Dictionary = {
@@ -1060,7 +1113,11 @@ func _apply_charge_open_line_hit(hit_result: Dictionary) -> void:
 	var asset: Dictionary = hit_result.get("asset", {})
 	var damage_amount: int = _resolve_charge_open_line_damage(asset)
 	if damage_amount > 0 and health_component:
-		health_component.take_damage(damage_amount)
+		health_component.take_damage(damage_amount, {
+			"source": asset.get("owner", null),
+			"kind": "charge_open_line_hit",
+			"damage_type": "DMG_DIRECT",
+		})
 	var asset_id: String = str(asset.get("asset_id", ""))
 	if not asset_id.is_empty():
 		_charge_line_hit_msec_by_asset[asset_id] = Time.get_ticks_msec()
@@ -1207,6 +1264,170 @@ func get_incoming_damage_multiplier() -> float:
 		multiplier *= combat_modifier_component.get_damage_taken_multiplier()
 	return multiplier
 
+func preprocess_incoming_damage(raw_damage: float, payload: Dictionary = {}) -> Dictionary:
+	var processed_payload: Dictionary = payload.duplicate(true)
+	var damage_value: float = raw_damage
+	if enemy_id == "line_dummy":
+		return _preprocess_line_dummy_damage(damage_value, processed_payload)
+	if enemy_id == "closure_dummy":
+		return _preprocess_closure_dummy_damage(damage_value, processed_payload)
+	if enemy_id != "phalanx_enforcer":
+		return {
+			"damage": damage_value,
+			"payload": processed_payload,
+		}
+
+	var damage_type: int = COMBAT_EVENT_TYPES.normalize_damage_type(
+		processed_payload.get("damage_type", COMBAT_EVENT_TYPES.DamageType.DIRECT)
+	)
+	processed_payload["damage_type"] = damage_type
+	if damage_type != COMBAT_EVENT_TYPES.DamageType.DIRECT:
+		return {
+			"damage": damage_value,
+			"payload": processed_payload,
+		}
+
+	var is_blocked: bool = _should_block_front_guard_payload(processed_payload)
+	if not is_blocked:
+		return {
+			"damage": damage_value,
+			"payload": processed_payload,
+		}
+
+	damage_value = 0.0
+	processed_payload["blocked_by_front_guard"] = true
+	Global.spawn_floating_text(global_position + Vector2(0, -18), "GUARD!", Color(0.66, 0.92, 1.0))
+	if has_method("set_flash_material"):
+		set_flash_material()
+	if SoundManager != null and SoundManager.has_method("play"):
+		SoundManager.play("enemy_charge_warning")
+	return {
+		"damage": damage_value,
+		"payload": processed_payload,
+	}
+
+func _preprocess_line_dummy_damage(raw_damage: float, payload: Dictionary) -> Dictionary:
+	var damage_value: float = raw_damage
+	if _is_open_line_damage_payload(payload):
+		damage_value *= 3.0
+		if _line_dummy_feedback_cooldown <= 0.0:
+			_line_dummy_feedback_cooldown = 0.18
+			Global.spawn_floating_text(global_position + Vector2(0, -18), "LINE x3", Color(0.48, 0.92, 1.0))
+	else:
+		damage_value *= 0.2
+		if _line_dummy_feedback_cooldown <= 0.0:
+			_line_dummy_feedback_cooldown = 0.18
+			Global.spawn_floating_text(global_position + Vector2(0, -18), "RESIST", Color(1.0, 0.84, 0.44))
+	return {
+		"damage": damage_value,
+		"payload": payload,
+	}
+
+func _preprocess_closure_dummy_damage(raw_damage: float, payload: Dictionary) -> Dictionary:
+	if _closure_dummy_vulnerable_timer > 0.0:
+		return {
+			"damage": raw_damage,
+			"payload": payload,
+		}
+	if not bool(payload.get("allow_closure_dummy_damage", false)):
+		payload["blocked_by_closure_dummy"] = true
+		Global.spawn_floating_text(global_position + Vector2(0, -18), "SEALED", Color(1.0, 0.72, 0.36))
+		return {
+			"damage": 0.0,
+			"payload": payload,
+		}
+	return {
+		"damage": raw_damage,
+		"payload": payload,
+	}
+
+func _should_block_front_guard_payload(payload: Dictionary) -> bool:
+	if enemy_id != "phalanx_enforcer":
+		return false
+	var source_position: Vector2 = _extract_damage_source_position(payload)
+	if source_position == Vector2.INF:
+		return false
+	var front_direction: Vector2 = _get_front_guard_direction()
+	if front_direction.length_squared() <= 0.0001:
+		return false
+	var to_source: Vector2 = source_position - global_position
+	if to_source.length_squared() <= 0.0001:
+		return false
+	return front_direction.normalized().dot(to_source.normalized()) >= 0.5
+
+func _extract_damage_source_position(payload: Dictionary) -> Vector2:
+	var source_position_variant: Variant = payload.get("source_position", Vector2.INF)
+	if source_position_variant is Vector2:
+		return source_position_variant
+	var source_variant: Variant = payload.get("source", null)
+	if typeof(source_variant) == TYPE_OBJECT:
+		var source_object: Object = source_variant as Object
+		if source_object != null and is_instance_valid(source_object) and source_object is Node2D:
+			return (source_object as Node2D).global_position
+	return Vector2.INF
+
+func _get_front_guard_direction() -> Vector2:
+	var target_node: Node2D = override_target
+	if not is_instance_valid(target_node):
+		target_node = Global.player
+	if is_instance_valid(target_node):
+		var to_target: Vector2 = target_node.global_position - global_position
+		if to_target.length_squared() > 0.0001:
+			return to_target.normalized()
+	if is_instance_valid(visuals):
+		return Vector2.RIGHT if visuals.scale.x < 0.0 else Vector2.LEFT
+	return Vector2.LEFT
+
+func _is_open_line_damage_payload(payload: Dictionary) -> bool:
+	var explicit_mode: String = str(payload.get("space_skill_mode", "")).strip_edges().to_lower()
+	if explicit_mode == "open":
+		return true
+	var kind: String = str(payload.get("kind", "")).strip_edges().to_lower()
+	return OPEN_LINE_DAMAGE_KINDS.has(kind)
+
+func _is_closed_space_damage_payload(payload: Dictionary) -> bool:
+	var explicit_mode: String = str(payload.get("space_skill_mode", "")).strip_edges().to_lower()
+	if explicit_mode == "closed":
+		return true
+	var kind: String = str(payload.get("kind", "")).strip_edges().to_lower()
+	return CLOSED_SPACE_DAMAGE_KINDS.has(kind)
+
+func _is_skill_slot_damage(payload: Dictionary, skill_slot: String) -> bool:
+	var normalized_slot: String = skill_slot.strip_edges().to_lower()
+	if normalized_slot.is_empty():
+		return false
+	var explicit_slot: String = str(payload.get("skill_slot", payload.get("source_slot", ""))).strip_edges().to_lower()
+	if explicit_slot == normalized_slot:
+		return true
+	var kind: String = str(payload.get("kind", "")).strip_edges().to_lower()
+	match normalized_slot:
+		"e":
+			return SKILL_E_DAMAGE_KINDS.has(kind)
+		"f":
+			return SKILL_F_DAMAGE_KINDS.has(kind)
+		_:
+			return false
+
+func on_player_draw_release(_player: PlayerBase, release_data: Dictionary) -> void:
+	if enemy_id != "closure_dummy":
+		return
+	if not bool(release_data.get("is_closed", false)):
+		return
+	var points_variant: Variant = release_data.get("points", PackedVector2Array())
+	var polygon: PackedVector2Array = PackedVector2Array()
+	if points_variant is PackedVector2Array:
+		polygon = points_variant
+	elif points_variant is Array:
+		for point_variant: Variant in points_variant:
+			if point_variant is Vector2:
+				polygon.append(point_variant)
+	if polygon.size() < 3:
+		return
+	if not Geometry2D.is_point_in_polygon(global_position, polygon):
+		return
+	_closure_dummy_vulnerable_timer = 2.0
+	Global.spawn_floating_text(global_position + Vector2(0, -20), "OPEN 2.0s", Color(1.0, 0.66, 0.34))
+
 func _process_parasite_timers(delta: float) -> void:
 	if not is_parasitized:
 		return
@@ -1240,7 +1461,10 @@ func _emit_parasite_pulse() -> void:
 			continue
 		if global_position.distance_to(enemy.global_position) > parasite_pulse_radius:
 			continue
-		enemy.apply_modifier_damage(pulse_damage, self, {"kind": "parasite_pulse"})
+		enemy.apply_modifier_damage(pulse_damage, self, {
+			"kind": "parasite_pulse",
+			"damage_type": "DMG_DOT",
+		})
 		enemy.apply_move_speed_modifier(
 			"parasite_pulse_slow",
 			max(0.0, 1.0 - parasite_slow_ratio),
@@ -1498,14 +1722,25 @@ func apply_modifier_damage(raw_amount: float, _source: Variant = null, _payload:
 	if is_dead or health_component == null:
 		return
 	var final_damage: float = raw_amount
-	var is_true_damage: bool = bool(_payload.get("true_damage", false))
+	var payload: Dictionary = _payload.duplicate(true)
+	if _source != null and not payload.has("source"):
+		payload["source"] = _source
+	var damage_type: int = COMBAT_EVENT_TYPES.normalize_damage_type(
+		payload.get(
+			"damage_type",
+			COMBAT_EVENT_TYPES.DamageType.TRUE_DAMAGE if bool(payload.get("true_damage", false)) else COMBAT_EVENT_TYPES.DamageType.DIRECT
+		)
+	)
+	payload["damage_type"] = damage_type
+	payload["is_shared_damage"] = bool(payload.get("is_shared_damage", false))
+	var is_true_damage: bool = damage_type == COMBAT_EVENT_TYPES.DamageType.TRUE_DAMAGE or bool(payload.get("true_damage", false))
 	if not is_true_damage:
 		final_damage *= get_incoming_damage_multiplier()
 	if is_true_damage:
 		set_meta("ignore_incoming_damage_multiplier_once", true)
-	if bool(_payload.get("soul_link_propagated", false)):
+	if bool(payload.get("soul_link_propagated", false)):
 		set_meta("soul_link_silent_damage", true)
-	health_component.take_damage(final_damage)
+	health_component.take_damage(final_damage, payload)
 	if has_meta("ignore_incoming_damage_multiplier_once"):
 		remove_meta("ignore_incoming_damage_multiplier_once")
 	if has_meta("soul_link_silent_damage"):
@@ -1551,20 +1786,27 @@ func apply_tag_marker(modifier_id: String, tag_name: String, duration: float, st
 			linked_enemy.apply_tag_marker(modifier_id, tag_name, duration, stacking_rule, source, linked_payload)
 	return applied_id
 
-func on_health_component_damage_applied(applied_damage: float) -> void:
+func on_health_component_damage_applied(applied_damage: float, payload: Dictionary = {}) -> void:
 	if applied_damage <= 0.0:
 		return
+	_last_damage_payload = payload.duplicate(true)
 	if has_meta("soul_link_silent_damage"):
+		return
+	if bool(payload.get("is_shared_damage", false)):
+		return
+	if bool(payload.get("soul_link_skip_share", false)):
 		return
 	if not _has_soul_link():
 		return
-	var transmission_ratio: float = 1.5 if _has_empowered_soul_link() else 0.8
+	var transmission_ratio: float = SILK_LINK_UTILS.get_transmission_ratio(_has_empowered_soul_link())
 	var shared_damage: float = applied_damage * transmission_ratio
 	if shared_damage <= 0.0:
 		return
 	for linked_enemy: Enemy in _get_other_soul_linked_enemies():
 		linked_enemy.apply_modifier_damage(shared_damage, self, {
 			"true_damage": true,
+			"damage_type": COMBAT_EVENT_TYPES.DamageType.TRUE_DAMAGE,
+			"is_shared_damage": true,
 			"soul_link_propagated": true,
 			"kind": "soul_link_damage",
 		})
@@ -1650,7 +1892,11 @@ func _execute_parasite_detonation() -> void:
 		if detonation_center.distance_to(enemy.global_position) > parasite_f_detonation_radius:
 			continue
 		if enemy.health_component:
-			enemy.health_component.take_damage(detonation_damage)
+			enemy.health_component.take_damage(detonation_damage, {
+				"source": self,
+				"kind": "parasite_f_detonation",
+				"damage_type": "DMG_AOE",
+			})
 
 func _trigger_parasite_catalyst_spread_on_death() -> void:
 	if parasite_catalyst_timer <= 0.0:
@@ -1817,9 +2063,12 @@ func apply_status(type: String, duration: float, value: float = 0, stacks: int =
 		return
 	
 	# P2-3: Debuff寤堕暱鏈哄埗锛堝拻鏈笀 Lv.1锛?
-	if BondManager.has_mechanic("debuff_duration"):
+	if BondManager.has_mechanic("abnormal_duration_scale") or BondManager.has_mechanic("debuff_duration"):
 		var original_duration = duration
-		duration *= 1.5
+		var duration_scale: float = BondManager.get_mechanic_value("abnormal_duration_scale")
+		if duration_scale <= 0.0:
+			duration_scale = 1.0 + max(0.0, BondManager.get_mechanic_value("debuff_duration"))
+		duration *= duration_scale
 		if DEBUG_VERBOSE: print("[Enemy] [P2-3] Debuff寤堕暱瑙﹀彂: %s 鎸佺画鏃堕棿 %.1f绉?-> %.1f绉?(x1.5)" % [
 			type,
 			original_duration,
@@ -1951,7 +2200,11 @@ func _apply_dot_damage(status_type: String, value: float, stacks: int) -> void:
 			Global.spawn_floating_text(global_position, "POISON x%d!" % stacks, Color(0.4, 0.7, 0.1))
 	
 	if damage > 0:
-		health_component.take_damage(damage)
+		health_component.take_damage(damage, {
+			"source": self,
+			"kind": "%s_status_tick" % status_type,
+			"damage_type": "DMG_DOT",
+		})
 		if DEBUG_VERBOSE: print("[Enemy] %s DoT浼ゅ: %d (灞傛暟: %d)" % [status_type.to_upper(), damage, stacks])
 
 ## 绉婚櫎鐘舵€佹晥鏋?
@@ -1996,16 +2249,68 @@ func clear_all_statuses() -> void:
 		_remove_status(status_type)
 	
 	active_statuses.clear()
+
+func get_abnormal_state_count() -> int:
+	var abnormal_states: Dictionary = {}
+	for state_name_variant: Variant in active_statuses.keys():
+		var state_name: String = str(state_name_variant).strip_edges().to_lower()
+		if state_name in ["poison", "vulnerable", "slow", "bleed", "tar_debuff"]:
+			abnormal_states[state_name] = true
+	if combat_modifier_component != null:
+		for marker_name: String in combat_modifier_component.get_tag_markers():
+			if marker_name == "joule_tar" or marker_name == "joule_tar_max":
+				abnormal_states["tar_debuff"] = true
+		for modifier_data: Dictionary in combat_modifier_component.get_modifiers_by_type("move_speed_multiplier"):
+			if float(modifier_data.get("value", 1.0)) < 1.0:
+				abnormal_states["slow"] = true
+		if not combat_modifier_component.get_modifiers_by_type("vulnerable").is_empty():
+			abnormal_states["vulnerable"] = true
+		for modifier_data: Dictionary in combat_modifier_component.get_modifiers_by_type("damage_over_time"):
+			var modifier_payload: Dictionary = modifier_data.get("payload", {})
+			var abnormal_key: String = str(modifier_payload.get("abnormal_state", modifier_payload.get("status_name", ""))).strip_edges().to_lower()
+			if abnormal_key in ["poison", "bleed"]:
+				abnormal_states[abnormal_key] = true
+	return abnormal_states.size()
+
+func has_mechanic_mark(mark_name: String) -> bool:
+	var normalized_mark: String = mark_name.strip_edges().to_lower()
+	if normalized_mark.is_empty():
+		return false
+	if normalized_mark == "mark" and active_statuses.has("marked"):
+		return true
+	if combat_modifier_component == null:
+		return false
+	if normalized_mark == "mark":
+		return combat_modifier_component.has_tag_marker("mark") or combat_modifier_component.has_tag_marker("overtone_echo")
+	if normalized_mark == "soul_link":
+		return combat_modifier_component.has_tag_marker("soul_link") or combat_modifier_component.has_tag_marker("soul_link_empowered")
+	return combat_modifier_component.has_tag_marker(normalized_mark)
 	
 # ==============================================================================
 # 鍑婚€€涓庡彈鍑?(淇濇寔涔嬪墠鐨勪慨澶?
 # ==============================================================================
-func apply_knockback(knock_dir: Vector2, knock_power: float) -> void:
+func apply_knockback(knock_dir: Vector2, knock_power: float, source: Variant = null, extra_payload: Dictionary = {}) -> void:
 	# 鍐查攱鏈熼棿鍏嶇柅鍑婚€€ (闇镐綋)
 	if current_ai_state == AIState.CHARGING: return
-	
-	knockback_dir = knock_dir
-	knockback_power = knock_power
+
+	var payload: Dictionary = {
+		"direction": knock_dir,
+		"power": knock_power,
+		"source": source,
+	}
+	for key_variant: Variant in extra_payload.keys():
+		payload[key_variant] = extra_payload[key_variant]
+	if BondManager != null and BondManager.has_method("process_enemy_knockback"):
+		payload = BondManager.process_enemy_knockback(self, payload)
+	knockback_requested.emit(self, payload)
+	var final_direction: Vector2 = payload.get("direction", knock_dir)
+	var final_power: float = float(payload.get("power", knock_power))
+	if final_direction.length_squared() <= 0.0001 or final_power <= 0.0:
+		return
+
+	knockback_dir = final_direction.normalized()
+	knockback_power = final_power
+	_last_knockback_payload = payload.duplicate(true)
 	if knockback_timer.time_left > 0:
 		knockback_timer.stop()
 		reset_knockback()
@@ -2014,6 +2319,30 @@ func apply_knockback(knock_dir: Vector2, knock_power: float) -> void:
 func reset_knockback() -> void:
 	knockback_dir = Vector2.ZERO
 	knockback_power = 0.0
+	_last_knockback_payload.clear()
+
+func _resolve_source_attack_value(source: Variant) -> float:
+	if source == null:
+		return max(1.0, damage)
+	if source is PlayerBase:
+		return max(1.0, float((source as PlayerBase).damage))
+	if source is Node and (source as Node).has_method("get_owner_player"):
+		var owner_variant: Variant = (source as Node).call("get_owner_player")
+		if owner_variant is PlayerBase and is_instance_valid(owner_variant):
+			return max(1.0, float((owner_variant as PlayerBase).damage))
+	return max(1.0, damage)
+
+func _detect_knockback_wall_hit(motion: Vector2) -> Dictionary:
+	if motion.length_squared() <= 0.0001:
+		return {}
+	var world_2d := get_world_2d()
+	if world_2d == null:
+		return {}
+	var query := PhysicsRayQueryParameters2D.create(global_position, global_position + motion)
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	query.collision_mask = charge_cage_collision_mask
+	return world_2d.direct_space_state.intersect_ray(query)
 
 func _on_knockback_timer_timeout() -> void:
 	reset_knockback()
@@ -2069,8 +2398,14 @@ func _process_phalanx_ballistic(delta: float) -> bool:
 		for collided_enemy: Enemy in collided_enemies:
 			if collided_enemy == null or not is_instance_valid(collided_enemy) or collided_enemy.is_dead:
 				continue
-			apply_modifier_damage(damage_amount, phalanx_ballistic_source, {"kind": "phalanx_ballistic_collision"})
-			collided_enemy.apply_modifier_damage(damage_amount, phalanx_ballistic_source, {"kind": "phalanx_ballistic_collision"})
+			apply_modifier_damage(damage_amount, phalanx_ballistic_source, {
+				"kind": "phalanx_ballistic_collision",
+				"damage_type": "DMG_DIRECT",
+			})
+			collided_enemy.apply_modifier_damage(damage_amount, phalanx_ballistic_source, {
+				"kind": "phalanx_ballistic_collision",
+				"damage_type": "DMG_DIRECT",
+			})
 			collided_enemy.global_position += direction * phalanx_ballistic_impact_push_distance
 			phalanx_ballistic_target_hit_cooldowns[collided_enemy.get_instance_id()] = 0.08
 			if has_method("set_flash_material"):
@@ -2130,6 +2465,13 @@ func _decay_phalanx_ballistic_hit_cooldowns(delta: float) -> void:
 func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 	if is_dead: return
 	var original_damage: float = hitbox.damage
+	var front_guard_blocked: bool = false
+	if enemy_id == "phalanx_enforcer":
+		var preview_payload: Dictionary = hitbox.build_damage_payload()
+		var preview_damage_type: int = COMBAT_EVENT_TYPES.normalize_damage_type(
+			preview_payload.get("damage_type", COMBAT_EVENT_TYPES.DamageType.DIRECT)
+		)
+		front_guard_blocked = preview_damage_type == COMBAT_EVENT_TYPES.DamageType.DIRECT and _should_block_front_guard_payload(preview_payload)
 	hitbox.damage = original_damage * get_incoming_damage_multiplier()
 
 	# 1. 纭３榫熷弽浼ら€昏緫 (淇敼涓哄噺浼よ€屼笉鏄畬鍏ㄦ牸鎸?
@@ -2141,7 +2483,11 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 		
 		# 杞诲井鍙嶄激鐜╁
 		if Global.player.has_method("take_damage"):
-			Global.player.take_damage(1, {"source": self, "kind": "shielded_reflect"})
+			Global.player.take_damage(1, {
+				"source": self,
+				"kind": "shielded_reflect",
+				"damage_type": "DMG_DIRECT",
+			})
 		
 		# 涓嶅啀 return锛岀户缁墽琛屾甯镐激瀹抽€昏緫
 
@@ -2151,15 +2497,19 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 	if current_ai_state == AIState.CHARGING:
 		_play_charge_hit_feedback("CUT!", Color(1.0, 1.0, 1.0), false)
 	
-	if hitbox.knockback_power > 0:
+	if hitbox.knockback_power > 0 and not front_guard_blocked:
 		# 瀹夊叏妫€鏌ワ細纭繚 source 浠嶇劧鏈夋晥
 		if hitbox.source and is_instance_valid(hitbox.source):
 			var dir := hitbox.source.global_position.direction_to(global_position)
-			apply_knockback(dir, hitbox.knockback_power)
+			apply_knockback(dir, hitbox.knockback_power, hitbox.source, {
+				"source_attack": _resolve_source_attack_value(hitbox.source),
+				"damage_type": int(hitbox.damage_type),
+				"knockback_generation": 0,
+			})
 	
 	# 澧炲己鎵撳嚮鎰燂細鏁屼汉鍙楀嚮鏃剁殑鍙嶉
 	# 瀹夊叏妫€鏌ワ細纭繚 source 鍜?Global.player 浠嶇劧鏈夋晥
-	if hitbox.source and is_instance_valid(hitbox.source) and hitbox.source == Global.player: 
+	if hitbox.source and is_instance_valid(hitbox.source) and hitbox.source == Global.player and not front_guard_blocked:
 		var is_elite_target: bool = self is EnemyElites
 		if Global.has_method("apply_enemy_hit_feedback"):
 			Global.apply_enemy_hit_feedback(hitbox.damage, hitbox.critical, is_elite_target)
@@ -2200,6 +2550,8 @@ func destroy_enemy() -> void:
 	if is_dead: return
 	is_dead = true
 	can_move = false
+	_try_spawn_split_on_death()
+	_try_trigger_explode_on_death()
 	_trigger_parasite_catalyst_spread_on_death()
 	clear_parasite_state()
 	var backend_kill: bool = is_backend_kill()
@@ -2259,6 +2611,8 @@ func destroy_enemy() -> void:
 		Global.player.on_enemy_killed(self)
 	if not backend_kill and assist_service != null and assist_service.has_method("on_front_enemy_killed"):
 		assist_service.call("on_front_enemy_killed", self)
+	if BondManager != null and BondManager.has_method("on_enemy_killed"):
+		BondManager.on_enemy_killed(self, _last_damage_payload.duplicate(true))
 	
 	var is_elite_target: bool = self is EnemyElites
 	if Global.has_method("apply_enemy_kill_feedback"):
@@ -2286,6 +2640,153 @@ func spawn_explosion_safe() -> void:
 	vfx_tween.tween_callback(vfx.queue_free)
 
 func _spawn_split_children() -> void:
+	var split_count: int = _get_split_child_count()
+	if split_count <= 0:
+		return
+	_spawn_split_children_for_enemy("fractal_slime_mini", split_count)
+
+func _get_split_child_count() -> int:
+	var split_ability: Dictionary = _get_enemy_ability_config("split_on_death")
+	if split_ability.is_empty():
+		return 0
+	return max(0, int(split_ability.get("param1", 0)))
+
+func _get_enemy_ability_config(target_ability_id: String) -> Dictionary:
+	if AbilityManager == null:
+		return {}
+	var abilities: Array = AbilityManager.get_enemy_abilities(enemy_id)
+	for ability_variant in abilities:
+		if not (ability_variant is Dictionary):
+			continue
+		var ability_config: Dictionary = ability_variant
+		if str(ability_config.get("ability_id", "")) == target_ability_id:
+			return ability_config
+	return {}
+
+func _try_trigger_explode_on_death() -> void:
+	var explode_ability: Dictionary = _get_enemy_ability_config("explode_on_death")
+	if explode_ability.is_empty():
+		return
+	var damage_value: float = max(0.0, float(explode_ability.get("param1", 20.0)))
+	var radius_value: float = max(8.0, float(explode_ability.get("param2", 80.0)))
+	if damage_value <= 0.0:
+		return
+	_spawn_death_explosion_area(damage_value, radius_value)
+
+func _spawn_death_explosion_area(explosion_damage: float, explosion_radius: float) -> void:
+	var current_scene: Node = get_tree().current_scene
+	if current_scene == null:
+		return
+
+	var explosion_area := Area2D.new()
+	explosion_area.name = "VolatileSparkExplosion"
+	explosion_area.global_position = global_position
+	explosion_area.collision_layer = 0
+	explosion_area.collision_mask = 8 | 32
+	explosion_area.monitoring = true
+	explosion_area.monitorable = false
+	explosion_area.z_index = 95
+
+	var collision := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = explosion_radius
+	collision.shape = circle
+	explosion_area.add_child(collision)
+
+	var ring := Line2D.new()
+	ring.width = 7.0
+	ring.default_color = Color(1.0, 0.92, 0.42, 0.85)
+	ring.closed = true
+	ring.z_index = 96
+	var ring_points := PackedVector2Array()
+	for i in range(20):
+		var angle: float = TAU * float(i) / 20.0
+		ring_points.append(Vector2.RIGHT.rotated(angle) * explosion_radius)
+	ring.points = ring_points
+	explosion_area.add_child(ring)
+
+	var fill := Polygon2D.new()
+	fill.color = Color(1.0, 0.56, 0.16, 0.24)
+	fill.polygon = ring_points
+	explosion_area.add_child(fill)
+
+	current_scene.add_child(explosion_area)
+	_apply_death_explosion_damage(explosion_damage, explosion_radius)
+	if SoundManager != null and SoundManager.has_method("play"):
+		SoundManager.play("player_explosion")
+	Global.on_camera_shake.emit(5.5, 0.12)
+
+	var tween: Tween = explosion_area.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(explosion_area, "scale", Vector2.ONE * 1.18, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(ring, "modulate:a", 0.0, 0.18)
+	tween.tween_property(fill, "color:a", 0.0, 0.18)
+	tween.chain().tween_callback(explosion_area.queue_free)
+
+func _apply_death_explosion_damage(explosion_damage: float, explosion_radius: float) -> void:
+	for hurtbox_variant in get_tree().get_nodes_in_group("hurtbox"):
+		if not (hurtbox_variant is HurtboxComponent):
+			continue
+		var hurtbox: HurtboxComponent = hurtbox_variant
+		if not is_instance_valid(hurtbox):
+			continue
+		var target_node: Node = hurtbox.get_parent()
+		if target_node == null or not is_instance_valid(target_node) or target_node == self:
+			continue
+		if not (target_node is Node2D):
+			continue
+		var target_2d: Node2D = target_node as Node2D
+		if target_2d.global_position.distance_to(global_position) > explosion_radius:
+			continue
+		if target_node is Enemy:
+			var target_enemy: Enemy = target_node as Enemy
+			if target_enemy.is_dead:
+				continue
+			target_enemy.apply_modifier_damage(explosion_damage, self, {
+				"kind": "volatile_spark_explosion",
+				"damage_type": COMBAT_EVENT_TYPES.DamageType.AOE,
+				"source_position": global_position,
+			})
+		elif target_node is PlayerBase:
+			var target_player: PlayerBase = target_node as PlayerBase
+			target_player.take_damage(explosion_damage, {
+				"source": self,
+				"kind": "volatile_spark_explosion",
+				"damage_type": COMBAT_EVENT_TYPES.DamageType.AOE,
+				"source_position": global_position,
+			})
+
+func _try_spawn_split_on_death() -> void:
+	if _split_spawned_on_death:
+		return
+	var split_ability: Dictionary = _get_enemy_ability_config("split_on_death")
+	if split_ability.is_empty():
+		return
+	if _should_block_split_on_death():
+		return
+	var split_count: int = max(0, int(split_ability.get("param1", 0)))
+	if split_count <= 0:
+		return
+	_split_spawned_on_death = true
+	_spawn_fractal_split_burst(Color(0.38, 1.0, 0.42, 1.0), 1.1)
+	_spawn_fractal_split_residue()
+	_spawn_split_children_for_enemy("fractal_slime_mini", split_count)
+
+func _should_block_split_on_death() -> bool:
+	var damage_type: int = COMBAT_EVENT_TYPES.normalize_damage_type(
+		_last_damage_payload.get("damage_type", COMBAT_EVENT_TYPES.DamageType.DIRECT)
+	)
+	if damage_type == COMBAT_EVENT_TYPES.DamageType.TRUE_DAMAGE or bool(_last_damage_payload.get("true_damage", false)):
+		return true
+	return _has_split_blocking_cc()
+
+func _has_split_blocking_cc() -> bool:
+	for status_name in ["stun", "freeze", "petrify"]:
+		if has_status(status_name):
+			return true
+	return false
+
+func _spawn_split_children_for_enemy(child_enemy_id: String, child_count: int) -> void:
 	var scene_path: String = scene_file_path
 	if scene_path.is_empty():
 		scene_path = "res://scenes/unit/enemy/enemy_generic.tscn"
@@ -2293,17 +2794,22 @@ func _spawn_split_children() -> void:
 	if scene == null:
 		return
 
-	for i in range(2):
+	for i in range(child_count):
 		var child_enemy = scene.instantiate() as Enemy
 		if child_enemy == null:
 			continue
-		child_enemy.enemy_id = enemy_id
-		child_enemy.global_position = global_position + Vector2(randf_range(-36, 36), randf_range(-24, 24))
+		var launch_dir: Vector2 = Vector2.RIGHT.rotated(randf_range(0.0, TAU))
+		var launch_power: float = randf_range(90.0, 145.0)
+		child_enemy.enemy_id = child_enemy_id
+		child_enemy.global_position = global_position + launch_dir * randf_range(12.0, 30.0)
 		child_enemy.elite_affix_id = ""
 		child_enemy.set_meta("split_spawn_profile", {
-			"speed_mult": 1.12,
-			"damage_mult": 0.60,
-			"hp_mult": 0.45
+			"speed_mult": 1.0,
+			"damage_mult": 1.0,
+			"hp_mult": 1.0,
+			"disable_split": true,
+			"knockback_dir": launch_dir,
+			"knockback_power": launch_power
 		})
 		get_tree().current_scene.call_deferred("add_child", child_enemy)
 
@@ -2319,6 +2825,7 @@ func _apply_split_spawn_profile() -> void:
 	var speed_mult: float = float(profile.get("speed_mult", 1.0))
 	var damage_mult: float = float(profile.get("damage_mult", 1.0))
 	var hp_mult: float = float(profile.get("hp_mult", 1.0))
+	var disable_split: bool = bool(profile.get("disable_split", false))
 
 	speed *= speed_mult
 	damage *= damage_mult
@@ -2327,8 +2834,125 @@ func _apply_split_spawn_profile() -> void:
 		health_component.max_health *= hp_mult
 		health_component.current_health = health_component.max_health
 	_sync_contact_hitbox_damage()
+	if disable_split:
+		_split_spawned_on_death = true
+	if profile.has("knockback_dir") and profile.has("knockback_power"):
+		var knock_dir: Vector2 = profile.get("knockback_dir", Vector2.ZERO)
+		var knock_power: float = float(profile.get("knockback_power", 0.0))
+		if knock_dir.length_squared() > 0.0001 and knock_power > 0.0:
+			call_deferred("apply_knockback", knock_dir, knock_power)
 
 # 鍦伴浄鎬鍚庣敓鎴愭瘨姹?
+func _setup_fractal_slime_runtime() -> void:
+	if not _is_fractal_slime_family():
+		return
+	if is_instance_valid(sprite):
+		_slime_sprite_base_scale = sprite.scale
+		if is_zero_approx(_slime_sprite_base_scale.length_squared()):
+			_slime_sprite_base_scale = Vector2.ONE
+	_slime_visual_time = randf() * TAU
+	if _is_fractal_slime_mini() and health_component != null:
+		health_component.is_invincible = true
+		_slime_birth_invul_timer = 0.15
+		_slime_spawn_pop_timer = 0.22
+
+func _process_fractal_slime_feedback(delta: float) -> void:
+	if not _is_fractal_slime_family():
+		return
+	if is_instance_valid(sprite):
+		_slime_visual_time += delta * (5.2 if _is_fractal_slime_mini() else 3.1)
+		var base_speed: float = max(speed, 1.0)
+		var move_bias: float = clamp(abs(knockback_power) / base_speed, 0.0, 1.0)
+		if current_ai_state == AIState.CHARGING:
+			move_bias = max(move_bias, 0.6)
+		var stretch_amp: float = (0.08 if _is_fractal_slime_mini() else 0.12) + move_bias * 0.04
+		var stretch_wave: float = sin(_slime_visual_time)
+		var settle_wave: float = cos(_slime_visual_time * 0.5)
+		var x_scale: float = 1.0 + stretch_wave * stretch_amp
+		var y_scale: float = 1.0 - stretch_wave * stretch_amp * 0.75 + settle_wave * 0.04
+		if _slime_spawn_pop_timer > 0.0:
+			var pop_progress: float = 1.0 - (_slime_spawn_pop_timer / 0.22)
+			var pop_pulse: float = sin(clamp(pop_progress, 0.0, 1.0) * PI)
+			x_scale *= 1.0 - pop_pulse * 0.18
+			y_scale *= 1.0 + pop_pulse * 0.24
+		sprite.scale = Vector2(_slime_sprite_base_scale.x * x_scale, _slime_sprite_base_scale.y * y_scale)
+		if _slime_birth_invul_timer > 0.0:
+			var flash: float = 0.5 + 0.5 * sin(_slime_visual_time * 16.0)
+			sprite.modulate = Color(0.72 + 0.28 * flash, 1.0, 0.72 + 0.18 * flash, 1.0)
+		else:
+			sprite.modulate = Color.WHITE
+	if _slime_birth_invul_timer <= 0.0:
+		if _slime_spawn_pop_timer > 0.0:
+			_slime_spawn_pop_timer = max(0.0, _slime_spawn_pop_timer - delta)
+		return
+	_slime_birth_invul_timer = max(0.0, _slime_birth_invul_timer - delta)
+	if _slime_spawn_pop_timer > 0.0:
+		_slime_spawn_pop_timer = max(0.0, _slime_spawn_pop_timer - delta)
+	if _slime_birth_invul_timer <= 0.0 and health_component != null:
+		health_component.is_invincible = false
+
+func _spawn_fractal_split_burst(tint: Color, scale_mult: float = 1.0) -> void:
+	if death_vfx_scene == null:
+		return
+	var vfx := death_vfx_scene.instantiate()
+	if vfx == null:
+		return
+	vfx.global_position = global_position
+	vfx.z_index = 105
+	if vfx is CanvasItem:
+		(vfx as CanvasItem).modulate = tint
+	if vfx is Node2D:
+		(vfx as Node2D).scale = Vector2.ONE * scale_mult
+	get_tree().current_scene.call_deferred("add_child", vfx)
+	var vfx_tween = vfx.create_tween()
+	vfx_tween.tween_interval(1.2)
+	vfx_tween.tween_callback(vfx.queue_free)
+
+func _spawn_fractal_split_residue() -> void:
+	var current_scene: Node = get_tree().current_scene
+	if current_scene == null:
+		return
+	var root := Node2D.new()
+	root.name = "FractalSplitResidue"
+	root.global_position = global_position
+	root.z_index = 12
+	root.scale = Vector2(1.05, 0.78)
+
+	var fill := Polygon2D.new()
+	var outline := Line2D.new()
+	var points := PackedVector2Array()
+	var base_radius: float = 24.0
+	for i in range(14):
+		var angle: float = (TAU * float(i)) / 14.0
+		var wobble: float = 1.0 + 0.14 * sin(angle * 3.0 + randf() * 0.6)
+		points.append(Vector2.RIGHT.rotated(angle) * base_radius * wobble)
+	fill.polygon = points
+	fill.color = Color(0.20, 0.78, 0.22, 0.30)
+	root.add_child(fill)
+
+	outline.points = points
+	outline.closed = true
+	outline.width = 3.0
+	outline.default_color = Color(0.55, 1.0, 0.58, 0.55)
+	root.add_child(outline)
+
+	current_scene.add_child(root)
+	var tween: Tween = root.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(root, "scale", Vector2(1.42, 0.94), 0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(fill, "color:a", 0.0, 0.55)
+	tween.tween_property(outline, "modulate:a", 0.0, 0.45)
+	tween.chain().tween_callback(root.queue_free)
+
+func _is_fractal_slime() -> bool:
+	return enemy_id == "fractal_slime"
+
+func _is_fractal_slime_mini() -> bool:
+	return enemy_id == "fractal_slime_mini"
+
+func _is_fractal_slime_family() -> bool:
+	return _is_fractal_slime() or _is_fractal_slime_mini()
+
 func _spawn_poison_pool(pos: Vector2) -> void:
 	# 瀹夊叏妫€鏌ワ細纭繚鍦烘櫙鏍戝彲鐢?
 	var tree = Engine.get_main_loop() as SceneTree
@@ -2402,7 +3026,11 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 				player_node = target.owner
 			
 			if is_instance_valid(player_node) and player_node.has_method("take_damage"):
-				player_node.take_damage(int(pool_damage))
+				player_node.take_damage(int(pool_damage), {
+					"source": self,
+					"kind": "enemy_poison_pool",
+					"damage_type": "DMG_DOT",
+				})
 				Global.spawn_floating_text(player_node.global_position, "-" + str(int(pool_damage)), Color(0.5, 1.0, 0.5))
 	)
 	

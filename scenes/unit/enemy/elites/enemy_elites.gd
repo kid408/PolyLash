@@ -296,14 +296,14 @@ func _trigger_eating_pause() -> void:
 # 覆盖击退以实现第3阶段免疫
 # ==============================================================================
 
-func apply_knockback(knock_dir: Vector2, knock_power: float) -> void:
+func apply_knockback(knock_dir: Vector2, knock_power: float, source: Variant = null, extra_payload: Dictionary = {}) -> void:
 	"""覆盖击退以实现第3阶段免疫"""
 	# 第3阶段免疫击退
 	if is_stage3_immune:
 		return
 	
 	# 否则，使用父类的击退逻辑
-	super.apply_knockback(knock_dir, knock_power)
+	super.apply_knockback(knock_dir, knock_power, source, extra_payload)
 
 # ==============================================================================
 # 覆盖死亡以显示最终阶段

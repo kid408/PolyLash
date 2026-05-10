@@ -7,7 +7,7 @@ class_name ShopFlowService
 
 var _shop_panel: Node = null
 var _spawner: Node = null
-const SHOP_INTERVAL_WAVES: int = 2
+const SHOP_INTERVAL_WAVES: int = 1
 
 func setup(shop_panel: Node, spawner: Node) -> void:
 	_shop_panel = shop_panel

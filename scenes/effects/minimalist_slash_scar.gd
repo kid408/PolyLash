@@ -14,6 +14,7 @@ var _effect_half_width: float = 80.0
 func _ready() -> void:
 	add_to_group("player_skill_effects")
 	add_to_group("minimalist_slash_scar")
+	add_to_group("player_summoned_entity")
 	set_meta("logic_tags", PackedStringArray(["高热", "金属"]))
 	_refresh_visuals()
 	_restart_lifetime_timer()

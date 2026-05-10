@@ -21,6 +21,11 @@ const DEFAULT_PICKUP_RANGE: float = 112.0
 @export var slash_width_length_cap: float = 2500.0
 @export var slash_base_damage_ratio: float = 0.80
 @export var slash_damage_bonus_ratio: float = 2.5
+@export var draw_energy_soft_cap_length: float = 900.0
+@export var draw_energy_post_cap_multiplier: float = 0.45
+@export var slash_long_line_bonus_threshold: float = 800.0
+@export var slash_long_line_bonus_distance: float = 1600.0
+@export var slash_long_line_bonus_ratio: float = 0.75
 @export var self_break_slow_duration: float = 1.0
 @export var self_break_slow_multiplier: float = 0.60
 @export var scar_lifetime: float = 4.0
@@ -43,12 +48,16 @@ const DEFAULT_PICKUP_RANGE: float = 112.0
 @export var resonance_half_width: float = 80.0
 @export var resonance_stun_duration: float = 0.18
 @export var resonance_knockback_distance: float = 180.0
+@export var slash_kill_e_cooldown_refund: float = 1.0
+@export var slash_kill_energy_restore: float = 3.0
 
 @export_group("F Skill")
 @export var dimension_energy_percent: float = 40.0
 @export var dimension_sample_step: float = 60.0
 @export var dimension_explosion_radius: float = 100.0
 @export var dimension_true_damage_ratio: float = 2.50
+@export var dimension_length_bonus_distance: float = 1600.0
+@export var dimension_length_bonus_cap: float = 0.35
 @export var dimension_sequence_duration: float = 0.4
 
 @onready var dash_timer: Timer = $DashTimer
@@ -66,6 +75,8 @@ var _dash_invulnerable: bool = false
 var _is_drawing: bool = false
 var _draw_points: PackedVector2Array = PackedVector2Array()
 var _draw_step_remainder: float = 0.0
+var _draw_total_length: float = 0.0
+var _draw_energy_spent: float = 0.0
 
 var _slow_penalty_timer: float = 0.0
 var _e_cooldown_remaining: float = 0.0
@@ -139,6 +150,11 @@ func _load_config_from_csv() -> void:
 	slash_base_half_width = float(space_config.get("preview_width_base", slash_base_half_width))
 	slash_bonus_half_width = max(0.0, float(space_config.get("preview_width_max", 170.0)) - slash_base_half_width)
 	scar_lifetime = float(space_config.get("release_asset_lifetime", scar_lifetime))
+	draw_energy_soft_cap_length = max(0.0, float(space_config.get("draw_energy_soft_cap_length", draw_energy_soft_cap_length)))
+	draw_energy_post_cap_multiplier = max(0.0, float(space_config.get("draw_energy_post_cap_multiplier", draw_energy_post_cap_multiplier)))
+	slash_long_line_bonus_threshold = max(0.0, float(space_config.get("slash_long_line_bonus_threshold", slash_long_line_bonus_threshold)))
+	slash_long_line_bonus_distance = max(1.0, float(space_config.get("slash_long_line_bonus_distance", slash_long_line_bonus_distance)))
+	slash_long_line_bonus_ratio = max(0.0, float(space_config.get("slash_long_line_bonus_ratio", slash_long_line_bonus_ratio)))
 
 	var energy_mode: String = str(space_config.get("energy_mode", "per_unit")).strip_edges()
 	var energy_cost_per_unit: float = float(space_config.get("energy_cost_per_unit", 0.4))
@@ -152,12 +168,16 @@ func _load_config_from_csv() -> void:
 	resonance_cooldown = float(e_config.get("cooldown", resonance_cooldown))
 	resonance_half_width = float(e_config.get("effect_radius", resonance_half_width))
 	resonance_stun_duration = float(e_config.get("effect_duration", resonance_stun_duration))
+	slash_kill_e_cooldown_refund = max(0.0, float(e_config.get("slash_kill_e_cooldown_refund", slash_kill_e_cooldown_refund)))
+	slash_kill_energy_restore = max(0.0, float(e_config.get("slash_kill_energy_restore", slash_kill_energy_restore)))
 	skill_e_cost = resonance_energy_cost
 
 	var f_cost_mode: String = str(f_config.get("energy_cost_mode", "percent_current")).strip_edges()
 	if f_cost_mode == "percent_current":
 		dimension_energy_percent = float(f_config.get("energy_cost", dimension_energy_percent))
 	dimension_sequence_duration = float(f_config.get("duration", dimension_sequence_duration))
+	dimension_length_bonus_distance = max(1.0, float(f_config.get("dimension_length_bonus_distance", dimension_length_bonus_distance)))
+	dimension_length_bonus_cap = max(0.0, float(f_config.get("dimension_length_bonus_cap", dimension_length_bonus_cap)))
 
 	damage = DEFAULT_ATTACK
 
@@ -225,6 +245,8 @@ func _begin_drawing() -> void:
 	_is_drawing = true
 	_draw_points = PackedVector2Array()
 	_draw_step_remainder = 0.0
+	_draw_total_length = 0.0
+	_draw_energy_spent = draw_base_energy_cost
 	_draw_points.append(global_position)
 	_refresh_draw_visual()
 
@@ -273,9 +295,13 @@ func _append_draw_point(point: Vector2) -> bool:
 	if not _can_ignore_self_intersection() and _would_self_intersect(previous, point):
 		_handle_self_intersection_failure()
 		return false
-	if not consume_energy(draw_energy_cost_per_step):
+	var segment_length: float = previous.distance_to(point)
+	var step_cost: float = _compute_incremental_draw_energy_cost(_draw_total_length, segment_length)
+	if step_cost > 0.0 and not consume_energy(step_cost):
 		return false
 
+	_draw_total_length += segment_length
+	_draw_energy_spent += step_cost
 	_draw_points.append(point)
 	_refresh_draw_visual()
 	return true
@@ -285,20 +311,25 @@ func _release_drawing_path() -> void:
 		return
 
 	var captured_points: PackedVector2Array = _draw_points.duplicate()
+	var total_length: float = _draw_total_length
 	_is_drawing = false
 	_draw_points = PackedVector2Array()
 	_draw_step_remainder = 0.0
+	_draw_total_length = 0.0
 	_clear_draw_visual()
 
 	if captured_points.size() < 2:
+		_draw_energy_spent = 0.0
 		return
 
-	var total_length: float = _compute_path_length(captured_points)
+	if total_length <= 0.0:
+		total_length = _compute_path_length(captured_points)
 	if total_length < draw_min_release_length:
+		_draw_energy_spent = 0.0
 		return
 
 	var half_width: float = _compute_slash_half_width(total_length)
-	var damage_amount: float = damage * slash_base_damage_ratio * (1.0 + _compute_slash_width_coefficient(total_length) * slash_damage_bonus_ratio)
+	var damage_amount: float = damage * _compute_slash_damage_multiplier(total_length)
 	_apply_polyline_damage(captured_points, half_width, damage_amount, false, "SLASH")
 	notify_space_draw_release({
 		"source": "space",
@@ -307,16 +338,19 @@ func _release_drawing_path() -> void:
 		"points": _packed_to_points(captured_points),
 		"centroid": _calculate_path_center(captured_points),
 		"approx_area": 0.0,
-		"draw_cost": _estimate_draw_cost(captured_points),
+		"draw_cost": _draw_energy_spent,
 	})
 	_spawn_path_band_flash(captured_points, half_width, Color(1.0, 0.94, 0.76, 0.50), Color(1.0, 0.72, 0.18, 0.40), 0.12, 0.24)
 	_spawn_or_replace_scar(captured_points, half_width)
 	_trigger_hitstop_if_needed(total_length)
+	_draw_energy_spent = 0.0
 
 func _handle_self_intersection_failure() -> void:
 	_is_drawing = false
 	_draw_points = PackedVector2Array()
 	_draw_step_remainder = 0.0
+	_draw_total_length = 0.0
+	_draw_energy_spent = 0.0
 	_clear_draw_visual()
 	_slow_penalty_timer = self_break_slow_duration
 	SoundManager.play("ui_error")
@@ -331,13 +365,15 @@ func _would_self_intersect(start_point: Vector2, end_point: Vector2) -> bool:
 		var b: Vector2 = _draw_points[i + 1]
 		var hit: Variant = Geometry2D.segment_intersects_segment(a, b, start_point, end_point)
 		if hit != null:
+			if BondManager != null and BondManager.has_method("on_draw_self_intersection") and hit is Vector2:
+				BondManager.on_draw_self_intersection(self, hit)
 			return true
 	return false
 
 func _would_exceed_max_length(start_point: Vector2, end_point: Vector2) -> bool:
 	if draw_max_total_length <= 0.0:
 		return false
-	var projected_length: float = _compute_path_length(_draw_points) + start_point.distance_to(end_point)
+	var projected_length: float = _draw_total_length + start_point.distance_to(end_point)
 	return projected_length > draw_max_total_length
 
 func _can_ignore_self_intersection() -> bool:
@@ -357,7 +393,7 @@ func _try_start_dash() -> void:
 		dash_dir = Vector2.RIGHT if is_facing_right() else Vector2.LEFT
 
 	_is_test_dashing = true
-	_dash_direction = dash_dir.normalized()
+	_dash_direction = get_modified_dash_direction(dash_dir.normalized())
 	_dash_remaining_distance = dash_distance
 	_dash_total_distance = dash_distance
 	_dash_invulnerable = true
@@ -402,6 +438,7 @@ func _activate_resonance() -> void:
 	if not consume_energy(resonance_energy_cost):
 		return
 	_e_cooldown_remaining = resonance_cooldown
+	notify_front_skill_cast("e", {"skill_id": "e_minimalist"})
 
 	var scar: MinimalistSlashScar = _get_active_scar()
 	if scar == null:
@@ -429,13 +466,15 @@ func _activate_dimension_slash() -> void:
 		SoundManager.play("ui_error")
 		return
 
+	notify_front_skill_cast("f", {"skill_id": "f_minimalist"})
 	var hit_enemies: Array = []
+	var scar_length: float = scar.get_total_length()
 	var sample_points: PackedVector2Array = scar.sample_points_along_path(dimension_sample_step)
 	if sample_points.is_empty():
 		sample_points = scar.get_path_points()
 	for sample: Vector2 in sample_points:
 		_spawn_dimension_explosion(sample)
-		hit_enemies.append_array(_apply_dimension_explosion(sample))
+		hit_enemies.append_array(_apply_dimension_explosion(sample, scar_length))
 
 	_f_sequence_timer = dimension_sequence_duration
 	_f_pending_teleport = scar.get_end_point()
@@ -535,8 +574,9 @@ func _get_nearest_segment_tangent(points: PackedVector2Array, target: Vector2) -
 			best_tangent = tangent
 	return best_tangent
 
-func _apply_dimension_explosion(center: Vector2) -> Array:
+func _apply_dimension_explosion(center: Vector2, scar_length: float) -> Array:
 	var hit_enemies: Array = []
+	var damage_amount: float = _compute_dimension_damage_amount(scar_length)
 	for enemy_node: Node in get_tree().get_nodes_in_group("enemies"):
 		if not (enemy_node is Enemy):
 			continue
@@ -545,7 +585,7 @@ func _apply_dimension_explosion(center: Vector2) -> Array:
 			continue
 		if enemy.global_position.distance_to(center) > dimension_explosion_radius:
 			continue
-		if _apply_damage_to_enemy(enemy, damage * dimension_true_damage_ratio, true, "VOID"):
+		if _apply_damage_to_enemy(enemy, damage_amount, true, "VOID"):
 			hit_enemies.append(enemy)
 	return hit_enemies
 
@@ -583,7 +623,13 @@ func _apply_damage_to_enemy(enemy: Enemy, damage_amount: float, true_damage: boo
 	if true_damage:
 		_apply_true_damage(enemy, damage_amount)
 	else:
-		enemy.health_component.take_damage(damage_amount)
+		enemy.health_component.take_damage(damage_amount, {
+			"source": self,
+			"kind": "minimalist_slash",
+			"damage_type": "DMG_DIRECT",
+			"skill_slot": "q",
+			"space_skill_mode": "open",
+		})
 	Global.spawn_floating_text(enemy.global_position, label, Color(1.0, 0.95, 0.7))
 	return true
 
@@ -591,11 +637,14 @@ func _apply_true_damage(enemy: Enemy, damage_amount: float) -> void:
 	var hc: HealthComponent = enemy.health_component
 	if hc == null or hc.current_health <= 0.0:
 		return
-	hc.current_health = max(0.0, hc.current_health - damage_amount)
-	hc.on_unit_hit.emit()
-	if hc.current_health == 0.0:
-		hc.on_unit_died.emit()
-		hc.die()
+	hc.take_damage(damage_amount, {
+		"source": self,
+		"kind": "minimalist_true_slash",
+		"damage_type": "DMG_TRUE",
+		"true_damage": true,
+		"skill_slot": "q",
+		"space_skill_mode": "open",
+	})
 
 func _trigger_hitstop_if_needed(total_length: float) -> void:
 	if total_length < hitstop_threshold_length:
@@ -742,16 +791,50 @@ func _calculate_path_center(points: PackedVector2Array) -> Vector2:
 
 func _estimate_draw_cost(points: PackedVector2Array) -> float:
 	var cost: float = draw_base_energy_cost
+	var total_length: float = 0.0
 	for i in range(points.size() - 1):
 		var segment_length: float = points[i].distance_to(points[i + 1])
-		cost += (segment_length / max(0.001, draw_sample_spacing)) * draw_energy_cost_per_step
+		cost += _compute_incremental_draw_energy_cost(total_length, segment_length)
+		total_length += segment_length
 	return cost
 
 func _compute_slash_width_coefficient(total_length: float) -> float:
 	return min(total_length / max(1.0, slash_width_length_cap), 1.0)
 
+func _compute_slash_damage_multiplier(total_length: float) -> float:
+	return slash_base_damage_ratio * (
+		1.0
+		+ _compute_slash_width_coefficient(total_length) * slash_damage_bonus_ratio
+		+ _compute_long_line_bonus(total_length)
+	)
+
+func _compute_long_line_bonus(total_length: float) -> float:
+	if total_length <= slash_long_line_bonus_threshold:
+		return 0.0
+	return min(
+		(total_length - slash_long_line_bonus_threshold) / max(1.0, slash_long_line_bonus_distance),
+		1.0
+	) * slash_long_line_bonus_ratio
+
+func _compute_incremental_draw_energy_cost(current_length: float, segment_length: float) -> float:
+	if segment_length <= 0.0:
+		return 0.0
+	var base_cost: float = (segment_length / max(0.001, draw_sample_spacing)) * draw_energy_cost_per_step
+	if draw_energy_soft_cap_length <= 0.0 or current_length >= draw_energy_soft_cap_length:
+		return base_cost * draw_energy_post_cap_multiplier
+	var next_length: float = current_length + segment_length
+	if next_length <= draw_energy_soft_cap_length:
+		return base_cost
+	var full_cost_ratio: float = (draw_energy_soft_cap_length - current_length) / segment_length
+	full_cost_ratio = clamp(full_cost_ratio, 0.0, 1.0)
+	return base_cost * full_cost_ratio + base_cost * (1.0 - full_cost_ratio) * draw_energy_post_cap_multiplier
+
 func _compute_slash_half_width(total_length: float) -> float:
 	return slash_base_half_width + _compute_slash_width_coefficient(total_length) * slash_bonus_half_width
+
+func _compute_dimension_damage_amount(total_length: float) -> float:
+	var length_bonus: float = min(total_length / max(1.0, dimension_length_bonus_distance), 1.0) * dimension_length_bonus_cap
+	return damage * dimension_true_damage_ratio * (1.0 + length_bonus)
 
 func _ensure_live_band_preview() -> void:
 	if is_instance_valid(_draw_band_outer) and is_instance_valid(_draw_band_inner):
@@ -812,3 +895,20 @@ func _clear_draw_visual() -> void:
 		_draw_band_outer.points = PackedVector2Array()
 	if is_instance_valid(_draw_band_inner):
 		_draw_band_inner.points = PackedVector2Array()
+
+func on_enemy_killed(enemy: Enemy) -> void:
+	if enemy == null or not is_instance_valid(enemy):
+		return
+	var payload_variant: Variant = enemy.get("_last_damage_payload")
+	if not (payload_variant is Dictionary):
+		return
+	var payload: Dictionary = payload_variant as Dictionary
+	if str(payload.get("kind", "")) != "minimalist_slash":
+		return
+	var source_variant: Variant = payload.get("source", null)
+	if source_variant != self:
+		return
+	_e_cooldown_remaining = max(0.0, _e_cooldown_remaining - slash_kill_e_cooldown_refund)
+	energy = min(max_energy, energy + slash_kill_energy_restore)
+	update_ui_signals()
+	Global.spawn_floating_text(global_position + Vector2(0, -22), "E -1s / +3", Color(1.0, 0.88, 0.54))

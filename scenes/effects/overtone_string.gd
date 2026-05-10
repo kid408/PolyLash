@@ -41,6 +41,7 @@ func setup(player_node: PlayerBase, points: PackedVector2Array, attack_value: fl
 
 func _ready() -> void:
 	add_to_group("overtone_strings")
+	add_to_group("player_summoned_entity")
 	_rebuild_visuals()
 	_refresh_visuals()
 
@@ -227,6 +228,9 @@ func _apply_rebound_wall_damage(direction: Vector2, source_slot: String) -> Arra
 			{
 				"kind": "overtone_sonic_boom",
 				"source_slot": source_slot,
+				"damage_type": "DMG_AOE",
+				"skill_slot": "q" if source_slot == "space" else source_slot,
+				"space_skill_mode": "open" if source_slot == "space" else "",
 			}
 		)
 		if enemy.has_method("set_flash_material"):

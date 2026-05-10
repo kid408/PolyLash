@@ -53,7 +53,7 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 	set_flash_material()
 	
 	# 受到伤害，调用健康组件的受到伤害
-	health_component.take_damage(hitbox.damage)
+	health_component.take_damage(hitbox.damage, hitbox.build_damage_payload())
 	
 	# 生命偷取：如果攻击来源有 buff_lifesteal，恢复其生命
 	if hitbox.source and is_instance_valid(hitbox.source) and hitbox.source.has_meta("buff_lifesteal"):

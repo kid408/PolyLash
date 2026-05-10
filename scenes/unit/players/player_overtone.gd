@@ -218,6 +218,7 @@ func _append_draw_point(point: Vector2) -> bool:
 	var segment_length: float = previous.distance_to(point)
 	if segment_length <= 0.001:
 		return true
+	_maybe_emit_prism_stun(previous, point)
 	if not _is_death_metal_active() and not consume_energy(draw_energy_cost_per_step):
 		_cancel_drawing()
 		return false
@@ -232,6 +233,8 @@ func _release_drawing_path() -> void:
 		return
 	var final_point: Vector2 = get_global_mouse_position()
 	if _draw_points.is_empty() or _draw_points[_draw_points.size() - 1].distance_to(final_point) > 1.0:
+		if not _draw_points.is_empty():
+			_maybe_emit_prism_stun(_draw_points[_draw_points.size() - 1], final_point)
 		_draw_points.append(final_point)
 
 	var captured_points: PackedVector2Array = _draw_points.duplicate()
@@ -247,6 +250,9 @@ func _release_drawing_path() -> void:
 	if total_length < draw_min_release_length:
 		return
 
+	var forced_closure: Dictionary = BondManager.apply_forced_closure(self, captured_points) if BondManager != null and BondManager.has_method("apply_forced_closure") else {}
+	if bool(forced_closure.get("forced_closed", false)):
+		captured_points = forced_closure.get("points", captured_points)
 	var closed_polygon: PackedVector2Array = _build_closed_polygon(captured_points)
 	var is_closed: bool = closed_polygon.size() >= 3
 	var release_points: PackedVector2Array = closed_polygon if is_closed else captured_points
@@ -276,6 +282,20 @@ func _cancel_drawing() -> void:
 	_draw_step_remainder = 0.0
 	_clear_draw_visual()
 
+func _maybe_emit_prism_stun(start_point: Vector2, end_point: Vector2) -> void:
+	if BondManager == null or not BondManager.has_method("on_draw_self_intersection"):
+		return
+	if _draw_points.size() < 3:
+		return
+	for i: int in range(_draw_points.size() - 2):
+		var a_start: Vector2 = _draw_points[i]
+		var a_end: Vector2 = _draw_points[i + 1]
+		var intersection_variant: Variant = Geometry2D.segment_intersects_segment(a_start, a_end, start_point, end_point)
+		if intersection_variant == null or not (intersection_variant is Vector2):
+			continue
+		BondManager.on_draw_self_intersection(self, intersection_variant)
+		return
+
 func _spawn_tension_string(points: PackedVector2Array) -> void:
 	var string_asset: OvertoneString = OVERTONE_STRING_SCRIPT.new() as OvertoneString
 	if string_asset == null:
@@ -302,6 +322,7 @@ func _activate_tuning() -> void:
 	if not consume_energy(tuning_energy_cost):
 		return
 	_e_cooldown_remaining = tuning_cooldown
+	notify_front_skill_cast("e", {"skill_id": "e_overtone"})
  
 	var strings_to_retune: Array[OvertoneString] = []
 	var group_center_accum: Vector2 = Vector2.ZERO
@@ -336,6 +357,7 @@ func _activate_death_metal() -> void:
 	if not consume_energy(energy_cost):
 		return
 	_death_metal_timer = death_metal_duration
+	notify_front_skill_cast("f", {"skill_id": "f_overtone"})
 	_set_all_strings_frenzy(true)
 	Global.spawn_floating_text(global_position, "DEATH METAL", Color(1.0, 0.82, 0.36))
 
@@ -361,7 +383,7 @@ func _try_start_dash() -> void:
 		dash_dir = Vector2.RIGHT if is_facing_right() else Vector2.LEFT
 
 	_is_dashing = true
-	_dash_direction = dash_dir.normalized()
+	_dash_direction = get_modified_dash_direction(dash_dir.normalized())
 	_dash_remaining_distance = dash_distance
 	_dash_total_distance = dash_distance
 	_dash_invulnerable = true

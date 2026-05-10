@@ -1,139 +1,134 @@
-# PolyLash 核心系统与羁绊架构全量开发白皮书 (Final V5.0)
+# PolyLash 羁绊系统全量落地开发白皮书 (Final Master V6.0)
 
-> **To Codex**: 本文档为 PolyLash 项目的核心系统重构与正式开发标准。包含 UI 数据解耦、小队羁绊逻辑、3x3x3 羁绊矩阵以及底层引擎排雷规范。请严格遵照此文档执行重构与开发。
-
----
-
-## 模块一：UI 数据底层重构与角色文案注入
-
-为了彻底解决数值与多语言文本混杂的问题，请立即将现有的 `player_config.csv` 拆分为“纯数值表”与“本地化文本表”，并搭建全新的角色选择 UI。
-
-### 1.1 数据表解耦 (Data Decoupling)
-1. **数值核心表 `player_config.csv`**：仅保留 `player_id`, `health`, `base_speed`, `max_energy`, `energy_regen` 等纯数据字段与标签字段。删除所有长中文本。
-2. **本地化文本表 `player_intro_cn.csv` (新建)**：表头结构包含 `player_id`, `display_name`, `signature`, `experience_goal`, `skill_unclosed`, `skill_closed`, `skill_e`, `skill_f`。
-
-### 1.2 全 8 名角色标准本地化文案
-*(请直接将以下数据录入 `player_intro_cn.csv`)*
-
-* **【缚丝 (Silk)】**
-  * `signature`: “不要挣扎，痛苦是会传染的。”
-  * `experience_goal`: 极致的伤害传导与团队资源循环。不需要直伤，通过走位给怪海“打结”，实现牵一发而动全身的恐怖全屏群伤。
-  * `skill_unclosed`: 【同频连结】画出无伤害的星光连线，碰到的敌人被挂上“灵魂链接”。被标记的怪群共享 25% 受到的真实伤害，且其中一只死亡时立刻为全队回蓝。
-  * `skill_closed`: 【命运绞索】生成灵魂牢笼，禁锢敌人并引爆牢笼内的所有链接标记，造成大范围真实爆发伤害，同时为全队赋予护盾。
-  * `skill_e`: 【能量回流】向目标冲刺，暴力扯断沿途敌人的链接并造成巨额伤害。根据扯断数量，为全队大量回复生命值。
-  * `skill_f`: 【纺命蛛后】超频状态，画线不耗蓝。连线的共享伤害比例强制翻倍，瞬间将战场化为互相传导伤害的死结。
-
-* **【坍缩者 (Collapsar)】**
-  * `signature`: “连光都无法逃逸的深渊，就是我为你画下的坟墓。”
-  * `experience_goal`: 高风险高回报的重狙体验。在最高压的追击下完成微雕般的极限闭合圈，一击蒸发最高危的目标。
-  * `skill_unclosed`: 【引力坍缩】画出重力扭曲轨迹，对沿途敌人造成微弱减速与持续牵引，为精确狙击做准备。
-  * `skill_closed`: 【微观奇点】在极微小的范围内（<250px）画出完美闭合圈，撕裂空间制造黑洞，瞬间吸附并绞碎敌人，造成极高单体爆发伤害。
-  * `skill_e`: 【事件视界】瞬间引爆场上所有残留的黑洞，使其剧烈坍缩并造成毁灭性的二次大范围物理爆发。
-  * `skill_f`: 【绝对真空】锁定一片区域，释放一个巨大的缓慢移动黑洞，无视血量吞噬并秒杀一切低阶敌人。
-
-* **【斩铁 (Zantetsu)】**
-  * `signature`: “花哨的轨迹留给弱者，杀人，一条直线就够了。”
-  * `experience_goal`: 极致的居合斩与瞬杀快感。将笔直轨迹转化为极速斩击，在怪海中不断穿插、拉扯，一击脱离。
-  * `skill_unclosed`: 【绝对锋刃】画出笔直剑气。你画出的线越直、越简单（无弯折），附带的物理切割伤害倍率就越恐怖。
-  * `skill_closed`: 【居合·拔浪】用极速闭合圈锁定目标，短暂延迟后，圈内爆发出无数道剑气将敌人瞬间肢解。
-  * `skill_e`: 【居合·瞬】沿着画出的直线轨迹进行光速冲刺，引爆沿途所有的剑气刻痕，造成巨额突进爆发伤害。
-  * `skill_f`: 【无想剑境】进入极意状态，所有画线强制判定为“绝对直线”，伤害倍率拉满，Dash 冷却极速重置。
-
-* **【血役师 (Hemomancer)】**
-  * `signature`: “你的每一次绝望挣扎，都在为我的毒沼提供养料。”
-  * `experience_goal`: 极致的异常状态折磨流。化身残忍的“牧羊人”铺设毒沼风筝怪物，耐心等待全屏敌人慢慢化为血水。
-  * `skill_unclosed`: 【疫病蔓延】轨迹长久残留于地面，化为剧毒沼泽。怪物踩上即被挂上无法摆脱的烈性持续伤害（DOT）和减速。
-  * `skill_closed`: 【猩红温床】闭合轨迹形成血池，催生血肉触手束缚敌人，并将其流失的生命值转化为全队的治疗法球。
-  * `skill_e`: 【血液沸腾】瞬间引爆场上所有带有异常状态的敌人，根据其残留毒素层数，一次性结算巨额真实伤害。
-  * `skill_f`: 【瘟疫之源】严重污染战场，每次冲刺都会向周围抛洒毒液，使满屏敌人陷入无尽的猩红腐败。
-
-* **【焦耳 (Joule)】**
-  * `signature`: “他们管这叫艺术，我管这叫物理超度。”
-  * `experience_goal`: 极致的阵地战与连锁爆破。通过焦油线改变敌人寻路引入雷区，按下一个按钮观赏最绚丽的烟花。
-  * `skill_unclosed`: 【化危焦油】画出高粘性焦油线，存留极长时间。敌人踩中会大幅减速并附加极高的物理易伤状态。
-  * `skill_closed`: 【高爆地雷区】在闭合圈内布下高密度的隐形地雷，怪海踩入瞬间引发连锁核爆，造成毁灭性 AOE。
-  * `skill_e`: 【火花塞】打出一发引爆炸弹，主动点燃场上所有焦油线和未触发的地雷，瞬间将整个阵地化为火海。
-  * `skill_f`: 【弹药倾泻】接下来的画线直接变成分裂导弹轰炸轨迹，无视几何限制，带来纯粹火力洗地。
-
-* **【弧光 (Arc)】**
-  * `signature`: “不要眨眼。当你看到我画出的光轨时，我已经在那条轨道的尽头了。”
-  * `experience_goal`: 极速飙车与肉身开团。把画线与冲刺完美结合，在怪海缝隙中规划极限路线，体验刀尖起舞。
-  * `skill_unclosed`: 【光速穿梭】结算后，化作残影沿着轨迹肉身飞行，期间绝对无敌，对穿过的敌人造成致命切割。
-  * `skill_closed`: 【死亡离心机】画出闭合圈，在圈内无限极速绕圈飞行，产生强烈负压气旋将圈外敌人吸扯绞碎。
-  * `skill_e`: 【漂移起爆】在穿梭中强行刹车，利用惯性漂移引发剧烈电浆爆炸，炸开安全区并大幅击退敌人。
-  * `skill_f`: 【矩阵超频】画线不耗蓝。飞行获得绝对霸体，切割伤害翻倍，直接碾穿沿途包含 Boss 在内的所有障碍。
-
-* **【泛音 (Overtone)】**
-  * `signature`: “战场是我的指板，光束是我的琴弦，而你的脚步，就是拨动杀戮的拨片。”
-  * `experience_goal`: 走位与节奏的正反馈。将高压风筝过程，变成一场疯狂拨动琴弦的重金属动作音游。
-  * `skill_unclosed`: 【紧绷光弦】画出无伤害光弦。使用冲刺穿过光弦时将其“拨动”，向身后反推发射宽阔的毁灭性音波墙。
-  * `skill_closed`: 【共鸣鼓面】生成限时鼓面。玩家在鼓面中疯狂连续冲刺砸地，爆出高频环形震荡波，重控敌人并回蓝。
-  * `skill_e`: 【强制调音】将场上所有光弦瞬间向玩家位置平移收缩，把散落的怪物强行兜住并向中间聚拢。
-  * `skill_f`: 【死亡重金属】场上所有光弦狂暴，无需玩家穿插，琴弦自动以极高频率向两侧疯狂发射高频音爆。
-
-* **【方阵 (Phalanx)】**
-  * `signature`: “你冲得越猛，你的骨头砸在同伴身上时就越碎。”
-  * `experience_goal`: 极具爽感的保龄球连击。通过画出不同几何角度的偏导墙，把冲锋的怪海变成互相撞击的动能炮弹。
-  * `skill_unclosed`: 【斥力屏障】画出动能墙。怪物撞击后受到伤害并被极速弹飞，化身“肉体炮弹”砸碎身后的同伴。
-  * `skill_closed`: 【动能弹球机】生成超高耐久闭合围墙，内部敌人被赋予初始动能，像弹球一样在圈内疯狂反弹互撞。
-  * `skill_e`: 【动能开球】将未闭合的屏障像台球杆一样向前平推，把前排怪群狠狠砸进大后方引发保龄球爆炸。
-  * `skill_f`: 【绝对刚体】屏障耐久无限。玩家本体化为反弹面，所有靠近的敌人都会被强制弹飞变成炮弹。
-
-### 1.3 选角 UI 视觉红线 (UI Redline)
-禁用默认风格，使用“极简工业赛博”主题。
-* **色彩**：底板 `#0D1117`，浮层 `#161B22`(Alpha 90%)，主高亮 `#00F0FF`，副高亮/警告 `#FF4655`，主文本 `#E6EDF3`，分割线 `#30363D`。
-* **布局**：HBox 划分 25%(左):40%(中):35%(右)。
-* **中栏雷达图错层悬浮**：**废弃纯数字属性列表**。中栏上方展示立绘（底部渐变虚化），并在立绘底部的虚化区域**叠加**一个 `280x280px` 的六边形雷达图（生命/速度/能量上限/回蓝/爆发/控制），营造全息投影的纵深感。
+> **To Codex**: 本文档为 PolyLash 羁绊系统重构与落地的**唯一技术执行标准**。
+> 开发分为四大模块：底层基建、CSV填表、羁绊特判、UI重构。请严格按照本文档中的架构指引、枚举类型和真实数据表头进行开发，严禁产生未定义的平行逻辑。
 
 ---
 
-## 模块二：小队框架与 3x3x3 羁绊图鉴
+## 模块一：底层架构基建升级 (Phase 1: Plumbing)
 
-### 2.1 基因与变异框架 (Squad Rules)
-* **容量**：上限 3 人。
-* **队长 (基因)**：1 号位不可替换，奠定初始流派。
-* **队员 (变异)**：2、3 号位，局内商店可随意替换并触发标签重算。
-* **Lv3 防逃课机制**：激活 6 标签的 Lv3 羁绊，其标签来源中**必须至少包含 1 个运行时来源**（武器附带标签 / 圣物 Emblem 提供）。
+在编写具体的 `BondManager` 前，必须先在现有的战斗总线中打通以下 4 个强类型拦截与分类钩子，且**必须兼容现有旁路逻辑**。
 
-### 2.2 羁绊图鉴 (The Chemistry Matrix)
+### 1. 伤害总线改造 (DamageType)
+* **枚举定义**：全局新增 `enum DamageType { DIRECT, AOE, DOT, TRUE_DAMAGE }`，以及标志位 `is_shared_damage: bool = false`。
+* **改造节点**：
+  - `HitboxComponent.setup()` 新增 `damage_type` 参数，默认向下兼容 `DIRECT`。
+  - 所有绕过 Hitbox、直接调用 `health_component.take_damage()` 或 `enemy.apply_modifier_damage()` 的旁路接口，必须同步追加 `damage_type` 传参，确保 DOT/真伤 准确归类。
 
-**【维度 X：身世 Origin】 (底层面板与生存)**
-1. **军工**：Lv1(AOE半径+25%) -> Lv2(AOE命中附加20%绝对易伤) -> **Lv3 (全屏溅射: 任何伤害引发3发弹片溅射)**
-2. **赛博**：Lv1(能量上限+40) -> Lv2(击杀精英重置Dash与E技能) -> **Lv3 (锁血复活: 挡致命伤，满血满蓝并无敌3s，每局1次)**
-3. **异能**：Lv1(全能吸血+15%) -> Lv2(溢出治疗转为鲜血护盾) -> **Lv3 (血量即伤害: 护盾存在时真实伤害翻倍，画线耗盾不耗蓝)**
-4. **机械**：Lv1(受击叠护甲) -> Lv2(满甲向外发射微型地雷) -> **Lv3 (移动要塞: 全队绝对霸体，创造的墙体耐久翻倍且不可推挤)**
+### 2. 状态双轨统计接口 (Status Aggregation)
+* **接口定义**：在敌人基类或状态管理器提供统一查询：
+  1. `get_abnormal_state_count() -> int` (获取负面异常总数)
+  2. `has_mechanic_mark(mark_name: String) -> bool` (检测机制标记)
+* **底层规约**：这两个接口必须**同时轮询合并** `Enemy.active_statuses` 和 `CombatModifierComponent`，严格去重，防止漏算。
 
-**【维度 Y：职能 Mastery】 (核心战斗机制)**
-1. **锋芒**：Lv1(画线后霸体加速) -> Lv2(Dash结束附带剑气) -> **Lv3 (无极光轨: 右键画线期间允许Dash，位移算作光轨)**
-2. **术理**：Lv1(异常状态时间+50%) -> Lv2(攻击异常敌人回蓝) -> **Lv3 (薛定谔的弦: 画出U型半圆松手即自动缝合为闭合圈)**
-3. **御阵**：Lv1(召唤墙体寿命+50%) -> Lv2(线条交叉点生成眩晕棱镜) -> **Lv3 (绝对领域: 闭合圈边缘化为不可跨越的真实物理刚体)**
-4. **协律**：Lv1(前台放E/F给后台回蓝) -> Lv2(切人留下幻影复刻上一次画线) -> **Lv3 (万物互联: 屏幕镜像自动复制玩家的所有画线操作)**
+### 3. 实体生命周期分组 (Entity Grouping)
+* **规约**：确立全局 Node Group: `"player_summoned_entity"`。
+* **改造节点**：全面排查 `SkillEffectManager` 托管物及各技能脚本自管实体（如墙体、焦油）。在其 `_ready()` 阶段统一执行 `add_to_group("player_summoned_entity")`。
 
-**【维度 Z：战术 Tactic】 (最高极权：篡改物理底层)**
-1. **击退**：Lv1(击退速度距离+40%) -> Lv2(击退撞墙引发激波) -> **Lv3 (核裂变弹球: 击退撞墙分裂出3颗次级肉体炮弹继续弹射)**
-2. **连携**：Lv1(标记敌人受AOE伤害+20%) -> Lv2(标记怪物死亡自动传染) -> **Lv3 (命运交织: 场上所有敌人强制链接，溢出伤害全屏传递)**
-3. **穿梭**：Lv1(Dash无视体积碰撞) -> Lv2(Dash留下延迟爆炸残影) -> **Lv3 (创战纪光轮: Dash在轨迹上永久留下高频切割激光墙)**
+### 4. 物理击退拦截钩子 (Knockback Hook)
+* **规约**：基于现有 Area2D 位移底层，放弃 `external_force` 思路。
+* **改造节点**：在真实的击退入口（如 `Enemy.apply_knockback(knockback_dir, knockback_power)`）增加拦截信号/接口。允许系统在此处监听并修改当前的击退方向与力度。
 
 ---
 
-## 模块三：引擎底层排雷与全局关键词字典
+## 模块二：核心技能数据表全量映射 (Phase 2: CSV Mapping)
 
-> **警告：** 在开发 `BondManager` 和战术 Lv3 机制前，必须在底层代码中确立以下强类型规范，**禁止使用 String 硬编码判断。**
+利用已有的 `space_skill_config.csv`、`skill_e_config.csv` 和 `ult_config.csv` 的扩展字段，将 8 名角色的技能属性打上精准标签。
 
-### 3.1 伤害类型界定 (Damage Classification)
-在 `HitboxComponent` (或 `DamagePayload`) 中新增 `enum DamageType { DIRECT, AOE, DOT, TRUE }`。
-* `TYPE_AOE`：任何 Area2D 碰撞触发的范围伤害必须打此标签。军工羁绊的扩大范围**仅监听**此标签。
-* `TYPE_DOT`：任何持续伤害必须打此标签。异能羁绊的吸血对其需有单独衰减系数。
+*(注：以下仅列出必须填入的 Tag 与 Type 字段，保留原表的数值/特效等其他字段配置)*
 
-### 3.2 状态标签界定 (Status Registry)
-在状态管理器中，严格区分状态类型：
-* `Abnormal_States` (负面异常)：仅包含毒、易伤、减速、流血。术理羁绊**只遍历**此类状态（眩晕/击飞等控制状态不计入）。
-* `Mechanic_Marks` (机制标记)：如缚丝的“灵魂链接”。
-* **防死循环补丁**：针对连携羁绊，伤害载体中必须加入 `is_shared_damage: bool = false`。传播产生的伤害将其置为 `true`，**受击方接收到 true 的伤害绝对禁止二次传播。**
+### 1. 缚丝 (Silk)
+* **Space-未闭合**: `open_logic_tags`: `"DMG_TRUE, MARK_SOUL_LINK, NO_KNOCKBACK"`
+* **Space-闭合**: `closed_logic_tags`: `"DMG_TRUE, APPLY_STUN"`
+* **E键**: `damage_type`: `"DMG_TRUE"`, `buff_id_list`: `""` (特判全队回血)
+* **F键**: `bonus_bond_tag`: `"no_cost"`
 
-### 3.3 物理与位移拦截 (Physics Interception)
-* 针对“具备击退效果的技能”：底层通过判断初始化时的 `knockback_force > 0` 来自动识别，禁止使用技能名称比对。
-* 针对战术羁绊的 **核裂变弹球 Lv3**：必须在生成的肉体炮弹上加入 `generation_limit`（最大繁衍2代）和 `0.05s` 的全局碰撞冷却（ICD），**防止几何级物理碰撞导致 Godot 物理引擎卡死崩溃。**
+### 2. 坍缩者 (Collapsar)
+* **Space-未闭合**: `open_logic_tags`: `"DMG_AOE, PULL_WEAK"`, `open_physics_tags`: `"APPLY_SLOW"`
+* **Space-闭合**: `closed_logic_tags`: `"DMG_AOE, PULL_STRONG, MARK_SINGULARITY"`
+* **E键**: `damage_type`: `"DMG_AOE"`, `effect_type`: `"EXPLODE_ALL_MARKS"`
+* **F键**: `base_damage_type`: `"DMG_TRUE"`
 
-### 3.4 实体归属界定 (Entity Tracking)
-* 御阵羁绊所识别的“玩家创造实体”，必须统一管理。所有由玩家技能实例化的留场节点（焦油、墙体），在 `_ready()` 中必须强制调用 `add_to_group("player_summoned_entity")`。御阵延长寿命机制仅对该 Group 生效。
+### 3. 斩铁 (Zantetsu)
+* **Space-未闭合**: `open_logic_tags`: `"DMG_DIRECT, SHAPE_CUT"`
+* **Space-闭合**: `closed_logic_tags`: `"DMG_AOE, APPLY_HITSTOP"`
+* **E键**: `damage_type`: `"DMG_DIRECT"`, `effect_type`: `"DASH_AND_DETONATE"`
+* **F键**: `bonus_bond_tag`: `"ultra_cut"`
+
+### 4. 血役师 (Hemomancer)
+* **Space-未闭合**: `open_logic_tags`: `"DMG_DOT"`, `open_physics_tags`: `"APPLY_POISON"`
+* **Space-闭合**: `closed_logic_tags`: `"DMG_AOE, APPLY_ROOT, SPAWN_HEAL_ORB"`
+* **E键**: `damage_type`: `"DMG_TRUE"`, `effect_type`: `"DETONATE_ALL_DEBUFFS"`
+* **F键**: `base_damage_type`: `"DMG_AOE"`, `bonus_bond_tag`: `"dash_poison_cloud"`
+
+### 5. 焦耳 (Joule)
+* **Space-未闭合**: `open_logic_tags`: `"DMG_DOT"`, `open_physics_tags`: `"APPLY_TAR"` (挂载 `tar_debuff`与`vulnerable`)
+* **Space-闭合**: `closed_logic_tags`: `"DMG_AOE, DETONATE_TAR"`
+* **E键**: `damage_type`: `"DMG_AOE"`, `effect_type`: `"IGNITE_ALL_MINES"`
+* **F键**: `base_damage_type`: `"DMG_AOE"`, `bonus_bond_tag`: `"missile_mode"`
+
+### 6. 弧光 (Arc)
+* **Space-未闭合**: `open_logic_tags`: `"DMG_DIRECT, PLAYER_DASH_PATH"`, `open_physics_tags`: `"APPLY_INVINCIBLE"`
+* **Space-闭合**: `closed_logic_tags`: `"DMG_AOE, CENTRIFUGE_PULL"`
+* **E键**: `damage_type`: `"DMG_AOE"`, `effect_type`: `"DRIFT_EXPLOSION"`
+* **F键**: `bonus_bond_tag`: `"ghost, no_cost"`
+
+### 7. 泛音 (Overtone)
+* **Space-未闭合**: `open_logic_tags`: `"DMG_AOE, TRIGGER_ON_DASH"`
+* **Space-闭合**: `closed_logic_tags`: `"DMG_AOE, APPLY_STUN, REGEN_ENERGY"`
+* **E键**: `damage_type`: `"DMG_AOE"`, `effect_type`: `"CONTRACT_ALL_STRINGS"`
+* **F键**: `base_damage_type`: `"DMG_AOE"`, `bonus_bond_tag`: `"auto_fire_strings"`
+
+### 8. 方阵 (Phalanx)
+* **Space-未闭合**: `open_logic_tags`: `"DMG_DIRECT, BOUNCE_ENEMY"`
+* **Space-闭合**: `closed_logic_tags`: `"DMG_AOE, PINBALL_ARENA"`
+* **E键**: `damage_type`: `"DMG_DIRECT"`, `effect_type`: `"BOWLING_PUSH"`
+* **F键**: `bonus_bond_tag`: `"infinite_hp"`
+
+---
+
+## 模块三：3x3x3 羁绊判定规约 (Phase 3: Bond Logic)
+
+> **极度重要：基于真实字典的过滤标准**
+> * **异常统计 (`get_abnormal_state_count`) 仅限**：`["poison", "vulnerable", "slow", "bleed", "tar_debuff"]`
+> * **连携统计 (`has_mechanic_mark`) 仅限**：`["soul_link", "mark"]`
+
+### 1. 【维度 X：身世 Origin】 (底层面板修改)
+* **军工**: 监听 `DMG_AOE`。Lv3 特判：任何 `DMG_AOE` 伤害均触发 3 发微型物理弹片溅射。
+* **赛博**: Lv3 特判：监听 `HealthComponent` 死亡信号，执行单局一次的满血/满蓝/无敌锁血。
+* **异能**: 监听 `DMG_DOT` 给予独立吸血衰减。Lv3 特判：若存在鲜血护盾，将 `DMG_DIRECT` 转为 `DMG_TRUE` 并翻倍。
+* **机械**: Lv3 特判：强制修改 `Group: "player_summoned_entity"` 的质量属性，实现不可推挤。
+
+### 2. 【维度 Y：职能 Mastery】 (机制变异)
+* **锋芒**: Lv3 特判：`space_skill` 脚本监听 `is_dashing`，允许 Dash 轨迹直接并入画线 Polygon。
+* **术理**: 依赖上方定义的“异常统计”回蓝。Lv3 特判：画线首尾距离虽远，但夹角 < 90度且总长达标，强制执行闭合逻辑。
+* **御阵**: 延长 `Group: "player_summoned_entity"` 的 lifespan。Lv3 特判：赋予闭合圈 StaticBody2D 物理碰撞。
+* **协律**: Lv3 特判：输入层拦截鼠标坐标，以角色为圆心生成对称点，双线程同步调用画线渲染与结算。
+
+### 3. 【维度 Z：战术 Tactic】 (物理规律篡改)
+* **击退**: 调用第一模块的拦截钩子放大 `knockback_power`。Lv3 (核裂变弹球) 特判：撞墙瞬间实例化 3 个 `DMG_AOE` 微型弹体。**强制要求：附带 `generation_limit=2`，全局碰撞 ICD=0.05s 防死机。**
+* **连携**: Lv3 (全屏伤害共享) 特判：提取全局所有的 Enemy，强制派发伤害。**强制要求：发出的载体 `is_shared_damage = true`，接收方遇此标识立即 Return，防无限递归崩溃。**
+* **穿梭**: Lv3 特判：Dash 状态结束不立刻清空轨迹，生成延迟销毁且附带 `DMG_DOT` 的 CollisionPolygon2D。
+
+---
+
+## 模块四：UI 视觉红线与本地化注入 (Phase 4: UI & Text)
+
+### 4.1 数据解耦与文案录入
+新建 `player_intro_cn.csv` 供 UI 读取。*(请将下列结构录入)*
+
+| player_id | signature | experience_goal |
+| :--- | :--- | :--- |
+| `silk` | “不要挣扎，痛苦是会传染的。” | 极致的伤害传导与团队资源循环。不需要直伤，通过走位给怪海“打结”，牵一发而动全身。 |
+| `collapsar` | “连光都无法逃逸的深渊，就是我为你画下的坟墓。” | 高风险高回报重狙体验。最高压下完成微雕般极限闭合圈，一击蒸发最高危目标。 |
+| `zantetsu` | “花哨的轨迹留给弱者，杀人，一条直线就够了。” | 极致的居合瞬杀快感。将笔直轨迹转化为极速斩击，在怪海中不断穿插一击脱离。 |
+| `hemomancer`| “你的每一次绝望挣扎，都在为我的毒沼提供养料。” | 极致的 DOT 折磨流。化身残忍牧羊人铺设毒沼风筝，耐心等待满屏敌人化为血水。 |
+| `joule` | “他们管这叫艺术，我管这叫物理超度。” | 极致阵地战与连锁爆破。通过焦油线改变寻路引入雷区，按下按钮观赏最绚丽烟花。 |
+| `arc` | “当你看到我画出的光轨时，我已经在那条轨道的尽头了。”| 极速飙车与肉身开团。把画线与冲刺完美结合，在怪海缝隙中规划极限路线刀尖起舞。 |
+| `overtone` | “战场是我的指板，光束是我的琴弦。” | 走位与节奏的正反馈。将高压逃生过程，变成一场疯狂拨动琴弦的重金属动作音游。 |
+| `phalanx` | “你冲得越猛，你的骨头砸在同伴身上时就越碎。” | 爽感保龄球物理连击。通过不同几何角度的偏导墙，把冲锋的怪海变成互相撞击的炮弹。 |
+
+### 4.2 像素级界面规范 (UI Redline Spec)
+* **配色方案**: 纯暗底色 `#0D1117` | 模块半透底板 `#161B22` | 主高亮/选中色 `#00F0FF` | 警告色 `#FF4655` | 文本色 `#E6EDF3` | 分割线 `#30363D`。
+* **排版结构**: HBox 划分为 25%(左导航) : 40%(中视觉) : 35%(右文本)。
+* **属性雷达图排版（强制）**: 废除旧版纯数字列表。中栏顶部为人物立绘（底部带渐变透明遮罩）。立绘下方**直接重叠/悬浮**一个 `280x280px` 的六边形雷达图（展示生命、速度、能量、回蓝、爆发、控制），利用图层 Z-index 制造全息纵深感。

@@ -1,11 +1,10 @@
-ult_id,name,duration,energy_cost,bonus_bond_tag,visual_color_hex,scale_multiplier,explosion_radius,explosion_damage_scale,description,f_role_id,f_internal_cd,f_q_line_amp,f_q_closure_amp,f_special_value_1,f_special_value_2,f_special_value_3,f_bond_o_payload,f_bond_m_payload,f_bond_t_payload
-silk_ult,众生相连,15,50,,#D95A74,1.0,0,0,瞬间为全场敌人挂上灵魂链接并强化传导。,silk,0.0,0.0,0.0,0,0,0,,,
--1,大招名称,持续时间,能量消耗百分比,临时羁绊标签,视觉颜色,缩放倍数,爆炸半径,伤害倍率,描述,F角色ID,F内置CD,Q线段倍率,Q闭合倍率,角色特值1,角色特值2,角色特值3,O位载荷,M位载荷,T位载荷
-minimalist_ult,维度断裂,0.4,40,,#F2D58A,1.0,100,2.5,消耗当前40%能量，对熔毁切痕执行维度断裂并完成终结斩。,minimalist,0.0,1.0,0.0,0,0,0,,,
-collapse_ult,事件视界,0.5,40,,#6DD3FF,1.0,280,1.2,引爆场上奇点并扩张事件视界，强化吸附与坍缩收束。,collapse,0.0,0.0,1.0,0,0,0,,,
-parasite_ult,血巢暴君,0.5,40,,#C94C65,1.0,260,1.0,引爆寄生生态，扩散血坑与寄生连锁，逼迫敌群持续失血。,parasite,0.0,1.0,0.0,0,0,0,,,
-joule_ult,白磷火雨,10,40,,#F18C54,1.0,260,1.0,降下白磷火雨并将全场敌人刷新为强化焦油印记。,joule,0.0,1.0,1.0,0,0,0,,,
-arc_ult,矩阵超频,6,40,,#7BE7FF,1.0,0,0,进入6秒超频模式；右键画线不再消耗能量，穿梭切割伤害翻倍并可连续穿刺。,arc,0.0,1.0,1.0,0,0,0,,,
-overtone_ult,死亡重金属,8,40,,#F2C75C,1.0,0,0,进入8秒狂想曲模式；右键画线零消耗，所有紧绷光弦自动以每秒2次向两侧拨出音爆。,overtone,0.0,1.0,1.0,0,0,0,,,
-
-phalanx_ult,绝对刚体,6,40,,#89C8FF,1.0,0,0,进入6秒动能过载模式；全部屏障耐久无限，方阵本体会把普通与精英敌人强制弹飞，并对Boss触发一次反噬。,phalanx,0.0,1.0,1.0,0,0,0,,,
+ult_id,name,duration,energy_cost,base_damage_type,bonus_bond_tag,visual_color_hex,scale_multiplier,explosion_radius,explosion_damage_scale,description,f_role_id,f_internal_cd,f_q_line_amp,f_q_closure_amp,f_special_value_1,f_special_value_2,f_special_value_3,f_bond_o_payload,f_bond_m_payload,f_bond_t_payload
+silk_ult,众生相连,15,50,,no_cost,#D95A74,1.0,0,0,瞬间为全场敌人挂上灵魂链接并强化传导。,silk,0.0,0.0,0.0,0,0,0,,,
+-1,大招名称,持续时间,能量消耗百分比,基础伤害类型,临时羁绊标签,视觉颜色,缩放倍数,爆炸半径,伤害倍率,描述,F角色ID,F内置CD,Q线段倍率,Q闭合倍率,角色特值1,角色特值2,角色特值3,O位载荷,M位载荷,T位载荷
+minimalist_ult,维度断裂,0.4,40,,ultra_cut,#F2D58A,1.0,100,2.5,消耗当前40%能量，对熔毁切痕执行维度断裂并完成终结斩。,minimalist,0.0,1.0,0.0,0,0,0,,,
+collapse_ult,事件视界,0.5,40,DMG_TRUE,,#6DD3FF,1.0,280,1.2,引爆场上奇点并扩张事件视界，强化吸附与坍缩收束。,collapse,0.0,0.0,1.0,0,0,0,,,
+parasite_ult,血巢暴君,0.5,40,DMG_AOE,dash_poison_cloud,#C94C65,1.0,260,1.0,引爆寄生生态，扩散血坑与寄生连锁，逼迫敌群持续失血。,parasite,0.0,1.0,0.0,0,0,0,,,
+joule_ult,白磷火雨,10,40,DMG_AOE,missile_mode,#F18C54,1.0,260,1.0,降下白磷火雨并将全场敌人刷新为强化焦油印记。,joule,0.0,1.0,1.0,0,0,0,,,
+arc_ult,矩阵超频,6,40,,"ghost, no_cost",#7BE7FF,1.0,0,0,进入6秒超频模式；右键画线不再消耗能量，穿梭切割伤害翻倍并可连续穿刺。,arc,0.0,1.0,1.0,0,0,0,,,
+overtone_ult,死亡重金属,8,40,DMG_AOE,auto_fire_strings,#F2C75C,1.0,0,0,进入8秒狂想曲模式；右键画线零消耗，所有紧绷光弦自动以每秒2次向两侧拨出音爆。,overtone,0.0,1.0,1.0,0,0,0,,,
+phalanx_ult,绝对刚体,6,40,,infinite_hp,#89C8FF,1.0,0,0,进入6秒动能过载模式；全部屏障耐久无限，方阵本体会把普通与精英敌人强制弹飞，并对Boss触发一次反噬。,phalanx,0.0,1.0,1.0,0,0,0,,,

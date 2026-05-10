@@ -1,7 +1,7 @@
 extends SkillBase
 class_name SkillParasiteE
 
-@export var catalyst_damage_ratio: float = 1.20
+@export var catalyst_damage_ratio: float = 0.75
 @export var parasite_duration: float = 8.0
 @export var spread_radius: float = 300.0
 @export var spread_count: int = 3
@@ -43,7 +43,12 @@ func execute() -> void:
 		if not is_instance_valid(enemy) or enemy.is_dead or enemy.health_component == null:
 			continue
 		enemy.mark_parasite_catalyst_window(source_attack, catalyst_death_window)
-		enemy.health_component.take_damage(catalyst_damage)
+		enemy.health_component.take_damage(catalyst_damage, {
+			"source": skill_owner,
+			"kind": "parasite_catalyst",
+			"damage_type": "DMG_TRUE",
+			"true_damage": true,
+		})
 		hit_enemies.append(enemy)
 
 	if skill_owner.has_method("notify_front_skill_damage") and not hit_enemies.is_empty():

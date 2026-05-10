@@ -93,11 +93,13 @@ func _append_path_point(target_point: Vector2) -> void:
 	var direction: Vector2 = (target_point - last_point).normalized()
 	var travelled: float = sample_spacing
 	while travelled < distance:
+		_maybe_emit_prism_stun(last_point, last_point + direction * travelled)
 		if not _consume_path_energy():
 			break
 		path_points.append(last_point + direction * travelled)
 		travelled += sample_spacing
 	if path_points[path_points.size() - 1].distance_to(target_point) > 0.001:
+		_maybe_emit_prism_stun(path_points[path_points.size() - 1], target_point)
 		path_points.append(target_point)
 
 func _apply_seed_to_enemies() -> int:
@@ -114,7 +116,11 @@ func _apply_seed_to_enemies() -> int:
 		if _distance_to_polyline(enemy.global_position) > hit_radius:
 			continue
 		if enemy.health_component:
-			enemy.health_component.take_damage(seed_damage)
+			enemy.health_component.take_damage(seed_damage, {
+				"source": skill_owner,
+				"kind": "parasite_seed",
+				"damage_type": "DMG_DOT",
+			})
 		enemy.apply_parasite_state(parasite_duration, source_attack)
 		infected_count += 1
 
@@ -183,3 +189,17 @@ func _refund_spent_energy() -> void:
 		skill_owner.energy = min(skill_owner.max_energy, skill_owner.energy + _spent_energy)
 		if skill_owner.has_method("update_ui_signals"):
 			skill_owner.update_ui_signals()
+
+func _maybe_emit_prism_stun(start_point: Vector2, end_point: Vector2) -> void:
+	if BondManager == null or not BondManager.has_method("on_draw_self_intersection"):
+		return
+	if path_points.size() < 3:
+		return
+	for i: int in range(path_points.size() - 2):
+		var a_start: Vector2 = path_points[i]
+		var a_end: Vector2 = path_points[i + 1]
+		var intersection_variant: Variant = Geometry2D.segment_intersects_segment(a_start, a_end, start_point, end_point)
+		if intersection_variant == null or not (intersection_variant is Vector2):
+			continue
+		BondManager.on_draw_self_intersection(skill_owner, intersection_variant)
+		return

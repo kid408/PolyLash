@@ -21,6 +21,10 @@ const DEFAULT_PICKUP_RANGE: float = 150.0
 @export var barrier_lifetime: float = 6.0
 @export var barrier_half_width: float = 18.0
 @export var pinball_arena_lifetime: float = 4.0
+@export var pinball_reference_radius: float = 120.0
+@export var pinball_min_damage_ratio: float = 0.75
+@export var pinball_max_damage_ratio: float = 1.35
+@export var pinball_max_bonus_bounces: int = 3
 
 @export_group("Barrier Bounce")
 @export var barrier_bounce_speed: float = 1200.0
@@ -125,6 +129,10 @@ func _load_config_from_csv() -> void:
 	draw_energy_cost_unit_px = max(1.0, float(space_config.get("energy_cost_unit_px", draw_energy_cost_unit_px)))
 	var energy_cost_per_unit: float = float(space_config.get("energy_cost_per_unit", 1.0))
 	draw_energy_cost_per_step = energy_cost_per_unit * (draw_sample_spacing / draw_energy_cost_unit_px)
+	pinball_reference_radius = max(1.0, float(space_config.get("pinball_reference_radius", pinball_reference_radius)))
+	pinball_min_damage_ratio = max(0.1, float(space_config.get("pinball_min_damage_ratio", pinball_min_damage_ratio)))
+	pinball_max_damage_ratio = max(pinball_min_damage_ratio, float(space_config.get("pinball_max_damage_ratio", pinball_max_damage_ratio)))
+	pinball_max_bonus_bounces = max(0, int(space_config.get("pinball_max_bonus_bounces", pinball_max_bonus_bounces)))
 
 	sweep_energy_cost = float(e_config.get("energy_cost", sweep_energy_cost))
 	sweep_cooldown = float(e_config.get("cooldown", sweep_cooldown))
@@ -235,6 +243,7 @@ func _append_draw_point(point: Vector2) -> bool:
 	var segment_length: float = previous.distance_to(point)
 	if segment_length <= 0.001:
 		return true
+	_maybe_emit_prism_stun(previous, point)
 	if not consume_energy(draw_energy_cost_per_step):
 		_cancel_drawing()
 		return false
@@ -248,6 +257,8 @@ func _release_drawing_path() -> void:
 		return
 	var final_point: Vector2 = get_global_mouse_position()
 	if _draw_points.is_empty() or _draw_points[_draw_points.size() - 1].distance_to(final_point) > 1.0:
+		if not _draw_points.is_empty():
+			_maybe_emit_prism_stun(_draw_points[_draw_points.size() - 1], final_point)
 		_draw_points.append(final_point)
 
 	var captured_points: PackedVector2Array = _draw_points.duplicate()
@@ -263,6 +274,9 @@ func _release_drawing_path() -> void:
 	if total_length < draw_min_release_length:
 		return
 
+	var forced_closure: Dictionary = BondManager.apply_forced_closure(self, captured_points) if BondManager != null and BondManager.has_method("apply_forced_closure") else {}
+	if bool(forced_closure.get("forced_closed", false)):
+		captured_points = forced_closure.get("points", captured_points)
 	var closed_polygon: PackedVector2Array = _build_closed_polygon(captured_points)
 	var is_closed: bool = closed_polygon.size() >= 3
 	var release_points: PackedVector2Array = closed_polygon if is_closed else captured_points
@@ -281,7 +295,7 @@ func _release_drawing_path() -> void:
 	_draw_energy_spent = 0.0
 
 	if is_closed:
-		_spawn_pinball_arena(release_points, centroid_value)
+		_spawn_pinball_arena(release_points, centroid_value, approx_area)
 	else:
 		_spawn_barrier(release_points, total_length)
 
@@ -290,6 +304,20 @@ func _cancel_drawing() -> void:
 	_draw_points = PackedVector2Array()
 	_draw_step_remainder = 0.0
 	_clear_draw_visual()
+
+func _maybe_emit_prism_stun(start_point: Vector2, end_point: Vector2) -> void:
+	if BondManager == null or not BondManager.has_method("on_draw_self_intersection"):
+		return
+	if _draw_points.size() < 3:
+		return
+	for i: int in range(_draw_points.size() - 2):
+		var a_start: Vector2 = _draw_points[i]
+		var a_end: Vector2 = _draw_points[i + 1]
+		var intersection_variant: Variant = Geometry2D.segment_intersects_segment(a_start, a_end, start_point, end_point)
+		if intersection_variant == null or not (intersection_variant is Vector2):
+			continue
+		BondManager.on_draw_self_intersection(self, intersection_variant)
+		return
 
 func _spawn_barrier(points: PackedVector2Array, total_length: float) -> void:
 	var barrier: PhalanxBarrier = PHALANX_BARRIER_SCRIPT.new() as PhalanxBarrier
@@ -310,17 +338,22 @@ func _spawn_barrier(points: PackedVector2Array, total_length: float) -> void:
 	get_tree().current_scene.add_child(barrier)
 	Global.spawn_floating_text(_average_point(points), "BARRIER", Color(0.72, 0.90, 1.0))
 
-func _spawn_pinball_arena(polygon: PackedVector2Array, centroid_value: Vector2) -> void:
+func _spawn_pinball_arena(polygon: PackedVector2Array, centroid_value: Vector2, approx_area: float) -> void:
 	var arena_asset: PhalanxPinballArena = PHALANX_PINBALL_ARENA_SCRIPT.new() as PhalanxPinballArena
 	if arena_asset == null:
 		return
+	var total_length: float = _compute_path_length(polygon)
+	var equivalent_radius: float = _compute_closure_equivalent_radius(approx_area)
+	var bounce_budget: int = _compute_pinball_bounce_budget(total_length, equivalent_radius)
+	var damage_ratio: float = _compute_pinball_damage_ratio(equivalent_radius)
 	arena_asset.setup(
 		self,
 		polygon,
 		centroid_value,
 		damage,
 		pinball_arena_lifetime,
-		_compute_barrier_durability(_compute_path_length(polygon))
+		bounce_budget,
+		damage_ratio
 	)
 	get_tree().current_scene.add_child(arena_asset)
 	Global.spawn_floating_text(centroid_value, "PINBALL", Color(0.78, 0.94, 1.0))
@@ -332,6 +365,7 @@ func _activate_sweep() -> void:
 	if not consume_energy(sweep_energy_cost):
 		return
 	_e_cooldown_remaining = sweep_cooldown
+	notify_front_skill_cast("e", {"skill_id": "e_phalanx"})
 
 	var swept_count: int = 0
 	for node: Node in get_tree().get_nodes_in_group("phalanx_barriers"):
@@ -359,6 +393,7 @@ func _activate_absolute_rigid_body() -> void:
 	if not consume_energy(energy_cost):
 		return
 	_rigid_body_timer = rigid_body_duration
+	notify_front_skill_cast("f", {"skill_id": "f_phalanx"})
 	_f_enemy_cooldowns.clear()
 	_f_boss_hits.clear()
 	_set_all_barriers_overdrive(true)
@@ -380,7 +415,11 @@ func _process_absolute_rigid_body(_delta: float) -> void:
 				continue
 			_f_boss_hits[boss_id] = true
 			var boss_damage: float = damage * rigid_body_boss_damage_ratio
-			enemy.apply_modifier_damage(boss_damage, self, {"kind": "phalanx_rigid_body_boss"})
+			enemy.apply_modifier_damage(boss_damage, self, {
+				"kind": "phalanx_rigid_body_boss",
+				"damage_type": "DMG_DIRECT",
+				"skill_slot": "f",
+			})
 			if enemy.has_method("set_flash_material"):
 				enemy.set_flash_material()
 			notify_front_skill_damage("f", [enemy], {"skill_id": "f_phalanx"})
@@ -442,7 +481,7 @@ func _try_start_dash() -> void:
 		dash_dir = Vector2.RIGHT if is_facing_right() else Vector2.LEFT
 
 	_is_dashing = true
-	_dash_direction = dash_dir.normalized()
+	_dash_direction = get_modified_dash_direction(dash_dir.normalized())
 	_dash_remaining_distance = dash_distance
 	_dash_total_distance = dash_distance
 	_dash_invulnerable = true
@@ -499,6 +538,32 @@ func _clear_draw_visual() -> void:
 
 func _compute_barrier_durability(total_length: float) -> int:
 	return max(2, int(floor(total_length / max(1.0, barrier_durability_divisor))))
+
+func _compute_closure_equivalent_radius(area: float) -> float:
+	if area <= 0.0:
+		return 0.0
+	return sqrt(area / PI)
+
+func _compute_pinball_damage_ratio(equivalent_radius: float) -> float:
+	var normalized_radius: float = clamp(
+		equivalent_radius / max(1.0, pinball_reference_radius * 2.0),
+		0.0,
+		1.0
+	)
+	return lerp(pinball_min_damage_ratio, pinball_max_damage_ratio, normalized_radius)
+
+func _compute_pinball_bounce_budget(total_length: float, equivalent_radius: float) -> int:
+	var length_budget: int = int(round(clamp(
+		total_length / max(1.0, barrier_durability_divisor * 3.0),
+		0.0,
+		4.0
+	)))
+	var radius_bonus: int = int(floor(clamp(
+		equivalent_radius / max(1.0, pinball_reference_radius) - 0.65,
+		0.0,
+		float(pinball_max_bonus_bounces)
+	)))
+	return int(clamp(2 + length_budget + radius_bonus, 2, 6 + pinball_max_bonus_bounces))
 
 func _compute_path_length(points: PackedVector2Array) -> float:
 	var total: float = 0.0

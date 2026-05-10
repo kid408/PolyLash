@@ -78,6 +78,14 @@ func setup(p_player_id: String, key_number: int) -> void:
 	is_active = false
 	_update_visual_state()
 
+func refresh_player_identity(p_player_id: String) -> void:
+	if p_player_id.is_empty() or p_player_id == player_id:
+		return
+	player_id = p_player_id
+	_load_portrait(p_player_id)
+	_load_bond_icons(p_player_id)
+	_update_visual_state()
+
 # 加载羁绊图标
 func _load_bond_icons(p_player_id: String) -> void:
 	if not bond_icons_container:

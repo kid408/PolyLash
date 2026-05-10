@@ -27,7 +27,7 @@
 "starting_weapon_price","40","随机初始武器价格"
 "WarehouseCapacity","80","仓库容量（格子数量）"
 "WarehouseColumns","8","仓库列数"
-"enemy_speed_scale","1.08","Enemy move speed scale"
+"enemy_speed_scale","1.00","Enemy move speed scale"
 "player_speed_scale","1.00","Player move speed scale"
 "player_hit_cooldown","0.12","Player minimum hit interval in seconds"
 "director_early_finish_enabled","0","是否允许预算耗尽后提前结束波次(1=允许 0=严格按倒计时)"

@@ -43,6 +43,7 @@ func setup(player_node: PlayerBase, points: PackedVector2Array, attack_value: fl
 
 func _ready() -> void:
 	add_to_group("phalanx_barriers")
+	add_to_group("player_summoned_entity")
 	if path_points.size() < 2:
 		queue_free()
 		return

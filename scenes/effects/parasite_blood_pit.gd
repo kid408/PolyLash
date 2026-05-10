@@ -13,6 +13,7 @@ var _fill: Polygon2D = null
 var _ring: Line2D = null
 
 func _ready() -> void:
+	add_to_group("player_summoned_entity")
 	_remaining_time = duration
 	_source_key = "pit_%s_%d" % [name, get_instance_id()]
 	_ensure_visuals()

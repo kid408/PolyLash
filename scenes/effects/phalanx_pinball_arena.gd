@@ -20,7 +20,7 @@ var _border: Line2D = null
 var _tracked_enemies: Dictionary = {}
 var _pair_hit_cooldowns: Dictionary = {}
 
-func setup(player_node: PlayerBase, polygon: PackedVector2Array, center: Vector2, attack_value: float, custom_lifetime: float = 4.0, bounce_limit: int = 2) -> void:
+func setup(player_node: PlayerBase, polygon: PackedVector2Array, center: Vector2, attack_value: float, custom_lifetime: float = 4.0, bounce_limit: int = 2, custom_damage_ratio: float = 1.0) -> void:
 	owner_player = player_node
 	polygon_points = polygon.duplicate()
 	centroid = center
@@ -28,9 +28,11 @@ func setup(player_node: PlayerBase, polygon: PackedVector2Array, center: Vector2
 	remaining_lifetime = max(0.1, custom_lifetime)
 	max_bounces = max(2, bounce_limit)
 	remaining_bounces = max_bounces
+	collision_damage_ratio = max(0.25, custom_damage_ratio)
 
 func _ready() -> void:
 	add_to_group("phalanx_pinball_arenas")
+	add_to_group("player_summoned_entity")
 	if polygon_points.size() < 3:
 		queue_free()
 		return
@@ -116,7 +118,12 @@ func _simulate_pinball(delta: float) -> void:
 		entry["wall_icd"] = wall_icd
 		if bool(move_result.get("wall_hit", false)) and wall_icd <= 0.0:
 			var damage_amount: float = max(1.0, source_attack * collision_damage_ratio)
-			enemy.apply_modifier_damage(damage_amount, owner_player, {"kind": "phalanx_pinball_wall"})
+			enemy.apply_modifier_damage(damage_amount, owner_player, {
+				"kind": "phalanx_pinball_wall",
+				"damage_type": "DMG_DIRECT",
+				"skill_slot": "q",
+				"space_skill_mode": "closed",
+			})
 			if enemy.has_method("set_flash_material"):
 				enemy.set_flash_material()
 			entry["wall_icd"] = pair_hit_icd
@@ -211,8 +218,18 @@ func _process_enemy_collisions() -> void:
 			if collision_normal.length_squared() <= 0.0001:
 				collision_normal = Vector2.RIGHT.rotated(randf() * TAU)
 			var damage_amount: float = max(1.0, source_attack * collision_damage_ratio)
-			enemy_a.apply_modifier_damage(damage_amount, owner_player, {"kind": "phalanx_pinball_enemy"})
-			enemy_b.apply_modifier_damage(damage_amount, owner_player, {"kind": "phalanx_pinball_enemy"})
+			enemy_a.apply_modifier_damage(damage_amount, owner_player, {
+				"kind": "phalanx_pinball_enemy",
+				"damage_type": "DMG_DIRECT",
+				"skill_slot": "q",
+				"space_skill_mode": "closed",
+			})
+			enemy_b.apply_modifier_damage(damage_amount, owner_player, {
+				"kind": "phalanx_pinball_enemy",
+				"damage_type": "DMG_DIRECT",
+				"skill_slot": "q",
+				"space_skill_mode": "closed",
+			})
 			enemy_a.global_position += collision_normal * 8.0
 			enemy_b.global_position -= collision_normal * 8.0
 			var entry_a: Dictionary = _tracked_enemies.get(a_id, {})

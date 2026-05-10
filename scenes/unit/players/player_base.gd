@@ -2,6 +2,7 @@ extends Unit
 class_name PlayerBase
 
 const COMBAT_MODIFIER_COMPONENT := preload("res://scenes/components/combat_modifier_component.gd")
+const COMBAT_EVENT_TYPES := preload("res://scenes/components/combat_event_types.gd")
 
 # 对外信号：供 HUD、结算与其他系统同步玩家实时状态。
 signal energy_changed(current, max_val)
@@ -12,6 +13,8 @@ signal dash_started(player_id: String, start_pos: Vector2, direction: Vector2)
 signal dash_active(player_id: String, current_pos: Vector2, direction: Vector2, normalized_time: float)
 signal dash_finished(player_id: String, end_pos: Vector2, direction: Vector2)
 signal pre_hit_veto_requested(payload: Dictionary)
+signal on_skill_e_cast(player: Node2D)
+signal on_skill_f_cast(player: Node2D)
 
 @export var player_id: String = ""
 
@@ -40,6 +43,8 @@ var energy: float = 0.0
 var armor: int = 0
 var xp: int = 0
 var gold: int = 0
+var blood_shield: float = 0.0
+var max_blood_shield: float = 0.0
 var move_dir: Vector2 = Vector2.ZERO
 var external_force: Vector2 = Vector2.ZERO
 var external_force_decay: float = 50.0
@@ -47,6 +52,8 @@ var knockback_scale: float = 0.3
 var reduction_per_armor: float = 0.2
 var player_hit_cooldown: float = 0.12
 var _player_hit_cooldown_timer: float = 0.0
+var _temporary_armor_stacks: Array[float] = []
+var _control_lock_timer: float = 0.0
 
 @export_group("Tactical Reject")
 @export var tactical_reject_enabled: bool = true
@@ -241,29 +248,38 @@ func apply_bond_stat_modifiers() -> void:
 	
 	var stats = {
 		"max_health": health,
+		"max_energy": max_energy,
 		"speed": speed,
 		"energy_regen": energy_regen,
 		"pickup_range": pickup_range,
 		"damage": damage,
+		"max_armor": max_armor,
 	}
 	
 	var modified = BondManager.apply_stat_modifiers(stats)
 	
 	var old_health = health
+	var old_max_energy = max_energy
 	health = modified.get("max_health", health)
+	max_energy = modified.get("max_energy", max_energy)
 	speed = modified.get("speed", speed)
 	energy_regen = modified.get("energy_regen", energy_regen)
 	pickup_range = modified.get("pickup_range", pickup_range)
 	damage = modified.get("damage", damage)
+	max_armor = int(round(modified.get("max_armor", max_armor)))
 	
 	if health_component:
 		if abs(health - health_component.max_health) > 0.01:
 			health_component.setup_with_health(health)
-		energy = max_energy
+	if old_max_energy != max_energy:
+		energy = min(energy, max_energy)
+		max_blood_shield = max(max_blood_shield, health * 0.5)
+	armor = min(armor, max_armor)
 	
 	if OS.is_debug_build():
 		print("[PlayerBase] Bond stat modifiers applied:")
 		print("  HP: %.0f -> %.0f" % [old_health, health])
+		print("  MaxEnergy: %.0f -> %.0f" % [old_max_energy, max_energy])
 		print("  Speed: %.0f" % speed)
 		print("  EnergyRegen: %.1f" % energy_regen)
 		print("  PickupRange: %.0f" % pickup_range)
@@ -543,9 +559,12 @@ func _process(delta: float) -> void:
 		_player_hit_cooldown_timer = max(0.0, _player_hit_cooldown_timer - delta)
 	if _tactical_reject_cooldown_remaining > 0.0:
 		_tactical_reject_cooldown_remaining = max(0.0, _tactical_reject_cooldown_remaining - delta)	
+	if _control_lock_timer > 0.0:
+		_control_lock_timer = max(0.0, _control_lock_timer - delta)
 	if energy < max_energy:
 		energy += energy_regen * delta
 		update_ui_signals()
+	_process_temporary_armor_stacks(delta)
 	
 	if external_force.length() > 1.0:
 		position += external_force * delta
@@ -574,6 +593,7 @@ func _handle_input(delta: float) -> void:
 		if Input.is_action_just_pressed("skill_e"):
 			print("[PlayerBase] E pressed -> execute_skill('e')")
 			skill_manager.execute_skill("e")
+			notify_front_skill_cast("e", {"source": "base_input"})
 			return
 		
 		if Input.is_action_pressed("click_right"):
@@ -593,6 +613,7 @@ func _handle_input(delta: float) -> void:
 		if ultimate_skill:
 			print("[PlayerBase] try activate ultimate, energy: %.1f%%" % get_energy_percent())
 			ultimate_skill.try_activate()
+			notify_front_skill_cast("f", {"source": "base_input"})
 		else:
 			print("[PlayerBase] ultimate is not loaded")
 
@@ -714,7 +735,35 @@ func _spawn_tactical_reject_vfx() -> void:
 	tween.finished.connect(root.queue_free)
 
 func can_move() -> bool:
-	return true
+	return _control_lock_timer <= 0.0
+
+func apply_control_lock(duration: float, feedback_text: String = "") -> void:
+	if duration <= 0.0:
+		return
+	_control_lock_timer = max(_control_lock_timer, duration)
+	external_force = Vector2.ZERO
+	if not feedback_text.is_empty():
+		Global.spawn_floating_text(global_position, feedback_text, Color(1.0, 0.74, 0.38))
+
+func get_modified_dash_direction(requested_direction: Vector2) -> Vector2:
+	var final_direction: Vector2 = requested_direction.normalized()
+	if final_direction.length_squared() <= 0.0001:
+		final_direction = Vector2.RIGHT if is_facing_right() else Vector2.LEFT
+	for enemy_node: Node in get_tree().get_nodes_in_group("enemies"):
+		if enemy_node == null or not is_instance_valid(enemy_node):
+			continue
+		if not enemy_node.has_method("modify_player_dash_direction"):
+			continue
+		var result: Variant = enemy_node.call("modify_player_dash_direction", self, final_direction)
+		if not (result is Dictionary):
+			continue
+		var result_dict: Dictionary = result
+		var direction_variant: Variant = result_dict.get("direction", final_direction)
+		if direction_variant is Vector2:
+			var new_direction: Vector2 = (direction_variant as Vector2).normalized()
+			if new_direction.length_squared() > 0.0001:
+				final_direction = new_direction
+	return final_direction
 
 func _ensure_combat_modifier_component() -> void:
 	if combat_modifier_component and is_instance_valid(combat_modifier_component):
@@ -739,7 +788,10 @@ func get_incoming_damage_multiplier() -> float:
 	return 1.0
 
 func apply_modifier_damage(raw_amount: float, _source: Variant = null, _payload: Dictionary = {}) -> void:
-	take_damage(raw_amount)
+	var payload: Dictionary = _payload.duplicate(true)
+	if _source != null and not payload.has("source"):
+		payload["source"] = _source
+	take_damage(raw_amount, payload)
 
 func apply_move_speed_modifier(modifier_id: String, multiplier: float, duration: float, stacking_rule: String = CombatModifierComponent.STACK_REFRESH, source: Variant = null, payload: Dictionary = {}) -> String:
 	_ensure_combat_modifier_component()
@@ -756,6 +808,34 @@ func apply_vulnerable_modifier(modifier_id: String, multiplier: float, duration:
 func apply_tag_marker(modifier_id: String, tag_name: String, duration: float, stacking_rule: String = CombatModifierComponent.STACK_REFRESH, source: Variant = null, payload: Dictionary = {}) -> String:
 	_ensure_combat_modifier_component()
 	return combat_modifier_component.apply_tag_marker(modifier_id, tag_name, duration, stacking_rule, source, payload)
+
+func get_abnormal_state_count() -> int:
+	var abnormal_states: Dictionary = {}
+	if combat_modifier_component != null:
+		for marker_name: String in combat_modifier_component.get_tag_markers():
+			if marker_name == "joule_tar" or marker_name == "joule_tar_max":
+				abnormal_states["tar_debuff"] = true
+		for modifier_data: Dictionary in combat_modifier_component.get_modifiers_by_type("move_speed_multiplier"):
+			if float(modifier_data.get("value", 1.0)) < 1.0:
+				abnormal_states["slow"] = true
+		if not combat_modifier_component.get_modifiers_by_type("vulnerable").is_empty():
+			abnormal_states["vulnerable"] = true
+		for modifier_data: Dictionary in combat_modifier_component.get_modifiers_by_type("damage_over_time"):
+			var modifier_payload: Dictionary = modifier_data.get("payload", {})
+			var abnormal_key: String = str(modifier_payload.get("abnormal_state", modifier_payload.get("status_name", ""))).strip_edges().to_lower()
+			if abnormal_key in ["poison", "bleed"]:
+				abnormal_states[abnormal_key] = true
+	return abnormal_states.size()
+
+func has_mechanic_mark(mark_name: String) -> bool:
+	var normalized_mark: String = mark_name.strip_edges().to_lower()
+	if normalized_mark.is_empty() or combat_modifier_component == null:
+		return false
+	if normalized_mark == "mark":
+		return combat_modifier_component.has_tag_marker("mark") or combat_modifier_component.has_tag_marker("overtone_echo")
+	if normalized_mark == "soul_link":
+		return combat_modifier_component.has_tag_marker("soul_link") or combat_modifier_component.has_tag_marker("soul_link_empowered")
+	return combat_modifier_component.has_tag_marker(normalized_mark)
 
 func _process_subclass(delta: float) -> void: 
 	pass
@@ -786,6 +866,8 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 		"hitbox": hitbox,
 		"kind": "hurtbox",
 		"knockback_power": float(hitbox.knockback_power),
+		"damage_type": int(hitbox.damage_type),
+		"is_shared_damage": bool(hitbox.is_shared_damage),
 	}
 	var pre_hit_result: Dictionary = _evaluate_pre_hit_veto(pre_hit_payload)
 	if bool(pre_hit_result.get("cancel", false)):
@@ -798,6 +880,8 @@ func _on_hurtbox_component_on_damaged(hitbox: HitboxComponent) -> void:
 		"source": hitbox.source,
 		"kind": "hurtbox",
 		"hitbox": hitbox,
+		"damage_type": int(hitbox.damage_type),
+		"is_shared_damage": bool(hitbox.is_shared_damage),
 	})
 	if not damage_applied:
 		return
@@ -842,7 +926,14 @@ func take_damage(raw_amount: float, payload: Dictionary = {}) -> bool:
 		Global.on_camera_shake.emit(10.0, 0.25)
 		Global.frame_freeze(0.08, 0.15)
 	
-	health_component.take_damage(final_damage)
+	var health_payload: Dictionary = payload.duplicate(true)
+	health_payload["damage_type"] = COMBAT_EVENT_TYPES.normalize_damage_type(
+		health_payload.get("damage_type", COMBAT_EVENT_TYPES.DamageType.DIRECT)
+	)
+	health_payload["is_shared_damage"] = bool(health_payload.get("is_shared_damage", false))
+	health_component.take_damage(final_damage, health_payload)
+	if BondManager != null and BondManager.has_method("on_player_took_damage"):
+		BondManager.on_player_took_damage(self, final_damage, health_payload)
 	
 	if BondManager.has_mechanic("soul_attach") or BondManager.has_mechanic("dual_order"):
 		_trigger_soul_attach_on_hit()
@@ -997,7 +1088,11 @@ func _trigger_soul_attach_on_hit() -> void:
 		var distance = global_position.distance_to(enemy.global_position)
 		if distance <= attach_radius:
 			if enemy.has_node("HealthComponent"):
-				enemy.get_node("HealthComponent").take_damage(attach_damage)
+				enemy.get_node("HealthComponent").take_damage(attach_damage, {
+					"source": self,
+					"kind": "bond_soul_attach",
+					"damage_type": "DMG_AOE",
+				})
 				hit_count += 1
 			
 
@@ -1014,6 +1109,9 @@ func _trigger_soul_attach_on_hit() -> void:
 		print("[PlayerBase] [P4-4] soul attach hit %d enemies" % hit_count)
 
 func apply_knockback_self(force: Vector2) -> void:
+	if BondManager != null and BondManager.has_method("is_player_immune_to_knockback") and BondManager.is_player_immune_to_knockback(self):
+		Global.spawn_floating_text(global_position, "IMMUNE", Color(0.72, 0.95, 1.0))
+		return
 	if _is_drawing_active() and BondManager.has_mechanic("super_armor"):
 		print("[PlayerBase] [P1-2] super armor triggered, knockback ignored (damage still applied)")
 		SoundManager.play("super_armor_trigger")
@@ -1030,14 +1128,18 @@ func consume_energy(amount: float) -> bool:
 	if _is_skill_synergy_test_no_cost_mode():
 		return true
 
+	if BondManager != null and BondManager.has_method("consume_player_energy"):
+		var result: Variant = BondManager.consume_player_energy(self, amount)
+		if result is bool and bool(result):
+			update_ui_signals()
+			return true
 	if energy >= amount:
 		energy -= amount
 		update_ui_signals()
 		return true
-	else:
-		SoundManager.play("player_energy_low")
-		Global.spawn_floating_text(global_position, "No Energy!", Color.RED)
-		return false
+	SoundManager.play("player_energy_low")
+	Global.spawn_floating_text(global_position, "No Energy!", Color.RED)
+	return false
 
 func gain_energy(amount: float) -> void:
 	energy = min(energy + amount, max_energy)
@@ -1212,16 +1314,41 @@ func notify_q_path_executed(is_closed: bool, segment_count: int, polygon_count: 
 	ultimate_skill.call("on_q_path_executed", is_closed, segment_count, polygon_count)
 
 func notify_space_draw_release(release_data: Dictionary) -> void:
+	if BondManager != null and BondManager.has_method("on_space_draw_release"):
+		BondManager.on_space_draw_release(self, release_data.duplicate(true))
+	for enemy_node: Node in get_tree().get_nodes_in_group("enemies"):
+		if enemy_node == null or not is_instance_valid(enemy_node):
+			continue
+		if not enemy_node.has_method("on_player_draw_release"):
+			continue
+		enemy_node.call("on_player_draw_release", self, release_data.duplicate(true))
 	var assist_service: Node = get_node_or_null("/root/AssistRuntimeService")
 	if assist_service == null or not assist_service.has_method("on_front_draw_release"):
 		return
 	assist_service.call("on_front_draw_release", self, release_data.duplicate(true))
 
 func notify_front_dash_used(dash_data: Dictionary) -> void:
+	if BondManager != null and BondManager.has_method("on_dash_started"):
+		BondManager.on_dash_started(self, dash_data.duplicate(true))
+	for enemy_node: Node in get_tree().get_nodes_in_group("enemies"):
+		if enemy_node == null or not is_instance_valid(enemy_node):
+			continue
+		if not enemy_node.has_method("on_player_dash_used"):
+			continue
+		enemy_node.call("on_player_dash_used", self, dash_data.duplicate(true))
 	var assist_service: Node = get_node_or_null("/root/AssistRuntimeService")
 	if assist_service == null or not assist_service.has_method("on_front_dash"):
 		return
 	assist_service.call("on_front_dash", self, dash_data.duplicate(true))
+
+func notify_front_skill_cast(skill_slot: String, payload: Dictionary = {}) -> void:
+	match skill_slot:
+		"e":
+			on_skill_e_cast.emit(self)
+		"f":
+			on_skill_f_cast.emit(self)
+	if BondManager != null and BondManager.has_method("on_front_skill_cast"):
+		BondManager.on_front_skill_cast(self, skill_slot, payload.duplicate(true))
 
 func notify_front_skill_damage(skill_slot: String, hit_enemies: Array, payload: Dictionary = {}) -> void:
 	var assist_service: Node = get_node_or_null("/root/AssistRuntimeService")
@@ -1237,6 +1364,57 @@ func notify_front_skill_damage(skill_slot: String, hit_enemies: Array, payload: 
 
 func reset_dash_cooldown() -> void:
 	pass
+
+func reset_skill_e_cooldown() -> void:
+	for property_name: String in [
+		"_e_cooldown_remaining",
+		"_gravity_well_cooldown_remaining"
+	]:
+		if property_name in self:
+			set(property_name, 0.0)
+	var skill_manager := get_node_or_null("SkillManager")
+	if skill_manager != null and skill_manager.has_method("get_skill"):
+		var skill_e: Variant = skill_manager.get_skill("e")
+		if skill_e != null and is_instance_valid(skill_e):
+			for cooldown_property: String in ["cooldown_remaining", "_cooldown_remaining", "current_cooldown", "cooldown_timer"]:
+				if cooldown_property in skill_e:
+					skill_e.set(cooldown_property, 0.0)
+
+func get_blood_shield() -> float:
+	return max(0.0, blood_shield)
+
+func add_blood_shield(amount: float, cap_value: float = -1.0) -> float:
+	if amount <= 0.0:
+		return blood_shield
+	var final_cap: float = cap_value if cap_value >= 0.0 else max(max_blood_shield, health * 0.5)
+	max_blood_shield = max(max_blood_shield, final_cap)
+	blood_shield = clamp(blood_shield + amount, 0.0, final_cap)
+	return blood_shield
+
+func spend_blood_shield(amount: float) -> float:
+	var spent: float = min(max(0.0, amount), blood_shield)
+	blood_shield = max(0.0, blood_shield - spent)
+	return spent
+
+func add_temporary_armor_stack(duration: float, max_stacks: int = 10) -> void:
+	if duration <= 0.0:
+		return
+	while _temporary_armor_stacks.size() >= max_stacks:
+		_temporary_armor_stacks.pop_front()
+	_temporary_armor_stacks.append(duration)
+
+func get_temporary_armor_bonus() -> float:
+	return float(_temporary_armor_stacks.size()) * 2.0
+
+func _process_temporary_armor_stacks(delta: float) -> void:
+	if _temporary_armor_stacks.is_empty():
+		return
+	var kept: Array[float] = []
+	for remaining_time: float in _temporary_armor_stacks:
+		var next_time: float = max(0.0, remaining_time - delta)
+		if next_time > 0.0:
+			kept.append(next_time)
+	_temporary_armor_stacks = kept
 
 func _auto_create_skill_manager() -> void:
 	print("[PlayerBase] Stage 1 cleanup: legacy skill manager auto-create disabled")

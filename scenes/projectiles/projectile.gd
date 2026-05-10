@@ -317,8 +317,18 @@ func apply_chain_effect(enemy: Node2D) -> void:
 		
 		# 对下一个目标造成递减伤害
 		current_damage *= chain_damage_ratio
-		if next_target.has_method("take_damage"):
-			next_target.take_damage(current_damage)
+		if next_target.has_method("apply_modifier_damage"):
+			next_target.apply_modifier_damage(current_damage, owner_unit, {
+				"kind": "projectile_chain",
+				"damage_type": "DMG_DIRECT",
+			})
+			print("[Projectile] 连锁攻击: ", next_target.name, " 伤害=", current_damage)
+		elif next_target.has_method("take_damage"):
+			next_target.take_damage(current_damage, {
+				"source": owner_unit,
+				"kind": "projectile_chain",
+				"damage_type": "DMG_DIRECT",
+			})
 			print("[Projectile] 连锁攻击: ", next_target.name, " 伤害=", current_damage)
 		
 		# 创建视觉效果（可选）

@@ -104,7 +104,11 @@ func _spawn_poison_pool(pos: Vector2) -> void:
 				player_node = target.owner
 			
 			if is_instance_valid(player_node) and player_node.has_method("take_damage"):
-				player_node.take_damage(int(pool_damage))
+				player_node.take_damage(int(pool_damage), {
+					"source": owner,
+					"kind": "poison_pool",
+					"damage_type": "DMG_DOT",
+				})
 				if Global.has_method("spawn_floating_text"):
 					Global.spawn_floating_text(player_node.global_position, 
 						"-" + str(int(pool_damage)), Color(0.5, 1.0, 0.5))

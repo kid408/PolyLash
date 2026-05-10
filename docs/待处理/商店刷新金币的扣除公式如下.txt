@@ -1,0 +1,30 @@
+商店刷新金币的扣除公式如下
+**“线性增长”**绝对是控制游戏经济水位最稳妥、体验最平滑的选择。核心公式 (线性增长)这是最标准、最好维护的线性递增数学公式：$$Cost = BaseCost + (RefreshCount \times CostIncrement)$$变量解释：$Cost$ (当前刷新所需价格)：玩家这一次按下按钮需要扣除的金币。$BaseCost$ (基础起步价)：玩家在当前商店第 1 次刷新的价格（此时已刷新次数为 0）。$RefreshCount$ (已刷新次数)：玩家在这家商店里已经按过几次刷新按钮。（注意：每次进入新一波的商店时，这个变量必须重置为 0）$CostIncrement$ (阶梯涨幅)：每次刷新比上一次贵多少钱。
+帮我实现
+
+商店里的确认换队员按钮点击还无反应
+有报错
+  ERROR: [WarehouseManager] 仓库中已存在道具 55，跳过添加
+以下是log
+[WaveRewardPanel] player selected reward #2
+  ERROR: [WarehouseManager] 仓库中已存在道具 55，跳过添加
+[Arena] 波次奖励已选择，继续显示商店
+[ShopManager] generated shop items: ["emblem_colossus", "relic_flask_green", "relic_glove_dark", "attr_speed_boots"]
+[WaveRewardPanel] panel closed
+[ShopManager] generated shop items: ["relic_book_illusionist", "relic_dagger_ritual", "relic_coin_ancient", "emblem_assist"]
+[ShopManager] generated shop items: ["magic_speed_boost", "relic_flask_green", "attr_damage_dagger", "emblem_hexer"]
+[ShopManager] generated shop items: ["emblem_hexer", "attr_speed_boots", "relic_doll_leviathan", "relic_skull_human"]
+[WarehouseManager] 添加道具 2 到槽位 16
+[ShopManager] purchase success: item_id=attr_speed_boots, price=40
+[ShopManager] generated shop items: ["relic_coin_ancient", "recruit_card_joule", "relic_page_script", "recruit_card_arc"]
+[ShopManager] purchase failed: 效果应用失败
+[ShopManager] purchase failed: 效果应用失败
+[ShopManager] purchase failed: 效果应用失败
+[ShopManager] purchase failed: 效果应用失败
+[ShopManager] purchase failed: 效果应用失败
+[ShopManager] purchase failed: 效果应用失败
+[ShopManager] purchase failed: 效果应用失败
+[ShopManager] purchase failed: 效果应用失败
+[ShopManager] purchase failed: 效果应用失败
+[ShopManager] purchase failed: 效果应用失败
+[Arena] 商店关闭，开始下一波

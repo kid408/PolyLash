@@ -5,20 +5,26 @@ const SILK_LINK_UTILS := preload("res://scenes/effects/silk_link_utils.gd")
 
 const DEFAULT_ATTACK: float = 12.0
 const DEFAULT_HEALTH: float = 180.0
-const DEFAULT_SPEED: float = 320.0
+const DEFAULT_SPEED: float = 250.0
 const DEFAULT_MAX_ENERGY: float = 120.0
 const DEFAULT_ENERGY_REGEN: float = 12.0
 const DEFAULT_PICKUP_RANGE: float = 165.0
 
 @export_group("Silk Draw")
 @export var draw_sample_spacing: float = 18.0
-@export var draw_energy_cost: float = 10.0
+@export var draw_base_energy_cost: float = 0.0
+@export var draw_energy_cost_per_step: float = 0.6
+@export var draw_energy_cost_unit_px: float = 30.0
 @export var draw_min_release_length: float = 24.0
 @export var draw_close_threshold: float = 60.0
 @export var soul_link_line_half_width: float = 34.0
-@export var soul_link_duration: float = 10.0
-@export var soul_link_empowered_duration: float = 15.0
+@export var soul_link_duration: float = 8.0
+@export var soul_link_empowered_duration: float = 10.0
+@export var soul_link_transmission_ratio: float = 0.30
+@export var soul_link_empowered_transmission_ratio: float = 0.80
 @export var harvest_energy_restore: float = 15.0
+@export var harvest_collapse_damage_ratio: float = 1.0
+@export var harvest_collapse_radius: float = 120.0
 
 @export_group("Dash")
 @export var dash_cost: float = 5.0
@@ -27,14 +33,18 @@ const DEFAULT_PICKUP_RANGE: float = 165.0
 @export var dash_invuln_duration: float = 0.35
 
 @export_group("E Skill")
-@export var convergence_energy_cost: float = 25.0
-@export var convergence_cooldown: float = 10.0
-@export var convergence_pull_duration: float = 0.5
-@export var convergence_scatter_radius: float = 12.0
+@export var convergence_energy_cost: float = 20.0
+@export var convergence_cooldown: float = 8.0
+@export var convergence_slow_duration: float = 0.5
+@export var convergence_slow_multiplier: float = 0.10
+@export var convergence_true_damage: float = 40.0
 
 @export_group("F Skill")
-@export var web_energy_percent: float = 50.0
-@export var web_duration: float = 15.0
+@export var web_energy_cost_mode: String = "flat"
+@export var web_energy_percent: float = 0.0
+@export var web_flat_energy_cost: float = 0.0
+@export var web_cooldown: float = 45.0
+@export var web_duration: float = 10.0
 
 @onready var dash_timer: Timer = $DashTimer
 @onready var draw_line: Line2D = $Line2D
@@ -47,9 +57,12 @@ var _dash_invulnerable: bool = false
 
 var _is_drawing: bool = false
 var _draw_points: PackedVector2Array = PackedVector2Array()
+var _draw_step_remainder: float = 0.0
+var _draw_total_length: float = 0.0
+var _draw_energy_spent: float = 0.0
 
 var _e_cooldown_remaining: float = 0.0
-var _active_convergence_pulls: Array[Dictionary] = []
+var _f_cooldown_remaining: float = 0.0
 var _v2_bundle: Dictionary = {}
 
 func _ready() -> void:
@@ -101,18 +114,43 @@ func _load_config_from_csv() -> void:
 	knockback_scale = float(player_config.get("knockback_scale", knockback_scale))
 
 	draw_sample_spacing = float(space_config.get("point_sample_step", draw_sample_spacing))
-	draw_energy_cost = float(space_config.get("base_energy_cost", draw_energy_cost))
+	draw_base_energy_cost = float(space_config.get("base_energy_cost", draw_base_energy_cost))
 	draw_min_release_length = float(space_config.get("min_release_length", draw_min_release_length))
+	draw_energy_cost_unit_px = max(1.0, float(space_config.get("energy_cost_unit_px", draw_energy_cost_unit_px)))
+	var energy_mode: String = str(space_config.get("energy_mode", "per_unit")).strip_edges()
+	var energy_cost_per_unit: float = float(space_config.get("energy_cost_per_unit", draw_energy_cost_per_step))
+	if energy_mode == "per_unit":
+		draw_energy_cost_per_step = energy_cost_per_unit * (draw_sample_spacing / draw_energy_cost_unit_px)
+	else:
+		draw_energy_cost_per_step = energy_cost_per_unit
+	soul_link_duration = max(0.1, float(space_config.get("soul_link_duration", soul_link_duration)))
+	soul_link_empowered_duration = max(soul_link_duration, float(space_config.get("soul_link_empowered_duration", soul_link_empowered_duration)))
+	soul_link_transmission_ratio = max(0.0, float(space_config.get("soul_link_transfer_ratio", soul_link_transmission_ratio)))
+	soul_link_empowered_transmission_ratio = max(
+		soul_link_transmission_ratio,
+		float(space_config.get("soul_link_empowered_transfer_ratio", soul_link_empowered_transmission_ratio))
+	)
+	harvest_energy_restore = max(0.0, float(space_config.get("harvest_energy_restore", harvest_energy_restore)))
+	harvest_collapse_damage_ratio = max(0.0, float(space_config.get("harvest_collapse_damage_ratio", harvest_collapse_damage_ratio)))
+	harvest_collapse_radius = max(0.0, float(space_config.get("harvest_collapse_radius", harvest_collapse_radius)))
+	SILK_LINK_UTILS.set_transmission_ratios(soul_link_transmission_ratio, soul_link_empowered_transmission_ratio)
 
 	convergence_energy_cost = float(e_config.get("energy_cost", convergence_energy_cost))
 	convergence_cooldown = float(e_config.get("cooldown", convergence_cooldown))
-	convergence_pull_duration = float(e_config.get("effect_duration", convergence_pull_duration))
-	convergence_scatter_radius = float(e_config.get("effect_radius", convergence_scatter_radius))
+	convergence_slow_duration = max(0.0, float(e_config.get("effect_duration", convergence_slow_duration)))
+	convergence_slow_multiplier = clamp(float(e_config.get("convergence_slow_multiplier", convergence_slow_multiplier)), 0.01, 1.0)
+	convergence_true_damage = max(
+		0.0,
+		float(e_config.get("convergence_sever_true_damage", e_config.get("convergence_true_damage", convergence_true_damage)))
+	)
 	skill_e_cost = convergence_energy_cost
 
-	var f_cost_mode: String = str(f_config.get("energy_cost_mode", "percent_current")).strip_edges()
-	if f_cost_mode in ["percent", "percent_current"]:
+	web_energy_cost_mode = str(f_config.get("energy_cost_mode", web_energy_cost_mode)).strip_edges()
+	if web_energy_cost_mode in ["percent", "percent_current"]:
 		web_energy_percent = float(f_config.get("energy_cost", web_energy_percent))
+	else:
+		web_flat_energy_cost = max(0.0, float(f_config.get("energy_cost", web_flat_energy_cost)))
+	web_cooldown = max(0.0, float(f_config.get("cooldown", web_cooldown)))
 	web_duration = max(0.5, float(f_config.get("duration", web_duration)))
 
 	damage = DEFAULT_ATTACK
@@ -156,14 +194,18 @@ func _handle_input(delta: float) -> void:
 func _process_subclass(delta: float) -> void:
 	if _e_cooldown_remaining > 0.0:
 		_e_cooldown_remaining = max(0.0, _e_cooldown_remaining - delta)
-	_process_convergence_pulls(delta)
+	if _f_cooldown_remaining > 0.0:
+		_f_cooldown_remaining = max(0.0, _f_cooldown_remaining - delta)
 	_refresh_invincible_meta()
 
 func _begin_drawing() -> void:
-	if not consume_energy(draw_energy_cost):
+	if draw_base_energy_cost > 0.0 and not consume_energy(draw_base_energy_cost):
 		return
 	_is_drawing = true
 	_draw_points = PackedVector2Array()
+	_draw_step_remainder = 0.0
+	_draw_total_length = 0.0
+	_draw_energy_spent = draw_base_energy_cost
 	_draw_points.append(get_global_mouse_position())
 	_refresh_draw_visual()
 
@@ -185,31 +227,43 @@ func _update_drawing_path() -> void:
 	var direction: Vector2 = delta_vec / distance_to_target
 	var remaining_distance: float = distance_to_target
 	var cursor: Vector2 = last_point
-	while remaining_distance >= draw_sample_spacing:
-		var new_point: Vector2 = cursor + direction * draw_sample_spacing
-		_draw_points.append(new_point)
+	var next_step: float = max(0.001, draw_sample_spacing - _draw_step_remainder)
+	while remaining_distance >= next_step:
+		var new_point: Vector2 = cursor + direction * next_step
+		if not _append_draw_point(new_point):
+			return
 		cursor = new_point
-		remaining_distance -= draw_sample_spacing
-	_refresh_draw_visual()
+		remaining_distance -= next_step
+		next_step = draw_sample_spacing
+	_draw_step_remainder = draw_sample_spacing - remaining_distance
 
 func _release_drawing_path() -> void:
 	if not _is_drawing:
 		return
 	var final_point: Vector2 = get_global_mouse_position()
 	if _draw_points.is_empty() or _draw_points[_draw_points.size() - 1].distance_to(final_point) > 1.0:
-		_draw_points.append(final_point)
+		_append_draw_point(final_point)
 	var captured_points: PackedVector2Array = _draw_points.duplicate()
+	var total_length: float = _draw_total_length
 	_is_drawing = false
 	_draw_points = PackedVector2Array()
+	_draw_step_remainder = 0.0
+	_draw_total_length = 0.0
 	_clear_draw_visual()
 
 	if captured_points.size() < 2:
+		_draw_energy_spent = 0.0
 		return
 
-	var total_length: float = _compute_path_length(captured_points)
+	if total_length <= 0.0:
+		total_length = _compute_path_length(captured_points)
 	if total_length < draw_min_release_length:
+		_draw_energy_spent = 0.0
 		return
 
+	var forced_closure: Dictionary = BondManager.apply_forced_closure(self, captured_points) if BondManager != null and BondManager.has_method("apply_forced_closure") else {}
+	if bool(forced_closure.get("forced_closed", false)):
+		captured_points = forced_closure.get("points", captured_points)
 	var is_closed: bool = _determine_closed_shape(captured_points)
 	var centroid: Vector2 = _resolve_centroid(captured_points, is_closed)
 	var approx_area: float = _estimate_polygon_area(captured_points, is_closed)
@@ -221,16 +275,56 @@ func _release_drawing_path() -> void:
 		"points": _packed_to_points(captured_points),
 		"centroid": centroid,
 		"approx_area": approx_area,
-		"draw_cost": draw_energy_cost,
+		"draw_cost": _draw_energy_spent,
 	})
+	_draw_energy_spent = 0.0
 
 	if is_closed and approx_area > 1.0:
 		_execute_harvest(captured_points)
 	else:
 		_apply_soul_link_line(captured_points)
 
+func _append_draw_point(point: Vector2) -> bool:
+	if _draw_points.is_empty():
+		_draw_points.append(point)
+		_refresh_draw_visual()
+		return true
+	var previous: Vector2 = _draw_points[_draw_points.size() - 1]
+	if previous.distance_to(point) <= 0.001:
+		return true
+	var segment_length: float = previous.distance_to(point)
+	var step_cost: float = _compute_incremental_draw_energy_cost(_draw_total_length, segment_length)
+	if step_cost > 0.0 and not consume_energy(step_cost):
+		return false
+	_maybe_emit_prism_stun(previous, point)
+	_draw_total_length += segment_length
+	_draw_energy_spent += step_cost
+	_draw_points.append(point)
+	_refresh_draw_visual()
+	return true
+
+func _compute_incremental_draw_energy_cost(_current_length: float, segment_length: float) -> float:
+	if segment_length <= 0.0:
+		return 0.0
+	var cost_per_px: float = draw_energy_cost_per_step / max(0.001, draw_sample_spacing)
+	return segment_length * cost_per_px
+
 func _determine_closed_shape(points: PackedVector2Array) -> bool:
 	return _build_closed_polygon(points).size() >= 3
+
+func _maybe_emit_prism_stun(start_point: Vector2, end_point: Vector2) -> void:
+	if BondManager == null or not BondManager.has_method("on_draw_self_intersection"):
+		return
+	if _draw_points.size() < 3:
+		return
+	for i: int in range(_draw_points.size() - 2):
+		var a_start: Vector2 = _draw_points[i]
+		var a_end: Vector2 = _draw_points[i + 1]
+		var intersection_variant: Variant = Geometry2D.segment_intersects_segment(a_start, a_end, start_point, end_point)
+		if intersection_variant == null or not (intersection_variant is Vector2):
+			continue
+		BondManager.on_draw_self_intersection(self, intersection_variant)
+		return
 
 func _apply_soul_link_line(points: PackedVector2Array) -> void:
 	_spawn_soul_link_line_vfx(points)
@@ -258,7 +352,7 @@ func _execute_harvest(points: PackedVector2Array) -> void:
 		_apply_soul_link_line(points)
 		return
 
-	var harvested_count: int = 0
+	var harvested_targets: Array[Enemy] = []
 	for enemy_node: Node in get_tree().get_nodes_in_group("enemies"):
 		if not (enemy_node is Enemy):
 			continue
@@ -269,18 +363,25 @@ func _execute_harvest(points: PackedVector2Array) -> void:
 			continue
 		if not SILK_LINK_UTILS.has_link(enemy):
 			continue
-		SILK_LINK_UTILS.clear_link(enemy)
-		if enemy.has_method("set_flash_material"):
-			enemy.set_flash_material()
-		harvested_count += 1
+		harvested_targets.append(enemy)
 
 	_spawn_harvest_vfx(polygon)
-	if harvested_count <= 0:
+	if harvested_targets.is_empty():
 		Global.spawn_floating_text(_average_point(polygon), "NO LINK", Color(1.0, 0.74, 0.68))
 		return
 
-	_restore_squad_energy(float(harvested_count) * harvest_energy_restore)
-	Global.spawn_floating_text(_average_point(polygon), "HARVEST x%d" % harvested_count, Color(1.0, 0.78, 0.84))
+	for harvested_enemy: Enemy in harvested_targets:
+		SILK_LINK_UTILS.clear_link(harvested_enemy)
+		if harvested_enemy.has_method("set_flash_material"):
+			harvested_enemy.set_flash_material()
+
+	var collapse_damage: float = damage * harvest_collapse_damage_ratio
+	if collapse_damage > 0.0 and harvest_collapse_radius > 0.0:
+		for harvested_enemy: Enemy in harvested_targets:
+			_apply_harvest_collapse(harvested_enemy.global_position, collapse_damage)
+
+	_restore_squad_energy(float(harvested_targets.size()) * harvest_energy_restore)
+	Global.spawn_floating_text(_average_point(polygon), "HARVEST x%d" % harvested_targets.size(), Color(1.0, 0.78, 0.84))
 
 func _restore_squad_energy(amount: float) -> void:
 	if amount <= 0.0:
@@ -312,6 +413,7 @@ func _activate_convergence() -> void:
 	if not consume_energy(convergence_energy_cost):
 		return
 	_e_cooldown_remaining = convergence_cooldown
+	notify_front_skill_cast("e", {"skill_id": "e_silk"})
 
 	var linked_enemies: Array[Enemy] = _get_linked_enemies()
 	if linked_enemies.is_empty():
@@ -320,56 +422,55 @@ func _activate_convergence() -> void:
 		return
 
 	var centroid: Vector2 = Vector2.ZERO
+	var hit_enemies: Array = []
 	for enemy: Enemy in linked_enemies:
+		if not is_instance_valid(enemy) or enemy.is_dead:
+			continue
 		centroid += enemy.global_position
-	centroid /= float(linked_enemies.size())
-
-	_active_convergence_pulls.clear()
-	for enemy: Enemy in linked_enemies:
-		var scatter: Vector2 = Vector2.RIGHT.rotated(randf() * TAU) * randf_range(0.0, convergence_scatter_radius)
-		_active_convergence_pulls.append({
-			"enemy_ref": weakref(enemy),
-			"start": enemy.global_position,
-			"target": centroid + scatter,
-			"elapsed": 0.0,
-			"duration": convergence_pull_duration,
+		enemy.apply_modifier_damage(convergence_true_damage, self, {
+			"kind": "silk_resonance_ping",
+			"damage_type": "DMG_TRUE",
+			"true_damage": true,
+			"skill_slot": "e",
+			"soul_link_skip_share": true,
 		})
-		enemy.apply_status("stun", convergence_pull_duration + 0.05, 0.0, 1, 1.0)
-
-	_spawn_convergence_vfx(centroid)
-	Global.spawn_floating_text(centroid, "CONVERGENCE", Color(1.0, 0.56, 0.66))
-
-func _process_convergence_pulls(delta: float) -> void:
-	if _active_convergence_pulls.is_empty():
-		return
-	var remaining: Array[Dictionary] = []
-	for pull in _active_convergence_pulls:
-		var enemy_ref_variant: Variant = pull.get("enemy_ref", null)
-		if enemy_ref_variant == null or not (enemy_ref_variant is WeakRef):
-			continue
-		var enemy: Enemy = (enemy_ref_variant as WeakRef).get_ref() as Enemy
-		if enemy == null or not is_instance_valid(enemy) or enemy.is_dead:
-			continue
-		var duration: float = max(0.01, float(pull.get("duration", convergence_pull_duration)))
-		var elapsed: float = min(duration, float(pull.get("elapsed", 0.0)) + delta)
-		var start_pos: Vector2 = pull.get("start", enemy.global_position)
-		var target_pos: Vector2 = pull.get("target", enemy.global_position)
-		var weight: float = elapsed / duration
-		enemy.global_position = start_pos.lerp(target_pos, weight)
-		pull["elapsed"] = elapsed
+		enemy.apply_move_speed_modifier(
+			"silk_resonance_slow",
+			convergence_slow_multiplier,
+			convergence_slow_duration,
+			CombatModifierComponent.STACK_REFRESH,
+			self,
+			{
+				"kind": "silk_resonance_slow",
+				"soul_link_skip_share": true,
+			}
+		)
 		if enemy.has_method("set_flash_material"):
 			enemy.set_flash_material()
-		if elapsed < duration:
-			remaining.append(pull)
-	_active_convergence_pulls = remaining
+		hit_enemies.append(enemy)
+
+	if hit_enemies.is_empty():
+		Global.spawn_floating_text(global_position, "MISS", Color(1.0, 0.42, 0.42))
+		return
+
+	centroid /= float(hit_enemies.size())
+	_spawn_convergence_vfx(centroid)
+	Global.spawn_floating_text(centroid, "RESONANCE x%d" % hit_enemies.size(), Color(1.0, 0.56, 0.66))
+	notify_front_skill_damage("e", hit_enemies, {
+		"skill_id": "e_silk",
+		"source": "silk_resonance_ping",
+		"resolved_damage": convergence_true_damage,
+	})
 
 func _activate_web_of_destiny() -> void:
-	var energy_cost: float = energy * (web_energy_percent / 100.0)
-	if energy_cost <= 0.0:
-		Global.spawn_floating_text(global_position, "NO ENERGY", Color(1.0, 0.42, 0.42))
+	if _f_cooldown_remaining > 0.0:
+		Global.spawn_floating_text(global_position, "CD", Color(0.92, 0.82, 0.42))
 		return
-	if not consume_energy(energy_cost):
+	var energy_cost: float = _resolve_web_energy_cost()
+	if energy_cost > 0.0 and not consume_energy(energy_cost):
 		return
+	_f_cooldown_remaining = web_cooldown
+	notify_front_skill_cast("f", {"skill_id": "f_silk"})
 
 	var linked_count: int = 0
 	for enemy_node: Node in get_tree().get_nodes_in_group("enemies"):
@@ -385,6 +486,32 @@ func _activate_web_of_destiny() -> void:
 
 	_spawn_web_of_destiny_vfx()
 	Global.spawn_floating_text(global_position, "WEB x%d" % linked_count, Color(1.0, 0.70, 0.82))
+
+func _resolve_web_energy_cost() -> float:
+	if web_energy_cost_mode in ["percent", "percent_current"]:
+		return max(0.0, energy * (web_energy_percent / 100.0))
+	if web_energy_cost_mode == "percent_max":
+		return max(0.0, max_energy * (web_energy_percent / 100.0))
+	return max(0.0, web_flat_energy_cost)
+
+func _apply_harvest_collapse(center: Vector2, damage_amount: float) -> void:
+	var radius_sq: float = harvest_collapse_radius * harvest_collapse_radius
+	for enemy_node: Node in get_tree().get_nodes_in_group("enemies"):
+		if not (enemy_node is Enemy):
+			continue
+		var enemy: Enemy = enemy_node as Enemy
+		if not is_instance_valid(enemy) or enemy.is_dead:
+			continue
+		if enemy.global_position.distance_squared_to(center) > radius_sq:
+			continue
+		enemy.apply_modifier_damage(damage_amount, self, {
+			"kind": "silk_harvest_collapse",
+			"damage_type": "DMG_DIRECT",
+			"skill_slot": "space",
+			"soul_link_skip_share": true,
+		})
+		if enemy.has_method("set_flash_material"):
+			enemy.set_flash_material()
 
 func _get_linked_enemies() -> Array[Enemy]:
 	var result: Array[Enemy] = []
@@ -413,7 +540,7 @@ func _try_start_dash() -> void:
 		dash_dir = Vector2.RIGHT if is_facing_right() else Vector2.LEFT
 
 	_is_dashing = true
-	_dash_direction = dash_dir.normalized()
+	_dash_direction = get_modified_dash_direction(dash_dir.normalized())
 	_dash_remaining_distance = dash_distance
 	_dash_total_distance = dash_distance
 	_dash_invulnerable = true

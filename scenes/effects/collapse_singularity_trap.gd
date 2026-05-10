@@ -3,16 +3,20 @@ class_name CollapseSingularityTrap
 
 signal removed(trap: CollapseSingularityTrap)
 
-@export var visual_radius: float = 15.0
-@export var attract_radius: float = 60.0
-@export var lifetime: float = 5.0
+@export var visual_radius: float = 18.0
+@export var attract_radius: float = 140.0
+@export var lifetime: float = 3.5
+@export var idle_tick_interval: float = 1.0
+@export var single_target_damage_ratio: float = 3.0
+@export var crowd_floor_damage_ratio: float = 0.5
+@export var crowd_falloff_count: int = 5
 @export var event_horizon_radius: float = 300.0
 @export var event_horizon_duration: float = 3.0
 @export var event_horizon_tick_interval: float = 0.2
 @export var event_horizon_damage_ratio: float = 1.50
 @export var event_horizon_final_damage_ratio: float = 5.0
 @export var elite_true_damage_ratio: float = 10.0
-@export var pull_strength: float = 980.0
+@export var pull_strength: float = 620.0
 
 var owner_player: PlayerBase = null
 var source_attack: float = 1.0
@@ -29,10 +33,13 @@ func setup(player_node: PlayerBase, base_attack: float) -> void:
 	owner_player = player_node
 	source_attack = max(1.0, base_attack)
 	_life_timer = lifetime
+	_tick_timer = idle_tick_interval
 
 func _ready() -> void:
 	add_to_group("player_skill_effects")
+	add_to_group("player_summoned_entity")
 	_life_timer = lifetime if _life_timer <= 0.0 else _life_timer
+	_tick_timer = idle_tick_interval if _tick_timer <= 0.0 else _tick_timer
 	_rebuild_visuals()
 
 func _process(delta: float) -> void:
@@ -45,7 +52,11 @@ func _process(delta: float) -> void:
 		return
 	_update_idle_visual(delta)
 	if _active:
-		_try_consume_target()
+		_apply_idle_pull(delta)
+		_tick_timer -= delta
+		while _tick_timer <= 0.0 and _active:
+			_tick_timer += max(0.05, idle_tick_interval)
+			_apply_idle_tick_damage()
 
 func activate_event_horizon() -> void:
 	_event_horizon_timer = event_horizon_duration
@@ -53,17 +64,8 @@ func activate_event_horizon() -> void:
 	_active = false
 	_rebuild_visuals()
 
-func _try_consume_target() -> void:
-	var target: Enemy = _select_best_enemy(attract_radius)
-	if target == null:
-		return
-	target.global_position = global_position
-	_resolve_annihilation(target)
-	_remove_self()
-
-func _select_best_enemy(radius_limit: float) -> Enemy:
-	var best_enemy: Enemy = null
-	var best_score: float = -INF
+func _collect_enemies_in_radius(radius_limit: float) -> Array[Enemy]:
+	var result: Array[Enemy] = []
 	for enemy_node in get_tree().get_nodes_in_group("enemies"):
 		if not (enemy_node is Enemy):
 			continue
@@ -72,30 +74,45 @@ func _select_best_enemy(radius_limit: float) -> Enemy:
 			continue
 		if enemy.global_position.distance_to(global_position) > radius_limit:
 			continue
-		var max_hp: float = 0.0
-		if enemy.health_component != null:
-			max_hp = float(enemy.health_component.max_health)
-		var elite_bias: float = 100000.0 if enemy.is_tactical_reject_elite_immune() else 0.0
-		var score: float = elite_bias + max_hp
-		if score > best_score:
-			best_score = score
-			best_enemy = enemy
-	return best_enemy
+		result.append(enemy)
+	return result
 
-func _resolve_annihilation(enemy: Enemy) -> void:
-	if not is_instance_valid(enemy) or enemy.is_dead:
+func _apply_idle_pull(delta: float) -> void:
+	for enemy: Enemy in _collect_enemies_in_radius(attract_radius):
+		var dir: Vector2 = global_position - enemy.global_position
+		if dir.length_squared() <= 0.001:
+			continue
+		var pull_step: float = min(dir.length(), pull_strength * delta)
+		enemy.global_position += dir.normalized() * pull_step
+
+func _apply_idle_tick_damage() -> void:
+	var trapped_enemies: Array[Enemy] = _collect_enemies_in_radius(attract_radius)
+	if trapped_enemies.is_empty():
 		return
-	if enemy.health_component == null:
-		return
-	if enemy.is_tactical_reject_elite_immune():
-		var previous_hp: float = enemy.health_component.current_health
-		_apply_true_damage(enemy, source_attack * elite_true_damage_ratio)
-		if previous_hp > 0.0 and enemy.is_dead and Global.has_method("spawn_energy_orb"):
-			Global.spawn_energy_orb(enemy.global_position, 8.0, Vector2(0, -120))
-		Global.spawn_floating_text(enemy.global_position, "ANNIHILATE", Color(1.0, 0.78, 0.3))
-		return
-	_apply_true_damage(enemy, enemy.health_component.current_health + 999999.0)
-	Global.spawn_floating_text(enemy.global_position, "ERASE", Color(1.0, 0.28, 0.2))
+	var enemy_count: int = trapped_enemies.size()
+	var t: float = clamp(float(enemy_count - 1) / max(1.0, float(crowd_falloff_count - 1)), 0.0, 1.0)
+	var damage_ratio: float = lerp(single_target_damage_ratio, crowd_floor_damage_ratio, t)
+	var damage_amount: float = max(1.0, source_attack * damage_ratio)
+	var hit_enemies: Array = []
+	for enemy: Enemy in trapped_enemies:
+		if enemy.health_component == null:
+			continue
+		enemy.apply_modifier_damage(damage_amount, owner_player, {
+			"kind": "collapse_singularity_tick",
+			"damage_type": "DMG_AOE",
+			"skill_id": "collapse_space",
+			"skill_slot": "q",
+			"space_skill_mode": "closed",
+		})
+		if enemy.has_method("set_flash_material"):
+			enemy.set_flash_material()
+		hit_enemies.append(enemy)
+	if is_instance_valid(owner_player) and not hit_enemies.is_empty():
+		owner_player.notify_front_skill_damage("space", hit_enemies, {
+			"skill_id": "collapse_space",
+			"source": "singularity_tick",
+			"enemy_count": enemy_count,
+		})
 
 func _process_event_horizon(delta: float) -> void:
 	_event_horizon_timer = max(0.0, _event_horizon_timer - delta)
@@ -110,33 +127,25 @@ func _process_event_horizon(delta: float) -> void:
 		_remove_self()
 
 func _apply_event_pull(delta: float) -> void:
-	for enemy_node in get_tree().get_nodes_in_group("enemies"):
-		if not (enemy_node is Enemy):
-			continue
-		var enemy: Enemy = enemy_node as Enemy
-		if not is_instance_valid(enemy) or enemy.is_dead:
-			continue
-		var distance_to_center: float = enemy.global_position.distance_to(global_position)
-		if distance_to_center > event_horizon_radius:
-			continue
+	for enemy: Enemy in _collect_enemies_in_radius(event_horizon_radius):
 		var dir: Vector2 = global_position - enemy.global_position
 		if dir.length_squared() <= 0.0:
 			continue
-		enemy.global_position += dir.normalized() * min(distance_to_center, pull_strength * delta)
+		enemy.global_position += dir.normalized() * min(dir.length(), pull_strength * 1.6 * delta)
 
 func _apply_event_tick_damage() -> void:
 	var hit_enemies: Array = []
-	for enemy_node in get_tree().get_nodes_in_group("enemies"):
-		if not (enemy_node is Enemy):
+	for enemy: Enemy in _collect_enemies_in_radius(event_horizon_radius):
+		if enemy.health_component == null:
 			continue
-		var enemy: Enemy = enemy_node as Enemy
-		if not is_instance_valid(enemy) or enemy.is_dead:
-			continue
-		if enemy.global_position.distance_to(global_position) > event_horizon_radius:
-			continue
-		if enemy.health_component != null:
-			enemy.health_component.take_damage(max(1, int(round(source_attack * event_horizon_damage_ratio))))
-			hit_enemies.append(enemy)
+		enemy.health_component.take_damage(max(1, int(round(source_attack * event_horizon_damage_ratio))), {
+			"source": owner_player,
+			"kind": "collapse_event_horizon_tick",
+			"damage_type": "DMG_TRUE",
+			"true_damage": true,
+			"skill_slot": "f",
+		})
+		hit_enemies.append(enemy)
 	if is_instance_valid(owner_player) and not hit_enemies.is_empty():
 		owner_player.notify_front_skill_damage("f", hit_enemies, {
 			"skill_id": "f_collapse",
@@ -145,33 +154,22 @@ func _apply_event_tick_damage() -> void:
 
 func _apply_final_explosion() -> void:
 	var hit_enemies: Array = []
-	for enemy_node in get_tree().get_nodes_in_group("enemies"):
-		if not (enemy_node is Enemy):
+	for enemy: Enemy in _collect_enemies_in_radius(event_horizon_radius):
+		if enemy.health_component == null:
 			continue
-		var enemy: Enemy = enemy_node as Enemy
-		if not is_instance_valid(enemy) or enemy.is_dead:
-			continue
-		if enemy.global_position.distance_to(global_position) > event_horizon_radius:
-			continue
-		if enemy.health_component != null:
-			enemy.health_component.take_damage(max(1, int(round(source_attack * event_horizon_final_damage_ratio))))
-			hit_enemies.append(enemy)
+		enemy.health_component.take_damage(max(1, int(round(source_attack * event_horizon_final_damage_ratio))), {
+			"source": owner_player,
+			"kind": "collapse_event_horizon_final",
+			"damage_type": "DMG_TRUE",
+			"true_damage": true,
+			"skill_slot": "f",
+		})
+		hit_enemies.append(enemy)
 	if is_instance_valid(owner_player) and not hit_enemies.is_empty():
 		owner_player.notify_front_skill_damage("f", hit_enemies, {
 			"skill_id": "f_collapse",
 			"source": "event_horizon_final",
 		})
-
-func _apply_true_damage(enemy: Enemy, damage_amount: float) -> void:
-	var hc: HealthComponent = enemy.health_component
-	if hc == null or hc.current_health <= 0.0:
-		return
-	hc.current_health = max(0.0, hc.current_health - damage_amount)
-	hc.on_unit_hit.emit()
-	if hc.current_health <= 0.0:
-		hc.current_health = 0.0
-		hc.on_unit_died.emit()
-		hc.die()
 
 func _rebuild_visuals() -> void:
 	if _core == null:
@@ -206,19 +204,19 @@ func _rebuild_visuals() -> void:
 		_glow.width = 28.0
 		_glow.default_color = Color(0.42, 0.7, 1.0, 0.18)
 	else:
-		_core.color = Color(0.04, 0.05, 0.08, 0.94)
-		_ring.width = 4.0
-		_ring.default_color = Color(0.82, 0.9, 1.0, 0.78)
-		_glow.width = 16.0
-		_glow.default_color = Color(0.48, 0.72, 1.0, 0.16)
+		_core.color = Color(0.06, 0.08, 0.12, 0.92)
+		_ring.width = 5.0
+		_ring.default_color = Color(0.82, 0.9, 1.0, 0.82)
+		_glow.width = 18.0
+		_glow.default_color = Color(0.48, 0.72, 1.0, 0.18)
 
 func _update_idle_visual(delta: float) -> void:
 	if _ring == null or _core == null:
 		return
 	var pulse: float = 0.5 + 0.5 * sin((Time.get_ticks_msec() / 1000.0) * 5.0 + delta)
-	_ring.width = lerp(3.0, 5.0, pulse)
+	_ring.width = lerp(4.0, 7.0, pulse)
 	_ring.modulate = Color(1.0, 1.0, 1.0, lerp(0.58, 0.84, pulse))
-	_core.scale = Vector2.ONE * lerp(0.92, 1.08, pulse)
+	_core.scale = Vector2.ONE * lerp(0.92, 1.14, pulse)
 
 func _update_event_horizon_visual(delta: float) -> void:
 	if _ring == null or _glow == null:

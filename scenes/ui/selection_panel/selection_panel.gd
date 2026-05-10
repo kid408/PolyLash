@@ -14,16 +14,16 @@ const COLOR_TEXT_SECONDARY := Color("8B949E")
 const COLOR_BORDER := Color("30363D")
 const COLOR_PANEL_DARK := Color("11161D")
 
-const CLASS_GROUP_ORDER: Array[String] = ["vanguard", "mystic", "sentinel", "harmony"]
+const CLASS_GROUP_ORDER: Array[String] = ["vanguard", "anomaly", "sentinel", "harmony"]
 const CLASS_GROUP_TITLES := {
 	"vanguard": "【锋芒】",
-	"mystic": "【术理】",
+	"anomaly": "【术理】",
 	"sentinel": "【御阵】",
 	"harmony": "【协律】",
 }
 const CLASS_GROUP_SHORT := {
 	"vanguard": "锋芒",
-	"mystic": "术理",
+	"anomaly": "术理",
 	"sentinel": "御阵",
 	"harmony": "协律",
 }
@@ -32,16 +32,17 @@ const CLASS_GROUP_ALIASES := {
 	"御阵": "sentinel",
 	"vanguard": "vanguard",
 	"锋芒": "vanguard",
-	"mystic": "mystic",
-	"术理": "mystic",
+	"mystic": "anomaly",
+	"anomaly": "anomaly",
+	"术理": "anomaly",
 	"harmony": "harmony",
 	"协律": "harmony",
 }
 const DISPLAY_CLASS_BY_PLAYER := {
 	"minimalist": "vanguard",
 	"arc": "vanguard",
-	"collapse": "mystic",
-	"parasite": "mystic",
+	"collapse": "anomaly",
+	"parasite": "anomaly",
 	"joule": "sentinel",
 	"phalanx": "sentinel",
 	"silk": "harmony",
@@ -321,6 +322,7 @@ func _generate_selected_slots() -> void:
 		slot_button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		slot_button.setup(i)
 		slot_button.player_dropped.connect(_on_player_dropped)
+		slot_button.remove_requested.connect(_on_selected_slot_remove_requested)
 		slot_button.pressed.connect(_on_selected_slot_pressed.bind(i))
 		_style_slot_button(slot_button, false)
 		selected_list.add_child(slot_button)
@@ -737,10 +739,15 @@ func _sort_selected_players() -> void:
 func _on_selected_slot_pressed(slot_index: int) -> void:
 	var occupied_index: int = _find_selected_slot_index(slot_index)
 	if occupied_index >= 0:
-		_remove_player_from_selected(occupied_index)
+		_preview_player(str(_selected_players[occupied_index].get("player_id", "")))
 		return
 	if not _preview_player_id.is_empty():
 		_add_player_to_selected(_preview_player_id, slot_index)
+
+func _on_selected_slot_remove_requested(slot_index: int) -> void:
+	var occupied_index: int = _find_selected_slot_index(slot_index)
+	if occupied_index >= 0:
+		_remove_player_from_selected(occupied_index)
 
 func _on_player_dropped(slot_index: int, player_id: String, weapon_type: String) -> void:
 	_player_weapon_cache[player_id] = weapon_type if not weapon_type.is_empty() else _resolve_default_weapon(player_id)
@@ -1075,10 +1082,14 @@ func _style_player_button(button: Button, player_id: String) -> void:
 	var alpha := 0.7
 	var border_width := 1
 	var border_color := COLOR_BORDER
-	if is_focus or is_selected:
+	if is_selected:
 		alpha = 1.0
 		border_width = 2
 		border_color = COLOR_ACCENT
+	elif is_focus:
+		alpha = 0.92
+		border_width = 1
+		border_color = COLOR_TEXT_SECONDARY
 	var style := _make_panel_style(Color(0.08, 0.10, 0.12, alpha), border_color, 12, border_width)
 	button.add_theme_stylebox_override("normal", style)
 	button.add_theme_stylebox_override("hover", _make_panel_style(Color(0.10, 0.13, 0.16, min(1.0, alpha + 0.12)), border_color, 12, border_width))

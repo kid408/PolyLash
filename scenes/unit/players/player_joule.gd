@@ -233,6 +233,7 @@ func _append_draw_point(point: Vector2) -> bool:
 	var segment_length: float = previous.distance_to(point)
 	if segment_length <= 0.001:
 		return true
+	_maybe_emit_prism_stun(previous, point)
 	if not consume_energy(draw_energy_cost_per_step):
 		return false
 	_draw_energy_spent += draw_energy_cost_per_step
@@ -245,6 +246,8 @@ func _release_drawing_path() -> void:
 		return
 	var final_point: Vector2 = get_global_mouse_position()
 	if _draw_points.is_empty() or _draw_points[_draw_points.size() - 1].distance_to(final_point) > 1.0:
+		if not _draw_points.is_empty():
+			_maybe_emit_prism_stun(_draw_points[_draw_points.size() - 1], final_point)
 		_draw_points.append(final_point)
 	var captured_points: PackedVector2Array = _draw_points.duplicate()
 	_is_drawing = false
@@ -259,6 +262,9 @@ func _release_drawing_path() -> void:
 	if total_length < draw_min_release_length:
 		return
 
+	var forced_closure: Dictionary = BondManager.apply_forced_closure(self, captured_points) if BondManager != null and BondManager.has_method("apply_forced_closure") else {}
+	if bool(forced_closure.get("forced_closed", false)):
+		captured_points = forced_closure.get("points", captured_points)
 	var is_closed: bool = _determine_closed_shape(captured_points)
 	var centroid: Vector2 = _resolve_centroid(captured_points, is_closed)
 	var approx_area: float = _estimate_polygon_area(captured_points, is_closed)
@@ -281,6 +287,20 @@ func _release_drawing_path() -> void:
 
 func _determine_closed_shape(points: PackedVector2Array) -> bool:
 	return _build_closed_polygon(points).size() >= 3
+
+func _maybe_emit_prism_stun(start_point: Vector2, end_point: Vector2) -> void:
+	if BondManager == null or not BondManager.has_method("on_draw_self_intersection"):
+		return
+	if _draw_points.size() < 3:
+		return
+	for i: int in range(_draw_points.size() - 2):
+		var a_start: Vector2 = _draw_points[i]
+		var a_end: Vector2 = _draw_points[i + 1]
+		var intersection_variant: Variant = Geometry2D.segment_intersects_segment(a_start, a_end, start_point, end_point)
+		if intersection_variant == null or not (intersection_variant is Vector2):
+			continue
+		BondManager.on_draw_self_intersection(self, intersection_variant)
+		return
 
 func _apply_tar_line(points: PackedVector2Array) -> void:
 	_spawn_tar_line_vfx(points)
@@ -353,7 +373,7 @@ func _execute_closed_blast(blast: Dictionary) -> void:
 		var enemy: Enemy = enemy_node as Enemy
 		if not is_instance_valid(enemy) or enemy.is_dead:
 			continue
-		if not Geometry2D.is_point_in_polygon(enemy.global_position, polygon):
+		if not _is_enemy_overlapping_polygon(enemy, polygon):
 			continue
 
 		var has_tar: bool = JOULE_TAR_UTILS.has_tar(enemy)
@@ -362,7 +382,13 @@ func _execute_closed_blast(blast: Dictionary) -> void:
 		enemy.apply_modifier_damage(
 			damage_amount,
 			self,
-			{"kind": "joule_closed_blast", "empowered": has_tar}
+			{
+				"kind": "joule_closed_blast",
+				"empowered": has_tar,
+				"damage_type": "DMG_AOE",
+				"skill_slot": "q",
+				"space_skill_mode": "closed",
+			}
 		)
 		if enemy.has_method("set_flash_material"):
 			enemy.set_flash_material()
@@ -384,6 +410,7 @@ func _activate_magnetic_decoy() -> void:
 	if not consume_energy(decoy_energy_cost):
 		return
 	_e_cooldown_remaining = decoy_cooldown
+	notify_front_skill_cast("e", {"skill_id": "e_joule"})
 
 	var target_pos: Vector2 = get_global_mouse_position()
 	var matched_count: int = 0
@@ -445,6 +472,7 @@ func _activate_phosphorus_rain() -> void:
 		return
 	if not consume_energy(energy_cost):
 		return
+	notify_front_skill_cast("f", {"skill_id": "f_joule"})
 	for enemy_node: Node in get_tree().get_nodes_in_group("enemies"):
 		if not (enemy_node is Enemy):
 			continue
@@ -482,7 +510,7 @@ func _try_start_dash() -> void:
 		dash_dir = Vector2.RIGHT if is_facing_right() else Vector2.LEFT
 
 	_is_dashing = true
-	_dash_direction = dash_dir.normalized()
+	_dash_direction = get_modified_dash_direction(dash_dir.normalized())
 	_dash_remaining_distance = dash_distance
 	_dash_total_distance = dash_distance
 	_dash_invulnerable = true
@@ -720,6 +748,8 @@ func _spawn_closed_blast_telegraph(polygon: PackedVector2Array) -> Node2D:
 	tween.set_loops()
 	tween.tween_property(fill, "modulate:a", 0.08, 0.12)
 	tween.tween_property(fill, "modulate:a", 0.28, 0.12)
+	tween.parallel().tween_property(border, "modulate:a", 0.34, 0.12)
+	tween.parallel().tween_property(border, "modulate:a", 0.82, 0.12)
 	return root
 
 func _spawn_closed_blast_vfx(polygon: PackedVector2Array, centroid: Vector2) -> void:
@@ -741,30 +771,12 @@ func _spawn_closed_blast_vfx(polygon: PackedVector2Array, centroid: Vector2) -> 
 	border.antialiased = true
 	root.add_child(border)
 
-	var ring: Line2D = Line2D.new()
-	ring.top_level = true
-	ring.closed = true
-	ring.width = 8.0
-	ring.default_color = Color(1.0, 0.96, 0.82, 0.82)
-	ring.antialiased = true
-	var ring_points: PackedVector2Array = PackedVector2Array()
-	for i in range(25):
-		var angle: float = (float(i) / 24.0) * TAU
-		ring_points.append(centroid + Vector2.RIGHT.rotated(angle) * 28.0)
-	ring.points = ring_points
-	get_tree().current_scene.add_child(ring)
-
 	var tween: Tween = root.create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(fill, "modulate:a", 0.0, 0.22)
 	tween.tween_property(border, "modulate:a", 0.0, 0.22)
+	tween.tween_property(border, "width", 22.0, 0.16)
 	tween.finished.connect(root.queue_free)
-
-	var ring_tween: Tween = ring.create_tween()
-	ring_tween.set_parallel(true)
-	ring_tween.tween_property(ring, "scale", Vector2(2.4, 2.4), 0.18)
-	ring_tween.tween_property(ring, "modulate:a", 0.0, 0.18)
-	ring_tween.finished.connect(ring.queue_free)
 
 func _spawn_decoy_vfx(center: Vector2) -> void:
 	var ring: Line2D = Line2D.new()
@@ -803,3 +815,46 @@ func _spawn_phosphorus_rain_vfx() -> void:
 	tween.set_parallel(true)
 	tween.tween_property(root, "modulate:a", 0.0, phosphorus_vfx_duration)
 	tween.finished.connect(root.queue_free)
+
+func _is_enemy_overlapping_polygon(enemy: Enemy, polygon: PackedVector2Array) -> bool:
+	if enemy == null or not is_instance_valid(enemy):
+		return false
+	if polygon.size() < 3:
+		return false
+	var center: Vector2 = enemy.global_position
+	if Geometry2D.is_point_in_polygon(center, polygon):
+		return true
+
+	var overlap_radius: float = _get_enemy_overlap_radius(enemy)
+	if overlap_radius <= 0.001:
+		return false
+
+	for polygon_point: Vector2 in polygon:
+		if polygon_point.distance_to(center) <= overlap_radius:
+			return true
+
+	for i: int in range(polygon.size()):
+		var seg_start: Vector2 = polygon[i]
+		var seg_end: Vector2 = polygon[(i + 1) % polygon.size()]
+		var closest: Vector2 = Geometry2D.get_closest_point_to_segment(center, seg_start, seg_end)
+		if closest.distance_to(center) <= overlap_radius:
+			return true
+
+	return false
+
+func _get_enemy_overlap_radius(enemy: Enemy) -> float:
+	var hurtbox_shape: CollisionShape2D = enemy.get_node_or_null("HurtboxComponent/CollisionShape2D") as CollisionShape2D
+	if hurtbox_shape != null and hurtbox_shape.shape != null:
+		if hurtbox_shape.shape is CircleShape2D:
+			return float((hurtbox_shape.shape as CircleShape2D).radius)
+		if hurtbox_shape.shape is RectangleShape2D:
+			return ((hurtbox_shape.shape as RectangleShape2D).size * 0.5).length()
+
+	var collision_shape: CollisionShape2D = enemy.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision_shape != null and collision_shape.shape != null:
+		if collision_shape.shape is CircleShape2D:
+			return float((collision_shape.shape as CircleShape2D).radius)
+		if collision_shape.shape is RectangleShape2D:
+			return ((collision_shape.shape as RectangleShape2D).size * 0.5).length()
+
+	return 24.0

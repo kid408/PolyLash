@@ -35,6 +35,7 @@ func setup(
 
 func _ready() -> void:
 	add_to_group("player_skill_effects")
+	add_to_group("player_summoned_entity")
 	top_level = true
 	_life_timer = lifetime
 	_rebuild_visual()

@@ -164,8 +164,19 @@ func _deal_damage() -> void:
 			continue
 		
 		# 造成伤害
-		if enemy.has_method("take_damage"):
-			enemy.take_damage(explosion_damage)
+		if enemy.has_method("apply_modifier_damage"):
+			enemy.apply_modifier_damage(explosion_damage, damage_source, {
+				"kind": "explosion_area",
+				"damage_type": "DMG_AOE",
+			})
+			hit_enemies.append(enemy)
+			print("[ExplosionArea]   ✅ 造成伤害: %.1f -> %s" % [explosion_damage, enemy.name])
+		elif enemy.has_method("take_damage"):
+			enemy.take_damage(explosion_damage, {
+				"source": damage_source,
+				"kind": "explosion_area",
+				"damage_type": "DMG_AOE",
+			})
 			hit_enemies.append(enemy)
 			print("[ExplosionArea]   ✅ 造成伤害: %.1f -> %s" % [explosion_damage, enemy.name])
 		elif enemy.has_method("_on_hurtbox_component_on_damaged"):
@@ -177,6 +188,7 @@ func _deal_damage() -> void:
 			temp_hitbox.critical = false
 			temp_hitbox.knockback_power = 0.0
 			temp_hitbox.source = damage_source
+			temp_hitbox.damage_type = HitboxComponent.COMBAT_EVENT_TYPES.DamageType.AOE
 			enemy._on_hurtbox_component_on_damaged(temp_hitbox)
 			temp_hitbox.queue_free()
 			hit_enemies.append(enemy)

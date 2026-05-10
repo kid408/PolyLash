@@ -41,6 +41,9 @@ enum TravelMode {
 @export var open_hit_spacing: float = 48.0
 @export var orbit_hit_spacing: float = 18.0
 @export var landing_lock_duration: float = 0.10
+@export var traversal_damage_taken_multiplier: float = 0.20
+@export var traversal_interrupt_stun_duration: float = 0.5
+@export var traversal_interrupt_probe_radius: float = 46.0
 
 @export_group("E Skill")
 @export var drift_energy_cost: float = 25.0
@@ -82,6 +85,7 @@ var _post_travel_lock_timer: float = 0.0
 var _drift_slide_timer: float = 0.0
 var _drift_slide_start: Vector2 = Vector2.ZERO
 var _drift_slide_end: Vector2 = Vector2.ZERO
+var _travel_crash_stun_timer: float = 0.0
 
 var _e_cooldown_remaining: float = 0.0
 var _overdrive_timer: float = 0.0
@@ -166,11 +170,16 @@ func _handle_input(delta: float) -> void:
 		_update_dash(delta)
 	elif _drift_slide_timer > 0.0:
 		_update_drift_slide(delta)
+	elif _travel_crash_stun_timer > 0.0:
+		pass
 	elif _post_travel_lock_timer <= 0.0 and can_move():
 		position += move_dir * get_effective_move_speed() * delta
 
 	if Input.is_action_just_pressed("tactical_reject"):
 		_try_activate_tactical_reject()
+
+	if _travel_crash_stun_timer > 0.0:
+		return
 
 	if Input.is_action_just_pressed("skill_e"):
 		_activate_drift_eject()
@@ -202,6 +211,8 @@ func _process_subclass(delta: float) -> void:
 		_e_cooldown_remaining = max(0.0, _e_cooldown_remaining - delta)
 	if _post_travel_lock_timer > 0.0:
 		_post_travel_lock_timer = max(0.0, _post_travel_lock_timer - delta)
+	if _travel_crash_stun_timer > 0.0:
+		_travel_crash_stun_timer = max(0.0, _travel_crash_stun_timer - delta)
 	if _overdrive_timer > 0.0:
 		_overdrive_timer = max(0.0, _overdrive_timer - delta)
 	_refresh_invincible_meta()
@@ -245,6 +256,7 @@ func _update_drawing_path() -> void:
 
 	while remaining_distance >= next_step:
 		var new_point: Vector2 = cursor + direction * next_step
+		_maybe_emit_prism_stun(cursor, new_point)
 		_draw_points.append(new_point)
 		cursor = new_point
 		remaining_distance -= next_step
@@ -260,6 +272,7 @@ func _release_drawing_path() -> void:
 	var final_point: Vector2 = get_global_mouse_position()
 	var last_point: Vector2 = _draw_points[_draw_points.size() - 1]
 	if last_point.distance_to(final_point) > 1.0:
+		_maybe_emit_prism_stun(last_point, final_point)
 		_draw_points.append(final_point)
 
 	var captured_points: PackedVector2Array = _draw_points.duplicate()
@@ -275,6 +288,9 @@ func _release_drawing_path() -> void:
 	if total_length < draw_min_release_length:
 		return
 
+	var forced_closure: Dictionary = BondManager.apply_forced_closure(self, captured_points) if BondManager != null and BondManager.has_method("apply_forced_closure") else {}
+	if bool(forced_closure.get("forced_closed", false)):
+		captured_points = forced_closure.get("points", captured_points)
 	var is_closed: bool = _determine_closed_shape(captured_points)
 	var draw_cost: float = 0.0
 	if not _is_overdrive_active() and total_length >= draw_deposit_refund_length:
@@ -324,7 +340,7 @@ func _try_start_dash() -> void:
 		dash_dir = Vector2.RIGHT if is_facing_right() else Vector2.LEFT
 
 	_is_dashing = true
-	_dash_direction = dash_dir.normalized()
+	_dash_direction = get_modified_dash_direction(dash_dir.normalized())
 	_dash_remaining_distance = dash_distance
 	_dash_total_distance = dash_distance
 	_dash_invulnerable = true
@@ -403,6 +419,10 @@ func _update_travel(delta: float) -> void:
 	var new_position: Vector2 = sample.get("position", previous_position)
 	_travel_tangent = sample.get("tangent", _travel_tangent)
 	global_position = new_position
+	var interrupt_info: Dictionary = _check_travel_interrupt(previous_position, new_position)
+	if bool(interrupt_info.get("hit", false)):
+		_interrupt_travel(interrupt_info.get("position", new_position))
+		return
 	_apply_travel_damage(previous_position, new_position)
 
 	if _travel_mode == TravelMode.OPEN and _travel_progress >= _travel_total_length - 0.001:
@@ -457,7 +477,12 @@ func _apply_travel_damage(from_pos: Vector2, to_pos: Vector2) -> void:
 		if _travel_total_progress - last_progress < min_spacing:
 			continue
 		_travel_hit_progress_by_enemy[enemy_key] = _travel_total_progress
-		enemy.apply_modifier_damage(damage_amount, self, {"kind": "arc_travel"})
+		enemy.apply_modifier_damage(damage_amount, self, {
+			"kind": "arc_travel",
+			"damage_type": "DMG_DIRECT",
+			"skill_slot": "q",
+			"space_skill_mode": "open",
+		})
 		if enemy.has_method("set_flash_material"):
 			enemy.set_flash_material()
 		Global.spawn_floating_text(enemy.global_position, "ARC", Color(0.78, 0.96, 1.0))
@@ -472,6 +497,7 @@ func _activate_drift_eject() -> void:
 	if not consume_energy(drift_energy_cost):
 		return
 	_e_cooldown_remaining = drift_cooldown
+	notify_front_skill_cast("e", {"skill_id": "e_arc"})
 
 	var blast_origin: Vector2 = global_position
 	var tangent: Vector2 = _travel_tangent
@@ -513,7 +539,11 @@ func _execute_drift_blast(center: Vector2) -> void:
 		var distance_to_center: float = enemy.global_position.distance_to(center)
 		if distance_to_center > drift_blast_radius:
 			continue
-		enemy.apply_modifier_damage(damage * drift_blast_damage_ratio, self, {"kind": "arc_drift_blast"})
+		enemy.apply_modifier_damage(damage * drift_blast_damage_ratio, self, {
+			"kind": "arc_drift_blast",
+			"damage_type": "DMG_AOE",
+			"skill_slot": "e",
+		})
 		var push_dir: Vector2 = enemy.global_position - center
 		if push_dir.length_squared() <= 0.0001:
 			push_dir = Vector2.RIGHT.rotated(randf() * TAU)
@@ -553,6 +583,7 @@ func _activate_matrix_overdrive() -> void:
 	if not consume_energy(energy_cost):
 		return
 	_overdrive_timer = overdrive_duration
+	notify_front_skill_cast("f", {"skill_id": "f_arc"})
 	Global.spawn_floating_text(global_position, "OVERDRIVE", Color(0.62, 0.94, 1.0))
 
 func _is_overdrive_active() -> bool:
@@ -565,11 +596,63 @@ func _get_closed_damage_ratio() -> float:
 	return orbit_overdrive_damage_ratio if _is_overdrive_active() else orbit_damage_ratio
 
 func _refresh_invincible_meta() -> void:
-	var should_be_invincible: bool = _dash_invulnerable or _travel_active()
+	var should_be_invincible: bool = _dash_invulnerable
 	if should_be_invincible:
 		set_meta("buff_invincible", true)
 	elif has_meta("buff_invincible"):
 		remove_meta("buff_invincible")
+
+func _check_travel_interrupt(from_pos: Vector2, to_pos: Vector2) -> Dictionary:
+	if from_pos.distance_to(to_pos) <= 0.001:
+		return {"hit": false}
+	var world_2d: World2D = get_world_2d()
+	if world_2d != null:
+		var query := PhysicsRayQueryParameters2D.create(from_pos, to_pos)
+		query.collide_with_bodies = true
+		query.collide_with_areas = false
+		var result: Dictionary = world_2d.direct_space_state.intersect_ray(query)
+		if not result.is_empty():
+			var collider: Variant = result.get("collider", null)
+			if collider is StaticBody2D:
+				return {
+					"hit": true,
+					"position": Vector2(result.get("position", to_pos)),
+				}
+	for enemy_node: Node in get_tree().get_nodes_in_group("enemies"):
+		if not (enemy_node is Enemy):
+			continue
+		var enemy: Enemy = enemy_node as Enemy
+		if not is_instance_valid(enemy) or enemy.is_dead:
+			continue
+		if not enemy.is_tactical_reject_elite_immune() and not enemy.is_boss_enemy():
+			continue
+		var closest: Vector2 = Geometry2D.get_closest_point_to_segment(enemy.global_position, from_pos, to_pos)
+		if enemy.global_position.distance_to(closest) > traversal_interrupt_probe_radius:
+			continue
+		return {
+			"hit": true,
+			"position": closest,
+		}
+	return {"hit": false}
+
+func _interrupt_travel(crash_position: Vector2) -> void:
+	global_position = crash_position
+	_end_travel(false)
+	_drift_slide_timer = 0.0
+	_travel_crash_stun_timer = traversal_interrupt_stun_duration
+	Global.spawn_floating_text(global_position, "CRASH", Color(1.0, 0.48, 0.32))
+	set_flash_material()
+
+func get_incoming_damage_multiplier() -> float:
+	var base_multiplier: float = super.get_incoming_damage_multiplier()
+	if _travel_active() or _drift_slide_timer > 0.0:
+		return base_multiplier * traversal_damage_taken_multiplier
+	return base_multiplier
+
+func apply_knockback_self(force: Vector2) -> void:
+	if _travel_active() or _drift_slide_timer > 0.0:
+		return
+	super.apply_knockback_self(force)
 
 func _fail_short_circuit(text: String) -> void:
 	_is_drawing = false
@@ -578,6 +661,20 @@ func _fail_short_circuit(text: String) -> void:
 	_clear_draw_visual()
 	SoundManager.play("ui_error")
 	Global.spawn_floating_text(global_position, text, Color(1.0, 0.38, 0.3))
+
+func _maybe_emit_prism_stun(start_point: Vector2, end_point: Vector2) -> void:
+	if BondManager == null or not BondManager.has_method("on_draw_self_intersection"):
+		return
+	if _draw_points.size() < 3:
+		return
+	for i: int in range(_draw_points.size() - 2):
+		var a_start: Vector2 = _draw_points[i]
+		var a_end: Vector2 = _draw_points[i + 1]
+		var intersection_variant: Variant = Geometry2D.segment_intersects_segment(a_start, a_end, start_point, end_point)
+		if intersection_variant == null or not (intersection_variant is Vector2):
+			continue
+		BondManager.on_draw_self_intersection(self, intersection_variant)
+		return
 
 func _determine_closed_shape(points: PackedVector2Array) -> bool:
 	return _build_closed_polygon(points).size() >= 3

@@ -32,6 +32,7 @@ func setup(player_node: PlayerBase, polygon: PackedVector2Array, center: Vector2
 
 func _ready() -> void:
 	add_to_group("overtone_drums")
+	add_to_group("player_summoned_entity")
 	_rebuild_visuals()
 	_refresh_visuals()
 
@@ -111,6 +112,9 @@ func _launch_enemies(shockwave_polygon: PackedVector2Array) -> void:
 			{
 				"kind": "overtone_drum_roll",
 				"source_slot": "space",
+				"damage_type": "DMG_AOE",
+				"skill_slot": "q",
+				"space_skill_mode": "closed",
 			}
 		)
 		enemy.apply_status("stun", stun_duration, 0.0, 1, 1.0)

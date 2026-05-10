@@ -1,4 +1,5 @@
 extends Node
+const COMBAT_EVENT_TYPES := preload("res://scenes/components/combat_event_types.gd")
 
 # Runtime bond resonance dispatcher driven by config.
 const RESONANCE_CONFIG_PATH := "res://config/player/bond_resonance_config.csv"
@@ -152,7 +153,11 @@ func _apply_pulse_burst(player: Node, params: Dictionary, _source: String) -> bo
 		if enemy.global_position.distance_to(player.global_position) > radius:
 			continue
 		var hc: Variant = enemy.get_node("HealthComponent")
-		hc.take_damage(damage)
+		hc.take_damage(damage, {
+			"source": player,
+			"damage_type": COMBAT_EVENT_TYPES.DamageType.AOE,
+			"kind": "resonance_pulse_burst",
+		})
 		hit_count += 1
 		Global.spawn_floating_text(enemy.global_position, "PULSE!", Color(1.0, 1.5, 2.0))
 

@@ -3,18 +3,22 @@ class_name PlayerCollapse
 
 const TRAP_SCRIPT: Script = preload("res://scenes/effects/collapse_singularity_trap.gd")
 
-@export var base_health: float = 220.0
-@export var base_damage: float = 40.0
-@export var base_move_speed: float = 360.0
-@export var base_max_energy: float = 220.0
-@export var base_energy_regen: float = 18.0
-@export var base_pickup_range: float = 170.0
+const DEFAULT_ATTACK: float = 40.0
+const DEFAULT_HEALTH: float = 220.0
+const DEFAULT_SPEED: float = 360.0
+const DEFAULT_MAX_ENERGY: float = 220.0
+const DEFAULT_ENERGY_REGEN: float = 18.0
+const DEFAULT_PICKUP_RANGE: float = 170.0
 
 @export_group("Collapse Draw")
 @export var draw_sample_spacing: float = 10.0
 @export var draw_energy_cost: float = 10.0
 @export var draw_length_limit: float = 360.0
-@export var closure_threshold: float = 34.0
+@export var closure_threshold: float = 56.0
+@export var singularity_trap_lifetime: float = 3.5
+@export var singularity_trap_radius: float = 140.0
+@export var singularity_trap_pull_strength: float = 620.0
+@export var singularity_tick_interval: float = 1.0
 
 @export_group("Dash")
 @export var dash_cost: float = 5.0
@@ -51,26 +55,22 @@ var _self_intersection_point: Vector2 = Vector2.ZERO
 
 var _gravity_well_cooldown_remaining: float = 0.0
 var _active_traps: Array[CollapseSingularityTrap] = []
+var _v2_bundle: Dictionary = {}
 
 func _ready() -> void:
 	if player_id.strip_edges().is_empty():
 		player_id = "collapse"
 	super._ready()
 
-	health = base_health
-	damage = base_damage
-	speed = base_move_speed
-	base_speed = base_move_speed
-	max_energy = base_max_energy
-	energy_regen = base_energy_regen
-	pickup_range = base_pickup_range
+	health = DEFAULT_HEALTH
+	damage = DEFAULT_ATTACK
 	energy = max_energy
 	skill_q_cost = 0.0
 	skill_e_cost = gravity_well_energy_cost
 	close_threshold = closure_threshold
 
 	if health_component:
-		health_component.setup_with_health(base_health)
+		health_component.setup_with_health(health)
 	update_ui_signals()
 
 	if is_instance_valid(dash_timer):
@@ -89,16 +89,42 @@ func _ready() -> void:
 		_clear_draw_visual()
 
 func _load_config_from_csv() -> void:
-	max_energy = base_max_energy
-	energy_regen = base_energy_regen
-	base_speed = base_move_speed
-	speed = base_move_speed
-	skill_q_cost = 0.0
-	skill_e_cost = gravity_well_energy_cost
+	super._load_config_from_csv()
+	_v2_bundle = RoleRuntimeService.get_v2_role_bundle(player_id)
+	var player_config: Dictionary = _v2_bundle.get("player_config", {})
+	var space_config: Dictionary = _v2_bundle.get("space_skill", {})
+	var e_config: Dictionary = _v2_bundle.get("e_skill", {})
+	var f_config: Dictionary = _v2_bundle.get("f_skill", {})
+
+	health = float(player_config.get("health", DEFAULT_HEALTH))
+	max_energy = float(player_config.get("max_energy", DEFAULT_MAX_ENERGY))
+	energy = float(player_config.get("initial_energy", max_energy))
+	energy_regen = float(player_config.get("energy_regen", DEFAULT_ENERGY_REGEN))
+	max_armor = int(player_config.get("max_armor", max_armor))
+	base_speed = float(player_config.get("base_speed", DEFAULT_SPEED))
+	speed = base_speed
+	pickup_range = float(player_config.get("pickup_range", DEFAULT_PICKUP_RANGE))
+	external_force_decay = float(player_config.get("external_force_decay", external_force_decay))
+	knockback_scale = float(player_config.get("knockback_scale", knockback_scale))
+	closure_threshold = float(player_config.get("close_threshold", closure_threshold))
 	close_threshold = closure_threshold
-	health = base_health
-	damage = base_damage
-	pickup_range = base_pickup_range
+
+	draw_sample_spacing = float(space_config.get("point_sample_step", draw_sample_spacing))
+	draw_energy_cost = float(space_config.get("base_energy_cost", draw_energy_cost))
+	draw_length_limit = float(space_config.get("max_total_length", draw_length_limit))
+	singularity_trap_lifetime = max(0.5, float(space_config.get("release_asset_lifetime", singularity_trap_lifetime)))
+
+	gravity_well_energy_cost = float(e_config.get("energy_cost", gravity_well_energy_cost))
+	gravity_well_cooldown = float(e_config.get("cooldown", gravity_well_cooldown))
+	gravity_well_radius = float(e_config.get("effect_radius", gravity_well_radius))
+	gravity_well_slow_duration = float(e_config.get("effect_duration", gravity_well_slow_duration))
+	skill_e_cost = gravity_well_energy_cost
+
+	var f_cost_mode: String = str(f_config.get("energy_cost_mode", "percent_current")).strip_edges()
+	if f_cost_mode in ["percent", "percent_current"]:
+		event_horizon_energy_percent = float(f_config.get("energy_cost", event_horizon_energy_percent))
+
+	damage = DEFAULT_ATTACK
 
 func _load_weapons_from_config() -> void:
 	super._load_weapons_from_config()
@@ -206,6 +232,8 @@ func _append_draw_point(point: Vector2) -> bool:
 	if hit != null:
 		_has_self_intersection = true
 		_self_intersection_point = hit
+		if BondManager != null and BondManager.has_method("on_draw_self_intersection") and hit is Vector2:
+			BondManager.on_draw_self_intersection(self, hit)
 
 	_draw_points.append(point)
 	_refresh_draw_visual()
@@ -220,6 +248,9 @@ func _release_drawing_path() -> void:
 	var captured_points: PackedVector2Array = _draw_points.duplicate()
 	var total_length: float = _draw_total_length
 	var draw_cost_spent: float = _draw_energy_spent
+	var forced_closure: Dictionary = BondManager.apply_forced_closure(self, captured_points) if BondManager != null and BondManager.has_method("apply_forced_closure") else {}
+	if bool(forced_closure.get("forced_closed", false)):
+		captured_points = forced_closure.get("points", captured_points)
 	var is_closed: bool = _determine_closed_shape(captured_points)
 	var centroid: Vector2 = _resolve_centroid(captured_points, is_closed)
 	var approx_area: float = _estimate_polygon_area(captured_points, is_closed)
@@ -291,7 +322,7 @@ func _estimate_polygon_area(points: PackedVector2Array, is_closed: bool) -> floa
 
 func _average_point(points: PackedVector2Array) -> Vector2:
 	var sum: Vector2 = Vector2.ZERO
-	for point in points:
+	for point: Vector2 in points:
 		sum += point
 	return sum / float(max(1, points.size()))
 
@@ -319,7 +350,7 @@ func _fail_short_circuit() -> void:
 	set_flash_material()
 
 func _notify_draw_release(points: PackedVector2Array, is_closed: bool, centroid: Vector2, approx_area: float, draw_cost_spent: float) -> void:
-	var release_payload: Dictionary = {
+	notify_space_draw_release({
 		"source": "space",
 		"skill_id": "collapse_space",
 		"is_closed": is_closed,
@@ -327,8 +358,7 @@ func _notify_draw_release(points: PackedVector2Array, is_closed: bool, centroid:
 		"centroid": centroid,
 		"approx_area": approx_area,
 		"draw_cost": draw_cost_spent,
-	}
-	notify_space_draw_release(release_payload)
+	})
 
 func _packed_to_points(points: PackedVector2Array) -> Array[Vector2]:
 	var result: Array[Vector2] = []
@@ -341,6 +371,11 @@ func _spawn_singularity_trap(center: Vector2) -> void:
 	if trap == null:
 		return
 	trap.global_position = center
+	trap.visual_radius = 18.0
+	trap.attract_radius = singularity_trap_radius
+	trap.lifetime = singularity_trap_lifetime
+	trap.pull_strength = singularity_trap_pull_strength
+	trap.idle_tick_interval = singularity_tick_interval
 	trap.setup(self, damage)
 	if not trap.removed.is_connected(_on_trap_removed):
 		trap.removed.connect(_on_trap_removed)
@@ -354,6 +389,7 @@ func _activate_gravity_well() -> void:
 	if not consume_energy(gravity_well_energy_cost):
 		return
 	_gravity_well_cooldown_remaining = gravity_well_cooldown
+	notify_front_skill_cast("e", {"skill_id": "e_collapse"})
 	var center: Vector2 = get_global_mouse_position()
 	_spawn_gravity_well_vfx(center)
 	for enemy_node in get_tree().get_nodes_in_group("enemies"):
@@ -399,6 +435,7 @@ func _activate_event_horizon() -> void:
 		Global.spawn_floating_text(global_position, "MISS", Color(1.0, 0.44, 0.42))
 		SoundManager.play("ui_error")
 		return
+	notify_front_skill_cast("f", {"skill_id": "f_collapse"})
 	for trap in _active_traps:
 		if is_instance_valid(trap):
 			trap.activate_event_horizon()
@@ -418,7 +455,7 @@ func _try_start_dash() -> void:
 		dash_dir = Vector2.RIGHT if is_facing_right() else Vector2.LEFT
 
 	_is_dashing = true
-	_dash_direction = dash_dir.normalized()
+	_dash_direction = get_modified_dash_direction(dash_dir.normalized())
 	_dash_remaining_distance = dash_distance
 	_dash_total_distance = dash_distance
 	_dash_invulnerable = true
@@ -478,5 +515,5 @@ func _cleanup_traps() -> void:
 			valid_traps.append(trap)
 	_active_traps = valid_traps
 
-func _on_trap_removed(trap: CollapseSingularityTrap) -> void:
+func _on_trap_removed(_trap: CollapseSingularityTrap) -> void:
 	_cleanup_traps()

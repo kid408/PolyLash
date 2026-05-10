@@ -36,8 +36,6 @@ var _using_locked_candidates: bool = false
 
 func check_wave_reward(wave_number: int) -> bool:
 	_pending_wave_number = wave_number
-	if Global.should_offer_recruit_for_wave(wave_number):
-		return true
 	if _pending_drop_points > 0:
 		return true
 	return wave_number in REWARD_WAVES
@@ -68,13 +66,6 @@ func generate_reward_options() -> Array[Dictionary]:
 	# 招募波次统一只占用一个奖励格子：
 	# - 未满员：直接招募
 	# - 满员：先给“招募并替换”卡，点击后再弹替换目标选择面板
-	if Global.should_offer_recruit_for_wave(_pending_wave_number):
-		var recruit_option: Dictionary = _generate_single_recruit_option()
-		if not recruit_option.is_empty():
-			_current_options.append(recruit_option)
-		if not _current_options.is_empty():
-			used_type_map[TYPE_RECRUIT] = true
-
 	while _current_options.size() < REWARD_OPTION_COUNT:
 		var option: Dictionary = _generate_weighted_option(reward_tier, used_type_map)
 		if option.is_empty():
@@ -88,14 +79,12 @@ func generate_reward_options() -> Array[Dictionary]:
 
 func _generate_weighted_option(reward_tier: int, used_type_map: Dictionary) -> Dictionary:
 	var entries: Array[Dictionary] = []
-	_append_weight_entry(entries, TYPE_RECRUIT, _get_type_weight(TYPE_RECRUIT), used_type_map, _can_offer_recruit())
 	_append_weight_entry(entries, TYPE_ATTRIBUTE, _get_type_weight(TYPE_ATTRIBUTE), used_type_map, true)
 	_append_weight_entry(entries, TYPE_BOND, _get_type_weight(TYPE_BOND), used_type_map, true)
 	_append_weight_entry(entries, TYPE_OTHER, _get_type_weight(TYPE_OTHER), used_type_map, true)
 
 	# 若都被“去重类型”过滤掉，允许重复类型，避免凑不齐三选一。
 	if entries.is_empty():
-		_append_weight_entry(entries, TYPE_RECRUIT, _get_type_weight(TYPE_RECRUIT), {}, _can_offer_recruit())
 		_append_weight_entry(entries, TYPE_ATTRIBUTE, _get_type_weight(TYPE_ATTRIBUTE), {}, true)
 		_append_weight_entry(entries, TYPE_BOND, _get_type_weight(TYPE_BOND), {}, true)
 		_append_weight_entry(entries, TYPE_OTHER, _get_type_weight(TYPE_OTHER), {}, true)
@@ -106,8 +95,6 @@ func _generate_weighted_option(reward_tier: int, used_type_map: Dictionary) -> D
 		var picked_type: String = _pick_weighted_key(entries)
 		var option: Dictionary = {}
 		match picked_type:
-			TYPE_RECRUIT:
-				option = _generate_single_recruit_option()
 			TYPE_ATTRIBUTE:
 				option = _generate_attribute_option(reward_tier)
 			TYPE_BOND:

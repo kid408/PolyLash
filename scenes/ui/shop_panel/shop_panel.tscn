@@ -32,7 +32,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
-custom_minimum_size = Vector2(800, 500)
+custom_minimum_size = Vector2(1040, 560)
 layout_mode = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer"]
@@ -55,7 +55,7 @@ vertical_alignment = 1
 [node name="GoldLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "金币: 0"
+text = "金币：0"
 horizontal_alignment = 1
 
 [node name="ItemsContainer" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
@@ -72,12 +72,12 @@ alignment = 1
 
 [node name="RerollButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BottomButtons"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(150, 50)
+custom_minimum_size = Vector2(180, 50)
 layout_mode = 2
-text = "刷新 (50金币)"
+text = "刷新商店（20 金币）"
 
 [node name="NextWaveButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BottomButtons"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(200, 50)
+custom_minimum_size = Vector2(220, 50)
 layout_mode = 2
 text = "开始下一波"

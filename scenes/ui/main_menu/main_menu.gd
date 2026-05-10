@@ -1,4 +1,4 @@
-extends MarginContainer
+﻿extends MarginContainer
 
 signal menu_action(action: String)
 
@@ -14,7 +14,7 @@ const BUTTON_DEFS: Array = [
 	["图鉴", "compendium"],
 	["设置", "settings"],
 	["鸣谢", "credits"],
-	["退出游戏", "quit"],
+	["退出", "quit"],
 ]
 
 @onready var nav_list: VBoxContainer = $HBoxContainer/NavList
@@ -108,7 +108,7 @@ func _refresh_quick_start_panel() -> void:
 		_clear_quick_portraits()
 		quick_name.text = "暂无存档"
 		quick_time.text = "--:--:--"
-		quick_detail.text = "创建新存档后，这里会显示三人小队、进度与游戏时长。"
+		quick_detail.text = "创建存档后，这里会显示三人小队、进度与游戏时长。"
 		quick_start_panel.mouse_default_cursor_shape = Control.CURSOR_ARROW
 		return
 
@@ -205,3 +205,4 @@ func _create_font() -> Font:
 	])
 	font.font_weight = 600
 	return font
+

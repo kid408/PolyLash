@@ -1,6 +1,8 @@
 ﻿extends Node
 
 const DEBUG_VERBOSE := false
+const COMBAT_EVENT_TYPES := preload("res://scenes/components/combat_event_types.gd")
+const FLOATING_TEXT_MANAGER_SCRIPT := preload("res://autoloads/floating_text_manager.gd")
 
 # 闪避文字
 signal on_create_block_text(unit:Node2D)
@@ -33,6 +35,7 @@ enum UpgradeTier{
 
 var player:PlayerBase
 var game_paused:= false
+var floating_text_manager: FloatingTextManager = null
 
 # ============================================================================
 # 角色选择系统
@@ -105,6 +108,7 @@ const PLAYER_WEAPON_CACHE_PATH := "user://player_weapon_cache.json"
 func _ready() -> void:
 	# 设置全局 Tooltip 样式
 	_setup_tooltip_theme()
+	_ensure_floating_text_manager()
 
 func _setup_tooltip_theme() -> void:
 	"""设置全局 Tooltip 主题样式（深色背景 + 暖白字体）"""
@@ -293,21 +297,23 @@ func _is_validation_test_mode_active() -> bool:
 
 
 func _spawn_floating_text(pos: Vector2, value: String, color: Color) -> void:
-	# 延后一帧创建，避开场景切换/节点装配期间的 add_child 冲突
-	var tree := get_tree()
-	if tree == null:
+	var manager := _ensure_floating_text_manager()
+	if manager == null:
 		return
-	var scene := tree.current_scene
-	if not is_instance_valid(scene):
-		return
-	var text_instance = FLOATING_TEXT_SCENE.instantiate()
-	scene.add_child(text_instance)
+	manager.request_floating_text(pos, value, color)
 
-	# 随机偏移位置（在主角四周）
-	var random_offset = Vector2(randf_range(-40, 40), randf_range(-40, 40))
-	text_instance.global_position = pos + random_offset
-
-	text_instance.setup(value, color)
+func _ensure_floating_text_manager() -> FloatingTextManager:
+	if floating_text_manager != null and is_instance_valid(floating_text_manager):
+		if FLOATING_TEXT_SCENE != null:
+			floating_text_manager.configure(FLOATING_TEXT_SCENE)
+		return floating_text_manager
+	floating_text_manager = FLOATING_TEXT_MANAGER_SCRIPT.new() as FloatingTextManager
+	if floating_text_manager == null:
+		return null
+	floating_text_manager.name = "FloatingTextManager"
+	add_child(floating_text_manager)
+	floating_text_manager.configure(FLOATING_TEXT_SCENE)
+	return floating_text_manager
 
 
 
@@ -357,11 +363,12 @@ func enter_wave_recruit_mode() -> void:
 		reserve_player_ids.clear()
 		return
 	if selected_player_ids.size() > 1:
-		# 正式选人界面已支持 3 人整队进场，此时保留整队逻辑用于后台/切人测试。
-		reserve_player_ids.clear()
+		# 正式流程允许整队入场，同时为商店保留可用的招募池。
 		for player_id in selected_player_ids:
 			_ensure_selected_weapon_for_player(str(player_id))
 		leader_player_id = get_leader_player_id()
+		current_player_index = clamp(current_player_index, 0, max(selected_player_ids.size() - 1, 0))
+		_rebuild_recruit_pool()
 		return
 
 	# 每次进入新战局都根据当前选择重建后备队，避免沿用旧局残留
@@ -503,9 +510,8 @@ func replace_player(out_player_id: String, in_player_id: String) -> bool:
 		save_current_player_state()
 		current_player_index = out_index
 		emit_signal("on_player_switch_requested", in_player_id)
-	else:
-		var state: Dictionary = get_player_state(in_player_id)
-		emit_signal("on_squad_state_changed", out_index, state)
+
+	notify_squad_state_changed(out_index)
 
 	BondManager.recalculate_active_bonds(selected_player_ids)
 	emit_signal("on_active_character_changed", current_player_index)
@@ -1095,7 +1101,13 @@ func trigger_mirror_draw_from_player(source_player_id: String, mirror_pivot: Vec
 		var enemy_pos: Vector2 = enemy.global_position
 		if _is_point_near_mirrored_path(enemy_pos, points, mirror_pivot, 36.0):
 			var health_comp = enemy.get_node("HealthComponent")
-			health_comp.take_damage(final_damage)
+			health_comp.take_damage(final_damage, {
+				"source": player if player != null and is_instance_valid(player) else null,
+				"damage_type": COMBAT_EVENT_TYPES.DamageType.DIRECT,
+				"kind": "mirror_draw",
+				"skill_slot": "q",
+				"space_skill_mode": "open",
+			})
 			hit_count += 1
 			spawn_floating_text(enemy_pos, "MIRROR!", Color(0.7, 1.8, 2.0))
 

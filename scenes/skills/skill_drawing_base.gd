@@ -145,7 +145,11 @@ func _apply_thorns_damage(enemy: Node2D, thorns_damage: float) -> void:
 		return
 	
 	if enemy.has_node("HealthComponent"):
-		enemy.get_node("HealthComponent").take_damage(int(thorns_damage))
+		enemy.get_node("HealthComponent").take_damage(int(thorns_damage), {
+			"source": skill_owner,
+			"kind": "bond_thorns_wall",
+			"damage_type": "DMG_DIRECT",
+		})
 		Global.spawn_floating_text(enemy.global_position, "THORNS!", Color(0.8, 0.4, 0.0))
 		print("[%s] [P2-2] 反伤命中: %s, damage=%.0f" % [skill_id, enemy.name, thorns_damage])
 
@@ -445,7 +449,11 @@ func _trigger_chain_reaction(polygon: PackedVector2Array, main_damage: int) -> v
 		
 		# 閫犳垚浼ゅ
 		if enemy.has_node("HealthComponent"):
-			enemy.get_node("HealthComponent").take_damage(chain_damage)
+			enemy.get_node("HealthComponent").take_damage(chain_damage, {
+				"source": skill_owner,
+				"kind": "bond_chain_reaction",
+				"damage_type": "DMG_AOE",
+			})
 		
 		# 瑙嗚鍙嶉锛氬皬鐖嗙偢鐗规晥
 		Global.spawn_floating_text(enemy.global_position, "CHAIN!", Color(2.0, 0.8, 0.0))
@@ -1049,7 +1057,11 @@ func _trigger_secondary_explode(polygon: PackedVector2Array, main_damage: int) -
 		if not Geometry2D.is_point_in_polygon(enemy.global_position, polygon):
 			continue
 		var hc: Variant = enemy.get_node("HealthComponent")
-		hc.take_damage(splash_damage)
+		hc.take_damage(splash_damage, {
+			"source": skill_owner,
+			"kind": "bond_secondary_explode",
+			"damage_type": "DMG_AOE",
+		})
 		Global.spawn_floating_text(enemy.global_position, "SECOND!", Color(2.0, 1.1, 0.2))
 		hit_count += 1
 
@@ -1221,7 +1233,11 @@ func _apply_death_brush_segment(seg_start: Vector2, seg_end: Vector2) -> void:
 		if damage <= 0:
 			continue
 
-		health_comp.take_damage(damage)
+		health_comp.take_damage(damage, {
+			"source": skill_owner,
+			"kind": "bond_death_brush",
+			"damage_type": "DMG_AOE",
+		})
 		Global.spawn_floating_text(enemy_pos, "DEATH BRUSH!", Color(1.6, 0.4, 1.2))
 		hit_count += 1
 
